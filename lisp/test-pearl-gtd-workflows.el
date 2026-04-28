@@ -38,7 +38,12 @@
             (cond
              ((string-match "2 minutes" prompt) nil)
              ((string-match "actionable" prompt) t)
-             (t nil)))))
+             (t nil))))
+         ((symbol-function 'completing-read)
+          (lambda (prompt collection &rest _)
+            (cond
+             ((string-match "Assign" prompt) "reference")
+             (t "")))))
   :body (progn
           (pearl-gtd-capture)
           (pearl-gtd-process-inbox))
@@ -90,6 +95,11 @@
            ((string-match "Add remarks" prompt) "")
            ((string-match "Context.*Action task" prompt) "@office")
            ((string-match "Assign.*Reference" prompt) "reference")
+           (t ""))))
+       ((symbol-function 'completing-read)
+        (lambda (prompt collection &rest _)
+          (cond
+           ((string-match "Assign" prompt) "reference")
            (t "")))))
   :body (pearl-gtd-process-inbox)
   :asserts (progn
@@ -125,7 +135,12 @@
                ((string-match "Add remarks" prompt) "")
                ((string-match "Assign" prompt) "reference")
                (t "")))))
-         ((symbol-function 'y-or-n-p) (lambda (&rest _) nil)))
+         ((symbol-function 'y-or-n-p) (lambda (&rest _) nil))
+         ((symbol-function 'completing-read)
+          (lambda (prompt collection &rest _)
+            (cond
+             ((string-match "Assign" prompt) "reference")
+             (t "")))))
   :body (progn
           (pearl-gtd-capture)
           (pearl-gtd-capture)

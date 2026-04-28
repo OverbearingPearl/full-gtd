@@ -29,6 +29,11 @@
              ((string-match "Rename" prompt) "Buy birthday gift for mom")
              ((string-match "Add remarks" prompt) "")
              ((string-match "Assign" prompt) "reference")
+             (t ""))))
+         ((symbol-function 'completing-read)
+          (lambda (prompt collection &rest _)
+            (cond
+             ((string-match "Assign" prompt) "reference")
              (t "")))))
   :body (pearl-gtd-process-inbox)
   :asserts (progn
@@ -51,6 +56,11 @@
              ((string-match "Rename" prompt) "")
              ((string-match "Add remarks" prompt) "Check Amazon first")
              ((string-match "Assign" prompt) "reference")
+             (t ""))))
+         ((symbol-function 'completing-read)
+          (lambda (prompt collection &rest _)
+            (cond
+             ((string-match "Assign" prompt) "reference")
              (t "")))))
   :body (pearl-gtd-process-inbox)
   :asserts (test-pearl-gtd-file-contains-p
@@ -69,6 +79,11 @@
              ((string-match "Rename" prompt) "")
              ((string-match "Add remarks" prompt) "")
              ((string-match "Assign" prompt) "reference")
+             (t ""))))
+         ((symbol-function 'completing-read)
+          (lambda (prompt collection &rest _)
+            (cond
+             ((string-match "Assign" prompt) "reference")
              (t "")))))
   :body (pearl-gtd-process-inbox)
   :asserts (should (test-pearl-gtd-file-contains-p
@@ -81,7 +96,8 @@
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Task to cancel\n"))
   :mock (((symbol-function 'y-or-n-p) (lambda (&rest _) (signal 'quit nil)))
-         ((symbol-function 'read-string) (lambda (&rest _) "")))
+         ((symbol-function 'read-string) (lambda (&rest _) ""))
+         ((symbol-function 'completing-read) (lambda (&rest _) "")))
   :body (progn
          (condition-case err
              (pearl-gtd-process-inbox)
@@ -121,7 +137,8 @@
                                          (if (string-match "actionable" prompt)
                                              (signal 'quit nil)
                                            nil)))
-         ((symbol-function 'read-string) (lambda (&rest _) "")))
+         ((symbol-function 'read-string) (lambda (&rest _) ""))
+         ((symbol-function 'completing-read) (lambda (&rest _) "")))
   :body (progn
          (condition-case err
              (pearl-gtd-process-inbox)
@@ -164,7 +181,12 @@
                ((string-match "Schedule" prompt) "")
                ((string-match "Delegate" prompt) "")
                ((string-match "Project" prompt) "")
-               (t ""))))))
+               (t "")))))
+         ((symbol-function 'completing-read)
+          (lambda (prompt collection &rest _)
+            (cond
+             ((string-match "Assign" prompt) "reference")
+             (t "")))))
   :body (pearl-gtd-process-inbox)
   :asserts (progn
              (should (test-pearl-gtd-file-contains-p

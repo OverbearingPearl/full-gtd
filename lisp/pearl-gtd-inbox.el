@@ -323,7 +323,9 @@ BUFFER is the staging buffer.
 ENTRY-REF is the reference to the entry.
 NEW-HEADLINE is the clarified headline (nil if unchanged).
 REMARKS is the clarified remarks text (nil if none)."
-  (let ((assign-to (read-string (format "Assign '%s' to (reference, someday, trash): " (or new-headline headline)))))
+  (let ((assign-to (completing-read (format "Assign '%s' to: " (or new-headline headline))
+                                    '("reference" "someday" "trash")
+                                    nil t)))
     (cond
      ((string= assign-to "reference")
       (pearl-gtd-inbox--stage-change entry-ref 1 (format "[Reference] %s" (or new-headline headline)))
