@@ -28,8 +28,8 @@
             (cond
              ((string-match "Rename" prompt) "")
              ((string-match "Add remarks" prompt) "")
-             ((string-match "Assign" prompt) "trash")
-             (t "")))))
+             (t ""))))
+         ((symbol-function 'completing-read) (lambda (&rest _) "trash")))
   :body (pearl-gtd-process-inbox)
   :asserts (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory))
   :teardown nil)
@@ -44,8 +44,8 @@
             (cond
              ((string-match "Rename" prompt) "")
              ((string-match "Add remarks" prompt) "")
-             ((string-match "Assign" prompt) "reference")
-             (t "")))))
+             (t ""))))
+         ((symbol-function 'completing-read) (lambda (&rest _) "reference")))
   :body (pearl-gtd-process-inbox)
   :asserts (test-pearl-gtd-file-contains-p
             (expand-file-name "reference.org" pearl-gtd-init-base-directory)
@@ -71,7 +71,8 @@
              ((string-match "Schedule" prompt) "")
              ((string-match "Delegate" prompt) "")
              ((string-match "Project" prompt) "")
-             (t "")))))
+             (t ""))))
+         ((symbol-function 'completing-read) (lambda (&rest _) "")))
   :body (pearl-gtd-process-inbox)
   :asserts (test-pearl-gtd-file-contains-p
             (expand-file-name "actions.org" pearl-gtd-init-base-directory)
@@ -97,7 +98,8 @@
              ((string-match "Schedule" prompt) "2026-04-15")
              ((string-match "Delegate" prompt) "")
              ((string-match "Project" prompt) "")
-             (t "")))))
+             (t ""))))
+         ((symbol-function 'completing-read) (lambda (&rest _) "")))
   :body (pearl-gtd-process-inbox)
   :asserts (progn
              (should (test-pearl-gtd-file-contains-p
@@ -119,7 +121,7 @@
   "User processes an empty inbox."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" ""))
-  :mock (((symbol-function 'y-or-n-p) (lambda (&rest _) nil)))
+  :mock nil
   :body (pearl-gtd-process-inbox)
   :asserts (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory))
   :teardown nil)
@@ -133,9 +135,8 @@
           (lambda (prompt &rest _)
             (cond
              ((string-match "Rename" prompt) "Renamed task")
-             ((string-match "Add remarks" prompt) "")
-             ((string-match "Assign" prompt) "reference")
-             (t "")))))
+             (t ""))))
+         ((symbol-function 'completing-read) (lambda (&rest _) "reference")))
   :body (pearl-gtd-process-inbox)
   :asserts (should (test-pearl-gtd-file-contains-p
                     (expand-file-name "reference.org" pearl-gtd-init-base-directory)
@@ -153,11 +154,14 @@
               (setq count (1+ count))
               (cond
                ((and (= count 1) (string-match "Rename" prompt)) "")
-               ((and (= count 2) (string-match "Rename" prompt)) "Important article")
+               ((and (= count 3) (string-match "Rename" prompt)) "Important article")
                ((string-match "Add remarks" prompt) "")
-               ((and (= count 1) (string-match "Assign" prompt)) "trash")
-               ((and (= count 2) (string-match "Assign" prompt)) "reference")
-               (t ""))))))
+               (t "")))))
+         ((symbol-function 'completing-read)
+          (let ((count 0))
+            (lambda (&rest _)
+              (setq count (1+ count))
+              (if (= count 1) "trash" "reference")))))
   :body (pearl-gtd-process-inbox)
   :asserts (progn
              (should-not (test-pearl-gtd-file-contains-p
@@ -174,12 +178,8 @@
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Quick call\n* Quick email\n"))
   :mock (((symbol-function 'y-or-n-p) (lambda (&rest _) t))
-         ((symbol-function 'read-string)
-          (lambda (prompt &rest _)
-            (cond
-             ((string-match "Rename" prompt) "")
-             ((string-match "Add remarks" prompt) "")
-             (t "")))))
+         ((symbol-function 'read-string) (lambda (&rest _) ""))
+         ((symbol-function 'completing-read) (lambda (&rest _) "")))
   :body (pearl-gtd-process-inbox)
   :asserts (progn
              (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory))
@@ -192,15 +192,13 @@
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Task to assign\n"))
   :mock (((symbol-function 'y-or-n-p) (lambda (&rest _) nil))
-         ((symbol-function 'read-string) (lambda (prompt &rest _)
-                                           (if (string-match "Assign" prompt)
-                                               (signal 'quit nil)
-                                             ""))))
+         ((symbol-function 'read-string) (lambda (&rest _) ""))
+         ((symbol-function 'completing-read) (lambda (&rest _) (signal 'quit nil))))
   :body (progn
          (condition-case err
              (pearl-gtd-process-inbox)
            (quit (setq test-pearl-gtd-caught-error err))))
-:asserts (progn
+  :asserts (progn
            (should (test-pearl-gtd-file-contains-p
                     (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
                     "* Task to assign"))

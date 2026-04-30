@@ -25,10 +25,11 @@
   "Assert that FILE contains PATTERN.
 FILE is the file path to check.
 PATTERN is the string to search for."
-  (with-temp-buffer
-    (insert-file-contents file)
-    (goto-char (point-min))
-    (search-forward pattern nil t)))
+  (when (file-exists-p file)
+    (with-temp-buffer
+      (insert-file-contents file)
+      (goto-char (point-min))
+      (search-forward pattern nil t))))
 
 (defun test-pearl-gtd-file-lacks-p (file pattern)
   "Assert that FILE does not contain PATTERN.
