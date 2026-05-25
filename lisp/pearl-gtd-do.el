@@ -104,8 +104,11 @@
 (defun pearl-gtd-do-complete-task ()
   "Mark the current task as complete."
   (interactive)
-  (org-todo 'done)
-  (org-set-property "CLOSED" (format-time-string "[%Y-%m-%d %a %H:%M]")))
+  ;; Enable org-log-done to automatically set CLOSED property
+  (let ((org-log-done 'time))
+    (org-todo "DONE"))
+  ;; Save the buffer to ensure changes are written to file
+  (save-buffer))
 
 (defun pearl-gtd-do--view-context (context)
   "Internal function to view tasks by CONTEXT."

@@ -48,10 +48,10 @@
   :asserts (progn
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      "CLOSED:"))
+                      "DONE"))
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      "DONE")))
+                      "CLOSED:")))
   :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-do-user-views-all-next-actions

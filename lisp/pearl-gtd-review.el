@@ -60,20 +60,22 @@
         (let ((file-path (expand-file-name file pearl-gtd-init-base-directory)))
           (when (file-exists-p file-path)
             (insert (format "** %s\n" (file-name-base file)))
-            (insert-file-contents file-path))))
+            (insert-file-contents file-path)
+            (goto-char (point-max))
+            (unless (bolp) (insert "\n")))))
       (goto-char (point-min))
       (org-mode))
     (pop-to-buffer buffer-name)))
 
-(defun pearl-gtd-review-undeligated ()
+(defun pearl-gtd-review-undelegated ()
   "Review tasks that are not delegated."
   (interactive)
-  (let ((buffer-name "*Pearl-GTD: Undeligated*"))
+  (let ((buffer-name "*Pearl-GTD: Undelegated*"))
     (get-buffer-create buffer-name)
     (with-current-buffer buffer-name
       (erase-buffer)
       (org-mode)
-      (insert "* Undeligated Tasks\n")
+      (insert "* Undelegated Tasks\n")
       (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
         (when (file-exists-p actions-file)
           (insert-file-contents actions-file)
@@ -92,7 +94,20 @@
   "Edit the task at point in the review buffer."
   (interactive)
   (let ((head (org-get-heading t t)))
-    (org-edit-headline (read-string "New task name: " head))))
+    (when head
+      (let ((new-name (read-string "New task name: " head)))
+        ;; Edit in actions.org directly - try to match headline without TODO keyword
+        (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
+          (when (file-exists-p actions-file)
+            (with-current-buffer (find-file-noselect actions-file)
+              (goto-char (point-min))
+              ;; Try to match with or without TODO keyword
+              (when (or (re-search-forward (concat "^\\*+ " (regexp-quote head) "\\($\\| \\)") nil t)
+                        (re-search-forward (concat "^\\*+ TODO " (regexp-quote head) "\\($\\| \\)") nil t)
+                        (re-search-forward (concat "^\\*+ " (regexp-quote (replace-regexp-in-string "^TODO " "" head)) "\\($\\| \\)") nil t))
+                (org-edit-headline new-name)
+                (save-buffer)
+                (message "Task renamed to '%s'" new-name)))))))))
 
 (defun pearl-gtd-review-overdue ()
   "Review overdue scheduled tasks."
@@ -149,8 +164,14 @@
   (interactive)
   (let ((deadline (read-string "Deadline (YYYY-MM-DD): "))
         (reminder (read-string "Reminder days before: ")))
-    (org-set-property "DEADLINE" (format "<%s>" deadline))
-    (org-set-property "REMINDER_DAYS" reminder)))
+    ;; Ensure we're at a task heading
+    (unless (org-at-heading-p)
+      (org-back-to-heading))
+    ;; Set deadline using org-deadline - pass date with angle brackets
+    (org-deadline nil (format "<%s>" deadline))
+    ;; Set reminder days property
+    (org-set-property "REMINDER_DAYS" reminder)
+    (save-buffer)))
 
 (defun pearl-gtd-review-view-upcoming-deadlines ()
   "View tasks with deadlines in next 7 days."
@@ -170,10 +191,13 @@
                    (deadline (org-entry-get nil "DEADLINE")))
                (when deadline
                  (let ((deadline-time (org-time-string-to-time deadline))
-                       (now (current-time)))
-                   (when (time-less-p now (time-add deadline-time (days-to-time 7)))
+                       (now (current-time))
+                       (seven-days-from-now (time-add now (days-to-time 7))))
+                   ;; Only show if deadline is within next 7 days (and not in the past)
+                   (when (and (time-less-p now deadline-time)
+                              (time-less-p deadline-time seven-days-from-now))
                      (insert (format "- %s\n" head)))))))
-           "TODO" 'file)))
+           nil 'file)))  ; Remove "TODO" filter to match all entries with deadlines
       (goto-char (point-min))
       (org-mode))
     (pop-to-buffer buffer-name)))
@@ -239,11 +263,14 @@
   (let ((task (org-get-heading t t))
         (delegatee (org-entry-get nil "DELEGATED"))
         (deadline (org-entry-get nil "DEADLINE")))
-    (when (and delegatee deadline)
+    (when (and delegatee deadline task)
       (let ((deadline-time (org-time-string-to-time deadline)))
         (when (time-less-p deadline-time (current-time))
           (when (y-or-n-p (format "Send reminder to %s for task '%s'? " delegatee task))
-            (org-set-property "REMINDER_SENT" (format-time-string "[%Y-%m-%d %a %H:%M]"))
+            ;; Use org-entry-put to set REMINDER_SENT
+            (org-entry-put nil "REMINDER_SENT" (format-time-string "[%Y-%m-%d %a %H:%M]"))
+            ;; Ensure buffer is saved
+            (save-buffer)
             (message "Reminder sent to %s for task '%s'." delegatee task)))))))
 
 (provide 'pearl-gtd-review)

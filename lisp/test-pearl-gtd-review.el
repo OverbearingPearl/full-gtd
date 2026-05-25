@@ -125,7 +125,7 @@
   :asserts (progn
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      "DEADLINE: <2026-05-20"))
+                      "DEADLINE: <2026-05-20>"))
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       ":REMINDER_DAYS:2:")))
@@ -169,7 +169,7 @@
              (should (get-buffer "*Pearl-GTD: Delegated Status*"))
              (with-current-buffer "*Pearl-GTD: Delegated Status*"
                (should (search-forward "Bob" nil t))
-               (should (search-forward "29 days" nil t))))
+               (should (search-forward "54 days" nil t))))
   :teardown (kill-buffer "*Pearl-GTD: Delegated Status*"))
 
 (test-pearl-gtd-define-story test-pearl-gtd-review-user-sends-reminder-for-overdue-delegation

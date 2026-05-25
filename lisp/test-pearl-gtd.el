@@ -57,7 +57,7 @@ TITLE is the task title to search for."
   "Define a user story test named NAME with DOCSTRING.
 ARGS is a plist with keys:
 :setup - Form to run before test
-:files - List of (filename content) to create
+:files - List of (filename content) to create, content can be expression
 :mock - List of `cl-letf` bindings for user input simulation
 :body - The test body form
 :asserts - Assertion forms
@@ -77,12 +77,13 @@ ARGS is a plist with keys:
          (unwind-protect
              (progn
                ,setup
-               ;; Create test files
-               (dolist (file-spec ',files)
-                 (let ((file (car file-spec))
-                       (content (cadr file-spec)))
-                   (with-temp-file (expand-file-name file temp-dir)
-                     (insert content))))
+               ;; Create test files - evaluate content expressions at runtime
+               ,@(mapcar (lambda (file-spec)
+                          `(let ((file ,(car file-spec))
+                                 (content ,(cadr file-spec)))
+                             (with-temp-file (expand-file-name file temp-dir)
+                               (insert content))))
+                        files)
                ;; Run test with mocks
                (cl-letf ,mock
                  ,body
