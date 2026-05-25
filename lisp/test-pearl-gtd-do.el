@@ -92,12 +92,12 @@
              (t "")))))
   :body (pearl-gtd-do-view-by-contexts)
   :asserts (progn
-             (should (get-buffer "*Pearl-GTD: Multiple*"))
-             (with-current-buffer "*Pearl-GTD: Multiple*"
+             (should (get-buffer "*Pearl-GTD: office,home*"))
+             (with-current-buffer "*Pearl-GTD: office,home*"
                (should (search-forward "Task 1" nil t))
                (should (search-forward "Task 2" nil t))
                (should (search-forward "Task 3" nil t))))
-  :teardown (kill-buffer "*Pearl-GTD: Multiple*"))
+  :teardown (kill-buffer "*Pearl-GTD: office,home*"))
 
 (test-pearl-gtd-define-story test-pearl-gtd-do-user-views-scheduled-for-today
   "User views actions scheduled for today."
