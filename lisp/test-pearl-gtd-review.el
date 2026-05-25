@@ -50,18 +50,18 @@
                (should (search-forward "Maybe later" nil t))))
   :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
 
-(test-pearl-gtd-define-story test-pearl-gtd-review-user-filters-undeligated-tasks
+(test-pearl-gtd-define-story test-pearl-gtd-review-user-filters-undelegated-tasks
   "User reviews tasks that are not delegated."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* Task A\n:PROPERTIES:\n:DELEGATED: John\n:END:\n* Task B\n"))
   :mock nil
-  :body (pearl-gtd-review-undeligated)
+  :body (pearl-gtd-review-undelegated)
   :asserts (progn
-             (should (get-buffer "*Pearl-GTD: Undeligated*"))
-             (with-current-buffer "*Pearl-GTD: Undeligated*"
+             (should (get-buffer "*Pearl-GTD: Undelegated*"))
+             (with-current-buffer "*Pearl-GTD: Undelegated*"
                (should (search-forward "Task B" nil t))
                (should-not (search-forward "Task A" nil t))))
-  :teardown (kill-buffer "*Pearl-GTD: Undeligated*"))
+  :teardown (kill-buffer "*Pearl-GTD: Undelegated*"))
 
 (test-pearl-gtd-define-story test-pearl-gtd-review-user-edits-task-in-review-window
   "User edits a task directly from review buffer."
@@ -158,6 +158,34 @@
              (with-current-buffer "*Pearl-GTD: Reminders*"
                (should (search-forward "Task with reminder" nil t))))
   :teardown (kill-buffer "*Pearl-GTD: Reminders*"))
+
+(test-pearl-gtd-define-story test-pearl-gtd-review-user-tracks-delegation-status
+  "User checks status of delegated tasks and sees waiting time."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* TODO Delegated task\n:PROPERTIES:\n:DELEGATED:Bob\n:DELEGATED_DATE:2026-04-01\n:END:\n"))
+  :mock nil
+  :body (pearl-gtd-review-track-delegation-status)
+  :asserts (progn
+             (should (get-buffer "*Pearl-GTD: Delegated Status*"))
+             (with-current-buffer "*Pearl-GTD: Delegated Status*"
+               (should (search-forward "Bob" nil t))
+               (should (search-forward "29 days" nil t))))
+  :teardown (kill-buffer "*Pearl-GTD: Delegated Status*"))
+
+(test-pearl-gtd-define-story test-pearl-gtd-review-user-sends-reminder-for-overdue-delegation
+  "User sends reminder for overdue delegated task."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* TODO Overdue delegated task\n:PROPERTIES:\n:DELEGATED:Charlie\n:DEADLINE:2026-04-01\n:END:\n"))
+  :mock (((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
+  :body (progn
+         (find-file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+         (goto-char (point-min))
+         (pearl-gtd-review-send-delegation-reminder))
+  :asserts (progn
+             (should (test-pearl-gtd-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      ":REMINDER_SENT:")))
+  :teardown nil)
 
 (provide 'test-pearl-gtd-review)
 

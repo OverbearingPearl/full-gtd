@@ -82,19 +82,45 @@
   :mock (((symbol-function 'read-string)
           (lambda (prompt &rest _)
             (cond
-             ((string-match "Purpose" prompt) "Live intentionally")
-             ((string-match "Principles" prompt) "Honesty, Growth, Service")
+             ((string-match "Vision" prompt) "A life of freedom and impact")
+             ((string-match "Future state" prompt) "Financial independence, strong relationships")
              (t "")))))
-  :body (pearl-gtd-horizons-define-purpose)
+  :body (pearl-gtd-horizons-define-vision)
   :asserts (progn
              (should (file-exists-p (expand-file-name "horizons.org" pearl-gtd-init-base-directory)))
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "horizons.org" pearl-gtd-init-base-directory)
-                      "* Horizon 1: Purpose"))
+                      "* Horizon 2: Vision"))
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "horizons.org" pearl-gtd-init-base-directory)
-                      "Live intentionally")))
+                      "A life of freedom and impact")))
   :teardown nil)
+
+(test-pearl-gtd-define-story test-pearl-gtd-horizons-user-views-projects-by-horizon-5
+  "User views projects grouped by Horizon 5 (Projects)."
+  :setup (pearl-gtd-init-initialize)
+  :files (("projects.org" "* Project A\n:PROPERTIES:\n:HORIZON: 5\n:END:\n* Project B\n:PROPERTIES:\n:HORIZON: 5\n:END:\n"))
+  :mock nil
+  :body (pearl-gtd-horizons-view-projects)
+  :asserts (progn
+             (should (get-buffer "*Pearl-GTD: Horizon 5 Projects*"))
+             (with-current-buffer "*Pearl-GTD: Horizon 5 Projects*"
+               (should (search-forward "Project A" nil t))
+               (should (search-forward "Project B" nil t))))
+  :teardown (kill-buffer "*Pearl-GTD: Horizon 5 Projects*"))
+
+(test-pearl-gtd-define-story test-pearl-gtd-horizons-user-views-actions-by-horizon-6
+  "User views actions grouped by Horizon 6 (Actions)."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* Task A\n:PROPERTIES:\n:HORIZON: 6\n:END:\n* Task B\n:PROPERTIES:\n:HORIZON: 6\n:END:\n"))
+  :mock nil
+  :body (pearl-gtd-horizons-view-actions)
+  :asserts (progn
+             (should (get-buffer "*Pearl-GTD: Horizon 6 Actions*"))
+             (with-current-buffer "*Pearl-GTD: Horizon 6 Actions*"
+               (should (search-forward "Task A" nil t))
+               (should (search-forward "Task B" nil t))))
+  :teardown (kill-buffer "*Pearl-GTD: Horizon 6 Actions*"))
 
 (provide 'test-pearl-gtd-horizons)
 

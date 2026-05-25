@@ -205,6 +205,27 @@
            (should (eq (car test-pearl-gtd-caught-error) 'quit)))
   :teardown nil)
 
+(test-pearl-gtd-define-story test-pearl-gtd-organize-user-links-task-to-multiple-projects
+  "User links single task to multiple projects via tags."
+  :setup (pearl-gtd-init-initialize)
+  :files (("projects.org" "* Project Alpha\n* Project Beta\n")
+          ("actions.org" "* Shared task\n"))
+  :mock (((symbol-function 'read-string)
+          (lambda (prompt &rest _)
+            (cond
+             ((string-match "Select projects" prompt) "Alpha,Beta")
+             (t "")))))
+  :body (progn
+         (with-current-buffer (find-file-noselect (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+           (goto-char (point-min))
+           (pearl-gtd-planning-link-to-projects)
+           (save-buffer)))
+  :asserts (progn
+             (should (test-pearl-gtd-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      ":PROJECT:Alpha,Beta:")))
+  :teardown nil)
+
 (provide 'test-pearl-gtd-organize)
 
 ;;; test-pearl-gtd-organize.el ends here

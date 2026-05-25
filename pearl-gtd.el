@@ -38,6 +38,8 @@
   (interactive)
   (require 'ert)
   (ert-delete-all-tests)
+  ;; Reload all modules first to ensure latest code is used
+  (pearl-gtd-reload-modules)
   ;; Load test files automatically from the lisp directory
   ;; This ensures all test files are loaded regardless of hardcoding
   (let ((test-dir (expand-file-name "lisp" pearl-gtd-directory)))
@@ -61,8 +63,10 @@
                 (unload-feature feature)
               (error nil))))))
     ;; Load .el source files directly, ignoring .elc
+    ;; Skip test files (only load core modules)
     (dolist (file el-files)
-      (when (string-match "^[^.]+\\.el$" file)
+      (when (and (string-match "^[^.]+\\.el$" file)
+                 (not (string-match "^test-" file)))
         (load-file (expand-file-name file lisp-dir))
         (message "Reloaded %s" file)))
     (message "Modules reloaded.")))

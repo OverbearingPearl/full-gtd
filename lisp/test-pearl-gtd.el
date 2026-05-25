@@ -88,10 +88,13 @@ ARGS is a plist with keys:
                  ,body
                  ,asserts))
            (ignore-errors ,teardown)
-           ;; First delete buffers
+           ;; First save and kill buffers
            (dolist (buf (buffer-list))
              (when (and (buffer-file-name buf)
                         (string-prefix-p temp-dir (buffer-file-name buf)))
+               (when (buffer-modified-p buf)
+                 (with-current-buffer buf
+                   (save-buffer)))
                (kill-buffer buf)))
            ;; Then delete files
            (dolist (file (directory-files temp-dir t "\\.org$"))
