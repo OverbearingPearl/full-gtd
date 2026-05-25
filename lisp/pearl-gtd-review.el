@@ -167,8 +167,8 @@
     ;; Ensure we're at a task heading
     (unless (org-at-heading-p)
       (org-back-to-heading))
-    ;; Set deadline using org-deadline - pass date with angle brackets
-    (org-deadline nil (format "<%s>" deadline))
+    ;; Set deadline using org-deadline - pass date without angle brackets
+    (org-deadline nil deadline)
     ;; Set reminder days property
     (org-set-property "REMINDER_DAYS" reminder)
     (save-buffer)))
@@ -176,13 +176,16 @@
 (defun pearl-gtd-review-view-upcoming-deadlines ()
   "View tasks with deadlines in next 7 days."
   (interactive)
-  (let ((buffer-name "*Pearl-GTD: Upcoming Deadlines*"))
+  (let ((buffer-name "*Pearl-GTD: Upcoming Deadlines*")
+        (now (current-time)))
     (get-buffer-create buffer-name)
     (with-current-buffer buffer-name
       (erase-buffer)
       (org-mode)
       (insert "* Upcoming Deadlines\n")
-      (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
+      (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+            (now-days (floor (/ (float-time now) 86400)))
+            (seven-days-later (+ (floor (/ (float-time now) 86400)) 7)))
         (when (file-exists-p actions-file)
           (insert-file-contents actions-file)
           (org-map-entries
@@ -190,14 +193,12 @@
              (let ((head (org-get-heading t t))
                    (deadline (org-entry-get nil "DEADLINE")))
                (when deadline
-                 (let ((deadline-time (org-time-string-to-time deadline))
-                       (now (current-time))
-                       (seven-days-from-now (time-add now (days-to-time 7))))
-                   ;; Only show if deadline is within next 7 days (and not in the past)
-                   (when (and (time-less-p now deadline-time)
-                              (time-less-p deadline-time seven-days-from-now))
+                 (let* ((deadline-time (org-time-string-to-time deadline))
+                        (deadline-days (floor (/ (float-time deadline-time) 86400))))
+                   (when (and (>= deadline-days now-days)
+                              (<= deadline-days seven-days-later))
                      (insert (format "- %s\n" head)))))))
-           nil 'file)))  ; Remove "TODO" filter to match all entries with deadlines
+           nil 'file)))
       (goto-char (point-min))
       (org-mode))
     (pop-to-buffer buffer-name)))
@@ -249,7 +250,11 @@
                    (delegated-date (org-entry-get nil "DELEGATED_DATE")))
                (when (assoc "DELEGATED" props)
                  (let ((days-waiting (if delegated-date
-                                         (floor (/ (float-time (time-subtract (current-time) (org-time-string-to-time delegated-date))) 86400))
+                                         (let* ((del-time (condition-case nil
+                                                              (org-time-string-to-time delegated-date)
+                                                            (error (date-to-time delegated-date))))
+                                                (diff (time-subtract (current-time) del-time)))
+                                           (floor (/ (float-time diff) 86400)))
                                        0)))
                    (insert (format "- %s (to %s, waiting %d days)\n" head (cdr (assoc "DELEGATED" props)) days-waiting))))))
            "TODO" 'file)))
@@ -267,9 +272,9 @@
       (let ((deadline-time (org-time-string-to-time deadline)))
         (when (time-less-p deadline-time (current-time))
           (when (y-or-n-p (format "Send reminder to %s for task '%s'? " delegatee task))
-            ;; Use org-entry-put to set REMINDER_SENT
-            (org-entry-put nil "REMINDER_SENT" (format-time-string "[%Y-%m-%d %a %H:%M]"))
-            ;; Ensure buffer is saved
+            ;; Use org-set-property to set REMINDER_SENT
+            (org-set-property "REMINDER_SENT" (format-time-string "[%Y-%m-%d %a %H:%M]"))
+            ;; Save the current buffer
             (save-buffer)
             (message "Reminder sent to %s for task '%s'." delegatee task)))))))
 
