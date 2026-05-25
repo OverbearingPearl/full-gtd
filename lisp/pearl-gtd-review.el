@@ -164,12 +164,9 @@
   (interactive)
   (let ((deadline (read-string "Deadline (YYYY-MM-DD): "))
         (reminder (read-string "Reminder days before: ")))
-    ;; Ensure we're at a task heading
     (unless (org-at-heading-p)
       (org-back-to-heading))
-    ;; Set deadline using org-deadline - pass date without angle brackets
     (org-deadline nil deadline)
-    ;; Set reminder days property
     (org-set-property "REMINDER_DAYS" reminder)
     (save-buffer)))
 
@@ -177,17 +174,15 @@
   "View tasks with deadlines in next 7 days."
   (interactive)
   (let ((buffer-name "*Pearl-GTD: Upcoming Deadlines*")
-        (now (current-time)))
-    (get-buffer-create buffer-name)
-    (with-current-buffer buffer-name
-      (erase-buffer)
-      (org-mode)
-      (insert "* Upcoming Deadlines\n")
-      (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
-            (now-days (floor (/ (float-time now) 86400)))
-            (seven-days-later (+ (floor (/ (float-time now) 86400)) 7)))
-        (when (file-exists-p actions-file)
+        (now (current-time))
+        (tasks '()))
+    (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+          (now-days (floor (/ (float-time now) 86400)))
+          (seven-days-later (+ (floor (/ (float-time now) 86400)) 7)))
+      (when (file-exists-p actions-file)
+        (with-temp-buffer
           (insert-file-contents actions-file)
+          (org-mode)
           (org-map-entries
            (lambda ()
              (let ((head (org-get-heading t t))
@@ -197,8 +192,15 @@
                         (deadline-days (floor (/ (float-time deadline-time) 86400))))
                    (when (and (>= deadline-days now-days)
                               (<= deadline-days seven-days-later))
-                     (insert (format "- %s\n" head)))))))
-           nil 'file)))
+                     (push head tasks))))))
+           nil nil))))
+    (get-buffer-create buffer-name)
+    (with-current-buffer buffer-name
+      (erase-buffer)
+      (org-mode)
+      (insert "* Upcoming Deadlines\n")
+      (dolist (task (nreverse tasks))
+        (insert (format "- %s\n" task)))
       (goto-char (point-min))
       (org-mode))
     (pop-to-buffer buffer-name)))
@@ -243,21 +245,23 @@
       (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
         (when (file-exists-p actions-file)
           (insert-file-contents actions-file)
+          (org-mode)
           (org-map-entries
            (lambda ()
-             (let ((head (org-get-heading t t))
-                   (props (org-entry-properties))
-                   (delegated-date (org-entry-get nil "DELEGATED_DATE")))
-               (when (assoc "DELEGATED" props)
-                 (let ((days-waiting (if delegated-date
-                                         (let* ((del-time (condition-case nil
-                                                              (org-time-string-to-time delegated-date)
-                                                            (error (date-to-time delegated-date))))
-                                                (diff (time-subtract (current-time) del-time)))
-                                           (floor (/ (float-time diff) 86400)))
-                                       0)))
-                   (insert (format "- %s (to %s, waiting %d days)\n" head (cdr (assoc "DELEGATED" props)) days-waiting))))))
-           "TODO" 'file)))
+             (when (string= (org-get-todo-state) "TODO")
+               (let* ((head (org-get-heading t t))
+                      (props (org-entry-properties))
+                      (delegated (cdr (assoc "DELEGATED" props)))
+                      (delegated-date (org-entry-get nil "DELEGATED_DATE")))
+                 (when delegated
+                   (if delegated-date
+                       (let* ((clean-date (string-trim delegated-date "<" ">"))
+                              (del-time (date-to-time clean-date))
+                              (diff (time-subtract (current-time) del-time))
+                              (days-waiting (floor (/ (float-time diff) 86400))))
+                         (insert (format "- %s (to %s, waiting %d days)\n" head delegated days-waiting)))
+                     (insert (format "- %s (to %s, waiting unknown days)\n" head delegated)))))))
+           nil nil)))
       (goto-char (point-min))
       (org-mode))
     (pop-to-buffer buffer-name)))
@@ -265,6 +269,8 @@
 (defun pearl-gtd-review-send-delegation-reminder ()
   "Send reminder for overdue delegated task."
   (interactive)
+  (unless (org-at-heading-p)
+    (org-back-to-heading))
   (let ((task (org-get-heading t t))
         (delegatee (org-entry-get nil "DELEGATED"))
         (deadline (org-entry-get nil "DEADLINE")))
@@ -272,11 +278,8 @@
       (let ((deadline-time (org-time-string-to-time deadline)))
         (when (time-less-p deadline-time (current-time))
           (when (y-or-n-p (format "Send reminder to %s for task '%s'? " delegatee task))
-            ;; Use org-set-property to set REMINDER_SENT
             (org-set-property "REMINDER_SENT" (format-time-string "[%Y-%m-%d %a %H:%M]"))
-            ;; Save the current buffer
-            (save-buffer)
-            (message "Reminder sent to %s for task '%s'." delegatee task)))))))
+            (save-buffer)))))))
 
 (provide 'pearl-gtd-review)
 
