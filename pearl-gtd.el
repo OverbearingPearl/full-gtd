@@ -28,12 +28,12 @@
 (defun pearl-gtd-capture ()
   "Capture a new item to the inbox."
   (interactive)
-  (pearl-gtd-inbox-capture))
+  (pearl-gtd-inbox--capture))
 
 (defun pearl-gtd-process-inbox ()
   "Process the inbox."
   (interactive)
-  (pearl-gtd-inbox-process))
+  (pearl-gtd-inbox--process))
 
 (defun pearl-gtd-init-initialize ()
   "Initialize the Pearl-GTD system by creating the base directory and necessary files."

@@ -211,7 +211,7 @@ Remarks is the clarified remarks text (nil if none).")
 (defvar pearl-gtd-inbox-stage-buffer-name nil
   "The name of the current inbox staging buffer.")
 
-(defun pearl-gtd-inbox-capture ()
+(defun pearl-gtd-inbox--capture ()
   "Capture a new item to the inbox with a timestamp."
   (let ((item (string-trim (read-string "Enter item to capture: "))))
     (unless (string-empty-p item)
@@ -220,7 +220,7 @@ Remarks is the clarified remarks text (nil if none).")
         (insert (format "* %s\n:PROPERTIES:\n:CREATED: %s\n:END:\n" item (format-time-string "%Y-%m-%d %H:%M:%S")))
         (save-buffer)))))
 
-(defun pearl-gtd-inbox-clarify-entry (headline buffer entry-ref)
+(defun pearl-gtd-inbox--clarify-entry (headline buffer entry-ref)
   "Clarify the entry by asking user to rename or add remarks.
 HEADLINE is the current entry heading.
 BUFFER is the staging buffer.
@@ -241,23 +241,23 @@ Returns a cons cell (NEW-HEADLINE . REMARKS)."
         (pearl-gtd-inbox--stage-change entry-ref 2 remark-text)))
     (cons new-headline remarks)))
 
-(defun pearl-gtd-inbox-process-entry (headline buffer entry-ref)
+(defun pearl-gtd-inbox--process-entry (headline buffer entry-ref)
   "Process a single entry according to GTD steps.
 HEADLINE is the entry heading to process.
 BUFFER is the staging buffer.
 ENTRY-REF is the reference to the entry."
   ;; Step 1: Clarify - ask for rename and remarks
-  (let* ((clarify-result (pearl-gtd-inbox-clarify-entry headline buffer entry-ref))
+  (let* ((clarify-result (pearl-gtd-inbox--clarify-entry headline buffer entry-ref))
          (new-headline (car clarify-result))
          (remarks (cdr clarify-result))
          (display-headline (or new-headline headline)))
     ;; Step 2: Process - check if actionable
     (let ((is-actionable (y-or-n-p (format "Is '%s' actionable? " display-headline))))
       (if is-actionable
-          (pearl-gtd-inbox-handle-actionable headline buffer entry-ref new-headline remarks)
-        (pearl-gtd-inbox-handle-non-actionable headline buffer entry-ref new-headline remarks)))))
+          (pearl-gtd-inbox--handle-actionable headline buffer entry-ref new-headline remarks)
+        (pearl-gtd-inbox--handle-non-actionable headline buffer entry-ref new-headline remarks)))))
 
-(defun pearl-gtd-inbox-handle-actionable (headline buffer entry-ref new-headline remarks)
+(defun pearl-gtd-inbox--handle-actionable (headline buffer entry-ref new-headline remarks)
   "Handle actionable entries.
 HEADLINE is the original entry heading.
 BUFFER is the staging buffer.
@@ -266,10 +266,10 @@ NEW-HEADLINE is the clarified headline (nil if unchanged).
 REMARKS is the clarified remarks text (nil if none)."
   (let ((can-do-in-2min (y-or-n-p (format "Can '%s' be done in 2 minutes? " (or new-headline headline)))))
     (if can-do-in-2min
-        (pearl-gtd-inbox-execute-immediately headline buffer entry-ref new-headline remarks)
-      (pearl-gtd-inbox-handle-further-checks headline buffer entry-ref new-headline remarks))))
+        (pearl-gtd-inbox--execute-immediately headline buffer entry-ref new-headline remarks)
+      (pearl-gtd-inbox--handle-further-checks headline buffer entry-ref new-headline remarks))))
 
-(defun pearl-gtd-inbox-execute-immediately (headline buffer entry-ref new-headline remarks)
+(defun pearl-gtd-inbox--execute-immediately (headline buffer entry-ref new-headline remarks)
   "Execute and stage immediate actions.
 HEADLINE is the original entry heading.
 BUFFER is the staging buffer.
@@ -280,7 +280,7 @@ REMARKS is the clarified remarks text (nil if none)."
   (pearl-gtd-inbox--mark-executed entry-ref)
   (push (list headline nil nil new-headline remarks) pearl-gtd-inbox--pending-moves))
 
-(defun pearl-gtd-inbox-handle-further-checks (headline buffer entry-ref new-headline remarks)
+(defun pearl-gtd-inbox--handle-further-checks (headline buffer entry-ref new-headline remarks)
   "Handle further checks for non-immediate actionable entries.
 HEADLINE is the original entry heading.
 BUFFER is the staging buffer.
@@ -316,7 +316,7 @@ REMARKS is the clarified remarks text (nil if none)."
       ;; Store headline, target-file, and properties, plus clarify info
       (push (list headline "actions.org" props new-headline remarks) pearl-gtd-inbox--pending-moves))))
 
-(defun pearl-gtd-inbox-handle-non-actionable (headline buffer entry-ref new-headline remarks)
+(defun pearl-gtd-inbox--handle-non-actionable (headline buffer entry-ref new-headline remarks)
   "Handle non-actionable entries.
 HEADLINE is the original entry heading.
 BUFFER is the staging buffer.
@@ -338,7 +338,7 @@ REMARKS is the clarified remarks text (nil if none)."
       (push (list headline nil nil new-headline remarks) pearl-gtd-inbox--pending-moves))
      (t nil))))
 
-(defun pearl-gtd-inbox-process ()
+(defun pearl-gtd-inbox--process ()
   "Process the inbox according to GTD clarify and organize steps, with user interaction via staging buffer."
   (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
     (setq pearl-gtd-inbox--pending-moves '())
@@ -357,7 +357,7 @@ REMARKS is the clarified remarks text (nil if none)."
                    staging-buffer
                    (lambda (headline entry-ref)
                      (pearl-gtd-inbox--highlight-entry entry-ref)
-                     (pearl-gtd-inbox-process-entry headline staging-buffer entry-ref)))
+                     (pearl-gtd-inbox--process-entry headline staging-buffer entry-ref)))
                   ;; Clear highlight after processing all entries
                   (when pearl-gtd-inbox--current-highlight
                     (delete-overlay pearl-gtd-inbox--current-highlight)
@@ -365,7 +365,7 @@ REMARKS is the clarified remarks text (nil if none)."
                   (pearl-gtd-inbox--clear-changes staging-buffer)
                   (setq pearl-gtd-inbox--pending-moves (nreverse pearl-gtd-inbox--pending-moves))
                   (dolist (move pearl-gtd-inbox--pending-moves)
-                    (pearl-gtd-inbox-do-move (nth 0 move) (nth 1 move) (nth 2 move) (nth 3 move) (nth 4 move)))
+                    (pearl-gtd-inbox--do-move (nth 0 move) (nth 1 move) (nth 2 move) (nth 3 move) (nth 4 move)))
                   (when (and (file-exists-p inbox-file)
                              (= 0 (file-attribute-size (file-attributes inbox-file))))
                     (delete-file inbox-file)))
@@ -373,7 +373,7 @@ REMARKS is the clarified remarks text (nil if none)."
             (message "Inbox is empty, nothing to process.")))
       (message "Inbox file does not exist."))))
 
-(defun pearl-gtd-inbox-do-move (headline target-file properties-string new-headline remarks)
+(defun pearl-gtd-inbox--do-move (headline target-file properties-string new-headline remarks)
   "Move HEADLINE to TARGET-FILE and delete from inbox.
 If TARGET-FILE is nil, just delete from inbox (trash).
 PROPERTIES-STRING contains properties such as \":SCHEDULED:2026-04-10:\",
