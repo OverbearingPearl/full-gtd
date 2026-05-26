@@ -17,9 +17,8 @@
 (require 'org)
 (require 'pearl-gtd-init)
 
-(defun pearl-gtd-review-daily ()
+(defun pearl-gtd-review--daily ()
   "Run daily review."
-  (interactive)
   (let ((buffer-name "*Pearl-GTD Daily Review*"))
     (get-buffer-create buffer-name)
     (with-current-buffer buffer-name
@@ -47,9 +46,8 @@
       (org-mode))
     (pop-to-buffer buffer-name)))
 
-(defun pearl-gtd-review-weekly ()
+(defun pearl-gtd-review--weekly ()
   "Run weekly review across all lists."
-  (interactive)
   (let ((buffer-name "*Pearl-GTD Weekly Review*"))
     (get-buffer-create buffer-name)
     (with-current-buffer buffer-name
@@ -67,9 +65,8 @@
       (org-mode))
     (pop-to-buffer buffer-name)))
 
-(defun pearl-gtd-review-undelegated ()
+(defun pearl-gtd-review--undelegated ()
   "Review tasks that are not delegated."
-  (interactive)
   (let ((buffer-name "*Pearl-GTD: Undelegated*"))
     (get-buffer-create buffer-name)
     (with-current-buffer buffer-name
@@ -90,9 +87,8 @@
       (org-mode))
     (pop-to-buffer buffer-name)))
 
-(defun pearl-gtd-review-edit-task ()
+(defun pearl-gtd-review--edit-task ()
   "Edit the task at point in the review buffer."
-  (interactive)
   (let ((head (org-get-heading t t)))
     (when head
       (let ((new-name (read-string "New task name: " head)))
@@ -109,9 +105,8 @@
                 (save-buffer)
                 (message "Task renamed to '%s'" new-name)))))))))
 
-(defun pearl-gtd-review-overdue ()
+(defun pearl-gtd-review--overdue ()
   "Review overdue scheduled tasks."
-  (interactive)
   (let ((buffer-name "*Pearl-GTD: Overdue*"))
     (get-buffer-create buffer-name)
     (with-current-buffer buffer-name
@@ -132,9 +127,8 @@
       (org-mode))
     (pop-to-buffer buffer-name)))
 
-(defun pearl-gtd-review-stuck-projects ()
+(defun pearl-gtd-review--stuck-projects ()
   "Review projects with no next actions."
-  (interactive)
   (let ((buffer-name "*Pearl-GTD: Stuck Projects*"))
     (get-buffer-create buffer-name)
     (with-current-buffer buffer-name
@@ -159,9 +153,8 @@
       (org-mode))
     (pop-to-buffer buffer-name)))
 
-(defun pearl-gtd-review-set-deadline ()
+(defun pearl-gtd-review--set-deadline ()
   "Set deadline for current task with reminder."
-  (interactive)
   (let ((deadline (read-string "Deadline (YYYY-MM-DD): "))
         (reminder (read-string "Reminder days before: ")))
     (unless (org-at-heading-p)
@@ -170,9 +163,8 @@
     (org-set-property "REMINDER_DAYS" reminder)
     (save-buffer)))
 
-(defun pearl-gtd-review-view-upcoming-deadlines ()
+(defun pearl-gtd-review--view-upcoming-deadlines ()
   "View tasks with deadlines in next 7 days."
-  (interactive)
   (let ((buffer-name "*Pearl-GTD: Upcoming Deadlines*")
         (now (current-time))
         (tasks '()))
@@ -205,9 +197,8 @@
       (org-mode))
     (pop-to-buffer buffer-name)))
 
-(defun pearl-gtd-review-check-reminders ()
+(defun pearl-gtd-review--check-reminders ()
   "Check and display reminders for due tasks."
-  (interactive)
   (let ((buffer-name "*Pearl-GTD: Reminders*"))
     (get-buffer-create buffer-name)
     (with-current-buffer buffer-name
@@ -233,9 +224,8 @@
       (org-mode))
     (pop-to-buffer buffer-name)))
 
-(defun pearl-gtd-review-track-delegation-status ()
+(defun pearl-gtd-review--track-delegation-status ()
   "Track status of delegated tasks and display waiting time."
-  (interactive)
   (let ((buffer-name "*Pearl-GTD: Delegated Status*"))
     (get-buffer-create buffer-name)
     (with-current-buffer buffer-name
@@ -266,9 +256,8 @@
       (org-mode))
     (pop-to-buffer buffer-name)))
 
-(defun pearl-gtd-review-send-delegation-reminder ()
+(defun pearl-gtd-review--send-delegation-reminder ()
   "Send reminder for overdue delegated task."
-  (interactive)
   (unless (org-at-heading-p)
     (org-back-to-heading))
   (let ((task (org-get-heading t t))

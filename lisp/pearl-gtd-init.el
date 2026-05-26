@@ -19,9 +19,8 @@
 (defvar pearl-gtd-init-base-directory (expand-file-name "~/.pearl-gtd/")
   "Base directory for Pearl-GTD.")
 
-(defun pearl-gtd-init-initialize ()
+(defun pearl-gtd-init--initialize ()
   "Initialize the Pearl-GTD system by creating the base directory and necessary files."
-  (interactive)
   (let ((dir pearl-gtd-init-base-directory))
     (unless (file-directory-p dir)
       (make-directory dir))

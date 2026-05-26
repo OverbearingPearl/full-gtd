@@ -18,21 +18,18 @@
 (require 'org)
 (require 'pearl-gtd-init)
 
-(defun pearl-gtd-do-view-by-context ()
+(defun pearl-gtd-do--view-by-context ()
   "View next actions filtered by a specific context."
-  (interactive)
   (let ((context (completing-read "Select context: " '("@office" "@home" "@errands" "@computer"))))
     (pearl-gtd-do--view-context context)))
 
-(defun pearl-gtd-do-view-by-contexts ()
+(defun pearl-gtd-do--view-by-contexts ()
   "View next actions filtered by multiple contexts."
-  (interactive)
   (let ((contexts (completing-read "Select contexts (comma separated): " '("@office" "@home" "@errands" "@computer"))))
     (pearl-gtd-do--view-context contexts)))
 
-(defun pearl-gtd-do-view-all-actions ()
+(defun pearl-gtd-do--view-all-actions ()
   "View all next actions regardless of context."
-  (interactive)
   (let ((buffer-name "*Pearl-GTD: All Actions*"))
     (get-buffer-create buffer-name)
     (with-current-buffer buffer-name
@@ -53,9 +50,8 @@
       (org-mode))
     (pop-to-buffer buffer-name)))
 
-(defun pearl-gtd-do-view-delegated ()
+(defun pearl-gtd-do--view-delegated ()
   "View all delegated tasks."
-  (interactive)
   (let ((buffer-name "*Pearl-GTD: Delegated*"))
     (get-buffer-create buffer-name)
     (with-current-buffer buffer-name
@@ -77,9 +73,8 @@
       (org-mode))
     (pop-to-buffer buffer-name)))
 
-(defun pearl-gtd-do-view-today ()
+(defun pearl-gtd-do--view-today ()
   "View actions scheduled for today."
-  (interactive)
   (let ((buffer-name "*Pearl-GTD: Today*"))
     (get-buffer-create buffer-name)
     (with-current-buffer buffer-name
@@ -101,9 +96,8 @@
       (org-mode))
     (pop-to-buffer buffer-name)))
 
-(defun pearl-gtd-do-complete-task ()
+(defun pearl-gtd-do--complete-task ()
   "Mark the current task as complete."
-  (interactive)
   ;; Enable org-log-done to automatically set CLOSED property
   (let ((org-log-done 'time))
     (org-todo "DONE"))
