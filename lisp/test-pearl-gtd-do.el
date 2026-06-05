@@ -21,7 +21,7 @@
 (test-pearl-gtd-define-story test-pearl-gtd-do-user-views-next-actions-by-context
   "User views all next actions filtered by @office context."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* Task 1 :office:\n* Task 2 :home:\n* Task 3 :office:\n"))
+  :files (("actions.org" "* TODO Task 1 :office:\n* TODO Task 2 :home:\n* TODO Task 3 :office:\n"))
   :mock (((symbol-function 'completing-read)
           (lambda (prompt collection &rest _)
             (cond
@@ -57,7 +57,7 @@
 (test-pearl-gtd-define-story test-pearl-gtd-do-user-views-all-next-actions
   "User views all next actions regardless of context."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* Task A :office:\n* Task B :home:\n* Task C :errands:\n"))
+  :files (("actions.org" "* TODO Task A :office:\n* TODO Task B :home:\n* TODO Task C :errands:\n"))
   :mock nil
   :body (pearl-gtd-do-view-all-actions)
   :asserts (progn
@@ -71,7 +71,7 @@
 (test-pearl-gtd-define-story test-pearl-gtd-do-user-views-delegated-tasks
   "User views all delegated tasks."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* Task X :office:\n:PROPERTIES:\n:DELEGATED: John\n:END:\n"))
+  :files (("actions.org" "* TODO Task X :office:\n:PROPERTIES:\n:DELEGATED: John\n:END:\n"))
   :mock nil
   :body (pearl-gtd-do-view-delegated)
   :asserts (progn
@@ -84,7 +84,7 @@
 (test-pearl-gtd-define-story test-pearl-gtd-do-user-filters-by-multiple-contexts
   "User filters actions by multiple contexts."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* Task 1 :office:\n* Task 2 :home:\n* Task 3 :office:home:\n"))
+  :files (("actions.org" "* TODO Task 1 :office:\n* TODO Task 2 :home:\n* TODO Task 3 :office:home:\n"))
   :mock (((symbol-function 'completing-read)
           (lambda (prompt collection &rest _)
             (cond
@@ -102,7 +102,7 @@
 (test-pearl-gtd-define-story test-pearl-gtd-do-user-views-scheduled-for-today
   "User views actions scheduled for today."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" (format "* Task today\nSCHEDULED: <%s>\n" (format-time-string "%Y-%m-%d"))))
+  :files (("actions.org" (format "* TODO Task today\nSCHEDULED: <%s>\n" (format-time-string "%Y-%m-%d"))))
   :mock nil
   :body (pearl-gtd-do-view-today)
   :asserts (progn
