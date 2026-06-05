@@ -370,8 +370,30 @@ REMARKS is the clarified remarks text (nil if none)."
                              (= 0 (file-attribute-size (file-attributes inbox-file))))
                     (delete-file inbox-file)))
                 (message "Inbox processing complete and changes applied per GTD workflow."))
-            (message "Inbox is empty, nothing to process.")))
-      (message "Inbox file does not exist."))))
+            ;; Empty inbox - create buffer with message
+            (let ((buffer-name "*Pearl-GTD: Inbox*"))
+              (get-buffer-create buffer-name)
+              (with-current-buffer buffer-name
+                (setq buffer-read-only nil)
+                (erase-buffer)
+                (org-mode)
+                (insert "(Inbox is empty - nothing to process)\n")
+                (setq buffer-read-only t)
+                (goto-char (point-min)))
+              (pop-to-buffer buffer-name)
+              (message "Inbox is empty, nothing to process."))))
+      ;; Inbox file does not exist - create buffer with unified message
+      (let ((buffer-name "*Pearl-GTD: Inbox*"))
+        (get-buffer-create buffer-name)
+        (with-current-buffer buffer-name
+          (setq buffer-read-only nil)
+          (erase-buffer)
+          (org-mode)
+          (insert "(Inbox is empty - nothing to process)\n")
+          (setq buffer-read-only t)
+          (goto-char (point-min)))
+        (pop-to-buffer buffer-name)
+        (message "Inbox is empty, nothing to process.")))))
 
 (defun pearl-gtd-inbox--do-move (headline target-file properties-string new-headline remarks)
   "Move HEADLINE to TARGET-FILE and delete from inbox.

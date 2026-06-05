@@ -156,8 +156,29 @@
   :files (("inbox.org" ""))
   :mock nil
   :body (pearl-gtd-process-inbox)
-  :asserts (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory))
-  :teardown nil)
+  :asserts (progn
+             (should (get-buffer "*Pearl-GTD: Inbox*"))
+             (with-current-buffer "*Pearl-GTD: Inbox*"
+               (should (search-forward "Inbox is empty" nil t))))
+  :teardown (kill-buffer "*Pearl-GTD: Inbox*"))
+
+(test-pearl-gtd-define-story test-pearl-gtd-clarify-user-processes-missing-inbox
+  "User attempts to process when inbox file does not exist."
+  :setup (pearl-gtd-init-initialize)
+  :files nil  ; No inbox.org created
+  :mock nil
+  :body (progn
+          ;; Delete inbox.org if it was created during initialization
+          (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+            (when (file-exists-p inbox-file)
+              (delete-file inbox-file)))
+          (pearl-gtd-process-inbox))
+  :asserts (progn
+             (should (get-buffer "*Pearl-GTD: Inbox*"))
+             (with-current-buffer "*Pearl-GTD: Inbox*"
+               ;; Unified message for both empty and missing inbox
+               (should (search-forward "Inbox is empty" nil t))))
+  :teardown (kill-buffer "*Pearl-GTD: Inbox*"))
 
 (test-pearl-gtd-define-story test-pearl-gtd-clarify-user-processes-two-entries-sequentially
   "User clarifies two entries with different decisions."

@@ -118,7 +118,10 @@
   :mock nil
   :body (pearl-gtd-process-inbox)
   :asserts (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory))
-  :teardown nil)
+  :teardown (when (get-buffer "*Pearl-GTD: Inbox*")
+              (with-current-buffer "*Pearl-GTD: Inbox*"
+                (setq buffer-read-only nil))
+              (kill-buffer "*Pearl-GTD: Inbox*")))
 
 (test-pearl-gtd-define-story test-pearl-gtd-workflows-user-captures-and-processes-two-items
   "User captures two items then processes both."
