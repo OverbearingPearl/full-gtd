@@ -106,7 +106,11 @@
 
 (defun pearl-gtd-do--view-context (context)
   "Internal function to view tasks by CONTEXT."
-  (let ((buffer-name (format "*Pearl-GTD: %s*" context)))
+  (let ((buffer-name (format "*Pearl-GTD: %s*" context))
+        ;; Normalize context by removing @ prefix since tags are stored without @
+        (normalized-context (if (string-prefix-p "@" context)
+                                (substring context 1)
+                              context)))
     (get-buffer-create buffer-name)
     (with-current-buffer buffer-name
       (erase-buffer)
@@ -120,7 +124,7 @@
              (lambda ()
                (let ((head (org-get-heading t t))
                      (tags (org-get-tags-at)))
-                 (when (member context tags)
+                 (when (member normalized-context tags)
                    (insert (format "- %s\n" head)))))
              "TODO" 'file))))
       (goto-char (point-min))
