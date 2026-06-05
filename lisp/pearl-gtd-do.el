@@ -16,6 +16,7 @@
 ;;; Code:
 
 (require 'org)
+(require 'cl-lib)
 (require 'pearl-gtd-init)
 
 (defun pearl-gtd-do--view-by-context ()
@@ -104,18 +105,30 @@
   ;; Save the buffer to ensure changes are written to file
   (save-buffer))
 
-(defun pearl-gtd-do--view-context (context)
-  "Internal function to view tasks by CONTEXT."
-  (let ((buffer-name (format "*Pearl-GTD: %s*" context))
-        ;; Normalize context by removing @ prefix since tags are stored without @
-        (normalized-context (if (string-prefix-p "@" context)
-                                (substring context 1)
-                              context)))
+(defun pearl-gtd-do--view-context (context-input)
+  "Internal function to view tasks by CONTEXT-INPUT.
+CONTEXT-INPUT can be a single context string or a list of context strings.
+When a string contains commas, it is split into multiple contexts.
+Context tags are normalized by removing the @ prefix if present."
+  (let* ((contexts (cond
+                    ((listp context-input) context-input)
+                    ((string-match-p "," context-input)
+                     (mapcar #'string-trim (split-string context-input "," t)))
+                    (t (list context-input))))
+         (normalized-contexts (mapcar (lambda (c)
+                                       (if (string-prefix-p "@" c)
+                                           (substring c 1)
+                                         c))
+                                     contexts))
+         (display-name (if (listp context-input)
+                          (mapconcat #'identity context-input ", ")
+                        context-input))
+         (buffer-name (format "*Pearl-GTD: %s*" display-name)))
     (get-buffer-create buffer-name)
     (with-current-buffer buffer-name
       (erase-buffer)
       (org-mode)
-      (insert (format "* Actions for %s\n" context))
+      (insert (format "* Actions for %s\n" display-name))
       (dolist (file '("actions.org"))
         (let ((file-path (expand-file-name file pearl-gtd-init-base-directory)))
           (when (file-exists-p file-path)
@@ -124,7 +137,7 @@
              (lambda ()
                (let ((head (org-get-heading t t))
                      (tags (org-get-tags-at)))
-                 (when (member normalized-context tags)
+                 (when (cl-some (lambda (ctx) (member ctx tags)) normalized-contexts)
                    (insert (format "- %s\n" head)))))
              "TODO" 'file))))
       (goto-char (point-min))
