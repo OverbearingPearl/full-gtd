@@ -86,20 +86,14 @@ CONTEXTS is a list of normalized context strings (without @ prefix), or nil for 
 BUFFER-NAME is the name for the new buffer."
   (let ((buffer (get-buffer-create buffer-name))
         (actions '()))
-    (message "DEBUG: Starting table creation for contexts: %S" contexts)
     (dolist (file '("actions.org"))
       (let ((file-path (expand-file-name file pearl-gtd-init-base-directory)))
-        (message "DEBUG: Checking file: %s" file-path)
-        (message "DEBUG: File exists? %s" (file-exists-p file-path))
         (when (file-exists-p file-path)
           (with-temp-buffer
             (insert-file-contents file-path)
-            (message "DEBUG: File contents: %s" (replace-regexp-in-string "\n" "\\\\n" (buffer-string)))
             (org-mode)
-            (message "DEBUG: org-mode activated, starting map-entries")
             (org-map-entries
              (lambda ()
-               (message "DEBUG: Processing entry at point")
                (let* ((head (org-get-heading t t))
                       (tags (org-get-tags-at))
                       (todo-state (org-get-todo-state))
@@ -107,11 +101,8 @@ BUFFER-NAME is the name for the new buffer."
                       (delegated (org-entry-get nil "DELEGATED"))
                       (matching-contexts (when contexts
                                           (cl-intersection tags contexts :test #'string=))))
-                 (message "DEBUG: head=%S, tags=%S, todo-state=%S" head tags todo-state)
-                 (message "DEBUG: matching-contexts=%S" matching-contexts)
                  (when (and (string= todo-state "TODO")
                             (or (null contexts) matching-contexts))
-                   (message "DEBUG: Adding action to list")
                    (push (list head
                               (if matching-contexts
                                   (mapconcat (lambda (c) (concat "@" c)) matching-contexts ",")
@@ -120,12 +111,9 @@ BUFFER-NAME is the name for the new buffer."
                               (or scheduled "")
                               (or delegated ""))
                          actions))))
-             nil nil)  ; Changed from nil 'file to nil nil
-            (message "DEBUG: Finished map-entries, actions count: %d" (length actions))))))
-    (message "DEBUG: Final actions list: %S" actions)
-    ;; Create buffer with table
+             nil nil)))))
     (with-current-buffer buffer
-      (setq buffer-read-only nil)  ; Ensure we can modify the buffer
+      (setq buffer-read-only nil)
       (erase-buffer)
       (org-mode)
       (if (null actions)
@@ -142,7 +130,7 @@ BUFFER-NAME is the name for the new buffer."
         (org-table-align))
       (setq buffer-read-only t)
       (goto-char (point-min))
-      (forward-line 1)  ; Move to first data row
+      (forward-line 1)
       (current-buffer))))
 
 (defun pearl-gtd-do--view-context (context-input)
@@ -211,7 +199,7 @@ Context tags are normalized by removing the @ prefix for matching."
              nil nil)))))
     (get-buffer-create buffer-name)
     (with-current-buffer buffer-name
-      (setq buffer-read-only nil)  ; Ensure we can modify
+      (setq buffer-read-only nil)
       (erase-buffer)
       (org-mode)
       (if (null actions)
@@ -259,7 +247,7 @@ Context tags are normalized by removing the @ prefix for matching."
              nil nil)))))
     (get-buffer-create buffer-name)
     (with-current-buffer buffer-name
-      (setq buffer-read-only nil)  ; Ensure we can modify
+      (setq buffer-read-only nil)
       (erase-buffer)
       (org-mode)
       (if (null actions)
