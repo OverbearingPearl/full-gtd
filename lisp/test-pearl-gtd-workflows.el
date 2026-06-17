@@ -51,7 +51,7 @@
              (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory))
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      "* Buy gift for mom"))
+                      "* TODO Buy gift for mom"))
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "Check Amazon first"))
@@ -105,7 +105,7 @@
   :asserts (progn
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      "* Action task"))
+                      "* TODO Action task"))
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "reference.org" pearl-gtd-init-base-directory)
                       "* Reference task")))

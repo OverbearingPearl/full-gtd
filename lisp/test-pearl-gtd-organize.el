@@ -74,9 +74,13 @@
              (t ""))))
          ((symbol-function 'completing-read) (lambda (&rest _) "")))
   :body (pearl-gtd-process-inbox)
-  :asserts (test-pearl-gtd-file-contains-p
-            (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-            ":office:")
+  :asserts (progn
+             (should (test-pearl-gtd-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      "* TODO Task for office"))
+             (should (test-pearl-gtd-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      ":office:")))
   :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-organize-user-renames-then-sets-context-and-schedule
@@ -104,7 +108,7 @@
   :asserts (progn
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      "* Prepare quarterly report"))
+                      "* TODO Prepare quarterly report"))
              (should (test-pearl-gtd-file-lacks-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "* Old vague name"))

@@ -451,6 +451,9 @@ REMARKS is the clarified remarks text (nil if none)."
         ;; Apply headline rename using org-edit-headline to preserve tags
         (when new-headline
           (org-edit-headline new-headline))
+        ;; Add TODO state when moving to actions.org
+        (when (and target-file (string= target-file "actions.org"))
+          (org-todo "TODO"))
         ;; Apply remarks if provided (add as body text after properties drawer)
         (when remarks
           (org-end-of-meta-data t)
