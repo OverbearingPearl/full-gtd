@@ -135,6 +135,21 @@ BUFFER-NAME is the name for the new buffer."
       (forward-line 1)
       (current-buffer))))
 
+(defun pearl-gtd-do--collect-contexts ()
+  "Collect all unique context tags from actions.org."
+  (let ((contexts '()))
+    (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
+      (when (file-exists-p actions-file)
+        (with-temp-buffer
+          (insert-file-contents actions-file)
+          (org-mode)
+          (org-map-entries
+           (lambda ()
+             (dolist (tag (org-get-tags-at))
+               (cl-pushnew tag contexts :test #'string=)))
+           nil nil))))
+    (mapcar (lambda (c) (concat "@" c)) contexts)))
+
 (defun pearl-gtd-do--view-context (context-input)
   "Internal function to view tasks by CONTEXT-INPUT in table format.
 CONTEXT-INPUT can be a single context string, comma-separated string, or nil for all.
@@ -162,8 +177,10 @@ Context tags are normalized by removing the @ prefix for matching."
 
 (defun pearl-gtd-do--view-by-context ()
   "View next actions filtered by a specific context."
-  (let ((context (completing-read "Select context: " '("@office" "@home" "@errands" "@computer"))))
-    (pearl-gtd-do--view-context context)))
+  (let ((contexts (pearl-gtd-do--collect-contexts)))
+    (when contexts
+      (let ((context (completing-read "Select context: " contexts)))
+        (pearl-gtd-do--view-context context)))))
 
 (defun pearl-gtd-do--view-all-actions ()
   "View all next actions regardless of context."
