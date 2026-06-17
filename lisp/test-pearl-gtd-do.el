@@ -141,6 +141,57 @@
                           "* TODO Task to complete")))
   :teardown (kill-buffer "*Pearl-GTD: All Actions*"))
 
+(test-pearl-gtd-define-story test-pearl-gtd-do-user-views-project-in-actions-table
+  "User views actions and sees associated project."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* TODO Task with project\n:PROPERTIES:\n:PROJECT: Website Redesign\n:END:\n"))
+  :mock nil
+  :body (pearl-gtd-do-view-all-actions)
+  :asserts (progn
+             (should (get-buffer "*Pearl-GTD: All Actions*"))
+             (with-current-buffer "*Pearl-GTD: All Actions*"
+               (should (search-forward "Website Redesign" nil t))))
+  :teardown (kill-buffer "*Pearl-GTD: All Actions*"))
+
+(test-pearl-gtd-define-story test-pearl-gtd-do-user-views-created-timestamp-in-actions-table
+  "User views actions and sees created timestamp."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* TODO Task with timestamp\n:PROPERTIES:\n:CREATED: 2026-01-15 10:30:00\n:END:\n"))
+  :mock nil
+  :body (pearl-gtd-do-view-all-actions)
+  :asserts (progn
+             (should (get-buffer "*Pearl-GTD: All Actions*"))
+             (with-current-buffer "*Pearl-GTD: All Actions*"
+               (should (search-forward "2026-01-15" nil t))))
+  :teardown (kill-buffer "*Pearl-GTD: All Actions*"))
+
+(test-pearl-gtd-define-story test-pearl-gtd-do-user-views-project-and-created-in-delegated-view
+  "User views delegated tasks with project and created columns."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* TODO Delegated task\n:PROPERTIES:\n:DELEGATED: Bob\n:PROJECT: Marketing Campaign\n:CREATED: 2026-01-10\n:END:\n"))
+  :mock nil
+  :body (pearl-gtd-do-view-delegated)
+  :asserts (progn
+             (should (get-buffer "*Pearl-GTD: Delegated*"))
+             (with-current-buffer "*Pearl-GTD: Delegated*"
+               (should (search-forward "Marketing Campaign" nil t))
+               (should (search-forward "2026-01-10" nil t))))
+  :teardown (kill-buffer "*Pearl-GTD: Delegated*"))
+
+(test-pearl-gtd-define-story test-pearl-gtd-do-user-views-project-and-created-in-today-view
+  "User views today's tasks with project and created columns."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" (format "* TODO Today task\nSCHEDULED: <%s>\n:PROPERTIES:\n:PROJECT: Current Sprint\n:CREATED: 2026-01-20\n:END:\n"
+                                  (format-time-string "%Y-%m-%d"))))
+  :mock nil
+  :body (pearl-gtd-do-view-today)
+  :asserts (progn
+             (should (get-buffer "*Pearl-GTD: Today*"))
+             (with-current-buffer "*Pearl-GTD: Today*"
+               (should (search-forward "Current Sprint" nil t))
+               (should (search-forward "2026-01-20" nil t))))
+  :teardown (kill-buffer "*Pearl-GTD: Today*"))
+
 (provide 'test-pearl-gtd-do)
 
 ;;; test-pearl-gtd-do.el ends here
