@@ -21,7 +21,7 @@
 (test-pearl-gtd-define-story test-pearl-gtd-clarify-user-renames-unclear-task
   "User renames 'Stuff' to 'Buy birthday gift for mom' during processing."
   :setup (pearl-gtd-init-initialize)
-  :files (("inbox.org" "* Stuff\n"))
+  :files (("inbox.org" "* Stuff\n:PROPERTIES:\n:ID: test-id-1\n:END:\n"))
   :mock (((symbol-function 'y-or-n-p) (lambda (&rest _) nil))
          ((symbol-function 'read-string)
           (lambda (prompt &rest _)
@@ -42,7 +42,11 @@
                       "* Buy birthday gift for mom"))
              (should (test-pearl-gtd-file-lacks-p
                       (expand-file-name "reference.org" pearl-gtd-init-base-directory)
-                      "* Stuff")))
+                      "* Stuff"))
+             ;; Verify ID is preserved after rename
+             (should (test-pearl-gtd-file-contains-p
+                      (expand-file-name "reference.org" pearl-gtd-init-base-directory)
+                      ":ID:")))
   :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-clarify-user-adds-notes-to-task

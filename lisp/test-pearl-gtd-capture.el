@@ -24,9 +24,13 @@
   :files nil
   :mock (((symbol-function 'read-string) (lambda (&rest _) "Buy milk")))
   :body (pearl-gtd-capture)
-  :asserts (should (test-pearl-gtd-file-contains-p
-                    (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                    "* Buy milk"))
+  :asserts (progn
+             (should (test-pearl-gtd-file-contains-p
+                      (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
+                      "* Buy milk"))
+             (should (test-pearl-gtd-file-contains-p
+                      (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
+                      ":ID:")))
   :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-capture-user-captures-idea-with-timestamp
@@ -35,9 +39,13 @@
   :files nil
   :mock (((symbol-function 'read-string) (lambda (&rest _) "Task with time")))
   :body (pearl-gtd-capture)
-  :asserts (should (test-pearl-gtd-file-contains-p
-                    (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                    ":CREATED:"))
+  :asserts (progn
+             (should (test-pearl-gtd-file-contains-p
+                      (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
+                      ":CREATED:"))
+             (should (test-pearl-gtd-file-contains-p
+                      (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
+                      ":ID:")))
   :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-capture-user-captures-empty-string-creates-nothing
@@ -106,7 +114,38 @@
                       "* First task"))
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                      "* Second task")))
+                      "* Second task"))
+             ;; Verify both have IDs
+             (with-temp-buffer
+               (insert-file-contents (expand-file-name "inbox.org" pearl-gtd-init-base-directory))
+               (goto-char (point-min))
+               (should (search-forward ":ID:" nil t))
+               (should (search-forward ":ID:" nil t))))
+  :teardown nil)
+
+(test-pearl-gtd-define-story test-pearl-gtd-capture-user-captures-duplicate-titles
+  "User captures two items with same title, both get unique IDs."
+  :setup (pearl-gtd-init-initialize)
+  :files nil
+  :mock (((symbol-function 'read-string)
+          (let ((count 0))
+            (lambda (&rest _)
+              (setq count (1+ count))
+              (if (= count 1) "Buy milk" "Buy milk")))))
+  :body (progn
+          (pearl-gtd-capture)
+          (pearl-gtd-capture))
+  :asserts (progn
+             ;; Both entries exist
+             (should (test-pearl-gtd-file-contains-p
+                      (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
+                      "* Buy milk"))
+             ;; Both have IDs (should find two :ID: occurrences)
+             (with-temp-buffer
+               (insert-file-contents (expand-file-name "inbox.org" pearl-gtd-init-base-directory))
+               (goto-char (point-min))
+               (should (search-forward ":ID:" nil t))
+               (should (search-forward ":ID:" nil t))))
   :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-capture-user-appends-to-existing-inbox

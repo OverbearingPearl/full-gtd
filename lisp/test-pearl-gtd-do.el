@@ -120,7 +120,7 @@
 (test-pearl-gtd-define-story test-pearl-gtd-do-user-completes-task-in-view-updates-original
   "User completes task in view buffer, original file is updated."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* TODO Task to complete :office:\n"))
+  :files (("actions.org" "* TODO Task to complete :office:\n:PROPERTIES:\n:ID: test-id-2\n:END:\n"))
   :mock nil
   :body (progn
          (pearl-gtd-do-view-all-actions)
@@ -133,6 +133,9 @@
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "* DONE Task to complete"))
+             (should (test-pearl-gtd-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      ":ID:"))  ; Verify ID exists
              (should-not (test-pearl-gtd-file-contains-p
                           (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                           "* TODO Task to complete")))

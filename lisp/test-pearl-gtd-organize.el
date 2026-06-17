@@ -227,7 +227,11 @@
   :asserts (progn
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      ":PROJECT:Alpha,Beta:")))
+                      ":PROJECT:Alpha,Beta:"))
+             ;; Verify ID exists
+             (should (test-pearl-gtd-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      ":ID:")))
   :teardown nil)
 
 (provide 'test-pearl-gtd-organize)

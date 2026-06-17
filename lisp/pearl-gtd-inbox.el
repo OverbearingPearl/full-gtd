@@ -462,7 +462,9 @@ REMARKS is the clarified remarks text (nil if none)."
           (insert remarks "\n"))
         ;; Re-locate to headline start after modifications
         (goto-char (point-min))
-        (re-search-forward (concat "^\\*+ " (regexp-quote (or new-headline headline)) "\\($\\| \\)") nil t)
+        (re-search-forward (concat "^\\*+[ \t]+\\(?:[A-Z]+[ \t]+\\)?"
+                                   (regexp-quote (or new-headline headline))
+                                   "\\($\\| \\)") nil t)
         (beginning-of-line)
         (org-mark-subtree)
         (setq subtree-content (buffer-substring (region-beginning) (region-end)))
