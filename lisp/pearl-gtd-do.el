@@ -33,7 +33,8 @@
   "Minor mode for viewing GTD actions in table format."
   :init-value nil
   :lighter " Pearl-Do"
-  :keymap pearl-gtd-do-view-mode-map)
+  :keymap pearl-gtd-do-view-mode-map
+  :interactive nil)
 
 (defun pearl-gtd-do--next-row ()
   "Move to next row in the actions table."
