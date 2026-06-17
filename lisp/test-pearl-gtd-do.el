@@ -117,6 +117,27 @@
                (should (search-forward "Task today" nil t))))
   :teardown (kill-buffer "*Pearl-GTD: Today*"))
 
+(test-pearl-gtd-define-story test-pearl-gtd-do-user-completes-task-in-view-updates-original
+  "User completes task in view buffer, original file is updated."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* TODO Task to complete :office:\n"))
+  :mock nil
+  :body (progn
+         (pearl-gtd-do-view-all-actions)
+         (with-current-buffer "*Pearl-GTD: All Actions*"
+           (goto-char (point-min))
+           (search-forward "Task to complete")
+           (beginning-of-line)
+           (pearl-gtd-do-complete-task-at-point)))
+  :asserts (progn
+             (should (test-pearl-gtd-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      "* DONE Task to complete"))
+             (should-not (test-pearl-gtd-file-contains-p
+                          (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                          "* TODO Task to complete")))
+  :teardown (kill-buffer "*Pearl-GTD: All Actions*"))
+
 (provide 'test-pearl-gtd-do)
 
 ;;; test-pearl-gtd-do.el ends here

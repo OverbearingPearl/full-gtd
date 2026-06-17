@@ -73,10 +73,13 @@
         (when (file-exists-p actions-file)
           (with-current-buffer (find-file-noselect actions-file)
             (goto-char (point-min))
-            (when (re-search-forward (concat "^\\*+ " (regexp-quote headline) "\\($\\| \\)") nil t)
-              (let ((org-log-done 'time))
-                (org-todo "DONE"))
-              (save-buffer)))))
+            (if (re-search-forward (concat "^\\*+[ \t]+\\(?:[A-Z]+[ \t]+\\)?"
+                                           (regexp-quote headline) "\\($\\| \\)") nil t)
+                (progn
+                  (let ((org-log-done 'time))
+                    (org-todo "DONE"))
+                  (save-buffer))
+              (message "Task not found in file")))))
       (let ((inhibit-read-only t))
         (org-table-goto-column 3)  ; Status column
         (org-table-blank-field)
