@@ -165,11 +165,6 @@ Context tags are normalized by removing the @ prefix for matching."
   (let ((context (completing-read "Select context: " '("@office" "@home" "@errands" "@computer"))))
     (pearl-gtd-do--view-context context)))
 
-(defun pearl-gtd-do--view-by-contexts ()
-  "View next actions filtered by multiple contexts."
-  (let ((contexts (completing-read "Select contexts (comma separated): " '("@office" "@home" "@errands" "@computer"))))
-    (pearl-gtd-do--view-context contexts)))
-
 (defun pearl-gtd-do--view-all-actions ()
   "View all next actions regardless of context."
   (pearl-gtd-do--view-context nil))

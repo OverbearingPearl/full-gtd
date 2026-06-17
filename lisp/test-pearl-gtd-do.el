@@ -105,28 +105,6 @@
                (should-not (search-forward "No state task" nil t))))
   :teardown (kill-buffer "*Pearl-GTD: Delegated*"))
 
-(test-pearl-gtd-define-story test-pearl-gtd-do-user-filters-by-multiple-contexts
-  "User filters actions by multiple contexts."
-  :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* TODO Task 1 :office:\n* TODO Task 2 :home:\n* TODO Task 3 :office:home:\n"))
-  :mock (((symbol-function 'completing-read)
-          (lambda (prompt collection &rest _)
-            (cond
-             ((string-match "Select contexts" prompt) "office,home")
-             (t "")))))
-  :body (pearl-gtd-do-view-by-contexts)
-  :asserts (progn
-             (should (get-buffer "*Pearl-GTD: office,home*"))
-             (with-current-buffer "*Pearl-GTD: office,home*"
-               (should (search-forward "Task 1" nil t))
-               (should (search-forward "Task 2" nil t))
-               (should (search-forward "Task 3" nil t))
-               ;; Verify Context column displays tags with @ prefix
-               (goto-char (point-min))
-               (should (search-forward "@office" nil t))
-               (should (search-forward "@home" nil t))))
-  :teardown (kill-buffer "*Pearl-GTD: office,home*"))
-
 (test-pearl-gtd-define-story test-pearl-gtd-do-user-views-scheduled-for-today
   "User views actions scheduled for today."
   :setup (pearl-gtd-init-initialize)

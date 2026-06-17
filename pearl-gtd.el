@@ -100,11 +100,6 @@
   (interactive)
   (pearl-gtd-do--view-by-context))
 
-(defun pearl-gtd-do-view-by-contexts ()
-  "View next actions filtered by multiple contexts."
-  (interactive)
-  (pearl-gtd-do--view-by-contexts))
-
 (defun pearl-gtd-do-view-all-actions ()
   "View all next actions regardless of context."
   (interactive)
