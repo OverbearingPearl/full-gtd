@@ -190,7 +190,7 @@ Context tags are normalized by removing the @ prefix for matching."
                       (todo-state (org-get-todo-state))
                       (scheduled (org-entry-get nil "SCHEDULED"))
                       (delegated (org-entry-get nil "DELEGATED")))
-                 (when delegated
+                 (when (and delegated (string= todo-state "TODO"))
                    (push (list head
                               (mapconcat (lambda (c) (concat "@" c)) tags ",")
                               (or todo-state "")

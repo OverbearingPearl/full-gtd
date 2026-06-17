@@ -92,6 +92,19 @@
                (should (search-forward "@office" nil t))))
   :teardown (kill-buffer "*Pearl-GTD: Delegated*"))
 
+(test-pearl-gtd-define-story test-pearl-gtd-do-user-views-delegated-excludes-done
+  "Delegated view excludes tasks without TODO state."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* TODO Active task\n:PROPERTIES:\n:DELEGATED: John\n:END:\n* DONE Completed task\n:PROPERTIES:\n:DELEGATED: Jane\n:END:\n* No state task\n:PROPERTIES:\n:DELEGATED: Bob\n:END:\n"))
+  :body (pearl-gtd-do-view-delegated)
+  :asserts (progn
+             (should (get-buffer "*Pearl-GTD: Delegated*"))
+             (with-current-buffer "*Pearl-GTD: Delegated*"
+               (should (search-forward "Active task" nil t))
+               (should-not (search-forward "Completed task" nil t))
+               (should-not (search-forward "No state task" nil t))))
+  :teardown (kill-buffer "*Pearl-GTD: Delegated*"))
+
 (test-pearl-gtd-define-story test-pearl-gtd-do-user-filters-by-multiple-contexts
   "User filters actions by multiple contexts."
   :setup (pearl-gtd-init-initialize)
