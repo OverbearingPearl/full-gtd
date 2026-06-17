@@ -21,7 +21,7 @@
 (test-pearl-gtd-define-story test-pearl-gtd-do-user-views-next-actions-by-context
   "User views all next actions filtered by @office context."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* TODO Task 1 :office:\n* TODO Task 2 :home:\n* TODO Task 3 :office:\n"))
+  :files (("actions.org" "* TODO Task 1 :office:\n:PROPERTIES:\n:ID: task-1-id\n:END:\n* TODO Task 2 :home:\n:PROPERTIES:\n:ID: task-2-id\n:END:\n* TODO Task 3 :office:\n:PROPERTIES:\n:ID: task-3-id\n:END:\n"))
   :mock (((symbol-function 'completing-read)
           (lambda (prompt collection &rest _)
             (cond
@@ -42,7 +42,7 @@
 (test-pearl-gtd-define-story test-pearl-gtd-do-user-marks-task-complete
   "User marks a task as completed."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* TODO Complete this task\n"))
+  :files (("actions.org" "* TODO Complete this task\n:PROPERTIES:\n:ID: complete-task-id\n:END:\n"))
   :mock nil
   :body (progn
          (find-file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
@@ -60,7 +60,7 @@
 (test-pearl-gtd-define-story test-pearl-gtd-do-user-views-all-next-actions
   "User views all next actions regardless of context."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* TODO Task A :office:\n* TODO Task B :home:\n* TODO Task C :errands:\n"))
+  :files (("actions.org" "* TODO Task A :office:\n:PROPERTIES:\n:ID: task-a-id\n:END:\n* TODO Task B :home:\n:PROPERTIES:\n:ID: task-b-id\n:END:\n* TODO Task C :errands:\n:PROPERTIES:\n:ID: task-c-id\n:END:\n"))
   :mock nil
   :body (pearl-gtd-do-view-all-actions)
   :asserts (progn
@@ -79,7 +79,7 @@
 (test-pearl-gtd-define-story test-pearl-gtd-do-user-views-delegated-tasks
   "User views all delegated tasks."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* TODO Task X :office:\n:PROPERTIES:\n:DELEGATED: John\n:END:\n"))
+  :files (("actions.org" "* TODO Task X :office:\n:PROPERTIES:\n:DELEGATED: John\n:ID: task-x-id\n:END:\n"))
   :mock nil
   :body (pearl-gtd-do-view-delegated)
   :asserts (progn
@@ -95,7 +95,7 @@
 (test-pearl-gtd-define-story test-pearl-gtd-do-user-views-delegated-excludes-done
   "Delegated view excludes tasks without TODO state."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* TODO Active task\n:PROPERTIES:\n:DELEGATED: John\n:END:\n* DONE Completed task\n:PROPERTIES:\n:DELEGATED: Jane\n:END:\n* No state task\n:PROPERTIES:\n:DELEGATED: Bob\n:END:\n"))
+  :files (("actions.org" "* TODO Active task\n:PROPERTIES:\n:DELEGATED: John\n:ID: active-task-id\n:END:\n* DONE Completed task\n:PROPERTIES:\n:DELEGATED: Jane\n:ID: completed-task-id\n:END:\n* No state task\n:PROPERTIES:\n:DELEGATED: Bob\n:ID: no-state-task-id\n:END:\n"))
   :body (pearl-gtd-do-view-delegated)
   :asserts (progn
              (should (get-buffer "*Pearl-GTD: Delegated*"))
@@ -108,7 +108,7 @@
 (test-pearl-gtd-define-story test-pearl-gtd-do-user-views-scheduled-for-today
   "User views actions scheduled for today."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" (format "* TODO Task today\nSCHEDULED: <%s>\n" (format-time-string "%Y-%m-%d"))))
+  :files (("actions.org" (format "* TODO Task today\nSCHEDULED: <%s>\n:PROPERTIES:\n:ID: today-task-id\n:END:\n" (format-time-string "%Y-%m-%d"))))
   :mock nil
   :body (pearl-gtd-do-view-today)
   :asserts (progn
@@ -191,6 +191,57 @@
                (should (search-forward "Current Sprint" nil t))
                (should (search-forward "2026-01-20" nil t))))
   :teardown (kill-buffer "*Pearl-GTD: Today*"))
+
+(test-pearl-gtd-define-story test-pearl-gtd-do-user-jumps-to-task-from-view
+  "User presses RET in view buffer to jump to task in actions.org."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* TODO Jump target task\n:PROPERTIES:\n:ID: jump-test-id\n:END:\n"))
+  :mock nil
+  :body (progn
+         (pearl-gtd-do-view-all-actions)
+         (with-current-buffer "*Pearl-GTD: All Actions*"
+           (goto-char (point-min))
+           (search-forward "Jump target task")
+           (beginning-of-line)
+           (pearl-gtd-do-goto-task)))
+  :asserts (progn
+             (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
+               (should (get-file-buffer actions-file)))
+             (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
+               (with-current-buffer (get-file-buffer actions-file)
+                 (should (looking-at-p "\\*+ TODO Jump target task")))))
+  :teardown (progn
+             (kill-buffer "*Pearl-GTD: All Actions*")
+             (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+                   (buf (get-file-buffer actions-file)))
+               (when buf (kill-buffer buf)))))
+
+(test-pearl-gtd-define-story test-pearl-gtd-do-user-jumps-to-first-duplicate-task
+  "User jumps to task when duplicate titles exist in actions.org."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* TODO Duplicate task\n:PROPERTIES:\n:ID: first-id\n:END:\n* TODO Another task\n:PROPERTIES:\n:ID: second-id\n:END:\n* TODO Duplicate task\n:PROPERTIES:\n:ID: third-id\n:END:\n"))
+  :mock nil
+  :body (progn
+         (pearl-gtd-do-view-all-actions)
+         (with-current-buffer "*Pearl-GTD: All Actions*"
+           ;; Move to the second "Duplicate task" row (line 5: header + separator + 3 data rows)
+           (goto-char (point-min))
+           (forward-line 4)  ; Skip header (1), separator (2), first task (3), second task (4)
+           (pearl-gtd-do-goto-task)))
+  :asserts (progn
+             ;; Jumps to correct task by ID
+             (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
+               (should (get-file-buffer actions-file)))
+             (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
+               (with-current-buffer (get-file-buffer actions-file)
+                 ;; Verify we are at the third task (second "Duplicate task")
+                 (should (looking-at-p "\\*+ TODO Duplicate task"))
+                 (should (search-forward ":ID: third-id" nil t)))))
+  :teardown (progn
+             (kill-buffer "*Pearl-GTD: All Actions*")
+             (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+                   (buf (get-file-buffer actions-file)))
+               (when buf (kill-buffer buf)))))
 
 (provide 'test-pearl-gtd-do)
 

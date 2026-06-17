@@ -26,6 +26,7 @@
     (define-key map (kbd "j") #'pearl-gtd-do-next-row)
     (define-key map (kbd "k") #'pearl-gtd-do-previous-row)
     (define-key map (kbd "c") #'pearl-gtd-do-complete-task-at-point)
+    (define-key map (kbd "RET") #'pearl-gtd-do-goto-task)
     (define-key map (kbd "q") #'quit-window)
     map))
 
@@ -87,6 +88,23 @@
         (org-table-align)
         (message "Task marked as complete")))))
 
+(defun pearl-gtd-do-goto-task ()
+  "Jump from table view to the corresponding task in actions.org."
+  (interactive)
+  (let* ((headline (string-trim (org-table-get-field 1)))
+         (id (when headline (get-text-property 0 'pearl-gtd-id headline))))
+    (when (and headline (not (string= headline "")))
+      (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
+        (when (file-exists-p actions-file)
+          (let ((buffer (find-file-noselect actions-file)))
+            (pop-to-buffer buffer)
+            (goto-char (point-min))
+            (if (and id (re-search-forward (concat ":ID:[ \t]+" (regexp-quote id)) nil t))
+                (progn
+                  (org-back-to-heading)
+                  (message "Jumped to task: %s" headline))
+              (message "Task not found in actions.org"))))))))
+
 (defun pearl-gtd-do--create-actions-table-buffer (contexts buffer-name)
   "Create a read-only table buffer showing actions filtered by CONTEXTS.
 CONTEXTS is a list of normalized context strings (without @ prefix), or nil for all.
@@ -102,6 +120,7 @@ BUFFER-NAME is the name for the new buffer."
             (org-map-entries
              (lambda ()
                (let* ((head (org-get-heading t t))
+                      (id (org-entry-get nil "ID"))
                       (tags (org-get-tags-at))
                       (todo-state (org-get-todo-state))
                       (scheduled (org-entry-get nil "SCHEDULED"))
@@ -113,6 +132,9 @@ BUFFER-NAME is the name for the new buffer."
                  (when (and (string= todo-state "TODO")
                             (or (null contexts) matching-contexts))
                    (let ((display-tags (if contexts matching-contexts tags)))
+                     ;; Attach ID as text property to headline for precise navigation
+                     (when id
+                       (put-text-property 0 (length head) 'pearl-gtd-id id head))
                      (push (list head
                                 (if display-tags
                                     (mapconcat (lambda (c) (concat "@" c)) display-tags ",")
@@ -211,6 +233,7 @@ Context tags are normalized by removing the @ prefix for matching."
             (org-map-entries
              (lambda ()
                (let* ((head (org-get-heading t t))
+                      (id (org-entry-get nil "ID"))
                       (tags (org-get-tags-at))
                       (todo-state (org-get-todo-state))
                       (scheduled (org-entry-get nil "SCHEDULED"))
@@ -218,6 +241,8 @@ Context tags are normalized by removing the @ prefix for matching."
                       (project (org-entry-get nil "PROJECT"))
                       (created (org-entry-get nil "CREATED")))
                  (when (and delegated (string= todo-state "TODO"))
+                   (when id
+                     (put-text-property 0 (length head) 'pearl-gtd-id id head))
                    (push (list head
                               (mapconcat (lambda (c) (concat "@" c)) tags ",")
                               (or todo-state "")
@@ -265,6 +290,7 @@ Context tags are normalized by removing the @ prefix for matching."
             (org-map-entries
              (lambda ()
                (let* ((head (org-get-heading t t))
+                      (id (org-entry-get nil "ID"))
                       (tags (org-get-tags-at))
                       (todo-state (org-get-todo-state))
                       (scheduled (org-entry-get nil "SCHEDULED"))
@@ -272,6 +298,8 @@ Context tags are normalized by removing the @ prefix for matching."
                       (project (org-entry-get nil "PROJECT"))
                       (created (org-entry-get nil "CREATED")))
                  (when (and scheduled (string-match-p today-string scheduled))
+                   (when id
+                     (put-text-property 0 (length head) 'pearl-gtd-id id head))
                    (push (list head
                               (mapconcat (lambda (c) (concat "@" c)) tags ",")
                               (or todo-state "")
