@@ -33,7 +33,10 @@
              (with-current-buffer "*Pearl-GTD: @office*"
                (should (search-forward "Task 1" nil t))
                (should (search-forward "Task 3" nil t))
-               (should-not (search-forward "Task 2" nil t))))
+               (should-not (search-forward "Task 2" nil t))
+               ;; Verify Context column displays "@office" format
+               (goto-char (point-min))
+               (should (search-forward "@office" nil t))))
   :teardown (kill-buffer "*Pearl-GTD: @office*"))
 
 (test-pearl-gtd-define-story test-pearl-gtd-do-user-marks-task-complete
@@ -65,7 +68,12 @@
              (with-current-buffer "*Pearl-GTD: All Actions*"
                (should (search-forward "Task A" nil t))
                (should (search-forward "Task B" nil t))
-               (should (search-forward "Task C" nil t))))
+               (should (search-forward "Task C" nil t))
+               ;; Verify Context column displays tags with @ prefix
+               (goto-char (point-min))
+               (should (search-forward "@office" nil t))
+               (should (search-forward "@home" nil t))
+               (should (search-forward "@errands" nil t))))
   :teardown (kill-buffer "*Pearl-GTD: All Actions*"))
 
 (test-pearl-gtd-define-story test-pearl-gtd-do-user-views-delegated-tasks
@@ -78,7 +86,10 @@
              (should (get-buffer "*Pearl-GTD: Delegated*"))
              (with-current-buffer "*Pearl-GTD: Delegated*"
                (should (search-forward "Task X" nil t))
-               (should (search-forward "John" nil t))))
+               (should (search-forward "John" nil t))
+               ;; Verify Context column displays tags with @ prefix
+               (goto-char (point-min))
+               (should (search-forward "@office" nil t))))
   :teardown (kill-buffer "*Pearl-GTD: Delegated*"))
 
 (test-pearl-gtd-define-story test-pearl-gtd-do-user-filters-by-multiple-contexts
@@ -96,7 +107,11 @@
              (with-current-buffer "*Pearl-GTD: office,home*"
                (should (search-forward "Task 1" nil t))
                (should (search-forward "Task 2" nil t))
-               (should (search-forward "Task 3" nil t))))
+               (should (search-forward "Task 3" nil t))
+               ;; Verify Context column displays tags with @ prefix
+               (goto-char (point-min))
+               (should (search-forward "@office" nil t))
+               (should (search-forward "@home" nil t))))
   :teardown (kill-buffer "*Pearl-GTD: office,home*"))
 
 (test-pearl-gtd-define-story test-pearl-gtd-do-user-views-scheduled-for-today

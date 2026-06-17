@@ -103,14 +103,15 @@ BUFFER-NAME is the name for the new buffer."
                                           (cl-intersection tags contexts :test #'string=))))
                  (when (and (string= todo-state "TODO")
                             (or (null contexts) matching-contexts))
-                   (push (list head
-                              (if matching-contexts
-                                  (mapconcat (lambda (c) (concat "@" c)) matching-contexts ",")
-                                "")
-                              (or todo-state "")
-                              (or scheduled "")
-                              (or delegated ""))
-                         actions))))
+                   (let ((display-tags (if contexts matching-contexts tags)))
+                     (push (list head
+                                (if display-tags
+                                    (mapconcat (lambda (c) (concat "@" c)) display-tags ",")
+                                  "")
+                                (or todo-state "")
+                                (or scheduled "")
+                                (or delegated ""))
+                           actions)))))
              nil nil)))))
     (with-current-buffer buffer
       (setq buffer-read-only nil)
