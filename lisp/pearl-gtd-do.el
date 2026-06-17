@@ -21,12 +21,12 @@
 
 (defvar pearl-gtd-do-view-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "n") (lambda () (interactive) (pearl-gtd-do--next-row)))
-    (define-key map (kbd "p") (lambda () (interactive) (pearl-gtd-do--previous-row)))
-    (define-key map (kbd "j") (lambda () (interactive) (pearl-gtd-do--next-row)))
-    (define-key map (kbd "k") (lambda () (interactive) (pearl-gtd-do--previous-row)))
-    (define-key map (kbd "c") (lambda () (interactive) (pearl-gtd-do--complete-task-at-point)))
-    (define-key map (kbd "q") 'quit-window)
+    (define-key map (kbd "n") #'pearl-gtd-do-next-row)
+    (define-key map (kbd "p") #'pearl-gtd-do-previous-row)
+    (define-key map (kbd "j") #'pearl-gtd-do-next-row)
+    (define-key map (kbd "k") #'pearl-gtd-do-previous-row)
+    (define-key map (kbd "c") #'pearl-gtd-do-complete-task-at-point)
+    (define-key map (kbd "q") #'quit-window)
     map))
 
 (define-minor-mode pearl-gtd-do-view-mode
@@ -36,8 +36,9 @@
   :keymap pearl-gtd-do-view-mode-map
   :interactive nil)
 
-(defun pearl-gtd-do--next-row ()
+(defun pearl-gtd-do-next-row ()
   "Move to next row in the actions table."
+  (interactive)
   (forward-line 1)
   (when (eobp)
     (forward-line -1)
@@ -49,8 +50,9 @@
       (forward-line -1)))
   (org-table-goto-column 1))
 
-(defun pearl-gtd-do--previous-row ()
+(defun pearl-gtd-do-previous-row ()
   "Move to previous row in the actions table."
+  (interactive)
   (forward-line -1)
   (when (bobp)
     (forward-line 1)
@@ -62,8 +64,9 @@
       (forward-line 1)))
   (org-table-goto-column 1))
 
-(defun pearl-gtd-do--complete-task-at-point ()
+(defun pearl-gtd-do-complete-task-at-point ()
   "Mark the task at point as complete."
+  (interactive)
   (let ((headline (string-trim (org-table-get-field 1))))
     (when (and headline (not (string= headline "")))
       (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
