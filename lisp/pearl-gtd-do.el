@@ -28,13 +28,13 @@
 
 (defvar pearl-gtd-do-view-mode-map
   (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "q") #'quit-window)
     (define-key map (kbd "n") #'pearl-gtd-do--next-row)
     (define-key map (kbd "p") #'pearl-gtd-do--previous-row)
     (define-key map (kbd "j") #'pearl-gtd-do--next-row)
     (define-key map (kbd "k") #'pearl-gtd-do--previous-row)
     (define-key map (kbd "c") #'pearl-gtd-do--complete-task-at-point)
     (define-key map (kbd "RET") #'pearl-gtd-do--goto-task)
-    (define-key map (kbd "q") #'quit-window)
     (define-key map (kbd "g") #'pearl-gtd-do--refresh-view)
     (define-key map (kbd "r") #'pearl-gtd-do--rename-task-at-point)
     map))
