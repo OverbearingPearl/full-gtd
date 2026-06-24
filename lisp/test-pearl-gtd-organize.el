@@ -210,28 +210,41 @@
   :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-organize-user-links-task-to-multiple-projects
-  "User links single task to multiple projects via tags."
+  "User links single task to multiple projects during processing."
   :setup (pearl-gtd-init-initialize)
-  :files (("projects.org" "* Project Alpha\n* Project Beta\n")
-          ("actions.org" "* Shared task\n"))
-  :mock (((symbol-function 'read-string)
+  :files (("inbox.org" "* Shared task\n:PROPERTIES:\n:ID: shared-1\n:END:\n"))
+  :mock (((symbol-function 'y-or-n-p)
           (lambda (prompt &rest _)
             (cond
-             ((string-match "Select projects" prompt) "Alpha,Beta")
-             (t "")))))
-  :body (progn
-         (with-current-buffer (find-file-noselect (expand-file-name "actions.org" pearl-gtd-init-base-directory))
-           (goto-char (point-min))
-           (pearl-gtd-planning-link-to-projects)
-           (save-buffer)))
+             ((string-match "2 minutes" prompt) nil)
+             ((string-match "actionable" prompt) t)
+             (t nil))))
+         ((symbol-function 'read-string)
+          (lambda (prompt &rest _)
+            (cond
+             ((string-match "Rename" prompt) "")
+             ((string-match "Add remarks" prompt) "")
+             ((string-match "Context" prompt) "")
+             ((string-match "Schedule" prompt) "")
+             ((string-match "Delegate" prompt) "")
+             ((string-match "Project" prompt) "Alpha,Beta")
+             (t ""))))
+         ((symbol-function 'completing-read) (lambda (&rest _) "")))
+  :body (pearl-gtd-process-inbox)
   :asserts (progn
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      ":PROJECT:Alpha,Beta:"))
-             ;; Verify ID exists
+                      "* TODO Shared task"))
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      ":ID:")))
+                      ":PROJECT:\\s-*Alpha"))
+             (should (test-pearl-gtd-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      "Beta"))
+             (should (test-pearl-gtd-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      ":ID:"))
+             (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory)))
   :teardown nil)
 
 (provide 'test-pearl-gtd-organize)
