@@ -20,15 +20,23 @@
 (require 'pearl-gtd-init)
 (require 'pearl-gtd-core)
 
+(defvar-local pearl-gtd-do--current-view-type nil
+  "Type of the current view: `context, `delegated, `today, etc.")
+
+(defvar-local pearl-gtd-do--current-view-contexts nil
+  "Contexts used for the current view buffer when type is `context.")
+
 (defvar pearl-gtd-do-view-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "n") #'pearl-gtd-do-next-row)
-    (define-key map (kbd "p") #'pearl-gtd-do-previous-row)
-    (define-key map (kbd "j") #'pearl-gtd-do-next-row)
-    (define-key map (kbd "k") #'pearl-gtd-do-previous-row)
-    (define-key map (kbd "c") #'pearl-gtd-do-complete-task-at-point)
-    (define-key map (kbd "RET") #'pearl-gtd-do-goto-task)
+    (define-key map (kbd "n") #'pearl-gtd-do--next-row)
+    (define-key map (kbd "p") #'pearl-gtd-do--previous-row)
+    (define-key map (kbd "j") #'pearl-gtd-do--next-row)
+    (define-key map (kbd "k") #'pearl-gtd-do--previous-row)
+    (define-key map (kbd "c") #'pearl-gtd-do--complete-task-at-point)
+    (define-key map (kbd "RET") #'pearl-gtd-do--goto-task)
     (define-key map (kbd "q") #'quit-window)
+    (define-key map (kbd "g") #'pearl-gtd-do--refresh-view)
+    (define-key map (kbd "r") #'pearl-gtd-do--rename-task-at-point)
     map))
 
 (define-minor-mode pearl-gtd-do-view-mode
@@ -38,35 +46,35 @@
   :keymap pearl-gtd-do-view-mode-map
   :interactive nil)
 
-(defun pearl-gtd-do-next-row ()
+(defun pearl-gtd-do--next-row ()
   "Move to next row in the actions table."
   (interactive)
   (forward-line 1)
+  (while (and (not (eobp))
+              (or (looking-at "|[-+]")      ; Skip separator lines
+                  (looking-at "| Headline") ; Skip header row
+                  (not (looking-at "|"))))  ; Skip non-table lines
+    (forward-line 1))
   (when (eobp)
     (forward-line -1)
     (beep))
-  (beginning-of-line)
-  (when (looking-at "|[-+]")  ; Skip separator lines
-    (forward-line 1)
-    (when (eobp)
-      (forward-line -1)))
   (org-table-goto-column 1))
 
-(defun pearl-gtd-do-previous-row ()
+(defun pearl-gtd-do--previous-row ()
   "Move to previous row in the actions table."
   (interactive)
   (forward-line -1)
+  (while (and (not (bobp))
+              (or (looking-at "|[-+]")      ; Skip separator lines
+                  (looking-at "| Headline") ; Skip header row
+                  (not (looking-at "|"))))  ; Skip non-table lines
+    (forward-line -1))
   (when (bobp)
     (forward-line 1)
     (beep))
-  (beginning-of-line)
-  (when (looking-at "|[-+]")  ; Skip separator lines
-    (forward-line -1)
-    (when (bobp)
-      (forward-line 1)))
   (org-table-goto-column 1))
 
-(defun pearl-gtd-do-complete-task-at-point ()
+(defun pearl-gtd-do--complete-task-at-point ()
   "Mark the task at point as complete."
   (interactive)
   (let ((headline (string-trim (org-table-get-field 1))))
@@ -89,7 +97,7 @@
         (org-table-align)
         (message "Task marked as complete")))))
 
-(defun pearl-gtd-do-goto-task ()
+(defun pearl-gtd-do--goto-task ()
   "Jump from table view to the corresponding task in actions.org."
   (interactive)
   (let* ((headline (string-trim (org-table-get-field 1)))
@@ -142,7 +150,9 @@ BUFFER-NAME is the name for the new buffer."
         (org-table-align))
       (setq buffer-read-only t)
       (goto-char (point-min))
-      (forward-line 1)
+      (forward-line 2)
+      (setq pearl-gtd-do--current-view-type 'context
+            pearl-gtd-do--current-view-contexts contexts)
       (current-buffer))))
 
 (defun pearl-gtd-do--collect-contexts ()
@@ -214,7 +224,10 @@ Context tags are normalized by removing the @ prefix for matching."
                          (nth 6 action))))
         (org-table-align))
       (setq buffer-read-only t)
-      (goto-char (point-min)))
+      (goto-char (point-min))
+      (forward-line 2))
+    (with-current-buffer buffer-name
+      (setq pearl-gtd-do--current-view-type 'delegated))
     (pop-to-buffer buffer-name)
     (pearl-gtd-do-view-mode 1)))
 
@@ -246,7 +259,10 @@ Context tags are normalized by removing the @ prefix for matching."
                          (nth 6 action))))
         (org-table-align))
       (setq buffer-read-only t)
-      (goto-char (point-min)))
+      (goto-char (point-min))
+      (forward-line 2))
+    (with-current-buffer buffer-name
+      (setq pearl-gtd-do--current-view-type 'today))
     (pop-to-buffer buffer-name)
     (pearl-gtd-do-view-mode 1)))
 
@@ -257,6 +273,35 @@ Context tags are normalized by removing the @ prefix for matching."
     (org-todo "DONE"))
   ;; Save the buffer to ensure changes are written to file
   (save-buffer))
+
+(defun pearl-gtd-do--refresh-view ()
+  "Refresh the current actions view buffer."
+  (interactive)
+  (pcase pearl-gtd-do--current-view-type
+    ('context (pearl-gtd-do--view-context pearl-gtd-do--current-view-contexts))
+    ('delegated (pearl-gtd-do--view-delegated))
+    ('today (pearl-gtd-do--view-today))
+    (_ (message "Cannot refresh this view"))))
+
+(defun pearl-gtd-do--rename-task-at-point ()
+  "Rename the task at point in the view buffer."
+  (interactive)
+  (let* ((headline (string-trim (org-table-get-field 1)))
+         (id (when headline (get-text-property 0 'pearl-gtd-id headline)))
+         (actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
+    (when (and headline (not (string= headline "")))
+      (let ((new-name (read-string "New task name: " headline)))
+        (when (and new-name (not (string= new-name "")) (not (string= new-name headline)))
+          (with-current-buffer (find-file-noselect actions-file)
+            (goto-char (point-min))
+            (if (and id (re-search-forward (concat ":ID:[ \t]+" (regexp-quote id)) nil t))
+                (progn
+                  (org-back-to-heading)
+                  (org-edit-headline new-name)
+                  (save-buffer)
+                  (message "Task renamed to '%s'" new-name))
+              (message "Task not found in actions.org")))
+          (pearl-gtd-do--refresh-view))))))
 
 (provide 'pearl-gtd-do)
 

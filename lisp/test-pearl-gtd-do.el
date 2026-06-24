@@ -128,7 +128,7 @@
            (goto-char (point-min))
            (search-forward "Task to complete")
            (beginning-of-line)
-           (pearl-gtd-do-complete-task-at-point)))
+           (pearl-gtd-do--complete-task-at-point)))
   :asserts (progn
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
@@ -203,7 +203,7 @@
            (goto-char (point-min))
            (search-forward "Jump target task")
            (beginning-of-line)
-           (pearl-gtd-do-goto-task)))
+           (pearl-gtd-do--goto-task)))
   :asserts (progn
              (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
                (should (get-file-buffer actions-file)))
@@ -227,7 +227,7 @@
            ;; Move to the second "Duplicate task" row (line 5: header + separator + 3 data rows)
            (goto-char (point-min))
            (forward-line 4)  ; Skip header (1), separator (2), first task (3), second task (4)
-           (pearl-gtd-do-goto-task)))
+           (pearl-gtd-do--goto-task)))
   :asserts (progn
              ;; Jumps to correct task by ID
              (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
