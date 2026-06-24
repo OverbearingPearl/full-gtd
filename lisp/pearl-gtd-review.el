@@ -352,13 +352,9 @@ Note: Row-to-entry mapping is handled by the caller."
           ;; Store mapping from row number to entry info
           (puthash row-num (cons id file) pearl-gtd-review--row-to-entry-map)
           (setq row-num (1+ row-num)))))
-    ;; Note: org-table-align is disabled to ensure exact string matching in tests
-    ;; The table is functional without alignment, just less visually polished
+    (org-table-align)
     (setq buffer-read-only t)
     (goto-char (point-min))
-    ;; DEBUG: Print buffer content as single line
-    (let ((content (replace-regexp-in-string "\n" "\\\\n" (buffer-string))))
-      (message "DEBUG CREATE: Buffer content: %s" content))
     (current-buffer)))
 
 (defun pearl-gtd-review--collect-entries-from-file (file &optional predicates)
