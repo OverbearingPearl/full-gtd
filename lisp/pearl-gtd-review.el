@@ -116,14 +116,7 @@
 (defun pearl-gtd-review--with-entry-buffer (id file callback)
   "Execute CALLBACK in buffer of FILE with entry ID."
   (let ((file-path (expand-file-name file pearl-gtd-init-base-directory))
-        (result nil)
-        (before-content nil))
-    ;; DEBUG: Read file content before modification
-    (when (file-exists-p file-path)
-      (with-temp-buffer
-        (insert-file-contents file-path)
-        (setq before-content (replace-regexp-in-string "\n" "\\\\n" (buffer-string)))))
-    (message "DEBUG WITH-ENTRY: Before modification - file=%s id=%s content=%s" file id (or before-content "FILE-NOT-EXIST"))
+        (result nil))
     (with-current-buffer (find-file-noselect file-path)
       (org-mode)
       (goto-char (point-min))
@@ -132,12 +125,6 @@
         (funcall callback)
         (setq result t))
       (save-buffer))
-    ;; DEBUG: Read file content after modification
-    (when (file-exists-p file-path)
-      (with-temp-buffer
-        (insert-file-contents file-path)
-        (let ((after-content (replace-regexp-in-string "\n" "\\\\n" (buffer-string))))
-          (message "DEBUG WITH-ENTRY: After modification - file=%s content=%s" file after-content))))
     result))
 
 (defun pearl-gtd-review--get-property-by-id (id file property)
@@ -329,7 +316,6 @@ Note: Row-to-entry mapping is handled by the caller."
 
 (defun pearl-gtd-review--create-table-buffer (buffer-name entries)
   "Create a review table buffer with ENTRIES."
-  (message "DEBUG CREATE: Creating buffer %s with %d entries" buffer-name (length entries))
   (with-current-buffer (get-buffer-create buffer-name)
     (setq buffer-read-only nil)
     (erase-buffer)
@@ -361,14 +347,10 @@ Note: Row-to-entry mapping is handled by the caller."
   "Collect entries from FILE matching PREDICATES."
   (let ((file-path (expand-file-name file pearl-gtd-init-base-directory))
         (entries '()))
-    (message "DEBUG COLLECT: Starting collection from file=%s predicates=%s" file predicates)
     (when (file-exists-p file-path)
       (with-temp-buffer
         (insert-file-contents file-path)
         (org-mode)
-        ;; DEBUG: Print file content
-        (let ((file-content (replace-regexp-in-string "\n" "\\\\n" (buffer-string))))
-          (message "DEBUG COLLECT: File content for %s: %s" file file-content))
         (org-map-entries
          (lambda ()
            (let ((id (org-entry-get nil "ID")))
@@ -382,12 +364,10 @@ Note: Row-to-entry mapping is handled by the caller."
                  ;; Check predicates if provided
                  (when (or (null predicates)
                            (cl-every (lambda (pred) (funcall pred)) predicates))
-                   (message "DEBUG COLLECT: Found entry head=%s id=%s todo=%s scheduled=%s" head id todo-state scheduled)
                    (push (list head id (file-name-nondirectory file-path)
                               todo-state scheduled deadline context delegated)
                          entries))))))
          nil nil))
-      (message "DEBUG COLLECT: Total entries collected from %s: %d" file (length entries))
       (nreverse entries))))
 
 (defun pearl-gtd-review--daily ()
