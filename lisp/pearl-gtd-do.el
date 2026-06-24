@@ -46,33 +46,59 @@
   :keymap pearl-gtd-do-view-mode-map
   :interactive nil)
 
+(defun pearl-gtd-do--data-row-boundaries ()
+  "Return cons cell (FIRST-DATA-ROW . LAST-DATA-ROW) positions.
+FIRST-DATA-ROW is the position of the first data row in the table.
+LAST-DATA-ROW is the position of the last data row in the table."
+  (save-excursion
+    (goto-char (point-min))
+    ;; Skip header and separator to find first data row
+    (while (and (not (eobp))
+                (or (looking-at "|[-+]")      ; Separator
+                    (looking-at "| Headline") ; Header
+                    (not (looking-at "|"))))  ; Non-table
+      (forward-line 1))
+    (let ((first-data (line-beginning-position)))
+      ;; Find last data row from end of buffer
+      (goto-char (point-max))
+      (forward-line -1)
+      (while (and (not (bobp))
+                  (or (looking-at "|[-+]")      ; Separator
+                      (looking-at "| Headline") ; Header
+                      (not (looking-at "|"))    ; Non-table
+                      (looking-at "^$")))       ; Empty line
+        (forward-line -1))
+      (cons first-data (line-beginning-position)))))
+
 (defun pearl-gtd-do--next-row ()
   "Move to next row in the actions table."
   (interactive)
-  (forward-line 1)
-  (while (and (not (eobp))
-              (or (looking-at "|[-+]")      ; Skip separator lines
-                  (looking-at "| Headline") ; Skip header row
-                  (not (looking-at "|"))))  ; Skip non-table lines
-    (forward-line 1))
-  (when (eobp)
-    (forward-line -1)
-    (beep))
-  (org-table-goto-column 1))
+  (let* ((boundaries (pearl-gtd-do--data-row-boundaries))
+         (last-data-row (cdr boundaries)))
+    (if (>= (line-beginning-position) last-data-row)
+        (beep)
+      (forward-line 1)
+      (while (and (not (eobp))
+                  (or (looking-at "|[-+]")      ; Skip separator
+                      (looking-at "| Headline") ; Skip header
+                      (not (looking-at "|"))))  ; Skip non-table
+        (forward-line 1))
+      (org-table-goto-column 1))))
 
 (defun pearl-gtd-do--previous-row ()
   "Move to previous row in the actions table."
   (interactive)
-  (forward-line -1)
-  (while (and (not (bobp))
-              (or (looking-at "|[-+]")      ; Skip separator lines
-                  (looking-at "| Headline") ; Skip header row
-                  (not (looking-at "|"))))  ; Skip non-table lines
-    (forward-line -1))
-  (when (bobp)
-    (forward-line 1)
-    (beep))
-  (org-table-goto-column 1))
+  (let* ((boundaries (pearl-gtd-do--data-row-boundaries))
+         (first-data-row (car boundaries)))
+    (if (<= (line-beginning-position) first-data-row)
+        (beep)
+      (forward-line -1)
+      (while (and (not (bobp))
+                  (or (looking-at "|[-+]")      ; Skip separator
+                      (looking-at "| Headline") ; Skip header
+                      (not (looking-at "|"))))  ; Skip non-table
+        (forward-line -1))
+      (org-table-goto-column 1))))
 
 (defun pearl-gtd-do--complete-task-at-point ()
   "Mark the task at point as complete."
