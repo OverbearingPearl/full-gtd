@@ -179,8 +179,9 @@ BUFFER-NAME is the name for the new buffer."
           (org-mode)
           (org-map-entries
            (lambda ()
-             (dolist (tag (org-get-tags-at))
-               (cl-pushnew tag contexts :test #'string=)))
+             (when (string= (org-get-todo-state) "TODO")
+               (dolist (tag (org-get-tags-at))
+                 (cl-pushnew tag contexts :test #'string=))))
            nil nil))))
     (mapcar (lambda (c) (concat "@" c)) contexts)))
 
