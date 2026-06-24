@@ -85,7 +85,20 @@
 
 (defun pearl-gtd-review--edit-task ()
   "Edit the task at point in the review buffer."
-  (let ((head (org-get-heading t t)))
+  (let ((head nil))
+    ;; Try to extract task name from current line (handles list items like "- Task name")
+    (save-excursion
+      (beginning-of-line)
+      (cond
+       ;; If at a heading, use the heading
+       ((org-at-heading-p)
+        (setq head (org-get-heading t t)))
+       ;; If at a list item, extract the task name
+       ((looking-at "^\\s-*- \\(.*\\)$")
+        (setq head (match-string 1)))
+       ;; Otherwise, try org-get-heading anyway
+       (t
+        (setq head (org-get-heading t t)))))
     (when head
       (let ((new-name (read-string "New task name: " head)))
         ;; Edit in actions.org directly - try to match headline without TODO keyword

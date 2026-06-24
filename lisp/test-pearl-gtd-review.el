@@ -66,7 +66,7 @@
 (test-pearl-gtd-define-story test-pearl-gtd-review-user-edits-task-in-review-window
   "User edits a task directly from review buffer."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* TODO Old task name\n"))
+  :files (("actions.org" (format "* TODO Old task name\nSCHEDULED: <%s>\n" (format-time-string "%Y-%m-%d"))))
   :mock (((symbol-function 'read-string) (lambda (&rest _) "Updated task name")))
   :body (progn
          (pearl-gtd-review-daily)
