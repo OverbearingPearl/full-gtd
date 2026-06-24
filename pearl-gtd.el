@@ -29,15 +29,7 @@
 (defun pearl-gtd-capture ()
   "Capture a new item to the inbox."
   (interactive)
-  (let ((item (string-trim (read-string "Enter item to capture: "))))
-    (unless (string-empty-p item)
-      (with-current-buffer (find-file-noselect (expand-file-name "inbox.org" pearl-gtd-init-base-directory))
-        (goto-char (point-max))
-        (insert (format "* %s\n:PROPERTIES:\n:CREATED: %s\n:END:\n" item (format-time-string "%Y-%m-%d %H:%M:%S")))
-        ;; Add ID to the newly created headline
-        (forward-line -2)  ; Go back to the headline line
-        (org-id-get-create)
-        (save-buffer)))))
+  (pearl-gtd-inbox--capture))
 
 (defun pearl-gtd-process-inbox ()
   "Process the inbox."

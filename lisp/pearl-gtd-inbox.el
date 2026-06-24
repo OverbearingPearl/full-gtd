@@ -16,6 +16,7 @@
 
 (require 'cl-lib)
 (require 'org)
+(require 'org-id)
 
 (defface pearl-gtd-inbox--highlight
   '((t :inherit highlight))
@@ -218,6 +219,8 @@ Remarks is the clarified remarks text (nil if none).")
       (with-current-buffer (find-file-noselect (expand-file-name "inbox.org" pearl-gtd-init-base-directory))
         (goto-char (point-max))
         (insert (format "* %s\n:PROPERTIES:\n:CREATED: %s\n:END:\n" item (format-time-string "%Y-%m-%d %H:%M:%S")))
+        (forward-line -2)
+        (org-id-get-create)
         (save-buffer)))))
 
 (defun pearl-gtd-inbox--clarify-entry (headline buffer entry-ref)
