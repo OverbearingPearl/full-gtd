@@ -22,6 +22,7 @@
 
 (require 'pearl-gtd-init)
 (require 'pearl-gtd-inbox)
+(require 'pearl-gtd-core)
 (require 'pearl-gtd-review)
 (require 'pearl-gtd-do)
 

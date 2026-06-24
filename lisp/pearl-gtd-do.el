@@ -18,6 +18,7 @@
 (require 'org)
 (require 'cl-lib)
 (require 'pearl-gtd-init)
+(require 'pearl-gtd-core)
 
 (defvar pearl-gtd-do-view-mode-map
   (let ((map (make-sparse-keymap)))
@@ -109,43 +110,18 @@
   "Create a read-only table buffer showing actions filtered by CONTEXTS.
 CONTEXTS is a list of normalized context strings (without @ prefix), or nil for all.
 BUFFER-NAME is the name for the new buffer."
-  (let ((buffer (get-buffer-create buffer-name))
-        (actions '()))
-    (dolist (file '("actions.org"))
-      (let ((file-path (expand-file-name file pearl-gtd-init-base-directory)))
-        (when (file-exists-p file-path)
-          (with-temp-buffer
-            (insert-file-contents file-path)
-            (org-mode)
-            (org-map-entries
-             (lambda ()
-               (let* ((head (org-get-heading t t))
-                      (id (org-entry-get nil "ID"))
-                      (tags (org-get-tags-at))
-                      (todo-state (org-get-todo-state))
-                      (scheduled (org-entry-get nil "SCHEDULED"))
-                      (delegated (org-entry-get nil "DELEGATED"))
-                      (project (org-entry-get nil "PROJECT"))
-                      (created (org-entry-get nil "CREATED"))
-                      (matching-contexts (when contexts
-                                          (cl-intersection tags contexts :test #'string=))))
-                 (when (and (string= todo-state "TODO")
-                            (or (null contexts) matching-contexts))
-                   (let ((display-tags (if contexts matching-contexts tags)))
-                     ;; Attach ID as text property to headline for precise navigation
-                     (when id
-                       (put-text-property 0 (length head) 'pearl-gtd-id id head))
-                     (push (list head
-                                (if display-tags
-                                    (mapconcat (lambda (c) (concat "@" c)) display-tags ",")
-                                  "")
-                                (or todo-state "")
-                                (or scheduled "")
-                                (or delegated "")
-                                (or project "")
-                                (or created ""))
-                           actions)))))
-             nil nil)))))
+  (let* ((buffer (get-buffer-create buffer-name))
+         (file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+         (predicates (list #'pearl-gtd-core-entry-todo-p))
+         (actions nil))
+    ;; Add context predicate if contexts specified
+    (when contexts
+      (setq predicates
+            (append predicates
+                    (list (lambda () (pearl-gtd-core-entry-context-p contexts))))))
+    ;; Get filtered entries
+    (setq actions (pearl-gtd-core-filter-entries file-path predicates))
+    ;; Create buffer with results
     (with-current-buffer buffer
       (setq buffer-read-only nil)
       (erase-buffer)
@@ -154,7 +130,7 @@ BUFFER-NAME is the name for the new buffer."
           (insert "(No actions found)\n")
         (insert "| Headline | Context | Status | Scheduled | Delegated | Project | Created |\n")
         (insert "|----------+---------+--------+-----------+-----------+---------+---------|\n")
-        (dolist (action (nreverse actions))
+        (dolist (action actions)
           (insert (format "| %s | %s | %s | %s | %s | %s | %s |\n"
                          (replace-regexp-in-string "|" "\\\\vert{}" (nth 0 action))
                          (nth 1 action)
@@ -171,19 +147,8 @@ BUFFER-NAME is the name for the new buffer."
 
 (defun pearl-gtd-do--collect-contexts ()
   "Collect all unique context tags from actions.org."
-  (let ((contexts '()))
-    (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
-      (when (file-exists-p actions-file)
-        (with-temp-buffer
-          (insert-file-contents actions-file)
-          (org-mode)
-          (org-map-entries
-           (lambda ()
-             (when (string= (org-get-todo-state) "TODO")
-               (dolist (tag (org-get-tags-at))
-                 (cl-pushnew tag contexts :test #'string=))))
-           nil nil))))
-    (mapcar (lambda (c) (concat "@" c)) contexts)))
+  (pearl-gtd-core-collect-contexts
+   (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
 
 (defun pearl-gtd-do--view-context (context-input)
   "Internal function to view tasks by CONTEXT-INPUT in table format.
@@ -223,36 +188,12 @@ Context tags are normalized by removing the @ prefix for matching."
 
 (defun pearl-gtd-do--view-delegated ()
   "View all delegated tasks in table format."
-  (let ((buffer-name "*Pearl-GTD: Delegated*")
-        (actions '()))
-    (dolist (file '("actions.org"))
-      (let ((file-path (expand-file-name file pearl-gtd-init-base-directory)))
-        (when (file-exists-p file-path)
-          (with-temp-buffer
-            (insert-file-contents file-path)
-            (org-mode)
-            (org-map-entries
-             (lambda ()
-               (let* ((head (org-get-heading t t))
-                      (id (org-entry-get nil "ID"))
-                      (tags (org-get-tags-at))
-                      (todo-state (org-get-todo-state))
-                      (scheduled (org-entry-get nil "SCHEDULED"))
-                      (delegated (org-entry-get nil "DELEGATED"))
-                      (project (org-entry-get nil "PROJECT"))
-                      (created (org-entry-get nil "CREATED")))
-                 (when (and delegated (string= todo-state "TODO"))
-                   (when id
-                     (put-text-property 0 (length head) 'pearl-gtd-id id head))
-                   (push (list head
-                              (mapconcat (lambda (c) (concat "@" c)) tags ",")
-                              (or todo-state "")
-                              (or scheduled "")
-                              delegated
-                              (or project "")
-                              (or created ""))
-                         actions))))
-             nil nil)))))
+  (let* ((buffer-name "*Pearl-GTD: Delegated*")
+         (file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+         (actions (pearl-gtd-core-filter-entries
+                   file-path
+                   (list #'pearl-gtd-core-entry-todo-p
+                         #'pearl-gtd-core-entry-delegated-p))))
     (get-buffer-create buffer-name)
     (with-current-buffer buffer-name
       (setq buffer-read-only nil)
@@ -262,7 +203,7 @@ Context tags are normalized by removing the @ prefix for matching."
           (insert "(No delegated tasks)\n")
         (insert "| Headline | Context | Status | Scheduled | Delegated | Project | Created |\n")
         (insert "|----------+---------+--------+-----------+-----------+---------+---------|\n")
-        (dolist (action (nreverse actions))
+        (dolist (action actions)
           (insert (format "| %s | %s | %s | %s | %s | %s | %s |\n"
                          (replace-regexp-in-string "|" "\\\\vert{}" (nth 0 action))
                          (nth 1 action)
@@ -279,37 +220,12 @@ Context tags are normalized by removing the @ prefix for matching."
 
 (defun pearl-gtd-do--view-today ()
   "View actions scheduled for today in table format."
-  (let ((buffer-name "*Pearl-GTD: Today*")
-        (actions '())
-        (today-string (format-time-string "%Y-%m-%d")))
-    (dolist (file '("actions.org"))
-      (let ((file-path (expand-file-name file pearl-gtd-init-base-directory)))
-        (when (file-exists-p file-path)
-          (with-temp-buffer
-            (insert-file-contents file-path)
-            (org-mode)
-            (org-map-entries
-             (lambda ()
-               (let* ((head (org-get-heading t t))
-                      (id (org-entry-get nil "ID"))
-                      (tags (org-get-tags-at))
-                      (todo-state (org-get-todo-state))
-                      (scheduled (org-entry-get nil "SCHEDULED"))
-                      (delegated (org-entry-get nil "DELEGATED"))
-                      (project (org-entry-get nil "PROJECT"))
-                      (created (org-entry-get nil "CREATED")))
-                 (when (and scheduled (string-match-p today-string scheduled))
-                   (when id
-                     (put-text-property 0 (length head) 'pearl-gtd-id id head))
-                   (push (list head
-                              (mapconcat (lambda (c) (concat "@" c)) tags ",")
-                              (or todo-state "")
-                              (or scheduled "")
-                              (or delegated "")
-                              (or project "")
-                              (or created ""))
-                         actions))))
-             nil nil)))))
+  (let* ((buffer-name "*Pearl-GTD: Today*")
+         (file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+         (actions (pearl-gtd-core-filter-entries
+                   file-path
+                   (list #'pearl-gtd-core-entry-todo-p
+                         #'pearl-gtd-core-entry-scheduled-today-p))))
     (get-buffer-create buffer-name)
     (with-current-buffer buffer-name
       (setq buffer-read-only nil)
@@ -319,7 +235,7 @@ Context tags are normalized by removing the @ prefix for matching."
           (insert "(No actions scheduled for today)\n")
         (insert "| Headline | Context | Status | Scheduled | Delegated | Project | Created |\n")
         (insert "|----------+---------+--------+-----------+-----------+---------+---------|\n")
-        (dolist (action (nreverse actions))
+        (dolist (action actions)
           (insert (format "| %s | %s | %s | %s | %s | %s | %s |\n"
                          (replace-regexp-in-string "|" "\\\\vert{}" (nth 0 action))
                          (nth 1 action)

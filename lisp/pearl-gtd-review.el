@@ -16,6 +16,7 @@
 
 (require 'org)
 (require 'pearl-gtd-init)
+(require 'pearl-gtd-core)
 
 (defun pearl-gtd-review--daily ()
   "Run daily review."
@@ -30,18 +31,13 @@
         (when (file-exists-p inbox-file)
           (insert-file-contents inbox-file)))
       (insert "** Scheduled for Today\n")
-      (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
-        (when (file-exists-p actions-file)
-          (insert-file-contents actions-file)
-          (org-map-entries
-           (lambda ()
-             (let ((scheduled (org-entry-get nil "SCHEDULED")))
-               (when (and scheduled (string-match-p (format-time-string "%Y-%m-%d") scheduled))
-                 (org-mark-subtree)
-                 (let ((content (buffer-substring (region-beginning) (region-end))))
-                   (erase-buffer)
-                   (insert content)))))
-           "TODO" 'file)))
+      (let* ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+             (actions (pearl-gtd-core-filter-entries
+                       actions-file
+                       (list #'pearl-gtd-core-entry-todo-p
+                             #'pearl-gtd-core-entry-scheduled-today-p))))
+        (dolist (action actions)
+          (insert (format "- %s\n" (nth 0 action)))))
       (goto-char (point-min))
       (org-mode))
     (pop-to-buffer buffer-name)))
@@ -113,16 +109,13 @@
       (erase-buffer)
       (org-mode)
       (insert "* Overdue Tasks\n")
-      (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
-        (when (file-exists-p actions-file)
-          (insert-file-contents actions-file)
-          (org-map-entries
-           (lambda ()
-             (let ((head (org-get-heading t t))
-                   (scheduled (org-entry-get nil "SCHEDULED")))
-               (when (and scheduled (time-less-p (org-time-string-to-time scheduled) (current-time)))
-                 (insert (format "- %s\n" head)))))
-           "TODO" 'file)))
+      (let* ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+             (actions (pearl-gtd-core-filter-entries
+                       actions-file
+                       (list #'pearl-gtd-core-entry-todo-p
+                             #'pearl-gtd-core-entry-overdue-p))))
+        (dolist (action actions)
+          (insert (format "- %s\n" (nth 0 action)))))
       (goto-char (point-min))
       (org-mode))
     (pop-to-buffer buffer-name)))
