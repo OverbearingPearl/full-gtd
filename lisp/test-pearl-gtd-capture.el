@@ -67,7 +67,7 @@
   :body (pearl-gtd-capture)
   :asserts (should (test-pearl-gtd-file-contains-p
                     (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                    "* Fix [urgent] bug"))
+                    "* Fix \\[urgent\\] bug"))
   :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-capture-user-captures-very-long-title
@@ -199,10 +199,10 @@
   :asserts (progn
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                      "* Task [urgent] with brackets"))
+                      "* Task \\[urgent\\] with brackets"))
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                      "* Task * with asterisk")))
+                      "* Task \\* with asterisk")))
   :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-capture-user-quits-during-input
