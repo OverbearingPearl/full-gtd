@@ -329,13 +329,11 @@ SECTIONS is a list of (SECTION-TITLE . ENTRIES) where ENTRIES is a list of entry
                 ;; Store entry info in vector: ID FILE
                 (aset pearl-gtd-review--entry-map entry-index (cons (nth 1 entry) (nth 2 entry)))
                 (setq entry-index (1+ entry-index))))
-            ;; Align the table for this section only
-            (unless (null entries)
-              ;; Move up to the last data row to ensure we are within the table
-              (forward-line -1)
-              (org-table-align)
-              ;; Move back down to the end of the table
-              (forward-line 1))
+            ;; Align the table for this section
+            (forward-line -1)
+            (org-table-align)
+            ;; Move back down to the end of the table
+            (forward-line 1)
             ;; Insert the newline after the table
             (insert "\n")))))
     (setq buffer-read-only t)
