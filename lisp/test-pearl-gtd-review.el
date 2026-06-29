@@ -32,7 +32,7 @@
                (goto-char (point-min))
                (should (search-forward "** actions.org - Today" nil t))
                (should (search-forward "** actions.org - Next Actions" nil t))
-               (should (search-forward "** inbox.org" nil t))
+               (should (search-forward "** inbox.org - Inbox" nil t))
                ;; Verify Today task is in Today section, not in Next Actions
                (goto-char (point-min))
                (let* ((today-start (search-forward "** actions.org - Today"))
@@ -71,14 +71,14 @@
              (with-current-buffer "*Pearl-GTD Weekly Review*"
                ;; Verify all sections present
                (goto-char (point-min))
-               (should (search-forward "** inbox.org" nil t))
+               (should (search-forward "** inbox.org - Inbox" nil t))
                (should (search-forward "** actions.org - Overdue" nil t))
                (should (search-forward "** actions.org - Upcoming Deadlines" nil t))
                (should (search-forward "** actions.org - Delegated" nil t))
                (should (search-forward "** actions.org - Next Actions" nil t))
                (should (search-forward "** Projects - Stuck" nil t))
                (should (search-forward "** Projects - Active" nil t))
-               (should (search-forward "** someday.org" nil t))
+               (should (search-forward "** someday.org - Someday" nil t))
                ;; Verify content isolation
                (goto-char (point-min))
                (search-forward "** actions.org - Overdue")

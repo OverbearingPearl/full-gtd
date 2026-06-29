@@ -470,7 +470,7 @@ Projects are defined by PROJECT property in actions.org entries."
                                       (not (pearl-gtd-core-entry-scheduled-today-p))))))))
       (push (cons "actions.org - Next Actions" next-entries) sections))
     (let ((inbox-entries (pearl-gtd-review--collect-entries-from-file "inbox.org")))
-      (push (cons "inbox.org" inbox-entries) sections))
+      (push (cons "inbox.org - Inbox" inbox-entries) sections))
     (setq sections (nreverse sections))
     (pearl-gtd-review--create-table-buffer buffer-name sections)
     (with-current-buffer buffer-name
@@ -483,7 +483,7 @@ Projects are defined by PROJECT property in actions.org entries."
   (let ((buffer-name "*Pearl-GTD Weekly Review*")
         (sections '()))
     (let ((inbox-entries (pearl-gtd-review--collect-entries-from-file "inbox.org")))
-      (push (cons "inbox.org" inbox-entries) sections))
+      (push (cons "inbox.org - Inbox" inbox-entries) sections))
     (let ((overdue-entries (pearl-gtd-review--collect-entries-from-file
                             "actions.org"
                             (list #'pearl-gtd-core-entry-todo-p
@@ -509,7 +509,7 @@ Projects are defined by PROJECT property in actions.org entries."
     (let ((active-entries (pearl-gtd-review--collect-active-projects)))
       (push (cons "Projects - Active" active-entries) sections))
     (let ((someday-entries (pearl-gtd-review--collect-entries-from-file "someday.org")))
-      (push (cons "someday.org" someday-entries) sections))
+      (push (cons "someday.org - Someday" someday-entries) sections))
     (setq sections (nreverse sections))
     (pearl-gtd-review--create-table-buffer buffer-name sections)
     (with-current-buffer buffer-name
