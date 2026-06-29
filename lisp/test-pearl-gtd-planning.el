@@ -39,20 +39,20 @@
   :body (pearl-gtd-planning-start-project)
   :asserts (progn
              (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "projects.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "* Launch new website"))
              (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "projects.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       ":PURPOSE: Establish online presence"))
              (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "projects.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       ":VISION: Modern responsive site with blog")))
   :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-planning-user-brainstorms-ideas
   "User brainstorms ideas for existing project."
   :setup (pearl-gtd-init-initialize)
-  :files (("projects.org" "* Existing project\n:PROPERTIES:\n:CREATED: 2026-04-30\n:END:\n"))
+  :files (("actions.org" "* TODO Existing project\n:PROPERTIES:\n:CREATED: 2026-04-30\n:END:\n"))
   :mock (((symbol-function 'read-string)
           (lambda (prompt &rest _)
             (cond
@@ -62,17 +62,17 @@
   :body (pearl-gtd-planning-brainstorm "Existing project")
   :asserts (progn
              (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "projects.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "** Brainstorming"))
              (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "projects.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "- Use Hugo static generator")))
   :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-planning-user-organizes-brainstorm-results
   "User organizes brainstormed ideas into actionable components."
   :setup (pearl-gtd-init-initialize)
-  :files (("projects.org" "* Project X\n** Brainstorming\n- Idea 1\n- Idea 2\n"))
+  :files (("actions.org" "* TODO Project X\n** Brainstorming\n- Idea 1\n- Idea 2\n"))
   :mock (((symbol-function 'completing-read)
           (lambda (prompt collection &rest _)
             (cond
@@ -81,14 +81,14 @@
   :body (pearl-gtd-planning-organize-ideas "Project X")
   :asserts (progn
              (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "projects.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "** Components")))
   :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-planning-user-defines-success-criteria
   "User defines specific success criteria for project."
   :setup (pearl-gtd-init-initialize)
-  :files (("projects.org" "* Project Y\n"))
+  :files (("actions.org" "* TODO Project Y\n"))
   :mock (((symbol-function 'read-string)
           (lambda (prompt &rest _)
             (cond
@@ -98,17 +98,17 @@
   :body (pearl-gtd-planning-define-success "Project Y")
   :asserts (progn
              (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "projects.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "** Success Criteria"))
              (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "projects.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "- 1000 monthly visitors")))
   :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-planning-user-cancels-mid-brainstorm
   "User cancels during brainstorming session."
   :setup (pearl-gtd-init-initialize)
-  :files (("projects.org" "* Project Z\n"))
+  :files (("actions.org" "* TODO Project Z\n"))
   :mock (((symbol-function 'read-string)
           (lambda (prompt &rest _)
             (if (string-match "Brainstorm" prompt)
@@ -121,7 +121,7 @@
   :asserts (progn
              (should (eq (car test-pearl-gtd-caught-error) 'quit))
              (should-not (test-pearl-gtd-file-contains-p
-                          (expand-file-name "projects.org" pearl-gtd-init-base-directory)
+                          (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                           "** Brainstorming")))
   :teardown nil)
 
@@ -146,13 +146,13 @@
   :body (pearl-gtd-planning-create-complex-project)
   :asserts (progn
              (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "projects.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "* Website Redesign"))
              (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "projects.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "** Visual Design"))
              (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "projects.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "*** Color palette")))
   :teardown nil)
 

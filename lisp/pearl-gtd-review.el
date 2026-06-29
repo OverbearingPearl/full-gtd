@@ -386,12 +386,10 @@ Returns list of (HEAD ID FILE STATUS SCHEDULED DEADLINE CONTEXT DELEGATED PROJEC
    (list #'pearl-gtd-core-entry-todo-p
          #'pearl-gtd-review--entry-upcoming-deadline-p)))
 
-(defun pearl-gtd-review--collect-stuck-projects ()
-  "Collect projects with no associated actions."
-  (let ((projects-file (expand-file-name "projects.org" pearl-gtd-init-base-directory))
-        (actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
-        (project-names '())
-        (stuck-projects '()))
+(defun pearl-gtd-review--collect-all-projects ()
+  "Collect all unique project names from actions.org."
+  (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+        (projects '()))
     (when (file-exists-p actions-file)
       (with-temp-buffer
         (insert-file-contents actions-file)
@@ -400,64 +398,60 @@ Returns list of (HEAD ID FILE STATUS SCHEDULED DEADLINE CONTEXT DELEGATED PROJEC
          (lambda ()
            (let ((proj (org-entry-get nil "PROJECT")))
              (when proj
-               (push proj project-names))))
+               ;; PROJECT can contain multiple projects separated by comma or space
+               (dolist (p (split-string proj "[, ]" t))
+                 (cl-pushnew p projects :test #'string=)))))
          nil nil)))
-    (when (file-exists-p projects-file)
+    (nreverse projects)))
+
+(defun pearl-gtd-review--collect-stuck-projects ()
+  "Collect projects with no associated TODO actions.
+Projects are defined by PROJECT property in actions.org entries."
+  (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+        (all-projects (pearl-gtd-review--collect-all-projects))
+        (projects-with-todos '())
+        (stuck-projects '()))
+    ;; Find which projects have TODO actions
+    (when (file-exists-p actions-file)
       (with-temp-buffer
-        (insert-file-contents projects-file)
+        (insert-file-contents actions-file)
         (org-mode)
         (org-map-entries
          (lambda ()
-           (let ((head (org-get-heading t t))
-                 (id (org-entry-get nil "ID"))
-                 (todo-state (org-get-todo-state))
-                 (scheduled (org-entry-get nil "SCHEDULED"))
-                 (deadline (org-entry-get nil "DEADLINE"))
-                 (context (org-entry-get nil "CONTEXT"))
-                 (delegated (org-entry-get nil "DELEGATED"))
-                 (project (org-entry-get nil "PROJECT"))
-                 (created (org-entry-get nil "CREATED")))
-             (when (and id (not (member head project-names)))
-               (push (list head id "projects.org" todo-state scheduled deadline context delegated project created)
-                     stuck-projects))))
+           (when (pearl-gtd-core-entry-todo-p)
+             (let ((proj (org-entry-get nil "PROJECT")))
+               (when proj
+                 (dolist (p (split-string proj "[, ]" t))
+                   (cl-pushnew p projects-with-todos :test #'string=))))))
          nil nil)))
+    ;; Stuck projects are those without TODO actions
+    (dolist (proj all-projects)
+      (unless (member proj projects-with-todos)
+        (push (list proj nil nil nil nil nil nil nil nil nil) stuck-projects)))
     (nreverse stuck-projects)))
 
 (defun pearl-gtd-review--collect-active-projects ()
-  "Collect projects that have associated actions."
-  (let ((projects-file (expand-file-name "projects.org" pearl-gtd-init-base-directory))
-        (actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
-        (project-names '())
+  "Collect projects that have associated TODO actions.
+Projects are defined by PROJECT property in actions.org entries."
+  (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+        (projects-with-todos '())
         (active-projects '()))
+    ;; Find projects with TODO actions
     (when (file-exists-p actions-file)
       (with-temp-buffer
         (insert-file-contents actions-file)
         (org-mode)
         (org-map-entries
          (lambda ()
-           (let ((proj (org-entry-get nil "PROJECT")))
-             (when proj
-               (push proj project-names))))
+           (when (pearl-gtd-core-entry-todo-p)
+             (let ((proj (org-entry-get nil "PROJECT")))
+               (when proj
+                 (dolist (p (split-string proj "[, ]" t))
+                   (cl-pushnew p projects-with-todos :test #'string=))))))
          nil nil)))
-    (when (file-exists-p projects-file)
-      (with-temp-buffer
-        (insert-file-contents projects-file)
-        (org-mode)
-        (org-map-entries
-         (lambda ()
-           (let ((head (org-get-heading t t))
-                 (id (org-entry-get nil "ID"))
-                 (todo-state (org-get-todo-state))
-                 (scheduled (org-entry-get nil "SCHEDULED"))
-                 (deadline (org-entry-get nil "DEADLINE"))
-                 (context (org-entry-get nil "CONTEXT"))
-                 (delegated (org-entry-get nil "DELEGATED"))
-                 (project (org-entry-get nil "PROJECT"))
-                 (created (org-entry-get nil "CREATED")))
-             (when (and id (member head project-names))
-               (push (list head id "projects.org" todo-state scheduled deadline context delegated project created)
-                     active-projects))))
-         nil nil)))
+    ;; Create entries for active projects
+    (dolist (proj projects-with-todos)
+      (push (list proj nil nil nil nil nil nil nil nil nil) active-projects))
     (nreverse active-projects)))
 
 (defun pearl-gtd-review--daily ()
@@ -511,9 +505,9 @@ Returns list of (HEAD ID FILE STATUS SCHEDULED DEADLINE CONTEXT DELEGATED PROJEC
                                       (not (pearl-gtd-review--entry-upcoming-deadline-p))))))))
       (push (cons "actions.org - Next Actions" next-entries) sections))
     (let ((stuck-entries (pearl-gtd-review--collect-stuck-projects)))
-      (push (cons "projects.org - Stuck Projects" stuck-entries) sections))
+      (push (cons "Projects - Stuck" stuck-entries) sections))
     (let ((active-entries (pearl-gtd-review--collect-active-projects)))
-      (push (cons "projects.org - Active Projects" active-entries) sections))
+      (push (cons "Projects - Active" active-entries) sections))
     (let ((someday-entries (pearl-gtd-review--collect-entries-from-file "someday.org")))
       (push (cons "someday.org" someday-entries) sections))
     (setq sections (nreverse sections))

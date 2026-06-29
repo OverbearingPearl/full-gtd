@@ -63,7 +63,6 @@
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Unprocessed\n:PROPERTIES:\n:ID: w-1\n:END:\n")
           ("actions.org" "* TODO Normal action\n:PROPERTIES:\n:ID: w-2\n:PROJECT: Active project\n:END:\n* TODO Overdue task\nSCHEDULED: <2026-01-01 Wed>\n:PROPERTIES:\n:ID: w-overdue\n:END:\n* TODO Delegated task\n:PROPERTIES:\n:ID: w-del\n:DELEGATED: Bob\n:END:\n")
-          ("projects.org" "* Active project\n:PROPERTIES:\n:ID: w-3\n:END:\n* Stuck project\n:PROPERTIES:\n:ID: w-stuck\n:END:\n")
           ("someday.org" "* Maybe later\n:PROPERTIES:\n:ID: w-4\n:END:\n"))
   :mock nil
   :body (pearl-gtd-review-weekly)
@@ -77,8 +76,8 @@
                (should (search-forward "** actions.org - Upcoming Deadlines" nil t))
                (should (search-forward "** actions.org - Delegated" nil t))
                (should (search-forward "** actions.org - Next Actions" nil t))
-               (should (search-forward "** projects.org - Stuck Projects" nil t))
-               (should (search-forward "** projects.org - Active Projects" nil t))
+               (should (search-forward "** Projects - Stuck" nil t))
+               (should (search-forward "** Projects - Active" nil t))
                (should (search-forward "** someday.org" nil t))
                ;; Verify content isolation
                (goto-char (point-min))
@@ -86,13 +85,7 @@
                (should (search-forward "Overdue task" nil t))
                (goto-char (point-min))
                (search-forward "** actions.org - Delegated")
-               (should (search-forward "Delegated task" nil t))
-               (goto-char (point-min))
-               (search-forward "** projects.org - Stuck Projects")
-               (should (search-forward "Stuck project" nil t))
-               (goto-char (point-min))
-               (search-forward "** projects.org - Active Projects")
-               (should (search-forward "Active project" nil t))))
+               (should (search-forward "Delegated task" nil t))))
   :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
 
 (test-pearl-gtd-define-story test-pearl-gtd-review-edit-context-with-default

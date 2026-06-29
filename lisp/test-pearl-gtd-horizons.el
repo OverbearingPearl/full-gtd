@@ -21,7 +21,7 @@
 (test-pearl-gtd-define-story test-pearl-gtd-horizons-user-assigns-level-3-to-task
   "User assigns a task to Horizon 3 (Goals)."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* Task for goals\n"))
+  :files (("actions.org" "* TODO Task for goals\n"))
   :mock (((symbol-function 'completing-read)
           (lambda (prompt collection &rest _)
             (cond
@@ -40,7 +40,7 @@
 (test-pearl-gtd-define-story test-pearl-gtd-horizons-user-views-projects-by-area
   "User views projects grouped by Horizon 4 (Areas of Responsibility)."
   :setup (pearl-gtd-init-initialize)
-  :files (("projects.org" "* Project A\n:PROPERTIES:\n:HORIZON: 4\n:AREA: Health\n:END:\n* Project B\n:PROPERTIES:\n:HORIZON: 4\n:AREA: Career\n:END:\n"))
+  :files (("actions.org" "* TODO Project A\n:PROPERTIES:\n:HORIZON: 4\n:AREA: Health\n:END:\n* TODO Project B\n:PROPERTIES:\n:HORIZON: 4\n:AREA: Career\n:END:\n"))
   :mock (((symbol-function 'completing-read)
           (lambda (prompt collection &rest _)
             (cond
@@ -99,7 +99,7 @@
 (test-pearl-gtd-define-story test-pearl-gtd-horizons-user-views-projects-by-horizon-5
   "User views projects grouped by Horizon 5 (Projects)."
   :setup (pearl-gtd-init-initialize)
-  :files (("projects.org" "* Project A\n:PROPERTIES:\n:HORIZON: 5\n:END:\n* Project B\n:PROPERTIES:\n:HORIZON: 5\n:END:\n"))
+  :files (("actions.org" "* TODO Project A\n:PROPERTIES:\n:HORIZON: 5\n:END:\n* TODO Project B\n:PROPERTIES:\n:HORIZON: 5\n:END:\n"))
   :mock nil
   :body (pearl-gtd-horizons-view-projects)
   :asserts (progn
@@ -112,7 +112,7 @@
 (test-pearl-gtd-define-story test-pearl-gtd-horizons-user-views-actions-by-horizon-6
   "User views actions grouped by Horizon 6 (Actions)."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* Task A\n:PROPERTIES:\n:HORIZON: 6\n:END:\n* Task B\n:PROPERTIES:\n:HORIZON: 6\n:END:\n"))
+  :files (("actions.org" "* TODO Task A\n:PROPERTIES:\n:HORIZON: 6\n:END:\n* TODO Task B\n:PROPERTIES:\n:HORIZON: 6\n:END:\n"))
   :mock nil
   :body (pearl-gtd-horizons-view-actions)
   :asserts (progn
