@@ -69,7 +69,7 @@
                (should (search-forward "Task A" nil t))
                (should (search-forward "Task B" nil t))
                (should (search-forward "Task C" nil t))
-               ;; Verify Context column displays tags with @ prefix
+               ;; Verify Context column displays tags with @prefix
                (goto-char (point-min))
                (should (search-forward "@office" nil t))
                (should (search-forward "@home" nil t))
@@ -87,7 +87,7 @@
              (with-current-buffer "*Pearl-GTD: Delegated*"
                (should (search-forward "Task X" nil t))
                (should (search-forward "John" nil t))
-               ;; Verify Context column displays tags with @ prefix
+               ;; Verify Context column displays tags with @prefix
                (goto-char (point-min))
                (should (search-forward "@office" nil t))))
   :teardown (kill-buffer "*Pearl-GTD: Delegated*"))
@@ -108,7 +108,7 @@
 (test-pearl-gtd-define-story test-pearl-gtd-do-user-views-scheduled-for-today
   "User views actions scheduled for today."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" (format "* TODO Task today\nSCHEDULED: <%s>\n:PROPERTIES:\n:ID: today-task-id\n:END:\n" (format-time-string "%Y-%m-%d"))))
+  :files (("actions.org" (format "* TODO Task today\nSCHEDULED: <%s>\n:PROPERTIES:\n:ID: today-task-id\n:END:\n" (format-time-string "%Y-%m-%d %a"))))
   :mock nil
   :body (pearl-gtd-do-view-today)
   :asserts (progn
@@ -182,7 +182,7 @@
   "User views today's tasks with project and created columns."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" (format "* TODO Today task\nSCHEDULED: <%s>\n:PROPERTIES:\n:PROJECT: Current Sprint\n:CREATED: 2026-01-20\n:END:\n"
-                                  (format-time-string "%Y-%m-%d"))))
+                                  (format-time-string "%Y-%m-%d %a"))))
   :mock nil
   :body (pearl-gtd-do-view-today)
   :asserts (progn

@@ -47,54 +47,9 @@
   (pearl-gtd-review--daily))
 
 (defun pearl-gtd-review-weekly ()
-  "Run weekly review across all lists."
+  "Run weekly review."
   (interactive)
   (pearl-gtd-review--weekly))
-
-(defun pearl-gtd-review-undelegated ()
-  "Review tasks that are not delegated."
-  (interactive)
-  (pearl-gtd-review--undelegated))
-
-(defun pearl-gtd-review-edit-task ()
-  "Edit the task at point in the review buffer."
-  (interactive)
-  (pearl-gtd-review--edit-task))
-
-(defun pearl-gtd-review-overdue ()
-  "Review overdue scheduled tasks."
-  (interactive)
-  (pearl-gtd-review--overdue))
-
-(defun pearl-gtd-review-stuck-projects ()
-  "Review projects with no next actions."
-  (interactive)
-  (pearl-gtd-review--stuck-projects))
-
-(defun pearl-gtd-review-set-deadline ()
-  "Set deadline for current task with reminder."
-  (interactive)
-  (pearl-gtd-review--set-deadline))
-
-(defun pearl-gtd-review-view-upcoming-deadlines ()
-  "View tasks with deadlines in next 7 days."
-  (interactive)
-  (pearl-gtd-review--view-upcoming-deadlines))
-
-(defun pearl-gtd-review-check-reminders ()
-  "Check and display reminders for due tasks."
-  (interactive)
-  (pearl-gtd-review--check-reminders))
-
-(defun pearl-gtd-review-track-delegation-status ()
-  "Track status of delegated tasks and display waiting time."
-  (interactive)
-  (pearl-gtd-review--track-delegation-status))
-
-(defun pearl-gtd-review-send-delegation-reminder ()
-  "Send reminder for overdue delegated task."
-  (interactive)
-  (pearl-gtd-review--send-delegation-reminder))
 
 (defun pearl-gtd-do-view-by-context ()
   "View next actions filtered by a specific context."
@@ -129,7 +84,6 @@
   ;; Reload all modules first to ensure latest code is used
   (pearl-gtd-reload-modules)
   ;; Load test files automatically from the lisp directory
-  ;; This ensures all test files are loaded regardless of hardcoding
   (let ((test-dir (expand-file-name "lisp" pearl-gtd-directory)))
     (dolist (file (directory-files test-dir nil "test-.*\\.el$"))
       (let ((full-path (expand-file-name file test-dir)))
@@ -151,7 +105,6 @@
                 (unload-feature feature)
               (error nil))))))
     ;; Load .el source files directly, ignoring .elc
-    ;; Skip test files (only load core modules)
     (dolist (file el-files)
       (when (and (string-match "^[^.]+\\.el$" file)
                  (not (string-match "^test-" file)))

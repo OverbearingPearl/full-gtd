@@ -33,9 +33,11 @@ CONTEXTS is a list of normalized context strings (without @ prefix)."
 
 (defun pearl-gtd-core-entry-scheduled-today-p ()
   "Return non-nil if current entry is scheduled for today."
-  (let ((scheduled (org-entry-get nil "SCHEDULED"))
-        (today-string (format-time-string "%Y-%m-%d")))
-    (and scheduled (string-match-p today-string scheduled))))
+  (let* ((current-time-val (current-time))
+         (today-string (format-time-string "%Y-%m-%d" current-time-val))
+         (scheduled (org-entry-get nil "SCHEDULED")))
+    (and scheduled
+         (string-match-p (concat "<" today-string) scheduled))))
 
 (defun pearl-gtd-core-entry-delegated-p ()
   "Return non-nil if current entry is delegated."
