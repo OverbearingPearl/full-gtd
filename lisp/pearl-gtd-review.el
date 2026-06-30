@@ -174,7 +174,7 @@
     headline))
 
 (defun pearl-gtd-review--edit-context-at-point ()
-  "Edit context with current value as default. Empty input removes it."
+  "Edit context with current value as default.  Empty input removes it."
   (interactive)
   (let ((entry (pearl-gtd-review--get-entry-at-point)))
     (when entry
@@ -188,7 +188,7 @@
         (pearl-gtd-review--refresh-view)))))
 
 (defun pearl-gtd-review--edit-delegated-at-point ()
-  "Edit delegated with current value as default. Empty input removes it."
+  "Edit delegated with current value as default.  Empty input removes it."
   (interactive)
   (let ((entry (pearl-gtd-review--get-entry-at-point)))
     (when entry
@@ -206,7 +206,7 @@
         (pearl-gtd-review--refresh-view)))))
 
 (defun pearl-gtd-review--edit-scheduled-at-point ()
-  "Edit scheduled date with current value as default. Empty input removes it."
+  "Edit scheduled date with current value as default.  Empty input removes it."
   (interactive)
   (let ((entry (pearl-gtd-review--get-entry-at-point)))
     (when entry
@@ -306,9 +306,9 @@ The row contains the following fields:
 - CREATED: creation date
 
 The ID and FILE are stored as text properties on the HEAD text to enable
-navigation and property editing from the review table. The HEAD text is
+navigation and property editing from the review table.  The HEAD text is
 escaped to handle pipe characters that would otherwise break the table
-formatting. This function is called by `pearl-gtd-review--create-table-buffer'
+formatting.  This function is called by `pearl-gtd-review--create-table-buffer'
 to populate the review tables with task entries from various sources."
   (let* ((headline-escaped (replace-regexp-in-string "|" "\\\\vert{}" head))
          (headline-with-props (copy-sequence headline-escaped)))
@@ -326,6 +326,7 @@ to populate the review tables with task entries from various sources."
 
 (defun pearl-gtd-review--create-table-buffer (buffer-name sections)
   "Create review buffer with multiple sections.
+BUFFER-NAME is the name for the new buffer.
 SECTIONS is a list of (SECTION-TITLE . ENTRIES) where ENTRIES is a list of entry data."
   (with-current-buffer (get-buffer-create buffer-name)
     (setq buffer-read-only nil)
