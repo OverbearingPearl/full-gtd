@@ -290,7 +290,12 @@
     (_ (message "Cannot refresh this view"))))
 
 (defun pearl-gtd-review--insert-table-row (head id file status scheduled deadline context delegated project created)
-  "Insert a table row with ID and FILE as text properties on headline."
+  "Insert a table row into the review buffer.
+The row contains the task HEADLINE, ID, FILE, STATUS, SCHEDULED date, DEADLINE,
+CONTEXT, DELEGATED information, PROJECT, and CREATION date. The ID and FILE are
+stored as text properties on the headline text for later retrieval. This function
+is used by `pearl-gtd-review--create-table-buffer' to populate review tables
+with task entries."
   (let* ((headline-escaped (replace-regexp-in-string "|" "\\\\vert{}" head))
          (headline-with-props (copy-sequence headline-escaped)))
     (put-text-property 0 (length headline-with-props) 'pearl-gtd-id id headline-with-props)
