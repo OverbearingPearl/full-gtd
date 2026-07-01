@@ -102,27 +102,18 @@
       (org-table-goto-column 1))))
 
 (defun pearl-gtd-review--get-entry-at-point ()
-  "Get (ID . FILE) from current row in table using row mapping."
-  (when (and pearl-gtd-review--entry-map (looking-at "|"))
-    (let ((row-index 0)
-          (current-line (line-number-at-pos)))
-      ;; Count data rows before current line
-      (save-excursion
-        (goto-char (point-min))
-        (while (< (line-number-at-pos) current-line)
-          (when (and (looking-at "|")
-                     (not (looking-at "|[-+]"))
-                     (not (looking-at "| Headline[ \t]*|"))
-                     (not (looking-at "| (No entries)")))
-            (setq row-index (1+ row-index)))
-          (forward-line 1))
-        ;; Check current line
-        (when (and (looking-at "|")
-                   (not (looking-at "|[-+]"))
-                   (not (looking-at "| Headline[ \t]*|"))
-                   (not (looking-at "| (No entries)")))
-          (when (< row-index (length pearl-gtd-review--entry-map))
-            (aref pearl-gtd-review--entry-map row-index)))))))
+  "Get (ID . FILE) from current row in table using text properties."
+  (save-excursion
+    (beginning-of-line)
+    (let ((end (line-end-position))
+          (id nil)
+          (file nil))
+      (while (and (not id) (< (point) end))
+        (setq id (get-text-property (point) 'pearl-gtd-id))
+        (setq file (get-text-property (point) 'pearl-gtd-file))
+        (forward-char 1))
+      (when (and id file)
+        (cons id file)))))
 
 (defun pearl-gtd-review--with-entry-buffer (id file callback)
   "Execute CALLBACK in buffer of FILE with entry ID."

@@ -100,45 +100,19 @@ LAST-DATA-ROW is the position of the last data row in the table."
         (forward-line -1))
       (org-table-goto-column 1))))
 
-(defun pearl-gtd-do--complete-task-at-point ()
-  "Mark the task at point as complete."
-  (interactive)
-  (let ((headline (string-trim (org-table-get-field 1))))
-    (when (and headline (not (string= headline "")))
-      (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
-        (when (file-exists-p actions-file)
-          (with-current-buffer (find-file-noselect actions-file)
-            (goto-char (point-min))
-            (if (re-search-forward (concat "^\\*+[ \t]+\\(?:[A-Z]+[ \t]+\\)?"
-                                           (regexp-quote headline) "\\($\\| \\)") nil t)
-                (progn
-                  (let ((org-log-done 'time))
-                    (org-todo "DONE"))
-                  (save-buffer))
-              (message "Task not found in file")))))
-      (let ((inhibit-read-only t))
-        (org-table-goto-column 3)  ; Status column
-        (org-table-blank-field)
-        (insert "DONE")
-        (org-table-align)
-        (message "Task marked as complete")))))
-
-(defun pearl-gtd-do--goto-task ()
-  "Jump from table view to the corresponding task in actions.org."
-  (interactive)
-  (let* ((headline (string-trim (org-table-get-field 1)))
-         (id (when headline (get-text-property 0 'pearl-gtd-id headline))))
-    (when (and headline (not (string= headline "")))
-      (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
-        (when (file-exists-p actions-file)
-          (let ((buffer (find-file-noselect actions-file)))
-            (pop-to-buffer buffer)
-            (goto-char (point-min))
-            (if (and id (re-search-forward (concat ":ID:[ \t]+" (regexp-quote id)) nil t))
-                (progn
-                  (org-back-to-heading)
-                  (message "Jumped to task: %s" headline))
-              (message "Task not found in actions.org"))))))))
+(defun pearl-gtd-do--get-entry-at-point ()
+  "Get (ID . FILE) from current row in table using text properties."
+  (save-excursion
+    (beginning-of-line)
+    (let ((end (line-end-position))
+          (id nil)
+          (file nil))
+      (while (and (not id) (< (point) end))
+        (setq id (get-text-property (point) 'pearl-gtd-id))
+        (setq file (get-text-property (point) 'pearl-gtd-file))
+        (forward-char 1))
+      (when (and id file)
+        (cons id file)))))
 
 (defun pearl-gtd-do--create-actions-table-buffer (contexts buffer-name)
   "Create a read-only table buffer showing actions filtered by CONTEXTS.
@@ -165,14 +139,17 @@ BUFFER-NAME is the name for the new buffer."
         (insert "| Headline | Context | Status | Scheduled | Delegated | Project | Created |\n")
         (insert "|----------+---------+--------+-----------+-----------+---------+---------|\n")
         (dolist (action actions)
-          (insert (format "| %s | %s | %s | %s | %s | %s | %s |\n"
-                         (replace-regexp-in-string "|" "\\\\vert{}" (nth 0 action))
-                         (nth 1 action)
-                         (nth 2 action)
-                         (nth 3 action)
-                         (nth 4 action)
-                         (nth 5 action)
-                         (nth 6 action))))
+          (let* ((raw-headline (nth 0 action))
+                 (id (get-text-property 0 'pearl-gtd-id raw-headline))
+                 (file "actions.org")
+                 (escaped-headline (replace-regexp-in-string "|" "\\\\vert{}" raw-headline)))
+            (when id
+              (put-text-property 0 (length escaped-headline) 'pearl-gtd-id id escaped-headline)
+              (put-text-property 0 (length escaped-headline) 'pearl-gtd-file file escaped-headline))
+            (insert (format "| %s | %s | %s | %s | %s | %s | %s |\n"
+                           escaped-headline
+                           (nth 1 action) (nth 2 action) (nth 3 action)
+                           (nth 4 action) (nth 5 action) (nth 6 action)))))
         (org-table-align))
       (setq buffer-read-only t)
       (goto-char (point-min))
@@ -240,14 +217,17 @@ Context tags are normalized by removing the @ prefix for matching."
         (insert "| Headline | Context | Status | Scheduled | Delegated | Project | Created |\n")
         (insert "|----------+---------+--------+-----------+-----------+---------+---------|\n")
         (dolist (action actions)
-          (insert (format "| %s | %s | %s | %s | %s | %s | %s |\n"
-                         (replace-regexp-in-string "|" "\\\\vert{}" (nth 0 action))
-                         (nth 1 action)
-                         (nth 2 action)
-                         (nth 3 action)
-                         (nth 4 action)
-                         (nth 5 action)
-                         (nth 6 action))))
+          (let* ((raw-headline (nth 0 action))
+                 (id (get-text-property 0 'pearl-gtd-id raw-headline))
+                 (file "actions.org")
+                 (escaped-headline (replace-regexp-in-string "|" "\\\\vert{}" raw-headline)))
+            (when id
+              (put-text-property 0 (length escaped-headline) 'pearl-gtd-id id escaped-headline)
+              (put-text-property 0 (length escaped-headline) 'pearl-gtd-file file escaped-headline))
+            (insert (format "| %s | %s | %s | %s | %s | %s | %s |\n"
+                           escaped-headline
+                           (nth 1 action) (nth 2 action) (nth 3 action)
+                           (nth 4 action) (nth 5 action) (nth 6 action)))))
         (org-table-align))
       (setq buffer-read-only t)
       (goto-char (point-min))
@@ -275,14 +255,17 @@ Context tags are normalized by removing the @ prefix for matching."
         (insert "| Headline | Context | Status | Scheduled | Delegated | Project | Created |\n")
         (insert "|----------+---------+--------+-----------+-----------+---------+---------|\n")
         (dolist (action actions)
-          (insert (format "| %s | %s | %s | %s | %s | %s | %s |\n"
-                         (replace-regexp-in-string "|" "\\\\vert{}" (nth 0 action))
-                         (nth 1 action)
-                         (nth 2 action)
-                         (nth 3 action)
-                         (nth 4 action)
-                         (nth 5 action)
-                         (nth 6 action))))
+          (let* ((raw-headline (nth 0 action))
+                 (id (get-text-property 0 'pearl-gtd-id raw-headline))
+                 (file "actions.org")
+                 (escaped-headline (replace-regexp-in-string "|" "\\\\vert{}" raw-headline)))
+            (when id
+              (put-text-property 0 (length escaped-headline) 'pearl-gtd-id id escaped-headline)
+              (put-text-property 0 (length escaped-headline) 'pearl-gtd-file file escaped-headline))
+            (insert (format "| %s | %s | %s | %s | %s | %s | %s |\n"
+                           escaped-headline
+                           (nth 1 action) (nth 2 action) (nth 3 action)
+                           (nth 4 action) (nth 5 action) (nth 6 action)))))
         (org-table-align))
       (setq buffer-read-only t)
       (goto-char (point-min))
@@ -292,41 +275,59 @@ Context tags are normalized by removing the @ prefix for matching."
     (pop-to-buffer buffer-name)
     (pearl-gtd-do-view-mode 1)))
 
-(defun pearl-gtd-do--complete-task ()
-  "Mark the current task as complete."
-  ;; Enable org-log-done to automatically set CLOSED property
-  (let ((org-log-done 'time))
-    (org-todo "DONE"))
-  ;; Save the buffer to ensure changes are written to file
-  (save-buffer))
-
-(defun pearl-gtd-do--refresh-view ()
-  "Refresh the current actions view buffer."
+(defun pearl-gtd-do--goto-task ()
+  "Jump from table view to the corresponding task in actions.org."
   (interactive)
-  (pcase pearl-gtd-do--current-view-type
-    ('context (pearl-gtd-do--view-context pearl-gtd-do--current-view-contexts))
-    ('delegated (pearl-gtd-do--view-delegated))
-    ('today (pearl-gtd-do--view-today))
-    (_ (message "Cannot refresh this view"))))
+  (let ((entry (pearl-gtd-do--get-entry-at-point)))
+    (when entry
+      (let* ((id (car entry))
+             (file (cdr entry))
+             (actions-file (expand-file-name file pearl-gtd-init-base-directory)))
+        (let ((buffer (find-file-noselect actions-file)))
+          (pop-to-buffer buffer)
+          (goto-char (point-min))
+          (if (re-search-forward (concat ":ID:[ \t]+" (regexp-quote id)) nil t)
+              (progn (org-back-to-heading) (message "Jumped to task"))
+            (message "Task not found in actions.org")))))))
+
+(defun pearl-gtd-do--complete-task-at-point ()
+  "Mark the task at point as complete."
+  (interactive)
+  (let ((entry (pearl-gtd-do--get-entry-at-point)))
+    (when entry
+      (let* ((id (car entry))
+             (file (cdr entry))
+             (actions-file (expand-file-name file pearl-gtd-init-base-directory)))
+        (with-current-buffer (find-file-noselect actions-file)
+          (goto-char (point-min))
+          (when (re-search-forward (concat ":ID:[ \t]+" (regexp-quote id)) nil t)
+            (org-back-to-heading)
+            (let ((org-log-done 'time)) (org-todo "DONE"))
+            (save-buffer)))
+        (let ((inhibit-read-only t))
+          (org-table-goto-column 3)
+          (org-table-blank-field)
+          (insert "DONE")
+          (org-table-align)
+          (message "Task marked as complete"))))))
 
 (defun pearl-gtd-do--rename-task-at-point ()
   "Rename the task at point in the view buffer."
   (interactive)
-  (let* ((headline (string-trim (org-table-get-field 1)))
-         (id (when headline (get-text-property 0 'pearl-gtd-id headline)))
-         (actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
-    (when (and headline (not (string= headline "")))
-      (let ((new-name (read-string "New task name: " headline)))
-        (when (and new-name (not (string= new-name "")) (not (string= new-name headline)))
+  (let ((entry (pearl-gtd-do--get-entry-at-point)))
+    (when entry
+      (let* ((id (car entry))
+             (file (cdr entry))
+             (actions-file (expand-file-name file pearl-gtd-init-base-directory))
+             (new-name (read-string "New task name: ")))
+        (when (and new-name (not (string= new-name "")))
           (with-current-buffer (find-file-noselect actions-file)
             (goto-char (point-min))
-            (if (and id (re-search-forward (concat ":ID:[ \t]+" (regexp-quote id)) nil t))
-                (progn
-                  (org-back-to-heading)
-                  (org-edit-headline new-name)
-                  (save-buffer)
-                  (message "Task renamed to '%s'" new-name))
-              (message "Task not found in actions.org")))
+            (when (re-search-forward (concat ":ID:[ \t]+" (regexp-quote id)) nil t)
+              (org-back-to-heading)
+              (org-edit-headline new-name)
+              (save-buffer)
+              (message "Task renamed to '%s'" new-name)))
           (pearl-gtd-do--refresh-view))))))
 
 (provide 'pearl-gtd-do)

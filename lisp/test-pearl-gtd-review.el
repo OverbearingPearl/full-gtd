@@ -252,6 +252,29 @@
                           "* TODO Old task name")))
   :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
 
+(test-pearl-gtd-define-story test-pearl-gtd-review-jump-across-sections-and-files
+  "RET jump works correctly from tasks in different sections and source files."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* TODO Today task\nSCHEDULED: <2026-01-15 Thu>\n:PROPERTIES:\n:ID: jump-sec-1\n:END:\n* TODO Next task\n:PROPERTIES:\n:ID: jump-sec-2\n:END:\n")
+          ("inbox.org" "* Inbox item\n:PROPERTIES:\n:ID: jump-sec-3\n:END:\n"))
+  :mock (((symbol-function 'current-time) (lambda () (encode-time 0 0 0 15 1 2026))))
+  :body (progn
+          (pearl-gtd-review-daily)
+          (with-current-buffer "*Pearl-GTD Daily Review*"
+            (goto-char (point-min))
+            (search-forward "** actions.org - Next Actions")
+            (search-forward "Next task")
+            (beginning-of-line)
+            (pearl-gtd-review--goto-task-at-point)))
+  :asserts (progn
+             (should (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
+             (with-current-buffer (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+               (should (looking-at-p "\\*+ TODO Next task"))))
+  :teardown (progn
+              (kill-buffer "*Pearl-GTD Daily Review*")
+              (let ((buf (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory))))
+                (when buf (kill-buffer buf)))))
+
 (provide 'test-pearl-gtd-review)
 
 ;;; test-pearl-gtd-review.el ends here
