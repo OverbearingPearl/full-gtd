@@ -291,7 +291,7 @@ Context tags are normalized by removing the @ prefix for matching."
             (message "Task not found in actions.org")))))))
 
 (defun pearl-gtd-do--complete-task-at-point ()
-  "Mark the task at point as complete."
+  "Mark the task at point as complete in the view buffer."
   (interactive)
   (let ((entry (pearl-gtd-do--get-entry-at-point)))
     (when entry

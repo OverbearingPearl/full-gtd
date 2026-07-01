@@ -343,8 +343,8 @@ SECTIONS is a list of (SECTION-TITLE . ENTRIES) where ENTRIES is a list of entry
             ;; Align the table for this section
             (forward-line -1)
             (org-table-align)
-            ;; Move back down to the end of the table
-            (forward-line 1)
+            ;; Move to end of buffer and insert newline
+            (goto-char (point-max))
             ;; Insert the newline after the table
             (insert "\n")))))
     (setq buffer-read-only t)
@@ -493,20 +493,37 @@ Projects are defined by PROJECT property in actions.org entries."
   "Run weekly review with comprehensive sections."
   (let ((buffer-name "*Pearl-GTD Weekly Review*")
         (sections '()))
+    ;; Build sections in the exact order they should appear in the buffer
+    ;; 1. Inbox
     (let ((inbox-entries (pearl-gtd-review--collect-entries-from-file "inbox.org")))
       (push (cons "inbox.org - Inbox" inbox-entries) sections))
+    ;; 2. Overdue
     (let ((overdue-entries (pearl-gtd-review--collect-entries-from-file
                             "actions.org"
                             (list #'pearl-gtd-core-entry-todo-p
                                   #'pearl-gtd-core-entry-overdue-p))))
       (push (cons "actions.org - Overdue" overdue-entries) sections))
+    ;; 3. Upcoming Deadlines
     (let ((upcoming-entries (pearl-gtd-review--collect-upcoming-deadlines)))
       (push (cons "actions.org - Upcoming Deadlines" upcoming-entries) sections))
+    ;; 4. Completed
+    (let ((completed-entries (pearl-gtd-review--collect-entries-from-file
+                          "actions.org"
+                          (list #'pearl-gtd-core-entry-done-p))))
+      (push (cons "actions.org - Completed" completed-entries) sections))
+    ;; 5. Completed Today
+    (let ((completed-today-entries (pearl-gtd-review--collect-entries-from-file
+                                "actions.org"
+                                (list #'pearl-gtd-core-entry-done-p
+                                      #'pearl-gtd-core-entry-completed-today-p))))
+      (push (cons "actions.org - Completed Today" completed-today-entries) sections))
+    ;; 6. Delegated
     (let ((delegated-entries (pearl-gtd-review--collect-entries-from-file
                               "actions.org"
                               (list #'pearl-gtd-core-entry-todo-p
                                     #'pearl-gtd-core-entry-delegated-p))))
       (push (cons "actions.org - Delegated" delegated-entries) sections))
+    ;; 7. Next Actions
     (let ((next-entries (pearl-gtd-review--collect-entries-from-file
                          "actions.org"
                          (list (lambda ()
@@ -515,12 +532,16 @@ Projects are defined by PROJECT property in actions.org entries."
                                       (not (pearl-gtd-core-entry-delegated-p))
                                       (not (pearl-gtd-review--entry-upcoming-deadline-p))))))))
       (push (cons "actions.org - Next Actions" next-entries) sections))
+    ;; 8. Stuck
     (let ((stuck-entries (pearl-gtd-review--collect-stuck-projects)))
       (push (cons "Projects - Stuck" stuck-entries) sections))
+    ;; 9. Active
     (let ((active-entries (pearl-gtd-review--collect-active-projects)))
       (push (cons "Projects - Active" active-entries) sections))
+    ;; 10. Someday
     (let ((someday-entries (pearl-gtd-review--collect-entries-from-file "someday.org")))
       (push (cons "someday.org - Someday" someday-entries) sections))
+    ;; Reverse so inbox (pushed last) appears first
     (setq sections (nreverse sections))
     (pearl-gtd-review--create-table-buffer buffer-name sections)
     (with-current-buffer buffer-name

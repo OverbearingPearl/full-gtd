@@ -45,17 +45,20 @@
   :files (("actions.org" "* TODO Complete this task\n:PROPERTIES:\n:ID: complete-task-id\n:END:\n"))
   :mock nil
   :body (progn
-         (find-file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
-         (goto-char (point-min))
-         (pearl-gtd-do-complete-task))
+         (pearl-gtd-do-view-all-actions)
+         (with-current-buffer "*Pearl-GTD: All Actions*"
+           (goto-char (point-min))
+           (search-forward "Complete this task")
+           (beginning-of-line)
+           (pearl-gtd-do--complete-task-at-point)))
   :asserts (progn
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      "DONE"))
+                      "* DONE Complete this task"))
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "CLOSED:")))
-  :teardown nil)
+  :teardown (kill-buffer "*Pearl-GTD: All Actions*"))
 
 (test-pearl-gtd-define-story test-pearl-gtd-do-user-views-all-next-actions
   "User views all next actions regardless of context."

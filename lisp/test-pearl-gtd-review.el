@@ -62,9 +62,9 @@
   "Weekly review aggregates all lists and action sub-views into separate tables."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Unprocessed\n:PROPERTIES:\n:ID: w-1\n:END:\n")
-          ("actions.org" "* TODO Normal action\n:PROPERTIES:\n:ID: w-2\n:PROJECT: Active project\n:END:\n* TODO Overdue task\nSCHEDULED: <2026-01-01 Wed>\n:PROPERTIES:\n:ID: w-overdue\n:END:\n* TODO Delegated task\n:PROPERTIES:\n:ID: w-del\n:DELEGATED: Bob\n:END:\n")
+          ("actions.org" "* TODO Normal action\n:PROPERTIES:\n:ID: w-2\n:PROJECT: Active project\n:END:\n* TODO Overdue task\nSCHEDULED: <2026-01-01 Wed>\n:PROPERTIES:\n:ID: w-overdue\n:END:\n* TODO Delegated task\n:PROPERTIES:\n:ID: w-del\n:DELEGATED: Bob\n:END:\n* DONE Completed today task\nCLOSED: [2026-01-15 Thu 10:00]\n:PROPERTIES:\n:ID: w-done-today\n:END:\n")
           ("someday.org" "* Maybe later\n:PROPERTIES:\n:ID: w-4\n:END:\n"))
-  :mock nil
+  :mock (((symbol-function 'current-time) (lambda () (encode-time 0 0 0 15 1 2026))))
   :body (pearl-gtd-review-weekly)
   :asserts (progn
              (should (get-buffer "*Pearl-GTD Weekly Review*"))
@@ -74,6 +74,8 @@
                (should (search-forward "** inbox.org - Inbox" nil t))
                (should (search-forward "** actions.org - Overdue" nil t))
                (should (search-forward "** actions.org - Upcoming Deadlines" nil t))
+               (should (search-forward "** actions.org - Completed" nil t))
+               (should (search-forward "** actions.org - Completed Today" nil t))
                (should (search-forward "** actions.org - Delegated" nil t))
                (should (search-forward "** actions.org - Next Actions" nil t))
                (should (search-forward "** Projects - Stuck" nil t))

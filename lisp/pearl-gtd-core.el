@@ -24,6 +24,10 @@
   "Return non-nil if current entry is a TODO item."
   (string= (org-get-todo-state) "TODO"))
 
+(defun pearl-gtd-core-entry-done-p ()
+  "Return non-nil if current entry is a DONE item."
+  (string= (org-get-todo-state) "DONE"))
+
 (defun pearl-gtd-core-entry-context-p (contexts)
   "Return non-nil if current entry has any of CONTEXTS.
 CONTEXTS is a list of normalized context strings (without @ prefix)."
@@ -38,6 +42,12 @@ CONTEXTS is a list of normalized context strings (without @ prefix)."
          (scheduled (org-entry-get nil "SCHEDULED")))
     (and scheduled
          (string-match-p (concat "<" today-string) scheduled))))
+
+(defun pearl-gtd-core-entry-completed-today-p ()
+  "Return non-nil if current entry was closed today."
+  (let* ((closed (org-entry-get nil "CLOSED")))
+    (and closed
+         (string-match-p (format-time-string "\\[%Y-%m-%d") closed))))
 
 (defun pearl-gtd-core-entry-delegated-p ()
   "Return non-nil if current entry is delegated."
