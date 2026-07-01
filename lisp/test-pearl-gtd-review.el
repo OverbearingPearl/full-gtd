@@ -22,8 +22,8 @@
   "Daily review shows Today, Next Actions, and Inbox in separate tables."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* New idea\n:PROPERTIES:\n:ID: d-1\n:CREATED: 2026-01-15\n:END:\n")
-          ("actions.org" "* TODO Today task\nSCHEDULED: <2026-01-15 Thu>\n:PROPERTIES:\n:ID: d-2\n:PROJECT: Web\n:CREATED: 2026-01-10\n:END:\n* TODO Next task\n:PROPERTIES:\n:ID: d-3\n:PROJECT: App\n:CREATED: 2026-01-11\n:END:\n"))
-  :mock (((symbol-function 'current-time) (lambda () (encode-time 0 0 0 15 1 2026))))
+          ("actions.org" "* TODO Today task\nSCHEDULED: <2026-01-15 Thu>\n:PROPERTIES:\n:ID: d-2\n:PROJECT: Web\n:CREATED: 2026-01-10\n:END:\n* TODO Next task\n:PROPERTIES:\n:ID: d-3\n:PROJECT: App\n:CREATED: 2026-01-11\n:END:\n* DONE Completed today task\nCLOSED: [2026-01-15 Thu 10:00]\n:PROPERTIES:\n:ID: d-4\n:END:\n"))
+  :mock (((symbol-function 'current-time) (lambda () (encode-time 0 0 0 15 1 2026 t))))
   :body (pearl-gtd-review-daily)
   :asserts (progn
              (should (get-buffer "*Pearl-GTD Daily Review*"))
@@ -31,6 +31,7 @@
                ;; Verify sections exist
                (goto-char (point-min))
                (should (search-forward "** actions.org - Today" nil t))
+               (should (search-forward "** actions.org - Completed Today" nil t))
                (should (search-forward "** actions.org - Next Actions" nil t))
                (should (search-forward "** inbox.org - Inbox" nil t))
                ;; Verify Today task is in Today section, not in Next Actions
@@ -56,13 +57,26 @@
                ;; Verify new columns exist using regex to match aligned headers
                (goto-char (point-min))
                (should (search-forward-regexp "|[ \t]*Headline[ \t]*|[ \t]*Status[ \t]*|[ \t]*Scheduled[ \t]*|[ \t]*Deadline[ \t]*|[ \t]*Context[ \t]*|[ \t]*Delegated[ \t]*|[ \t]*Project[ \t]*|[ \t]*Created[ \t]*|" nil t))
-               ;; Verify GTD workflow order: Today → Next Actions → Inbox
+               ;; Verify GTD workflow order: Today → Completed Today → Next Actions → Inbox
                (goto-char (point-min))
                (let ((pos-today (search-forward "** actions.org - Today" nil t))
+                     (pos-completed (search-forward "** actions.org - Completed Today" nil t))
                      (pos-next (search-forward "** actions.org - Next Actions" nil t))
                      (pos-inbox (search-forward "** inbox.org - Inbox" nil t)))
-                 (should (< pos-today pos-next))
-                 (should (< pos-next pos-inbox)))))
+                 (should (< pos-today pos-completed))
+                 (should (< pos-completed pos-next))
+                 (should (< pos-next pos-inbox)))
+               ;; Verify completed task is in Completed Today section and not in Today
+               (goto-char (point-min))
+               (let* ((today-start (search-forward "** actions.org - Today"))
+                      (today-end (save-excursion
+                                   (search-forward "** actions.org - Completed Today" nil t)
+                                   (line-beginning-position))))
+                 (goto-char today-start)
+                 (should-not (search-forward "Completed today task" today-end t)))
+               (goto-char (point-min))
+               (search-forward "** actions.org - Completed Today")
+               (should (search-forward "Completed today task" nil t))))
   :teardown (kill-buffer "*Pearl-GTD Daily Review*"))
 
 (test-pearl-gtd-define-story test-pearl-gtd-review-weekly-shows-all-sections
@@ -82,7 +96,6 @@
                (should (search-forward "** actions.org - Overdue" nil t))
                (should (search-forward "** actions.org - Upcoming Deadlines" nil t))
                (should (search-forward "** actions.org - Completed" nil t))
-               (should (search-forward "** actions.org - Completed Today" nil t))
                (should (search-forward "** actions.org - Delegated" nil t))
                (should (search-forward "** actions.org - Next Actions" nil t))
                (should (search-forward "** Projects - Stuck" nil t))
@@ -101,7 +114,6 @@
                                       (search-forward "** actions.org - Overdue" nil t)
                                       (search-forward "** actions.org - Upcoming Deadlines" nil t)
                                       (search-forward "** actions.org - Completed" nil t)
-                                      (search-forward "** actions.org - Completed Today" nil t)
                                       (search-forward "** actions.org - Delegated" nil t)
                                       (search-forward "** actions.org - Next Actions" nil t)
                                       (search-forward "** Projects - Stuck" nil t)

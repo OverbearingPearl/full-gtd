@@ -96,15 +96,22 @@
       (when (string-match "^[^.]+\\.el$" file)
         (let ((feature (intern (file-name-base file))))
           (when (featurep feature)
-            (condition-case nil
+            (message "DEBUG: Unloading %s before reload" feature)
+            (condition-case err
                 (unload-feature feature)
-              (error nil))))))
+              (error (message "DEBUG: Failed to unload %s: %s" feature err)))))))
     ;; Load .el source files directly, ignoring .elc
     (dolist (file el-files)
       (when (and (string-match "^[^.]+\\.el$" file)
                  (not (string-match "^test-" file)))
-        (load-file (expand-file-name file lisp-dir))
-        (message "Reloaded %s" file)))
+        (let ((el-path (expand-file-name file lisp-dir))
+              (elc-path (concat (expand-file-name file lisp-dir) "c")))
+          (message "DEBUG: Loading %s (elc exists: %s)" el-path (file-exists-p elc-path))
+          (message "DEBUG: source file %s newer than compiled? %s" 
+                   el-path 
+                   (file-newer-than-file-p el-path elc-path))
+          (load-file el-path)
+          (message "DEBUG: Reloaded %s" file))))
     (message "Modules reloaded.")))
 
 (provide 'pearl-gtd)

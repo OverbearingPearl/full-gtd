@@ -478,7 +478,12 @@ Projects are defined by PROJECT property in actions.org entries."
                                 (and (pearl-gtd-core-entry-todo-p)
                                      (not (pearl-gtd-core-entry-scheduled-today-p)))))))
          (inbox-entries (pearl-gtd-review--collect-entries-from-file "inbox.org"))
+         (completed-today-entries (pearl-gtd-review--collect-entries-from-file
+                                   "actions.org"
+                                   (list #'pearl-gtd-core-entry-done-p
+                                         #'pearl-gtd-core-entry-completed-today-p)))
          (sections (list (cons "actions.org - Today" today-entries)
+                         (cons "actions.org - Completed Today" completed-today-entries)
                          (cons "actions.org - Next Actions" next-entries)
                          (cons "inbox.org - Inbox" inbox-entries))))
     (pearl-gtd-review--create-table-buffer buffer-name sections)
@@ -503,11 +508,6 @@ Projects are defined by PROJECT property in actions.org entries."
          (completed-entries (pearl-gtd-review--collect-entries-from-file
                              "actions.org"
                              (list #'pearl-gtd-core-entry-done-p)))
-         ;; 5. Completed Today
-         (completed-today-entries (pearl-gtd-review--collect-entries-from-file
-                                   "actions.org"
-                                   (list #'pearl-gtd-core-entry-done-p
-                                         #'pearl-gtd-core-entry-completed-today-p)))
          ;; 6. Delegated - check waiting for
          (delegated-entries (pearl-gtd-review--collect-entries-from-file
                              "actions.org"
@@ -532,7 +532,6 @@ Projects are defined by PROJECT property in actions.org entries."
                          (cons "actions.org - Overdue" overdue-entries)
                          (cons "actions.org - Upcoming Deadlines" upcoming-entries)
                          (cons "actions.org - Completed" completed-entries)
-                         (cons "actions.org - Completed Today" completed-today-entries)
                          (cons "actions.org - Delegated" delegated-entries)
                          (cons "actions.org - Next Actions" next-entries)
                          (cons "Projects - Stuck" stuck-entries)
