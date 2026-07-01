@@ -55,7 +55,14 @@
                  (should-not (search-forward "Today task" next-end t)))
                ;; Verify new columns exist using regex to match aligned headers
                (goto-char (point-min))
-               (should (search-forward-regexp "|[ \t]*Headline[ \t]*|[ \t]*Status[ \t]*|[ \t]*Scheduled[ \t]*|[ \t]*Deadline[ \t]*|[ \t]*Context[ \t]*|[ \t]*Delegated[ \t]*|[ \t]*Project[ \t]*|[ \t]*Created[ \t]*|" nil t))))
+               (should (search-forward-regexp "|[ \t]*Headline[ \t]*|[ \t]*Status[ \t]*|[ \t]*Scheduled[ \t]*|[ \t]*Deadline[ \t]*|[ \t]*Context[ \t]*|[ \t]*Delegated[ \t]*|[ \t]*Project[ \t]*|[ \t]*Created[ \t]*|" nil t))
+               ;; Verify GTD workflow order: Today → Next Actions → Inbox
+               (goto-char (point-min))
+               (let ((pos-today (search-forward "** actions.org - Today" nil t))
+                     (pos-next (search-forward "** actions.org - Next Actions" nil t))
+                     (pos-inbox (search-forward "** inbox.org - Inbox" nil t)))
+                 (should (< pos-today pos-next))
+                 (should (< pos-next pos-inbox)))))
   :teardown (kill-buffer "*Pearl-GTD Daily Review*"))
 
 (test-pearl-gtd-define-story test-pearl-gtd-review-weekly-shows-all-sections
@@ -87,7 +94,20 @@
                (should (search-forward "Overdue task" nil t))
                (goto-char (point-min))
                (search-forward "** actions.org - Delegated")
-               (should (search-forward "Delegated task" nil t))))
+               (should (search-forward "Delegated task" nil t))
+               ;; Verify GTD weekly review order: Inbox → Overdue/Upcoming → Completed → Delegated → Next Actions → Projects → Someday
+               (goto-char (point-min))
+               (let ((positions (list (search-forward "** inbox.org - Inbox" nil t)
+                                      (search-forward "** actions.org - Overdue" nil t)
+                                      (search-forward "** actions.org - Upcoming Deadlines" nil t)
+                                      (search-forward "** actions.org - Completed" nil t)
+                                      (search-forward "** actions.org - Completed Today" nil t)
+                                      (search-forward "** actions.org - Delegated" nil t)
+                                      (search-forward "** actions.org - Next Actions" nil t)
+                                      (search-forward "** Projects - Stuck" nil t)
+                                      (search-forward "** Projects - Active" nil t)
+                                      (search-forward "** someday.org - Someday" nil t))))
+                 (should (equal positions (sort (copy-sequence positions) #'<))))))
   :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
 
 (test-pearl-gtd-define-story test-pearl-gtd-review-edit-context-with-default
