@@ -71,11 +71,6 @@
   (interactive)
   (pearl-gtd-do--view-today))
 
-(defun pearl-gtd-do-complete-task ()
-  "Mark the current task as complete."
-  (interactive)
-  (pearl-gtd-do--complete-task-at-point))
-
 (defun pearl-gtd-run-tests ()
   "Run all Pearl-GTD unit tests."
   (interactive)
