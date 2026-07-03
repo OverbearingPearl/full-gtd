@@ -221,13 +221,13 @@
   :files (("actions.org" "* TODO Jump target\n:PROPERTIES:\n:ID: jump-1\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n"))
   :mock nil
   :body (progn
-         (pearl-gtd-review-weekly)
-         (with-current-buffer "*Pearl-GTD Weekly Review*"
-           (goto-char (point-min))
-           (search-forward "** actions.org - Next Actions")
-           (search-forward "Jump target")
-           (beginning-of-line)
-           (pearl-gtd-review--goto-task-at-point)))
+          (pearl-gtd-review-weekly)
+          (with-current-buffer "*Pearl-GTD Weekly Review*"
+            (goto-char (point-min))
+            (search-forward "** actions.org - Next Actions")
+            (search-forward "Jump target")
+            (beginning-of-line)
+            (pearl-gtd-review--goto-task-at-point)))
   :asserts (progn
              (should (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
              (with-current-buffer (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory))
@@ -372,7 +372,7 @@
 (test-pearl-gtd-define-story test-pearl-gtd-review-stuck-project-shows-zero-todo
   "Stuck project shows zero todo count."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* DONE Completed task\n:PROPERTIES:\n:ID: stuck-1\n:PROJECT: StuckProj\n:END:\n"))
+  :files (("actions.org" "* DONE Completed task\n:PROPERTIES:\n:ID: stuck-1\n:PROJECT: StuckProj\n:END:\n* Scheduled but no todo\nSCHEDULED: <2026-04-10 Fri>\n:PROPERTIES:\n:ID: stuck-2\n:PROJECT: StuckProj\n:END:\n"))
   :mock nil
   :body (pearl-gtd-review-weekly)
   :asserts (progn
@@ -382,7 +382,7 @@
                (search-forward "** Projects - Stuck")
                (forward-line 3)
                (beginning-of-line)
-               (should (search-forward-regexp "|\\s-*StuckProj\\s-*|\\s-*1\\s-*|\\s-*0\\s-*|\\s-*1\\s-*|" (line-end-position) t))))
+               (should (search-forward-regexp "|\\s-*StuckProj\\s-*|\\s-*2\\s-*|\\s-*0\\s-*|\\s-*1\\s-*|" (line-end-position) t))))
   :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
 
 (test-pearl-gtd-define-story test-pearl-gtd-review-project-exact-match-not-substring

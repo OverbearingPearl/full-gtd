@@ -440,9 +440,9 @@ NEXT-DEADLINE is the earliest deadline string or empty string."
                  (when (member project-name projects)
                    (cl-incf total)
                    (let ((todo-state (org-get-todo-state)))
-                     (if (member todo-state org-done-keywords)
-                         (cl-incf done)
-                       (cl-incf todo))
+                     (cond
+                      ((member todo-state org-done-keywords) (cl-incf done))
+                      ((string= todo-state "TODO") (cl-incf todo)))
                      (let ((deadline (org-entry-get nil "DEADLINE")))
                        (when deadline
                          (let ((d-time (org-time-string-to-time deadline)))
