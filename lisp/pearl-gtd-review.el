@@ -28,7 +28,7 @@
 
 (defvar pearl-gtd-review-view-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "q") #'quit-window)
+    (define-key map (kbd "q") #'pearl-gtd-review--quit-or-return)
     (define-key map (kbd "n") #'pearl-gtd-review--next-row)
     (define-key map (kbd "p") #'pearl-gtd-review--previous-row)
     (define-key map (kbd "j") #'pearl-gtd-review--next-row)
@@ -282,29 +282,26 @@
 
 (defun pearl-gtd-review--insert-table-row (head id file status scheduled deadline context delegated project created)
   "Insert a table row into the review buffer.
-This function formats a task entry and inserts it as a row in an Org table.
+HEAD is the entry headline string.
+ID is the unique identifier string, or nil for project rows.
+FILE is the source file path string.
+STATUS is the todo state string.
+SCHEDULED is the scheduled date string or nil.
+DEADLINE is the deadline date string or nil.
+CONTEXT is the context tag string or nil.
+DELEGATED is the delegation info string or nil.
+PROJECT is the project name string or nil.
+CREATED is the creation timestamp string or nil.
 
-The row contains the following fields:
-- HEAD: the task headline
-- ID: unique identifier
-- FILE: source file
-- STATUS: todo state
-- SCHEDULED: scheduled date
-- DEADLINE: deadline date
-- CONTEXT: context tag
-- DELEGATED: delegation info
-- PROJECT: project name
-- CREATED: creation date
-
-The ID and FILE are stored as text properties on the HEAD text to enable
-navigation and property editing from the review table.  The HEAD text is
-escaped to handle pipe characters that would otherwise break the table
-formatting.  This function is called by `pearl-gtd-review--create-table-buffer'
-to populate the review tables with task entries from various sources."
+For project rows (ID is nil), attach `pearl-gtd-project' property to HEAD.
+For task rows, attach `pearl-gtd-id' and `pearl-gtd-file' properties to HEAD."
   (let* ((headline-escaped (replace-regexp-in-string "|" "\\\\vert{}" head))
          (headline-with-props (copy-sequence headline-escaped)))
-    (put-text-property 0 (length headline-with-props) 'pearl-gtd-id id headline-with-props)
-    (put-text-property 0 (length headline-with-props) 'pearl-gtd-file file headline-with-props)
+    (if (and (null id) head)
+        (put-text-property 0 (length headline-with-props) 'pearl-gtd-project head headline-with-props)
+      (progn
+        (put-text-property 0 (length headline-with-props) 'pearl-gtd-id id headline-with-props)
+        (put-text-property 0 (length headline-with-props) 'pearl-gtd-file file headline-with-props)))
     (insert (format "| %s | %s | %s | %s | %s | %s | %s | %s |\n"
                     headline-with-props
                     (or status "")
@@ -316,9 +313,9 @@ to populate the review tables with task entries from various sources."
                     (or created "")))))
 
 (defun pearl-gtd-review--create-table-buffer (buffer-name sections)
-  "Create review buffer with multiple sections.
-BUFFER-NAME is the name for the new buffer.
-SECTIONS is a list of (SECTION-TITLE . ENTRIES) where ENTRIES is a list of entry data."
+  "Create review buffer named BUFFER-NAME with multiple sections.
+SECTIONS is a list of (TITLE . ENTRIES) or (TITLE ENTRIES . TYPE)
+where TYPE can be \\='project for project sections."
   (with-current-buffer (get-buffer-create buffer-name)
     (setq buffer-read-only nil)
     (erase-buffer)
@@ -328,24 +325,27 @@ SECTIONS is a list of (SECTION-TITLE . ENTRIES) where ENTRIES is a list of entry
       (if (null sections)
           (insert "(No entries to review)\n")
         (dolist (section sections)
-          (let ((title (car section))
-                (entries (cdr section)))
+          (let* ((title (car section))
+                 (is-project (eq (cddr section) 'project))
+                 (entries (if is-project (cadr section) (cdr section))))
             (insert (format "** %s\n" title))
-            (insert "| Headline | Status | Scheduled | Deadline | Context | Delegated | Project | Created |\n")
-            (insert "|----------+--------+-----------+----------+---------+-----------+---------+---------|\n")
+            (if is-project
+                (progn
+                  (insert "| Project | Total | Todo | Done | Next Deadline | | | |\n")
+                  (insert "|---------+-------+------+------+---------------+-+-+-+-|\n"))
+              (progn
+                (insert "| Headline | Status | Scheduled | Deadline | Context | Delegated | Project | Created |\n")
+                (insert "|----------+--------+-----------+----------+---------+-----------+---------+---------|\n")))
             (if (null entries)
                 (insert "| (No entries) | | | | | | | |\n")
               (dolist (entry entries)
                 (apply #'pearl-gtd-review--insert-table-row entry)
-                ;; Store entry info in vector: ID FILE
-                (aset pearl-gtd-review--entry-map entry-index (cons (nth 1 entry) (nth 2 entry)))
+                (unless is-project
+                  (aset pearl-gtd-review--entry-map entry-index (cons (nth 1 entry) (nth 2 entry))))
                 (setq entry-index (1+ entry-index))))
-            ;; Align the table for this section
             (forward-line -1)
             (org-table-align)
-            ;; Move to end of buffer and insert newline
             (goto-char (point-max))
-            ;; Insert the newline after the table
             (insert "\n")))))
     (setq buffer-read-only t)
     (goto-char (point-min))
@@ -415,54 +415,99 @@ Returns list of (HEAD ID FILE STATUS SCHEDULED DEADLINE CONTEXT DELEGATED PROJEC
          nil nil)))
     (nreverse projects)))
 
-(defun pearl-gtd-review--collect-stuck-projects ()
-  "Collect projects with no associated TODO actions.
-Projects are defined by PROJECT property in actions.org entries."
-  (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
-        (all-projects (pearl-gtd-review--collect-all-projects))
-        (projects-with-todos '())
-        (stuck-projects '()))
-    ;; Find which projects have TODO actions
-    (when (file-exists-p actions-file)
+(defun pearl-gtd-review--get-project-stats (project-name)
+  "Get statistics for PROJECT-NAME from actions.org.
+PROJECT-NAME is a string naming the project to analyze.
+Returns list (TOTAL TODO DONE NEXT-DEADLINE) where:
+TOTAL is the total number of entries,
+TODO is the count of unfinished entries,
+DONE is the count of completed entries,
+NEXT-DEADLINE is the earliest deadline string or empty string."
+  (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+        (total 0)
+        (done 0)
+        (todo 0)
+        (next-deadline nil))
+    (when (file-exists-p file-path)
       (with-temp-buffer
-        (insert-file-contents actions-file)
+        (insert-file-contents file-path)
         (org-mode)
         (org-map-entries
          (lambda ()
-           (when (pearl-gtd-core-entry-todo-p)
-             (let ((proj (org-entry-get nil "PROJECT")))
-               (when proj
-                 (dolist (p (split-string proj "[, ]" t))
-                   (cl-pushnew p projects-with-todos :test #'string=))))))
+           (let ((proj (org-entry-get nil "PROJECT")))
+             (when (and proj (string-match-p (regexp-quote project-name) proj))
+               (cl-incf total)
+               (let ((todo-state (org-get-todo-state))
+                     (deadline (org-entry-get nil "DEADLINE")))
+                 (if (member todo-state org-done-keywords)
+                     (cl-incf done)
+                   (cl-incf todo))
+                 (when deadline
+                   (let ((d-time (org-time-string-to-time deadline)))
+                     (when (or (null next-deadline)
+                               (time-less-p d-time (org-time-string-to-time next-deadline)))
+                       (setq next-deadline deadline))))))))
          nil nil)))
-    ;; Stuck projects are those without TODO actions
+    (list total todo done (or next-deadline ""))))
+
+(defun pearl-gtd-review--collect-stuck-projects ()
+  "Collect projects with no associated TODO actions.
+Returns list of entries formatted for project table display."
+  (let ((all-projects (pearl-gtd-review--collect-all-projects))
+        (projects-with-todos '())
+        (stuck-projects '()))
+    (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
+      (when (file-exists-p file-path)
+        (with-temp-buffer
+          (insert-file-contents file-path)
+          (org-mode)
+          (org-map-entries
+           (lambda ()
+             (when (pearl-gtd-core-entry-todo-p)
+               (let ((proj (org-entry-get nil "PROJECT")))
+                 (when proj
+                   (dolist (p (split-string proj "[, ]" t))
+                     (cl-pushnew p projects-with-todos :test #'string=))))))
+           nil nil))))
     (dolist (proj all-projects)
       (unless (member proj projects-with-todos)
-        (push (list proj nil nil nil nil nil nil nil nil nil) stuck-projects)))
+        (let ((stats (pearl-gtd-review--get-project-stats proj)))
+          (push (list proj nil "actions.org"
+                      (number-to-string (nth 0 stats))
+                      (number-to-string (nth 1 stats))
+                      (number-to-string (nth 2 stats))
+                      (nth 3 stats)
+                      "" "" "")
+                stuck-projects))))
     (nreverse stuck-projects)))
 
 (defun pearl-gtd-review--collect-active-projects ()
   "Collect projects that have associated TODO actions.
-Projects are defined by PROJECT property in actions.org entries."
-  (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
-        (projects-with-todos '())
+Returns list of entries formatted for project table display."
+  (let ((projects-with-todos '())
         (active-projects '()))
-    ;; Find projects with TODO actions
-    (when (file-exists-p actions-file)
-      (with-temp-buffer
-        (insert-file-contents actions-file)
-        (org-mode)
-        (org-map-entries
-         (lambda ()
-           (when (pearl-gtd-core-entry-todo-p)
-             (let ((proj (org-entry-get nil "PROJECT")))
-               (when proj
-                 (dolist (p (split-string proj "[, ]" t))
-                   (cl-pushnew p projects-with-todos :test #'string=))))))
-         nil nil)))
-    ;; Create entries for active projects
+    (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
+      (when (file-exists-p file-path)
+        (with-temp-buffer
+          (insert-file-contents file-path)
+          (org-mode)
+          (org-map-entries
+           (lambda ()
+             (when (pearl-gtd-core-entry-todo-p)
+               (let ((proj (org-entry-get nil "PROJECT")))
+                 (when proj
+                   (dolist (p (split-string proj "[, ]" t))
+                     (cl-pushnew p projects-with-todos :test #'string=))))))
+           nil nil))))
     (dolist (proj projects-with-todos)
-      (push (list proj nil nil nil nil nil nil nil nil nil) active-projects))
+      (let ((stats (pearl-gtd-review--get-project-stats proj)))
+        (push (list proj nil "actions.org"
+                    (number-to-string (nth 0 stats))
+                    (number-to-string (nth 1 stats))
+                    (number-to-string (nth 2 stats))
+                    (nth 3 stats)
+                    "" "" "")
+              active-projects)))
     (nreverse active-projects)))
 
 (defun pearl-gtd-review--daily ()
@@ -534,14 +579,86 @@ Projects are defined by PROJECT property in actions.org entries."
                          (cons "actions.org - Completed" completed-entries)
                          (cons "actions.org - Delegated" delegated-entries)
                          (cons "actions.org - Next Actions" next-entries)
-                         (cons "Projects - Stuck" stuck-entries)
-                         (cons "Projects - Active" active-entries)
+                         (cons "Projects - Stuck" (cons stuck-entries 'project))
+                         (cons "Projects - Active" (cons active-entries 'project))
                          (cons "someday.org - Someday" someday-entries))))
     (pearl-gtd-review--create-table-buffer buffer-name sections)
     (with-current-buffer buffer-name
       (setq pearl-gtd-review--current-view-type 'weekly))
     (pop-to-buffer buffer-name)
     (pearl-gtd-review-view-mode 1)))
+
+(defun pearl-gtd-review--collect-project-entries (project-name)
+  "Collect all entries from actions.org belonging to PROJECT-NAME.
+PROJECT-NAME is a string naming the project to search for.
+Returns list of entry lists suitable for `pearl-gtd-review--insert-table-row'."
+  (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+        (entries '()))
+    (when (file-exists-p file-path)
+      (with-temp-buffer
+        (insert-file-contents file-path)
+        (org-mode)
+        (org-map-entries
+         (lambda ()
+           (let ((id (org-entry-get nil "ID"))
+                 (proj (org-entry-get nil "PROJECT")))
+             (when (and id proj (string-match-p (regexp-quote project-name) proj))
+               (let ((head (org-get-heading t t))
+                     (todo-state (org-get-todo-state))
+                     (scheduled (org-entry-get nil "SCHEDULED"))
+                     (deadline (org-entry-get nil "DEADLINE"))
+                     (context (org-entry-get nil "CONTEXT"))
+                     (delegated (org-entry-get nil "DELEGATED"))
+                     (created (org-entry-get nil "CREATED")))
+                 (push (list head id "actions.org" todo-state scheduled deadline context delegated project-name created)
+                       entries)))))
+         nil nil)))
+    (nreverse entries)))
+
+(defun pearl-gtd-review--show-project-tasks (project-name)
+  "Display all tasks for PROJECT-NAME in a dedicated buffer.
+PROJECT-NAME is a string naming the project to display.
+Creates and pops to buffer *Pearl-GTD Project: PROJECT-NAME*."
+  (let* ((buffer-name (format "*Pearl-GTD Project: %s*" project-name))
+         (entries (pearl-gtd-review--collect-project-entries project-name))
+         (sections (list (cons (format "actions.org - %s" project-name) entries))))
+    (pearl-gtd-review--create-table-buffer buffer-name sections)
+    (with-current-buffer buffer-name
+      (setq pearl-gtd-review--current-view-type nil))
+    (pop-to-buffer buffer-name)
+    (pearl-gtd-review-view-mode 1)))
+
+(defun pearl-gtd-review--quit-or-return ()
+  "Quit window, or return to weekly review if in project sub-view."
+  (interactive)
+  (if (and (boundp 'pearl-gtd-review--current-view-type)
+           (null pearl-gtd-review--current-view-type))
+      (progn
+        (kill-buffer)
+        (when (get-buffer "*Pearl-GTD Weekly Review*")
+          (pop-to-buffer "*Pearl-GTD Weekly Review*")))
+    (quit-window)))
+
+(defun pearl-gtd-review--goto-task-at-point ()
+  "Jump to task in source file, or show project tasks if on project row."
+  (interactive)
+  (save-excursion
+    (beginning-of-line)
+    (let ((end (line-end-position))
+          (project nil))
+      (while (and (< (point) end) (not project))
+        (setq project (get-text-property (point) 'pearl-gtd-project))
+        (forward-char 1))
+      (if project
+          (pearl-gtd-review--show-project-tasks project)
+        (let ((entry (pearl-gtd-review--get-entry-at-point)))
+          (when entry
+            (let ((id (car entry))
+                  (file (cdr entry)))
+              (find-file (expand-file-name file pearl-gtd-init-base-directory))
+              (goto-char (point-min))
+              (when (re-search-forward (concat ":ID:[ \t]+" (regexp-quote id)) nil t)
+                (org-back-to-heading)))))))))
 
 (provide 'pearl-gtd-review)
 
