@@ -157,12 +157,24 @@ jobs:
           username: ${{ secrets.SMTP_USER }}
           password: ${{ secrets.SMTP_PASS }}
           subject: "❌ MELPA Build Failed - ${{ github.repository }}"
-          body: |
-            Repository: ${{ github.repository }}
-            Branch: ${{ github.ref }}
-            Commit: ${{ github.sha }}
-
-            Build failed. See attached logs for full error details.
+          html_body: |
+            <h2 style="color: #d32f2f; border-bottom: 2px solid #d32f2f; padding-bottom: 10px; margin-bottom: 20px;">MELPA Build Failed</h2>
+            <table style="border-collapse: collapse; font-family: Arial, sans-serif; margin: 20px 0;">
+              <tr>
+                <td style="padding: 10px; font-weight: bold; color: #555; width: 100px; border-bottom: 1px solid #eee;">Repository</td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">${{ github.repository }}</td>
+              </tr>
+              <tr style="background-color: #f9f9f9;">
+                <td style="padding: 10px; font-weight: bold; color: #555; border-bottom: 1px solid #eee;">Branch</td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">${{ github.ref }}</td>
+              </tr>
+              <tr>
+                <td style="padding: 10px; font-weight: bold; color: #555;">Commit</td>
+                <td style="padding: 10px; font-family: monospace; font-size: 0.9em; color: #333;">${{ github.sha }}</td>
+              </tr>
+            </table>
+            <hr style="border: none; border-top: 2px solid #eee; margin: 30px 0;">
+            <p style="color: #666; font-style: italic; margin-top: 20px;">Detailed error logs are attached to this email.</p>
           to: ${{ secrets.NOTIFY_EMAIL }}
           from: ${{ secrets.SMTP_USER }}
           attachments: build-logs.txt
