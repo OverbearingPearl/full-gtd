@@ -91,14 +91,16 @@ Return the created buffer."
                               (format "%dd %dh %dm" days hours minutes))
                           "N/A")))
           (insert (format "| %s | | %s | %s |\n"
-                          (nth 0 entry) age-str
+                          (nth 0 entry)
+                          age-str
                           (mapconcat #'identity (nth 1 entry) ",")))))
       (org-table-align)
       (setq buffer-read-only t)
       (current-buffer))))
 
 (defun pearl-gtd-inbox--map-entries (buffer func)
-  "Map over all entries in BUFFER, calling FUNC with headline and entry-ref."
+  "Map over all entries in BUFFER.
+Calls FUNC with headline and entry-ref for each entry."
   (with-current-buffer buffer
     (save-excursion
       (goto-char (point-min))
@@ -115,7 +117,8 @@ Return the created buffer."
           (funcall func (car entry) (cdr entry)))))))
 
 (defun pearl-gtd-inbox--highlight-entry (entry-ref)
-  "Highlight ENTRY-REF in staging buffer."
+  "Highlight ENTRY-REF in staging buffer.
+ENTRY-REF is a cons cell (BUFFER . ROW)."
   (let ((buffer (car entry-ref)) (row (cdr entry-ref)))
     (with-current-buffer buffer
       (save-excursion
@@ -129,7 +132,8 @@ Return the created buffer."
           (setq pearl-gtd-inbox--current-highlight ov))))))
 
 (defun pearl-gtd-inbox--mark-deleted (entry-ref)
-  "Mark ENTRY-REF as deleted."
+  "Mark ENTRY-REF as deleted.
+ENTRY-REF is a cons cell (BUFFER . ROW)."
   (let ((buffer (car entry-ref)) (row (cdr entry-ref)))
     (with-current-buffer buffer
       (let ((inhibit-read-only t))
@@ -145,7 +149,8 @@ Return the created buffer."
         (cl-pushnew row pearl-gtd-inbox--marked-deleted-rows)))))
 
 (defun pearl-gtd-inbox--mark-executed (entry-ref)
-  "Mark ENTRY-REF as executed."
+  "Mark ENTRY-REF as executed.
+ENTRY-REF is a cons cell (BUFFER . ROW)."
   (let ((buffer (car entry-ref)) (row (cdr entry-ref)))
     (with-current-buffer buffer
       (let ((inhibit-read-only t))
@@ -161,7 +166,10 @@ Return the created buffer."
         (cl-pushnew row pearl-gtd-inbox--marked-executed-rows)))))
 
 (defun pearl-gtd-inbox--stage-change (entry-ref col new-value)
-  "Stage change for ENTRY-REF at COL with NEW-VALUE."
+  "Stage change for ENTRY-REF at COL with NEW-VALUE.
+ENTRY-REF is a cons cell (BUFFER . ROW).
+COL is the column number to modify.
+NEW-VALUE is the string to insert."
   (let ((buffer (car entry-ref)) (row (cdr entry-ref)))
     (with-current-buffer buffer
       (push (list row col new-value) pearl-gtd-inbox--staging-changes)
@@ -176,12 +184,14 @@ Return the created buffer."
           (pearl-gtd-inbox--reapply-marks buffer))))))
 
 (defun pearl-gtd-inbox--clear-changes (buffer)
-  "Clear changes in BUFFER."
+  "Clear changes in BUFFER.
+BUFFER is the staging buffer to clear."
   (with-current-buffer buffer
     (setq pearl-gtd-inbox--staging-changes nil)))
 
 (defun pearl-gtd-inbox--reapply-marks (buffer)
-  "Reapply marks to BUFFER after table alignment."
+  "Reapply marks to BUFFER after table alignment.
+BUFFER is the staging buffer to update."
   (with-current-buffer buffer
     (dolist (row pearl-gtd-inbox--marked-deleted-rows)
       (condition-case nil
