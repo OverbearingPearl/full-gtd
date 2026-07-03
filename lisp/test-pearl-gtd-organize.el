@@ -67,10 +67,11 @@
             (cond
              ((string-match "Rename" prompt) "")
              ((string-match "Add remarks" prompt) "")
-             ((string-match "Context" prompt) "@office")
-             ((string-match "Schedule" prompt) "")
-             ((string-match "Delegate" prompt) "")
-             ((string-match "Project" prompt) "")
+             ((string-match "^Context" prompt) "@office")
+             ((string-match "^Schedule" prompt) "")
+             ((string-match "^Deadline" prompt) "")
+             ((string-match "^Delegate" prompt) "")
+             ((string-match "^Project" prompt) "")
              (t ""))))
          ((symbol-function 'completing-read) (lambda (&rest _) "")))
   :body (pearl-gtd-process-inbox)
@@ -98,10 +99,11 @@
             (cond
              ((string-match "Rename" prompt) "Prepare quarterly report")
              ((string-match "Add remarks" prompt) "")
-             ((string-match "Context" prompt) "@office")
-             ((string-match "Schedule" prompt) "2026-04-15")
-             ((string-match "Delegate" prompt) "")
-             ((string-match "Project" prompt) "")
+             ((string-match "^Context" prompt) "@office")
+             ((string-match "^Schedule" prompt) "2026-04-15")
+             ((string-match "^Deadline" prompt) "")
+             ((string-match "^Delegate" prompt) "")
+             ((string-match "^Project" prompt) "")
              (t ""))))
          ((symbol-function 'completing-read) (lambda (&rest _) "")))
   :body (pearl-gtd-process-inbox)
@@ -224,10 +226,11 @@
             (cond
              ((string-match "Rename" prompt) "")
              ((string-match "Add remarks" prompt) "")
-             ((string-match "Context" prompt) "")
-             ((string-match "Schedule" prompt) "")
-             ((string-match "Delegate" prompt) "")
-             ((string-match "Project" prompt) "Alpha,Beta")
+             ((string-match "^Context" prompt) "")
+             ((string-match "^Schedule" prompt) "")
+             ((string-match "^Deadline" prompt) "")
+             ((string-match "^Delegate" prompt) "")
+             ((string-match "^Project" prompt) "Alpha,Beta")
              (t ""))))
          ((symbol-function 'completing-read) (lambda (&rest _) "")))
   :body (pearl-gtd-process-inbox)
@@ -244,6 +247,138 @@
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       ":ID:"))
+             (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory)))
+  :teardown nil)
+
+(test-pearl-gtd-define-story test-pearl-gtd-organize-user-sets-schedule-with-default-deadline
+  "User sets schedule and accepts it as deadline."
+  :setup (pearl-gtd-init-initialize)
+  :files (("inbox.org" "* Task with deadline\n"))
+  :mock (((symbol-function 'y-or-n-p)
+          (lambda (prompt &rest _)
+            (cond
+             ((string-match "2 minutes" prompt) nil)
+             ((string-match "actionable" prompt) t)
+             (t nil))))
+         ((symbol-function 'read-string)
+          (lambda (prompt &rest _)
+            (cond
+             ((string-match "Rename" prompt) "")
+             ((string-match "Add remarks" prompt) "")
+             ((string-match "^Context" prompt) "")
+             ((string-match "^Schedule" prompt) "2026-04-15")
+             ((string-match "^Deadline" prompt) "")
+             ((string-match "^Delegate" prompt) "")
+             ((string-match "^Project" prompt) "")
+             (t ""))))
+         ((symbol-function 'completing-read) (lambda (&rest _) "")))
+  :body (pearl-gtd-process-inbox)
+  :asserts (progn
+             (should (test-pearl-gtd-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      "SCHEDULED: <2026-04-15"))
+             (should (test-pearl-gtd-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      "DEADLINE: <2026-04-15"))
+             (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory)))
+  :teardown nil)
+
+(test-pearl-gtd-define-story test-pearl-gtd-organize-user-sets-schedule-with-different-deadline
+  "User sets schedule and a different deadline."
+  :setup (pearl-gtd-init-initialize)
+  :files (("inbox.org" "* Task with separate deadline\n"))
+  :mock (((symbol-function 'y-or-n-p)
+          (lambda (prompt &rest _)
+            (cond
+             ((string-match "2 minutes" prompt) nil)
+             ((string-match "actionable" prompt) t)
+             (t nil))))
+         ((symbol-function 'read-string)
+          (lambda (prompt &rest _)
+            (cond
+             ((string-match "Rename" prompt) "")
+             ((string-match "Add remarks" prompt) "")
+             ((string-match "^Context" prompt) "")
+             ((string-match "^Schedule" prompt) "2026-04-15")
+             ((string-match "^Deadline" prompt) "2026-04-20")
+             ((string-match "^Delegate" prompt) "")
+             ((string-match "^Project" prompt) "")
+             (t ""))))
+         ((symbol-function 'completing-read) (lambda (&rest _) "")))
+  :body (pearl-gtd-process-inbox)
+  :asserts (progn
+             (should (test-pearl-gtd-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      "SCHEDULED: <2026-04-15"))
+             (should (test-pearl-gtd-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      "DEADLINE: <2026-04-20"))
+             (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory)))
+  :teardown nil)
+
+(test-pearl-gtd-define-story test-pearl-gtd-organize-user-sets-deadline-without-schedule
+  "User sets deadline without schedule."
+  :setup (pearl-gtd-init-initialize)
+  :files (("inbox.org" "* Task deadline only\n"))
+  :mock (((symbol-function 'y-or-n-p)
+          (lambda (prompt &rest _)
+            (cond
+             ((string-match "2 minutes" prompt) nil)
+             ((string-match "actionable" prompt) t)
+             (t nil))))
+         ((symbol-function 'read-string)
+          (lambda (prompt &rest _)
+            (cond
+             ((string-match "Rename" prompt) "")
+             ((string-match "Add remarks" prompt) "")
+             ((string-match "^Context" prompt) "")
+             ((string-match "^Schedule" prompt) "")
+             ((string-match "^Deadline" prompt) "2026-04-25")
+             ((string-match "^Delegate" prompt) "")
+             ((string-match "^Project" prompt) "")
+             (t ""))))
+         ((symbol-function 'completing-read) (lambda (&rest _) "")))
+  :body (pearl-gtd-process-inbox)
+  :asserts (progn
+             (should (test-pearl-gtd-file-lacks-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      "SCHEDULED"))
+             (should (test-pearl-gtd-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      "DEADLINE: <2026-04-25"))
+             (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory)))
+  :teardown nil)
+
+(test-pearl-gtd-define-story test-pearl-gtd-organize-user-skips-deadline
+  "User skips deadline entirely."
+  :setup (pearl-gtd-init-initialize)
+  :files (("inbox.org" "* Task no deadline\n"))
+  :mock (((symbol-function 'y-or-n-p)
+          (lambda (prompt &rest _)
+            (cond
+             ((string-match "2 minutes" prompt) nil)
+             ((string-match "actionable" prompt) t)
+             (t nil))))
+         ((symbol-function 'read-string)
+          (lambda (prompt &rest _)
+            (cond
+             ((string-match "Rename" prompt) "")
+             ((string-match "Add remarks" prompt) "")
+             ((string-match "^Context" prompt) "")
+             ((string-match "^Schedule" prompt) "")
+             ((string-match "^Deadline" prompt) "")
+             ((string-match "^Delegate" prompt) "")
+             ((string-match "^Project" prompt) "")
+             (t ""))))
+         ((symbol-function 'completing-read) (lambda (&rest _) "")))
+  :body (pearl-gtd-process-inbox)
+  :asserts (progn
+             (should (test-pearl-gtd-file-lacks-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      "SCHEDULED"))
+             (should (test-pearl-gtd-file-lacks-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      "DEADLINE"))
              (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory)))
   :teardown nil)
 

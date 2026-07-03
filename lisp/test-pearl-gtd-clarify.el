@@ -202,6 +202,7 @@
                ((string-match "Add remarks" prompt) "")
                ((string-match "Context" prompt) "@office")
                ((string-match "Schedule" prompt) "")
+               ((string-match "Deadline" prompt) "")
                ((string-match "Delegate" prompt) "")
                ((string-match "Project" prompt) "")
                (t "")))))

@@ -33,6 +33,9 @@
   "Face for executed (2-minute rule) entries."
   :group 'pearl-gtd)
 
+(defvar pearl-gtd-inbox--current-test-name nil
+  "Current running test name for debugging.")
+
 (defvar pearl-gtd-inbox--staging-original-file nil
   "The original Org file path for the staging buffer.")
 
@@ -203,11 +206,12 @@ Return the created buffer."
         (error nil)))))
 
 (defvar pearl-gtd-inbox--pending-moves nil
-  "List of (list original-headline target-file properties-string new-headline remarks) pending to be moved after staging.
+  "List of (list original-headline target-file properties-string new-headline remarks deadline) pending to be moved after staging.
 If target-file is nil, means delete (trash).
 Properties-string contains tags and properties.
 New-headline is the clarified headline (nil if unchanged).
-Remarks is the clarified remarks text (nil if none).")
+Remarks is the clarified remarks text (nil if none).
+Deadline is the deadline date string (nil if not set).")
 
 (defvar pearl-gtd-inbox-stage-buffer-name nil
   "The name of the current inbox staging buffer.")
@@ -281,7 +285,7 @@ NEW-HEADLINE is the clarified headline (nil if unchanged).
 REMARKS is the clarified remarks text (nil if none)."
   (message "Executing '%s' immediately." (or new-headline headline))
   (pearl-gtd-inbox--mark-executed entry-ref)
-  (push (list headline nil nil new-headline remarks) pearl-gtd-inbox--pending-moves))
+  (push (list headline nil nil new-headline remarks nil) pearl-gtd-inbox--pending-moves))
 
 (defun pearl-gtd-inbox--handle-further-checks (headline buffer entry-ref new-headline remarks)
   "Handle further checks for non-immediate actionable entries.
@@ -290,8 +294,11 @@ BUFFER is the staging buffer.
 ENTRY-REF is the reference to the entry.
 NEW-HEADLINE is the clarified headline (nil if unchanged).
 REMARKS is the clarified remarks text (nil if none)."
+  (message "[DEBUG] ======== TEST: %s ========" (or pearl-gtd-inbox--current-test-name "unknown"))
+  (message "[DEBUG] handle-further-checks START: headline=%s, new-headline=%s" headline new-headline)
   (let ((tags '())
-        (display-headline (or new-headline headline)))
+        (display-headline (or new-headline headline))
+        (deadline nil))
     ;; Context: single value
     (let ((context (read-string (format "Context for '%s' (e.g. @home, RET to skip): " display-headline))))
       (when (not (string= context ""))
@@ -299,8 +306,27 @@ REMARKS is the clarified remarks text (nil if none)."
 
     ;; Schedule: single value
     (let ((schedule (read-string (format "Schedule for '%s' (e.g. 2026-04-10, RET to skip): " display-headline))))
+      (message "[DEBUG] Schedule input: '%s'" schedule)
       (when (not (string= schedule ""))
-        (push (format ":SCHEDULED:%s:" schedule) tags)))
+        (push (format ":SCHEDULED:%s:" schedule) tags)
+        ;; If schedule is set, ask about deadline with schedule as default
+        (let* ((deadline-prompt (format "Deadline for '%s' (RET to use schedule, or enter date): " display-headline))
+               (deadline-input (read-string deadline-prompt)))
+          (message "[DEBUG] Deadline input (with schedule): '%s', prompt matched: %s" 
+                   deadline-input (string-match "Deadline" deadline-prompt))
+          (when (not (string= deadline-input ""))
+            (setq deadline deadline-input))
+          (when (and (string= deadline-input "") (not (string= schedule "")))
+            (setq deadline schedule)))))
+
+    ;; If no schedule was set, still ask about deadline (no default)
+    (let ((schedule-set (cl-find-if (lambda (tag) (string-match "^:SCHEDULED:" tag)) tags)))
+      (message "[DEBUG] schedule-set found: %s" schedule-set)
+      (unless schedule-set
+        (let ((deadline-input (read-string (format "Deadline for '%s' (RET to skip): " display-headline))))
+          (message "[DEBUG] Deadline input (no schedule): '%s'" deadline-input)
+          (when (not (string= deadline-input ""))
+            (setq deadline deadline-input)))))
 
     ;; Delegated: single value
     (let ((delegatee (read-string (format "Delegate '%s' to (e.g. John, RET to skip): " display-headline))))
@@ -313,11 +339,13 @@ REMARKS is the clarified remarks text (nil if none)."
         (when projects
           (push (format ":PROJECT:%s:" (mapconcat 'identity projects ",")) tags))))
 
+    (message "[DEBUG] Final deadline value: %s" deadline)
+    (message "[DEBUG] Final tags: %s" tags)
     (let ((props (when tags (mapconcat 'identity (nreverse tags) " "))))
       (when props
         (pearl-gtd-inbox--stage-change entry-ref 4 props))
-      ;; Store headline, target-file, and properties, plus clarify info
-      (push (list headline "actions.org" props new-headline remarks) pearl-gtd-inbox--pending-moves))))
+      ;; Store headline, target-file, and properties, plus clarify info and deadline
+      (push (list headline "actions.org" props new-headline remarks deadline) pearl-gtd-inbox--pending-moves))))
 
 (defun pearl-gtd-inbox--handle-non-actionable (headline buffer entry-ref new-headline remarks)
   "Handle non-actionable entries.
@@ -332,13 +360,13 @@ REMARKS is the clarified remarks text (nil if none)."
     (cond
      ((string= assign-to "reference")
       (pearl-gtd-inbox--stage-change entry-ref 1 (format "[Reference] %s" (or new-headline headline)))
-      (push (list headline "reference.org" nil new-headline remarks) pearl-gtd-inbox--pending-moves))
+      (push (list headline "reference.org" nil new-headline remarks nil) pearl-gtd-inbox--pending-moves))
      ((string= assign-to "someday")
       (pearl-gtd-inbox--stage-change entry-ref 1 (format "[Someday] %s" (or new-headline headline)))
-      (push (list headline "someday.org" nil new-headline remarks) pearl-gtd-inbox--pending-moves))
+      (push (list headline "someday.org" nil new-headline remarks nil) pearl-gtd-inbox--pending-moves))
      ((string= assign-to "trash")
       (pearl-gtd-inbox--mark-deleted entry-ref)
-      (push (list headline nil nil new-headline remarks) pearl-gtd-inbox--pending-moves))
+      (push (list headline nil nil new-headline remarks nil) pearl-gtd-inbox--pending-moves))
      (t nil))))
 
 (defun pearl-gtd-inbox--process ()
@@ -368,7 +396,7 @@ REMARKS is the clarified remarks text (nil if none)."
                   (pearl-gtd-inbox--clear-changes staging-buffer)
                   (setq pearl-gtd-inbox--pending-moves (nreverse pearl-gtd-inbox--pending-moves))
                   (dolist (move pearl-gtd-inbox--pending-moves)
-                    (pearl-gtd-inbox--do-move (nth 0 move) (nth 1 move) (nth 2 move) (nth 3 move) (nth 4 move)))
+                    (pearl-gtd-inbox--do-move (nth 0 move) (nth 1 move) (nth 2 move) (nth 3 move) (nth 4 move) (nth 5 move)))
                   (when (and (file-exists-p inbox-file)
                              (= 0 (file-attribute-size (file-attributes inbox-file))))
                     (delete-file inbox-file)))
@@ -398,7 +426,7 @@ REMARKS is the clarified remarks text (nil if none)."
         (pop-to-buffer buffer-name)
         (message "Inbox is empty, nothing to process.")))))
 
-(defun pearl-gtd-inbox--do-move (headline target-file properties-string new-headline remarks)
+(defun pearl-gtd-inbox--do-move (headline target-file properties-string new-headline remarks deadline)
   "Move HEADLINE to TARGET-FILE and delete from inbox.
 If TARGET-FILE is nil, just delete from inbox (trash).
 PROPERTIES-STRING contains properties such as \":SCHEDULED:2026-04-10:\",
@@ -408,10 +436,15 @@ HEADLINE is the entry heading to process.
 TARGET-FILE is the destination file.
 PROPERTIES-STRING is the string of properties.
 NEW-HEADLINE is the clarified headline (nil if unchanged).
-REMARKS is the clarified remarks text (nil if none)."
+REMARKS is the clarified remarks text (nil if none).
+DEADLINE is the deadline date string (nil if not set)."
+  (message "[DEBUG] ======== TEST: %s ========" (or pearl-gtd-inbox--current-test-name "unknown"))
+  (message "[DEBUG] do-move START: headline=%s, target=%s, props=%s, new-headline=%s, remarks=%s, deadline=%s" 
+           headline target-file properties-string new-headline remarks deadline)
   (let ((inbox-path (expand-file-name "inbox.org" pearl-gtd-init-base-directory))
         subtree-content)
     ;; First, add properties and tags to the entry in inbox
+    (message "[DEBUG] Setting properties: headline=%s, properties-string=%s" headline properties-string)
     (when (and properties-string (not (string= properties-string "")))
       (with-current-buffer (find-file-noselect inbox-path)
         (org-mode)
@@ -445,6 +478,19 @@ REMARKS is the clarified remarks text (nil if none)."
                ((not (string-match "^:" comp))
                 (org-set-tags-to (list comp))))))
           (save-buffer))))
+    ;; Add deadline if set
+    (message "[DEBUG] Setting deadline: headline=%s, new-headline=%s, deadline=%s" headline new-headline deadline)
+    (when deadline
+      (with-current-buffer (find-file-noselect inbox-path)
+        (org-mode)
+        (goto-char (point-min))
+        (message "[DEBUG] Searching for headline: %s" (or new-headline headline))
+        (if (re-search-forward (concat "^\\*+ " (regexp-quote (or new-headline headline)) "\\($\\| \\)") nil t)
+            (progn
+              (message "[DEBUG] Found headline, calling org-deadline with: %s" deadline)
+              (org-deadline nil deadline)
+              (save-buffer))
+          (message "[DEBUG] Headline NOT FOUND: %s" (or new-headline headline)))))
     ;; Then, extract the subtree from inbox (now with properties)
     (with-current-buffer (find-file-noselect inbox-path)
       (org-mode)

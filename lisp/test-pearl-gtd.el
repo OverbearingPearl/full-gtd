@@ -29,7 +29,8 @@ PATTERN is the regex pattern to search for."
     (with-temp-buffer
       (insert-file-contents file)
       (goto-char (point-min))
-      (re-search-forward pattern nil t))))
+      (let ((case-fold-search nil))
+        (re-search-forward pattern nil t)))))
 
 (defun test-pearl-gtd-file-lacks-p (file pattern)
   "Assert that FILE does not contain PATTERN.
@@ -38,7 +39,8 @@ PATTERN is the string to search for."
   (with-temp-buffer
     (insert-file-contents file)
     (goto-char (point-min))
-    (not (search-forward pattern nil t))))
+    (let ((case-fold-search nil))
+      (not (search-forward pattern nil t)))))
 
 (defun test-pearl-gtd-inbox-empty-p (base-dir)
   "Check if inbox is visually empty (missing or zero size).
@@ -76,6 +78,7 @@ ARGS is a plist with keys:
               (test-pearl-gtd-caught-error nil))
          (unwind-protect
              (progn
+               (setq pearl-gtd-inbox--current-test-name ',name)
                ,setup
                ;; Create test files - evaluate content expressions at runtime
                ,@(mapcar (lambda (file-spec)
