@@ -42,6 +42,9 @@
 (defvar pearl-gtd-inbox--staging-changes nil
   "A list to store staged changes, e.g., ((row col new-value) ...).")
 
+(defvar pearl-gtd-inbox--current-prompt-type nil
+  "Current prompt type: 'rename, 'remarks, 'context, 'schedule, 'deadline, 'delegate, 'project.")
+
 (defvar-local pearl-gtd-inbox--current-highlight nil
   "Current highlight overlay in the staging buffer.")
 
@@ -236,11 +239,13 @@ Returns a cons cell (NEW-HEADLINE . REMARKS)."
   (let ((new-headline nil)
         (remarks nil))
     ;; Ask for rename
+    (setq pearl-gtd-inbox--current-prompt-type 'rename)
     (let ((rename (read-string (format "Rename '%s'? (RET to keep, or type new name): " headline))))
       (when (not (string= rename ""))
         (setq new-headline rename)
         (pearl-gtd-inbox--stage-change entry-ref 1 rename)))
     ;; Ask for remarks
+    (setq pearl-gtd-inbox--current-prompt-type 'remarks)
     (let ((remark-text (read-string (format "Add remarks for '%s'? (RET to skip, or type remarks): " (or new-headline headline)))))
       (when (not (string= remark-text ""))
         (setq remarks remark-text)
@@ -299,21 +304,23 @@ REMARKS is the clarified remarks text (nil if none)."
   (let ((tags '())
         (display-headline (or new-headline headline))
         (deadline nil))
-    ;; Context: single value
+    ;; Context
+    (setq pearl-gtd-inbox--current-prompt-type 'context)
     (let ((context (read-string (format "Context for '%s' (e.g. @home, RET to skip): " display-headline))))
       (when (not (string= context ""))
         (push context tags)))
 
-    ;; Schedule: single value
+    ;; Schedule
+    (setq pearl-gtd-inbox--current-prompt-type 'schedule)
     (let ((schedule (read-string (format "Schedule for '%s' (e.g. 2026-04-10, RET to skip): " display-headline))))
       (message "[DEBUG] Schedule input: '%s'" schedule)
       (when (not (string= schedule ""))
         (push (format ":SCHEDULED:%s:" schedule) tags)
         ;; If schedule is set, ask about deadline with schedule as default
+        (setq pearl-gtd-inbox--current-prompt-type 'deadline)
         (let* ((deadline-prompt (format "Deadline for '%s' (RET to use schedule, or enter date): " display-headline))
                (deadline-input (read-string deadline-prompt)))
-          (message "[DEBUG] Deadline input (with schedule): '%s', prompt matched: %s" 
-                   deadline-input (string-match "Deadline" deadline-prompt))
+          (message "[DEBUG] Deadline input (with schedule): '%s'" deadline-input)
           (when (not (string= deadline-input ""))
             (setq deadline deadline-input))
           (when (and (string= deadline-input "") (not (string= schedule "")))
@@ -323,17 +330,20 @@ REMARKS is the clarified remarks text (nil if none)."
     (let ((schedule-set (cl-find-if (lambda (tag) (string-match "^:SCHEDULED:" tag)) tags)))
       (message "[DEBUG] schedule-set found: %s" schedule-set)
       (unless schedule-set
+        (setq pearl-gtd-inbox--current-prompt-type 'deadline)
         (let ((deadline-input (read-string (format "Deadline for '%s' (RET to skip): " display-headline))))
           (message "[DEBUG] Deadline input (no schedule): '%s'" deadline-input)
           (when (not (string= deadline-input ""))
             (setq deadline deadline-input)))))
 
-    ;; Delegated: single value
+    ;; Delegated
+    (setq pearl-gtd-inbox--current-prompt-type 'delegate)
     (let ((delegatee (read-string (format "Delegate '%s' to (e.g. John, RET to skip): " display-headline))))
       (when (not (string= delegatee ""))
         (push (format ":DELEGATED:%s:" delegatee) tags)))
 
-    ;; Project: supports multiple projects (comma separated)
+    ;; Project
+    (setq pearl-gtd-inbox--current-prompt-type 'project)
     (let ((project-input (read-string (format "Project name(s) for '%s' (comma separated, RET to skip): " display-headline))))
       (let ((projects (mapcar #'string-trim (split-string project-input "," t))))
         (when projects
