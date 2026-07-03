@@ -162,5 +162,5 @@ jobs:
 
             Build failed. See attached logs for full error details.
           to: ${{ secrets.NOTIFY_EMAIL }}
-          from: github-actions@${{ github.repository }}
+          from: ${{ secrets.SMTP_USER }}
           attachments: build-logs.txt
