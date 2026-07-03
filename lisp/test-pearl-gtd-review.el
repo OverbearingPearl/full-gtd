@@ -385,6 +385,48 @@
                (should (search-forward-regexp "|\\s-*StuckProj\\s-*|\\s-*1\\s-*|\\s-*0\\s-*|\\s-*1\\s-*|" (line-end-position) t))))
   :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
 
+(test-pearl-gtd-define-story test-pearl-gtd-review-project-exact-match-not-substring
+  "Project names that are substrings of each other are matched exactly."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* DONE P1 task\n:PROPERTIES:\n:ID: exact-1\n:PROJECT: P1\n:END:\n* TODO P10 task\n:PROPERTIES:\n:ID: exact-2\n:PROJECT: P10\n:END:\n"))
+  :mock nil
+  :body (pearl-gtd-review-weekly)
+  :asserts (progn
+             (should (get-buffer "*Pearl-GTD Weekly Review*"))
+             (with-current-buffer "*Pearl-GTD Weekly Review*"
+               ;; Get section boundaries first
+               (goto-char (point-min))
+               (let* ((stuck-pos (search-forward "** Projects - Stuck"))
+                      (active-pos (search-forward "** Projects - Active"))
+                      (someday-pos (search-forward "** someday.org - Someday"))
+                      (stuck-start stuck-pos)
+                      (stuck-end active-pos)
+                      (active-start active-pos)
+                      (active-end someday-pos))
+                 ;; P1 has no TODO, must appear in Stuck
+                 (goto-char stuck-start)
+                 (should (re-search-forward "|\\s-*P1\\s-*|" stuck-end t))
+                 (goto-char stuck-start)
+                 (should-not (re-search-forward "|\\s-*P10\\s-*|" stuck-end t))
+                 ;; P10 has TODO, must appear in Active
+                 (goto-char active-start)
+                 (should (re-search-forward "|\\s-*P10\\s-*|" active-end t))
+                 (goto-char active-start)
+                 (should-not (re-search-forward "|\\s-*P1\\s-*|" active-end t)))
+               ;; Verify P1 stats: Total=1, Todo=0, Done=1
+               (goto-char (point-min))
+               (search-forward "** Projects - Stuck")
+               (search-forward "P1")
+               (beginning-of-line)
+               (should (search-forward-regexp "|\\s-*P1\\s-*|\\s-*1\\s-*|\\s-*0\\s-*|\\s-*1\\s-*|" (line-end-position) t))
+               ;; Verify P10 stats: Total=1, Todo=1, Done=0
+               (goto-char (point-min))
+               (search-forward "** Projects - Active")
+               (search-forward "P10")
+               (beginning-of-line)
+               (should (search-forward-regexp "|\\s-*P10\\s-*|\\s-*1\\s-*|\\s-*1\\s-*|\\s-*0\\s-*|" (line-end-position) t))))
+  :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
+
 (provide 'test-pearl-gtd-review)
 
 ;;; test-pearl-gtd-review.el ends here
