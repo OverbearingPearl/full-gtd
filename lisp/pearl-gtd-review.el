@@ -436,14 +436,10 @@ NEXT-DEADLINE is the earliest deadline string or empty string."
          (lambda ()
            (let ((proj (org-entry-get nil "PROJECT")))
              (when proj
-               ;; DEBUG: Check what projects are found
                (let ((projects (split-string proj "[, ]" t)))
-                 (message "DEBUG: Checking project-name: %s against projects: %s" project-name projects)
                  (when (member project-name projects)
-                   (message "DEBUG: Match found for %s" project-name)
                    (cl-incf total)
                    (let ((todo-state (org-get-todo-state)))
-                     (message "DEBUG: todo-state: %s" todo-state)
                      (if (member todo-state org-done-keywords)
                          (cl-incf done)
                        (cl-incf todo))
@@ -454,7 +450,6 @@ NEXT-DEADLINE is the earliest deadline string or empty string."
                                      (time-less-p d-time (org-time-string-to-time next-deadline)))
                              (setq next-deadline deadline)))))))))))
          nil nil)))
-    (message "DEBUG: Final stats for %s: total=%s, todo=%s, done=%s" project-name total todo done)
     (list total todo done (or next-deadline ""))))
 
 (defun pearl-gtd-review--collect-stuck-projects ()
