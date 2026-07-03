@@ -590,9 +590,9 @@ Returns list of entries formatted for project table display."
     (pop-to-buffer buffer-name)
     (pearl-gtd-review-view-mode 1)))
 
-(defun pearl-gtd-review--collect-project-entries (project-name)
-  "Collect all entries from actions.org belonging to PROJECT-NAME.
-PROJECT-NAME is a string naming the project to search for.
+(defun pearl-gtd-review--collect-project-entries (proj-name)
+  "Collect all entries from actions.org belonging to PROJ-NAME.
+PROJ-NAME is a string naming the project to search for.
 Returns list of entry lists suitable for `pearl-gtd-review--insert-table-row'."
   (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
         (entries '()))
@@ -604,7 +604,7 @@ Returns list of entry lists suitable for `pearl-gtd-review--insert-table-row'."
          (lambda ()
            (let ((id (org-entry-get nil "ID"))
                  (proj (org-entry-get nil "PROJECT")))
-             (when (and id proj (member project-name (split-string proj "[, ]" t)))
+             (when (and id proj (member proj-name (split-string proj "[, ]" t)))
                (let ((head (org-get-heading t t))
                      (todo-state (org-get-todo-state))
                      (scheduled (org-entry-get nil "SCHEDULED"))
@@ -612,18 +612,18 @@ Returns list of entry lists suitable for `pearl-gtd-review--insert-table-row'."
                      (context (org-entry-get nil "CONTEXT"))
                      (delegated (org-entry-get nil "DELEGATED"))
                      (created (org-entry-get nil "CREATED")))
-                 (push (list head id "actions.org" todo-state scheduled deadline context delegated project-name created)
+                 (push (list head id "actions.org" todo-state scheduled deadline context delegated proj-name created)
                        entries)))))
          nil nil)))
     (nreverse entries)))
 
-(defun pearl-gtd-review--show-project-tasks (project-name)
-  "Display all tasks for PROJECT-NAME in a dedicated buffer.
-PROJECT-NAME is a string naming the project to display.
-Creates and pops to buffer *Pearl-GTD Project: PROJECT-NAME*."
-  (let* ((buffer-name (format "*Pearl-GTD Project: %s*" project-name))
-         (entries (pearl-gtd-review--collect-project-entries project-name))
-         (sections (list (cons (format "actions.org - %s" project-name) entries))))
+(defun pearl-gtd-review--show-project-tasks (proj-name)
+  "Display all tasks for PROJ-NAME in a dedicated buffer.
+PROJ-NAME is a string naming the project to display.
+Creates and pops to buffer *Pearl-GTD Project: PROJ-NAME*."
+  (let* ((buffer-name (format "*Pearl-GTD Project: %s*" proj-name))
+         (entries (pearl-gtd-review--collect-project-entries proj-name))
+         (sections (list (cons (format "actions.org - %s" proj-name) entries))))
     (pearl-gtd-review--create-table-buffer buffer-name sections)
     (with-current-buffer buffer-name
       (setq pearl-gtd-review--current-view-type nil))
