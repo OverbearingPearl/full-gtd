@@ -39,6 +39,7 @@ jobs:
 
       - name: Install packages and run all checks
         run: |
+          exec > >(tee -a build-logs.txt) 2>&1
           # First, refresh package archives and install required packages
           emacs -Q --batch \
                 --eval "(package-refresh-contents)" \
@@ -99,6 +100,7 @@ jobs:
 
       - name: Build package
         run: |
+          exec > >(tee -a build-logs.txt) 2>&1
           cd melpa
           make recipes/pearl-gtd
 
@@ -143,3 +145,22 @@ jobs:
             # Clean up
             rm -rf /tmp/"$PACKAGE_DIR"
           done
+
+      - name: Send failure notification
+        if: failure()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_HOST }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USER }}
+          password: ${{ secrets.SMTP_PASS }}
+          subject: "❌ MELPA Build Failed - ${{ github.repository }}"
+          body: |
+            Repository: ${{ github.repository }}
+            Branch: ${{ github.ref }}
+            Commit: ${{ github.sha }}
+
+            Build failed. See attached logs for full error details.
+          to: ${{ secrets.NOTIFY_EMAIL }}
+          from: github-actions@${{ github.repository }}
+          attachments: build-logs.txt
