@@ -219,13 +219,17 @@ BUFFER is the staging buffer to update."
         (error nil)))))
 
 (defvar pearl-gtd-inbox--pending-moves nil
-  "List of (list original-headline target-file properties-string
-new-headline remarks deadline) pending to be moved after staging.
-If target-file is nil, means delete (trash).
-Properties-string contains tags and properties.
-New-headline is the clarified headline (nil if unchanged).
-Remarks is the clarified remarks text (nil if none).
-Deadline is the deadline date string (nil if not set).")
+  "List of pending moves after staging.
+
+Each element is a list:
+ORIGINAL-HEADLINE, TARGET-FILE, PROPERTIES-STRING,
+NEW-HEADLINE, REMARKS, and DEADLINE.
+
+If TARGET-FILE is nil, the entry is deleted (trash).
+PROPERTIES-STRING contains tags and properties.
+NEW-HEADLINE is the clarified headline, or nil if unchanged.
+REMARKS is the clarified remarks text, or nil if none.
+DEADLINE is the deadline date string, or nil if not set.")
 
 (defvar pearl-gtd-inbox-stage-buffer-name nil
   "The name of the current inbox staging buffer.")
