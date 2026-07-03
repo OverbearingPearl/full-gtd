@@ -299,8 +299,6 @@ BUFFER is the staging buffer.
 ENTRY-REF is the reference to the entry.
 NEW-HEADLINE is the clarified headline (nil if unchanged).
 REMARKS is the clarified remarks text (nil if none)."
-  (message "[DEBUG] ======== TEST: %s ========" (or pearl-gtd-inbox--current-test-name "unknown"))
-  (message "[DEBUG] handle-further-checks START: headline=%s, new-headline=%s" headline new-headline)
   (let ((tags '())
         (display-headline (or new-headline headline))
         (deadline nil))
@@ -313,14 +311,12 @@ REMARKS is the clarified remarks text (nil if none)."
     ;; Schedule
     (setq pearl-gtd-inbox--current-prompt-type 'schedule)
     (let ((schedule (read-string (format "Schedule for '%s' (e.g. 2026-04-10, RET to skip): " display-headline))))
-      (message "[DEBUG] Schedule input: '%s'" schedule)
       (when (not (string= schedule ""))
         (push (format ":SCHEDULED:%s:" schedule) tags)
         ;; If schedule is set, ask about deadline with schedule as default
         (setq pearl-gtd-inbox--current-prompt-type 'deadline)
         (let* ((deadline-prompt (format "Deadline for '%s' (RET to use schedule, or enter date): " display-headline))
                (deadline-input (read-string deadline-prompt)))
-          (message "[DEBUG] Deadline input (with schedule): '%s'" deadline-input)
           (when (not (string= deadline-input ""))
             (setq deadline deadline-input))
           (when (and (string= deadline-input "") (not (string= schedule "")))
@@ -328,11 +324,9 @@ REMARKS is the clarified remarks text (nil if none)."
 
     ;; If no schedule was set, still ask about deadline (no default)
     (let ((schedule-set (cl-find-if (lambda (tag) (string-match "^:SCHEDULED:" tag)) tags)))
-      (message "[DEBUG] schedule-set found: %s" schedule-set)
       (unless schedule-set
         (setq pearl-gtd-inbox--current-prompt-type 'deadline)
         (let ((deadline-input (read-string (format "Deadline for '%s' (RET to skip): " display-headline))))
-          (message "[DEBUG] Deadline input (no schedule): '%s'" deadline-input)
           (when (not (string= deadline-input ""))
             (setq deadline deadline-input)))))
 
@@ -349,8 +343,6 @@ REMARKS is the clarified remarks text (nil if none)."
         (when projects
           (push (format ":PROJECT:%s:" (mapconcat 'identity projects ",")) tags))))
 
-    (message "[DEBUG] Final deadline value: %s" deadline)
-    (message "[DEBUG] Final tags: %s" tags)
     (let ((props (when tags (mapconcat 'identity (nreverse tags) " "))))
       (when props
         (pearl-gtd-inbox--stage-change entry-ref 4 props))
@@ -448,13 +440,9 @@ PROPERTIES-STRING is the string of properties.
 NEW-HEADLINE is the clarified headline (nil if unchanged).
 REMARKS is the clarified remarks text (nil if none).
 DEADLINE is the deadline date string (nil if not set)."
-  (message "[DEBUG] ======== TEST: %s ========" (or pearl-gtd-inbox--current-test-name "unknown"))
-  (message "[DEBUG] do-move START: headline=%s, target=%s, props=%s, new-headline=%s, remarks=%s, deadline=%s" 
-           headline target-file properties-string new-headline remarks deadline)
   (let ((inbox-path (expand-file-name "inbox.org" pearl-gtd-init-base-directory))
         subtree-content)
     ;; First, add properties and tags to the entry in inbox
-    (message "[DEBUG] Setting properties: headline=%s, properties-string=%s" headline properties-string)
     (when (and properties-string (not (string= properties-string "")))
       (with-current-buffer (find-file-noselect inbox-path)
         (org-mode)
@@ -489,18 +477,15 @@ DEADLINE is the deadline date string (nil if not set)."
                 (org-set-tags-to (list comp))))))
           (save-buffer))))
     ;; Add deadline if set
-    (message "[DEBUG] Setting deadline: headline=%s, new-headline=%s, deadline=%s" headline new-headline deadline)
     (when deadline
       (with-current-buffer (find-file-noselect inbox-path)
         (org-mode)
         (goto-char (point-min))
-        (message "[DEBUG] Searching for headline: %s" (or new-headline headline))
         (if (re-search-forward (concat "^\\*+ " (regexp-quote (or new-headline headline)) "\\($\\| \\)") nil t)
             (progn
-              (message "[DEBUG] Found headline, calling org-deadline with: %s" deadline)
               (org-deadline nil deadline)
               (save-buffer))
-          (message "[DEBUG] Headline NOT FOUND: %s" (or new-headline headline)))))
+          nil)))
     ;; Then, extract the subtree from inbox (now with properties)
     (with-current-buffer (find-file-noselect inbox-path)
       (org-mode)
