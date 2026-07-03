@@ -415,9 +415,9 @@ Returns list of (HEAD ID FILE STATUS SCHEDULED DEADLINE CONTEXT DELEGATED PROJEC
          nil nil)))
     (nreverse projects)))
 
-(defun pearl-gtd-review--get-project-stats (project-name)
-  "Get statistics for PROJECT-NAME from actions.org.
-PROJECT-NAME is a string naming the project to analyze.
+(defun pearl-gtd-review--get-project-stats (proj-name)
+  "Get statistics for PROJ-NAME from actions.org.
+PROJ-NAME is a string naming the project to analyze.
 Returns list (TOTAL TODO DONE NEXT-DEADLINE) where:
 TOTAL is the total number of entries,
 TODO is the count of unfinished entries,
@@ -437,7 +437,7 @@ NEXT-DEADLINE is the earliest deadline string or empty string."
            (let ((proj (org-entry-get nil "PROJECT")))
              (when proj
                (let ((projects (split-string proj "[, ]" t)))
-                 (when (member project-name projects)
+                 (when (member proj-name projects)
                    (cl-incf total)
                    (let ((todo-state (org-get-todo-state)))
                      (cond
