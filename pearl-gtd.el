@@ -89,7 +89,8 @@
 (defun pearl-gtd-reload-modules ()
   "Reload Pearl-GTD modules for updated code."
   (interactive)
-  (let* ((lisp-dir (expand-file-name "lisp" pearl-gtd-directory))
+  (let* ((root-dir pearl-gtd-directory)
+         (lisp-dir (expand-file-name "lisp" pearl-gtd-directory))
          (el-files (directory-files lisp-dir nil "\\.el$")))
     ;; Unload all features first
     (dolist (file el-files)
@@ -99,7 +100,16 @@
             (condition-case err
                 (unload-feature feature)
               (error nil))))))
-    ;; Load .el source files directly, ignoring .elc
+    ;; Unload pearl-gtd.el if loaded
+    (when (featurep 'pearl-gtd)
+      (condition-case err
+          (unload-feature 'pearl-gtd)
+        (error nil)))
+    ;; Load pearl-gtd.el from root directory
+    (let ((pearl-gtd-el (expand-file-name "pearl-gtd.el" root-dir)))
+      (when (file-exists-p pearl-gtd-el)
+        (load-file pearl-gtd-el)))
+    ;; Load .el source files from lisp directory, ignoring .elc
     (dolist (file el-files)
       (when (and (string-match "^[^.]+\\.el$" file)
                  (not (string-match "^test-" file)))
