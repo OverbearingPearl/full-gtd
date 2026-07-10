@@ -357,13 +357,13 @@ where TYPE can be \\='project for project sections."
             (if (null entries)
                 (cond
                  (is-no-project
-                  (insert "| (No entries) | | | | | |\n")  ; 6 columns for No Project)
+                  (insert "| (No entries) | | | | | |\n"))  ; 6 columns for No Project
                  (is-project
-                  (insert "| (No entries) | | | | |\n")    ; 5 columns for Project)
+                  (insert "| (No entries) | | | | |\n"))    ; 5 columns for Project
                  (is-inbox
-                  (insert "| (No entries) | |\n")  ; 2 columns for Inbox)
+                  (insert "| (No entries) | |\n"))  ; 2 columns for Inbox)
                  (t
-                  (insert "| (No entries) | | | | | | |\n")  ; 7 columns for standard (no Created)))
+                  (insert "| (No entries) | | | | | | |\n")))  ; 7 columns for standard (no Created)
               (dolist (entry entries)
                 (apply #'pearl-gtd-review--insert-table-row entry)
                 (unless (or is-project is-no-project is-inbox)
@@ -435,7 +435,7 @@ Returns list of entry lists suitable for table display."
    "actions.org"
    (list #'pearl-gtd-core-entry-todo-p
          #'pearl-gtd-review--entry-upcoming-deadline-p)
-   nil  ; no Created field))
+   nil))  ; no Created field
 
 (defun pearl-gtd-review--collect-all-projects ()
   "Collect all unique project names from actions.org."
@@ -591,19 +591,19 @@ Returns list of entry lists suitable for table display."
                          "actions.org"
                          (list #'pearl-gtd-core-entry-todo-p
                                #'pearl-gtd-core-entry-scheduled-today-p)
-                         nil  ; no Created field))
+                         nil))  ; no Created field
          (next-entries (pearl-gtd-review--collect-entries-from-file
                         "actions.org"
                         (list (lambda ()
                                 (and (pearl-gtd-core-entry-todo-p)
                                      (not (pearl-gtd-core-entry-scheduled-today-p)))))
-                        nil  ; no Created field))
+                        nil))  ; no Created field
          (inbox-entries (pearl-gtd-review--collect-entries-from-file "inbox.org" nil t))  ; include Created
          (completed-today-entries (pearl-gtd-review--collect-entries-from-file
                                    "actions.org"
                                    (list #'pearl-gtd-core-entry-done-p
                                          #'pearl-gtd-core-entry-completed-today-p)
-                                   nil  ; no Created field))
+                                   nil))  ; no Created field
          (sections (list (cons "actions.org - Today" today-entries)
                          (cons "actions.org - Completed Today" completed-today-entries)
                          (cons "actions.org - Next Actions" next-entries)
