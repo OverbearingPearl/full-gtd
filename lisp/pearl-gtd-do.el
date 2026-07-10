@@ -4,7 +4,7 @@
 
 ;; Author: OverbearingPearl <OverbearingPearl@outlook.com>
 ;; Version: 0.1.0
-;; Package-Requires: ((emacs "27.1") (org "9.4"))
+;; Package-Requires: ((emacs "27.1") (org "9.0"))
 ;; Keywords: outlines, tools, convenience, productivity, gtd, org
 ;; URL: https://github.com/OverbearingPearl/pearl-gtd
 

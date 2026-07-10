@@ -4,7 +4,7 @@
 
 ;; Author: OverbearingPearl <OverbearingPearl@outlook.com>
 ;; Version: 0.1.0
-;; Package-Requires: ((emacs "27.1"))
+;; Package-Requires: ((emacs "27.1") (org "9.0"))
 ;; Keywords: outlines, tools, convenience, productivity, gtd, org
 ;; URL: https://github.com/OverbearingPearl/pearl-gtd
 
@@ -13,8 +13,6 @@
 ;; This file provides initialization functions for pearl-gtd.
 
 ;;; Code:
-
-;; Add initialization code here if needed
 
 (defvar pearl-gtd-init-base-directory (expand-file-name "~/.pearl-gtd/")
   "Base directory for Pearl-GTD.")
