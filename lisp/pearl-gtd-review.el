@@ -280,37 +280,47 @@
     ('weekly (pearl-gtd-review--weekly))
     (_ (message "Cannot refresh this view"))))
 
-(defun pearl-gtd-review--insert-table-row (head id file status scheduled deadline context delegated project created)
+(defun pearl-gtd-review--insert-table-row (head id file &rest fields)
   "Insert a table row into the review buffer.
 HEAD is the entry headline string.
 ID is the unique identifier string, or nil for project rows.
 FILE is the source file path string.
-STATUS is the todo state string.
-SCHEDULED is the scheduled date string or nil.
-DEADLINE is the deadline date string or nil.
-CONTEXT is the context tag string or nil.
-DELEGATED is the delegation info string or nil.
-PROJECT is the project name string or nil.
-CREATED is the creation timestamp string or nil.
+FIELDS is a list of field values in order.
 
 For project rows (ID is nil), attach `pearl-gtd-project' property to HEAD.
-For task rows, attach `pearl-gtd-id' and `pearl-gtd-file' properties to HEAD."
+For task rows, attach `pearl-gtd-id' and `pearl-gtd-file' properties to HEAD.
+
+The number of fields determines the table format:
+- 1 field: Created (Inbox - Headline + Created)
+- -1 fields: (special case for project rows, handled separately)
+- -2 fields: (special case for project rows, handled separately)
+- 7 fields: Status, Scheduled, Deadline, Context, Delegated, Project (standard)
+- 6 fields: Status, Scheduled, Deadline, Context, Delegated (No Project)
+- 5 fields: Status, Scheduled, Deadline, Context, Delegated (No Project without Created)
+- 4 fields: Total, Todo, Done, Next Deadline (Project rows)"
   (let* ((headline-escaped (replace-regexp-in-string "|" "\\\\vert{}" head))
-         (headline-with-props (copy-sequence headline-escaped)))
+         (headline-with-props (copy-sequence headline-escaped))
+         (field-count (length fields))
+         (format-string
+          (cond
+           ((= field-count 1) "| %s | %s |\n")  ; Headline + Created
+           ((= field-count -1) (error "Invalid number of fields: -1"))
+           ((= field-count -2) (error "Invalid number of fields: -2"))
+           ((= field-count 7) "| %s | %s | %s | %s | %s | %s | %s |\n")
+           ((= field-count 6) "| %s | %s | %s | %s | %s | %s |\n")
+           ((= field-count 5) "| %s | %s | %s | %s | %s |\n")
+           ((= field-count 4) "| %s | %s | %s | %s | %s |\n")
+           (t (error "Invalid number of fields: %d" field-count))))
+         ;; Convert nil fields to empty strings
+         (processed-fields (mapcar (lambda (field)
+                                     (if (null field) "" field))
+                                   fields)))
     (if (and (null id) head)
         (put-text-property 0 (length headline-with-props) 'pearl-gtd-project head headline-with-props)
       (progn
         (put-text-property 0 (length headline-with-props) 'pearl-gtd-id id headline-with-props)
         (put-text-property 0 (length headline-with-props) 'pearl-gtd-file file headline-with-props)))
-    (insert (format "| %s | %s | %s | %s | %s | %s | %s | %s |\n"
-                    headline-with-props
-                    (or status "")
-                    (or scheduled "")
-                    (or deadline "")
-                    (or context "")
-                    (or delegated "")
-                    (or project "")
-                    (or created "")))))
+    (insert (apply #'format format-string headline-with-props processed-fields))))
 
 (defun pearl-gtd-review--create-table-buffer (buffer-name sections)
   "Create review buffer named BUFFER-NAME with multiple sections.
@@ -327,20 +337,36 @@ where TYPE can be \\='project for project sections."
         (dolist (section sections)
           (let* ((title (car section))
                  (is-project (eq (cddr section) 'project))
-                 (entries (if is-project (cadr section) (cdr section))))
+                 (entries (if is-project (cadr section) (cdr section)))
+                 (is-no-project (string-match-p "no project" (downcase title)))
+                 (is-inbox (string-match-p "inbox" (downcase title))))
             (insert (format "** %s\n" title))
-            (if is-project
-                (progn
-                  (insert "| Project | Total | Todo | Done | Next Deadline | | | |\n")
-                  (insert "|---------+-------+------+------+---------------+-+-+-+-|\n"))
-              (progn
-                (insert "| Headline | Status | Scheduled | Deadline | Context | Delegated | Project | Created |\n")
-                (insert "|----------+--------+-----------+----------+---------+-----------+---------+---------|\n")))
+            (cond
+             (is-project
+              (insert "| Project | Total | Todo | Done | Next Deadline |\n")
+              (insert "|---------+-------+------+------+---------------|\n"))
+             (is-no-project
+              (insert "| Headline | Status | Scheduled | Deadline | Context | Delegated |\n")
+              (insert "|----------+--------+-----------+----------+---------+-----------|\n"))
+             (is-inbox
+              (insert "| Headline | Created |\n")
+              (insert "|----------+---------|\n"))
+             (t
+              (insert "| Headline | Status | Scheduled | Deadline | Context | Delegated | Project |\n")
+              (insert "|----------+--------+-----------+----------+---------+-----------+---------|\n")))
             (if (null entries)
-                (insert "| (No entries) | | | | | | | |\n")
+                (cond
+                 (is-no-project
+                  (insert "| (No entries) | | | | | |\n")  ; 6 columns for No Project)
+                 (is-project
+                  (insert "| (No entries) | | | | |\n")    ; 5 columns for Project)
+                 (is-inbox
+                  (insert "| (No entries) | |\n")  ; 2 columns for Inbox)
+                 (t
+                  (insert "| (No entries) | | | | | | |\n")  ; 7 columns for standard (no Created)))
               (dolist (entry entries)
                 (apply #'pearl-gtd-review--insert-table-row entry)
-                (unless is-project
+                (unless (or is-project is-no-project is-inbox)
                   (aset pearl-gtd-review--entry-map entry-index (cons (nth 1 entry) (nth 2 entry))))
                 (setq entry-index (1+ entry-index))))
             (forward-line -1)
@@ -351,9 +377,10 @@ where TYPE can be \\='project for project sections."
     (goto-char (point-min))
     (current-buffer)))
 
-(defun pearl-gtd-review--collect-entries-from-file (file &optional predicates)
+(defun pearl-gtd-review--collect-entries-from-file (file &optional predicates include-created)
   "Collect entries from FILE matching PREDICATES.
-Returns list of (HEAD ID FILE STATUS SCHEDULED DEADLINE CONTEXT DELEGATED PROJECT CREATED)."
+INCLUDE-CREATED non-nil means include Created field.
+Returns list of entry lists suitable for table display."
   (let ((file-path (expand-file-name file pearl-gtd-init-base-directory))
         (entries '()))
     (when (file-exists-p file-path)
@@ -374,8 +401,20 @@ Returns list of (HEAD ID FILE STATUS SCHEDULED DEADLINE CONTEXT DELEGATED PROJEC
                      (created (org-entry-get nil "CREATED")))
                  (when (or (null predicates)
                            (cl-every (lambda (pred) (funcall pred)) predicates))
-                   (push (list head id file todo-state scheduled deadline context delegated project created)
-                         entries))))))
+                   ;; Convert nil values to empty strings
+                   (if include-created
+                       ;; For inbox, only return Headline and Created (1 field)
+                       (push (list head id file
+                                   (or created ""))
+                             entries)
+                     (push (list head id file
+                                 (or todo-state "")
+                                 (or scheduled "")
+                                 (or deadline "")
+                                 (or context "")
+                                 (or delegated "")
+                                 (or project ""))
+                           entries)))))))
          nil nil)))
     (nreverse entries)))
 
@@ -395,7 +434,8 @@ Returns list of (HEAD ID FILE STATUS SCHEDULED DEADLINE CONTEXT DELEGATED PROJEC
   (pearl-gtd-review--collect-entries-from-file
    "actions.org"
    (list #'pearl-gtd-core-entry-todo-p
-         #'pearl-gtd-review--entry-upcoming-deadline-p)))
+         #'pearl-gtd-review--entry-upcoming-deadline-p)
+   nil  ; no Created field))
 
 (defun pearl-gtd-review--collect-all-projects ()
   "Collect all unique project names from actions.org."
@@ -478,8 +518,7 @@ Returns list of entries formatted for project table display."
                       (number-to-string (nth 0 stats))
                       (number-to-string (nth 1 stats))
                       (number-to-string (nth 2 stats))
-                      (nth 3 stats)
-                      "" "" "")
+                      (nth 3 stats))
                 stuck-projects))))
     (nreverse stuck-projects)))
 
@@ -507,10 +546,43 @@ Returns list of entries formatted for project table display."
                     (number-to-string (nth 0 stats))
                     (number-to-string (nth 1 stats))
                     (number-to-string (nth 2 stats))
-                    (nth 3 stats)
-                    "" "" "")
+                    (nth 3 stats))
               active-projects)))
     (nreverse active-projects)))
+
+(defun pearl-gtd-review--collect-no-project-actions ()
+  "Collect TODO actions that don't belong to any project.
+Returns list of entry lists suitable for table display."
+  (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+        (entries '()))
+    (when (file-exists-p file-path)
+      (with-temp-buffer
+        (insert-file-contents file-path)
+        (org-mode)
+        (org-map-entries
+         (lambda ()
+           (when (pearl-gtd-core-entry-todo-p)
+             (let ((id (org-entry-get nil "ID"))
+                   (proj (org-entry-get nil "PROJECT")))
+               (when (and id (or (null proj) (string= proj "")))
+                 (let ((head (org-get-heading t t))
+                       (todo-state (org-get-todo-state))
+                       (scheduled (org-entry-get nil "SCHEDULED"))
+                       (deadline (org-entry-get nil "DEADLINE"))
+                       (context (org-entry-get nil "CONTEXT"))
+                       (delegated (org-entry-get nil "DELEGATED")))
+                   ;; Return 6 fields: head, id, file, todo-state, scheduled, deadline, context, delegated
+                   ;; Note: Project and Created fields are omitted for No Project section
+                   ;; Convert nil values to empty strings
+                   (push (list head id "actions.org"
+                               (or todo-state "")
+                               (or scheduled "")
+                               (or deadline "")
+                               (or context "")
+                               (or delegated ""))
+                         entries)))))))
+         nil nil))
+    (nreverse entries)))
 
 (defun pearl-gtd-review--daily ()
   "Run daily review with sections: Today, Next Actions, and Inbox."
@@ -518,17 +590,20 @@ Returns list of entries formatted for project table display."
          (today-entries (pearl-gtd-review--collect-entries-from-file
                          "actions.org"
                          (list #'pearl-gtd-core-entry-todo-p
-                               #'pearl-gtd-core-entry-scheduled-today-p)))
+                               #'pearl-gtd-core-entry-scheduled-today-p)
+                         nil  ; no Created field))
          (next-entries (pearl-gtd-review--collect-entries-from-file
                         "actions.org"
                         (list (lambda ()
                                 (and (pearl-gtd-core-entry-todo-p)
-                                     (not (pearl-gtd-core-entry-scheduled-today-p)))))))
-         (inbox-entries (pearl-gtd-review--collect-entries-from-file "inbox.org"))
+                                     (not (pearl-gtd-core-entry-scheduled-today-p)))))
+                        nil  ; no Created field))
+         (inbox-entries (pearl-gtd-review--collect-entries-from-file "inbox.org" nil t))  ; include Created
          (completed-today-entries (pearl-gtd-review--collect-entries-from-file
                                    "actions.org"
                                    (list #'pearl-gtd-core-entry-done-p
-                                         #'pearl-gtd-core-entry-completed-today-p)))
+                                         #'pearl-gtd-core-entry-completed-today-p)
+                                   nil  ; no Created field))
          (sections (list (cons "actions.org - Today" today-entries)
                          (cons "actions.org - Completed Today" completed-today-entries)
                          (cons "actions.org - Next Actions" next-entries)
@@ -542,38 +617,44 @@ Returns list of entries formatted for project table display."
 (defun pearl-gtd-review--weekly ()
   "Run weekly review with comprehensive sections."
   (let* ((buffer-name "*Pearl-GTD Weekly Review*")
-         ;; 1. Inbox - clear first
-         (inbox-entries (pearl-gtd-review--collect-entries-from-file "inbox.org"))
-         ;; 2. Overdue - urgent items
+         ;; 1. Inbox - clear first (include Created)
+         (inbox-entries (pearl-gtd-review--collect-entries-from-file "inbox.org" nil t))
+         ;; 2. Overdue - urgent items (no Created)
          (overdue-entries (pearl-gtd-review--collect-entries-from-file
                            "actions.org"
                            (list #'pearl-gtd-core-entry-todo-p
-                                 #'pearl-gtd-core-entry-overdue-p)))
-         ;; 3. Upcoming Deadlines
+                                 #'pearl-gtd-core-entry-overdue-p)
+                           nil))
+         ;; 3. Upcoming Deadlines (no Created)
          (upcoming-entries (pearl-gtd-review--collect-upcoming-deadlines))
-         ;; 4. Completed - review accomplishments
+         ;; 4. Completed - review accomplishments (no Created)
          (completed-entries (pearl-gtd-review--collect-entries-from-file
                              "actions.org"
-                             (list #'pearl-gtd-core-entry-done-p)))
-         ;; 6. Delegated - check waiting for
+                             (list #'pearl-gtd-core-entry-done-p)
+                             nil))
+         ;; 6. Delegated - check waiting for (no Created)
          (delegated-entries (pearl-gtd-review--collect-entries-from-file
                              "actions.org"
                              (list #'pearl-gtd-core-entry-todo-p
-                                   #'pearl-gtd-core-entry-delegated-p)))
-         ;; 7. Next Actions
+                                   #'pearl-gtd-core-entry-delegated-p)
+                             nil))
+         ;; 7. Next Actions (no Created)
          (next-entries (pearl-gtd-review--collect-entries-from-file
                         "actions.org"
                         (list (lambda ()
                                 (and (pearl-gtd-core-entry-todo-p)
                                      (not (pearl-gtd-core-entry-overdue-p))
                                      (not (pearl-gtd-core-entry-delegated-p))
-                                     (not (pearl-gtd-review--entry-upcoming-deadline-p)))))))
+                                     (not (pearl-gtd-review--entry-upcoming-deadline-p)))))
+                        nil))
          ;; 8. Stuck Projects
          (stuck-entries (pearl-gtd-review--collect-stuck-projects))
          ;; 9. Active Projects
          (active-entries (pearl-gtd-review--collect-active-projects))
-         ;; 10. Someday/Maybe
-         (someday-entries (pearl-gtd-review--collect-entries-from-file "someday.org"))
+         ;; 10. Actions without projects (include Created for No Project)
+         (no-project-entries (pearl-gtd-review--collect-no-project-actions))
+         ;; 11. Someday/Maybe (no Created)
+         (someday-entries (pearl-gtd-review--collect-entries-from-file "someday.org" nil nil))
          ;; Build sections in GTD review order
          (sections (list (cons "inbox.org - Inbox" inbox-entries)
                          (cons "actions.org - Overdue" overdue-entries)
@@ -583,6 +664,7 @@ Returns list of entries formatted for project table display."
                          (cons "actions.org - Next Actions" next-entries)
                          (cons "Projects - Stuck" (cons stuck-entries 'project))
                          (cons "Projects - Active" (cons active-entries 'project))
+                         (cons "actions.org - No Project" no-project-entries)
                          (cons "someday.org - Someday" someday-entries))))
     (pearl-gtd-review--create-table-buffer buffer-name sections)
     (with-current-buffer buffer-name
@@ -612,7 +694,16 @@ Returns list of entry lists suitable for `pearl-gtd-review--insert-table-row'."
                      (context (org-entry-get nil "CONTEXT"))
                      (delegated (org-entry-get nil "DELEGATED"))
                      (created (org-entry-get nil "CREATED")))
-                 (push (list head id "actions.org" todo-state scheduled deadline context delegated proj-name created)
+                 ;; Convert nil values to empty strings
+                 ;; For project task view, include Created field
+                 (push (list head id "actions.org"
+                             (or todo-state "")
+                             (or scheduled "")
+                             (or deadline "")
+                             (or context "")
+                             (or delegated "")
+                             proj-name
+                             (or created ""))
                        entries)))))
          nil nil)))
     (nreverse entries)))

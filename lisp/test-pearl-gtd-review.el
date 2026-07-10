@@ -54,9 +54,24 @@
                  (should (search-forward "Next task" next-end t))
                  (goto-char next-start)
                  (should-not (search-forward "Today task" next-end t)))
-               ;; Verify new columns exist using regex to match aligned headers
+               ;; Verify Today section has 7 columns (no Created)
                (goto-char (point-min))
-               (should (search-forward-regexp "|[ \t]*Headline[ \t]*|[ \t]*Status[ \t]*|[ \t]*Scheduled[ \t]*|[ \t]*Deadline[ \t]*|[ \t]*Context[ \t]*|[ \t]*Delegated[ \t]*|[ \t]*Project[ \t]*|[ \t]*Created[ \t]*|" nil t))
+               (search-forward "** actions.org - Today")
+               (forward-line 1)
+               (beginning-of-line)
+               (should (search-forward-regexp "|[ \t]*Headline[ \t]*|[ \t]*Status[ \t]*|[ \t]*Scheduled[ \t]*|[ \t]*Deadline[ \t]*|[ \t]*Context[ \t]*|[ \t]*Delegated[ \t]*|[ \t]*Project[ \t]*|" nil t))
+               ;; Verify Inbox section has only 2 columns (Headline and Created)
+               (goto-char (point-min))
+               (search-forward "** inbox.org - Inbox")
+               (forward-line 1)
+               (beginning-of-line)
+               (should (search-forward-regexp "|[ \t]*Headline[ \t]*|[ \t]*Created[ \t]*|" nil t))
+               (should-not (search-forward-regexp "|[ \t]*Status[ \t]*|" (line-end-position) t))
+               (should-not (search-forward-regexp "|[ \t]*Scheduled[ \t]*|" (line-end-position) t))
+               (should-not (search-forward-regexp "|[ \t]*Deadline[ \t]*|" (line-end-position) t))
+               (should-not (search-forward-regexp "|[ \t]*Context[ \t]*|" (line-end-position) t))
+               (should-not (search-forward-regexp "|[ \t]*Delegated[ \t]*|" (line-end-position) t))
+               (should-not (search-forward-regexp "|[ \t]*Project[ \t]*|" (line-end-position) t))
                ;; Verify GTD workflow order: Today → Completed Today → Next Actions → Inbox
                (goto-char (point-min))
                (let ((pos-today (search-forward "** actions.org - Today" nil t))
@@ -83,7 +98,7 @@
   "Weekly review aggregates all lists and action sub-views into separate tables."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Unprocessed\n:PROPERTIES:\n:ID: w-1\n:END:\n")
-          ("actions.org" "* TODO Normal action\n:PROPERTIES:\n:ID: w-2\n:PROJECT: Active project\n:END:\n* TODO Overdue task\nSCHEDULED: <2026-01-01 Wed>\n:PROPERTIES:\n:ID: w-overdue\n:END:\n* TODO Delegated task\n:PROPERTIES:\n:ID: w-del\n:DELEGATED: Bob\n:END:\n* DONE Completed today task\nCLOSED: [2026-01-15 Thu 10:00]\n:PROPERTIES:\n:ID: w-done-today\n:END:\n")
+          ("actions.org" "* TODO Normal action\n:PROPERTIES:\n:ID: w-2\n:PROJECT: Active project\n:END:\n* TODO Overdue task\nSCHEDULED: <2026-01-01 Wed>\n:PROPERTIES:\n:ID: w-overdue\n:END:\n* TODO Delegated task\n:PROPERTIES:\n:ID: w-del\n:DELEGATED: Bob\n:END:\n* DONE Completed today task\nCLOSED: [2026-01-15 Thu 10:00]\n:PROPERTIES:\n:ID: w-done-today\n:END:\n* TODO No project task\n:PROPERTIES:\n:ID: w-no-proj\n:END:\n")
           ("someday.org" "* Maybe later\n:PROPERTIES:\n:ID: w-4\n:END:\n"))
   :mock (((symbol-function 'current-time) (lambda () (encode-time 0 0 0 15 1 2026))))
   :body (pearl-gtd-review-weekly)
@@ -100,6 +115,7 @@
                (should (search-forward "** actions.org - Next Actions" nil t))
                (should (search-forward "** Projects - Stuck" nil t))
                (should (search-forward "** Projects - Active" nil t))
+               (should (search-forward "** actions.org - No Project" nil t))
                (should (search-forward "** someday.org - Someday" nil t))
                ;; Verify content isolation
                (goto-char (point-min))
@@ -108,7 +124,19 @@
                (goto-char (point-min))
                (search-forward "** actions.org - Delegated")
                (should (search-forward "Delegated task" nil t))
-               ;; Verify GTD weekly review order: Inbox → Overdue/Upcoming → Completed → Delegated → Next Actions → Projects → Someday
+               ;; Verify No Project section content
+               (goto-char (point-min))
+               (search-forward "** actions.org - No Project")
+               (should (search-forward "No project task" nil t))
+               ;; Verify No Project section has correct columns (no Project column and no Created column)
+               (goto-char (point-min))
+               (search-forward "** actions.org - No Project")
+               (forward-line 1) ; Skip to table header (next line after title)
+               (beginning-of-line)
+               (should (search-forward-regexp "|\\s-*Headline\\s-*|\\s-*Status\\s-*|\\s-*Scheduled\\s-*|\\s-*Deadline\\s-*|\\s-*Context\\s-*|\\s-*Delegated\\s-*|" nil t))
+               (should-not (search-forward-regexp "|\\s-*Project\\s-*|" (line-end-position) t))
+               (should-not (search-forward-regexp "|\\s-*Created\\s-*|" (line-end-position) t))
+               ;; Verify GTD weekly review order: Inbox → Overdue/Upcoming → Completed → Delegated → Next Actions → Projects → No Project → Someday
                (goto-char (point-min))
                (let ((positions (list (search-forward "** inbox.org - Inbox" nil t)
                                       (search-forward "** actions.org - Overdue" nil t)
@@ -118,6 +146,7 @@
                                       (search-forward "** actions.org - Next Actions" nil t)
                                       (search-forward "** Projects - Stuck" nil t)
                                       (search-forward "** Projects - Active" nil t)
+                                      (search-forward "** actions.org - No Project" nil t)
                                       (search-forward "** someday.org - Someday" nil t))))
                  (should (equal positions (sort (copy-sequence positions) #'<))))))
   :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
@@ -322,7 +351,7 @@
                (search-forward "** Projects - Active")
                (forward-line 3)
                (beginning-of-line)
-               (should (search-forward-regexp "|\\s-*Website\\s-*|\\s-*3\\s-*|\\s-*2\\s-*|\\s-*1\\s-*|\\s-*<2026-05-20\\( [A-Za-z]+\\)?>\\s-*|" (line-end-position) t))))
+               (should (search-forward-regexp "|\\s-*Website\\s-*|\\s-*3\\s-*|\\s-*2\\s-*|\\s-*1\\s-*|\\s-*<2026-05-20[^>]*>\\s-*|" (line-end-position) t))))
   :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
 
 (test-pearl-gtd-define-story test-pearl-gtd-review-jump-to-project-tasks
@@ -425,6 +454,54 @@
                (search-forward "P10")
                (beginning-of-line)
                (should (search-forward-regexp "|\\s-*P10\\s-*|\\s-*1\\s-*|\\s-*1\\s-*|\\s-*0\\s-*|" (line-end-position) t))))
+  :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
+
+(test-pearl-gtd-define-story test-pearl-gtd-review-weekly-no-project-table-no-project-column
+  "No Project table should not have Project column and should be after Project sections."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* TODO No project task 1\n:PROPERTIES:\n:ID: np-1\n:CREATED: 2026-01-15\n:END:\n* TODO No project task 2\nSCHEDULED: <2026-01-20 Fri>\n:PROPERTIES:\n:ID: np-2\n:CONTEXT: home\n:CREATED: 2026-01-16\n:END:\n* TODO Project task\n:PROPERTIES:\n:ID: p-1\n:PROJECT: TestProject\n:CREATED: 2026-01-17\n:END:\n"))
+  :mock (((symbol-function 'current-time) (lambda () (encode-time 0 0 0 15 1 2026))))
+  :body (pearl-gtd-review-weekly)
+  :asserts (progn
+             (should (get-buffer "*Pearl-GTD Weekly Review*"))
+             (with-current-buffer "*Pearl-GTD Weekly Review*"
+               ;; Verify No Project section is after Project sections
+               (goto-char (point-min))
+               (let ((pos-active (search-forward "** Projects - Active" nil t))
+                     (pos-no-project (search-forward "** actions.org - No Project" nil t))
+                     (pos-someday (search-forward "** someday.org - Someday" nil t)))
+                 (should (< pos-active pos-no-project))
+                 (should (< pos-no-project pos-someday)))
+               ;; Verify No Project table has correct columns (6 columns: no Project and no Created)
+               (goto-char (point-min))
+               (search-forward "** actions.org - No Project")
+               (forward-line 1) ; Skip to table header
+               (beginning-of-line)
+               (let ((line (buffer-substring (line-beginning-position) (line-end-position))))
+                 ;; Count pipe separators - should be 7 pipes for 6 columns
+                 (let ((pipe-count (cl-count ?| line)))
+                   (should (= pipe-count 7)))
+                 ;; Verify column headers
+                 (should (string-match-p "Headline" line))
+                 (should (string-match-p "Status" line))
+                 (should (string-match-p "Scheduled" line))
+                 (should (string-match-p "Deadline" line))
+                 (should (string-match-p "Context" line))
+                 (should (string-match-p "Delegated" line))
+                 (should-not (string-match-p "Project" line))
+                 (should-not (string-match-p "Created" line)))
+               ;; Verify data rows also have correct number of columns
+               (goto-char (point-min))
+               (search-forward "** actions.org - No Project")
+               (search-forward "|---------") ; Separator line
+               (forward-line 1)
+               (while (and (not (eobp)) (looking-at "|"))
+                 (let ((line (buffer-substring (line-beginning-position) (line-end-position))))
+                   (let ((pipe-count (cl-count ?| line)))
+                     (should (= pipe-count 7)) ; 6 columns + closing pipe)
+                   (should (string-match-p "No project task" line))
+                   (should-not (string-match-p "TestProject" line)))
+                 (forward-line 1))))
   :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
 
 (provide 'test-pearl-gtd-review)
