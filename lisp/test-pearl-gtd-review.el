@@ -498,7 +498,7 @@
                (while (and (not (eobp)) (looking-at "|"))
                  (let ((line (buffer-substring (line-beginning-position) (line-end-position))))
                    (let ((pipe-count (cl-count ?| line)))
-                     (should (= pipe-count 7)) ; 6 columns + closing pipe)
+                     (should (= pipe-count 7))) ; 6 columns + closing pipe
                    (should (string-match-p "No project task" line))
                    (should-not (string-match-p "TestProject" line)))
                  (forward-line 1))))
