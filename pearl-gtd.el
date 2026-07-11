@@ -25,6 +25,7 @@
 (require 'pearl-gtd-core)
 (require 'pearl-gtd-review)
 (require 'pearl-gtd-do)
+(require 'pearl-gtd-horizons)
 
 (defun pearl-gtd-capture ()
   "Capture a new item to the inbox."
@@ -70,6 +71,11 @@
   "View actions scheduled for today."
   (interactive)
   (pearl-gtd-do--view-today))
+
+(defun pearl-gtd-horizons-view ()
+  "Display horizon hierarchy view."
+  (interactive)
+  (pearl-gtd-horizons--view))
 
 (defun pearl-gtd-run-tests ()
   "Run all Pearl-GTD unit tests."

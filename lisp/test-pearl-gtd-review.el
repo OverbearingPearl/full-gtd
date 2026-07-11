@@ -472,15 +472,15 @@
                      (pos-someday (search-forward "** someday.org - Someday" nil t)))
                  (should (< pos-active pos-no-project))
                  (should (< pos-no-project pos-someday)))
-               ;; Verify No Project table has correct columns (6 columns: no Project and no Created)
+               ;; Verify No Project table has correct columns (7 columns: no Project and no Created, but with L3)
                (goto-char (point-min))
                (search-forward "** actions.org - No Project")
                (forward-line 1) ; Skip to table header
                (beginning-of-line)
                (let ((line (buffer-substring (line-beginning-position) (line-end-position))))
-                 ;; Count pipe separators - should be 7 pipes for 6 columns
+                 ;; Count pipe separators - should be 8 pipes for 7 columns
                  (let ((pipe-count (cl-count ?| line)))
-                   (should (= pipe-count 7)))
+                   (should (= pipe-count 8)))
                  ;; Verify column headers
                  (should (string-match-p "Headline" line))
                  (should (string-match-p "Status" line))
@@ -488,6 +488,7 @@
                  (should (string-match-p "Deadline" line))
                  (should (string-match-p "Context" line))
                  (should (string-match-p "Delegated" line))
+                 (should (string-match-p "L3" line))
                  (should-not (string-match-p "Project" line))
                  (should-not (string-match-p "Created" line)))
                ;; Verify data rows also have correct number of columns
@@ -498,7 +499,7 @@
                (while (and (not (eobp)) (looking-at "|"))
                  (let ((line (buffer-substring (line-beginning-position) (line-end-position))))
                    (let ((pipe-count (cl-count ?| line)))
-                     (should (= pipe-count 7))) ; 6 columns + closing pipe
+                     (should (= pipe-count 8))) ; 7 columns + closing pipe
                    (should (string-match-p "No project task" line))
                    (should-not (string-match-p "TestProject" line)))
                  (forward-line 1))))

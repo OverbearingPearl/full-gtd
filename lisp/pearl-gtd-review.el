@@ -42,6 +42,12 @@
     (define-key map (kbd "s") #'pearl-gtd-review--set-deadline-at-point)
     (define-key map (kbd "r") #'pearl-gtd-review--rename-task-at-point)
     (define-key map (kbd "C") #'pearl-gtd-review--complete-task-at-point)
+    (define-key map (kbd "P") #'pearl-gtd-review--edit-project-at-point)
+    ;; Horizon editing
+    (define-key map (kbd "3") #'pearl-gtd-horizons--edit-l3-at-point)
+    (define-key map (kbd "4") #'pearl-gtd-horizons--edit-l4-at-point)
+    (define-key map (kbd "5") #'pearl-gtd-horizons--edit-l5-at-point)
+    (define-key map (kbd "6") #'pearl-gtd-horizons--edit-l6-at-point)
     map))
 
 (define-minor-mode pearl-gtd-review-view-mode
@@ -246,6 +252,26 @@
               (save-buffer)))
           (pearl-gtd-review--refresh-view))))))
 
+(defun pearl-gtd-review--edit-project-at-point ()
+  "Edit project with current value as default.  Empty input removes it."
+  (interactive)
+  (let ((entry (pearl-gtd-review--get-entry-at-point)))
+    (when entry
+      (let* ((id (car entry))
+             (file (cdr entry))
+             (current-value (pearl-gtd-review--get-property-by-id id file "PROJECT"))
+             (new-value (read-string "Project (empty to remove): " (or current-value ""))))
+        (if (string= new-value "")
+            (progn
+              (pearl-gtd-review--remove-property-by-id id file "PROJECT")
+              ;; Also remove horizon properties when leaving project
+              (pearl-gtd-review--remove-property-by-id id file "HORIZON_L3")
+              (pearl-gtd-review--remove-property-by-id id file "HORIZON_L4")
+              (pearl-gtd-review--remove-property-by-id id file "HORIZON_L5")
+              (pearl-gtd-review--remove-property-by-id id file "HORIZON_L6"))
+          (pearl-gtd-review--set-property-by-id id file "PROJECT" new-value))
+        (pearl-gtd-review--refresh-view)))))
+
 (defun pearl-gtd-review--complete-task-at-point ()
   "Mark task at point as done."
   (interactive)
@@ -292,35 +318,24 @@ For task rows, attach `pearl-gtd-id' and `pearl-gtd-file' properties to HEAD.
 
 The number of fields determines the table format:
 - 1 field: Created (Inbox - Headline + Created)
-- -1 fields: (special case for project rows, handled separately)
-- -2 fields: (special case for project rows, handled separately)
 - 7 fields: Status, Scheduled, Deadline, Context, Delegated, Project (standard)
-- 6 fields: Status, Scheduled, Deadline, Context, Delegated (No Project)
-- 5 fields: Status, Scheduled, Deadline, Context, Delegated (No Project without Created)
-- 4 fields: Total, Todo, Done, Next Deadline (Project rows)"
+- 6 fields: Status, Scheduled, Deadline, Context, Delegated, L3 (No Project)
+- 8 fields: Total, Todo, Done, Next Deadline, L3, L4, L5, L6 (Project rows)"
   (let* ((headline-escaped (replace-regexp-in-string "|" "\\\\vert{}" head))
-         (headline-with-props (copy-sequence headline-escaped))
-         (field-count (length fields))
-         (format-string
-          (cond
-           ((= field-count 1) "| %s | %s |\n")  ; Headline + Created
-           ((= field-count -1) (error "Invalid number of fields: -1"))
-           ((= field-count -2) (error "Invalid number of fields: -2"))
-           ((= field-count 7) "| %s | %s | %s | %s | %s | %s | %s |\n")
-           ((= field-count 6) "| %s | %s | %s | %s | %s | %s |\n")
-           ((= field-count 5) "| %s | %s | %s | %s | %s |\n")
-           ((= field-count 4) "| %s | %s | %s | %s | %s |\n")
-           (t (error "Invalid number of fields: %d" field-count))))
-         ;; Convert nil fields to empty strings
-         (processed-fields (mapcar (lambda (field)
-                                     (if (null field) "" field))
-                                   fields)))
-    (if (and (null id) head)
-        (put-text-property 0 (length headline-with-props) 'pearl-gtd-project head headline-with-props)
-      (progn
-        (put-text-property 0 (length headline-with-props) 'pearl-gtd-id id headline-with-props)
-        (put-text-property 0 (length headline-with-props) 'pearl-gtd-file file headline-with-props)))
-    (insert (apply #'format format-string headline-with-props processed-fields))))
+         (field-count (length fields)))
+    ;; Insert headline with properties
+    (insert "| ")
+    (let ((start (point)))
+      (insert headline-escaped)
+      (if (and (null id) head)
+          (put-text-property start (point) 'pearl-gtd-project head)
+        (progn
+          (put-text-property start (point) 'pearl-gtd-id id)
+          (put-text-property start (point) 'pearl-gtd-file file))))
+    ;; Insert fields
+    (dolist (field fields)
+      (insert " | " (or field "")))
+    (insert " |\n")))
 
 (defun pearl-gtd-review--create-table-buffer (buffer-name sections)
   "Create review buffer named BUFFER-NAME with multiple sections.
@@ -343,11 +358,11 @@ where TYPE can be \\='project for project sections."
             (insert (format "** %s\n" title))
             (cond
              (is-project
-              (insert "| Project | Total | Todo | Done | Next Deadline |\n")
-              (insert "|---------+-------+------+------+---------------|\n"))
+              (insert "| Project | Total | Todo | Done | Next Deadline | L3 | L4 | L5 | L6 |\n")
+              (insert "|---------+-------+------+------+---------------+----+----+----+----|\n"))
              (is-no-project
-              (insert "| Headline | Status | Scheduled | Deadline | Context | Delegated |\n")
-              (insert "|----------+--------+-----------+----------+---------+-----------|\n"))
+              (insert "| Headline | Status | Scheduled | Deadline | Context | Delegated | L3 |\n")
+              (insert "|----------+--------+-----------+----------+---------+-----------+----|\n"))
              (is-inbox
               (insert "| Headline | Created |\n")
               (insert "|----------+---------|\n"))
@@ -357,9 +372,9 @@ where TYPE can be \\='project for project sections."
             (if (null entries)
                 (cond
                  (is-no-project
-                  (insert "| (No entries) | | | | | |\n"))  ; 6 columns for No Project
+                  (insert "| (No entries) | | | | | | |\n"))  ; 7 columns for No Project (including L3)
                  (is-project
-                  (insert "| (No entries) | | | | |\n"))    ; 5 columns for Project
+                  (insert "| (No entries) | | | | | | | | |\n"))    ; 9 columns for Project (including L3-L6)
                  (is-inbox
                   (insert "| (No entries) | |\n"))  ; 2 columns for Inbox)
                  (t
@@ -458,16 +473,21 @@ Returns list of entry lists suitable for table display."
 (defun pearl-gtd-review--get-project-stats (proj-name)
   "Get statistics for PROJ-NAME from actions.org.
 PROJ-NAME is a string naming the project to analyze.
-Returns list (TOTAL TODO DONE NEXT-DEADLINE) where:
+Returns list (TOTAL TODO DONE NEXT-DEADLINE L3 L4 L5 L6) where:
 TOTAL is the total number of entries,
 TODO is the count of unfinished entries,
 DONE is the count of completed entries,
-NEXT-DEADLINE is the earliest deadline string or empty string."
+NEXT-DEADLINE is the earliest deadline string or empty string,
+L3-L6 are horizon values from project entries."
   (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
         (total 0)
         (done 0)
         (todo 0)
-        (next-deadline nil))
+        (next-deadline nil)
+        (horizon-l3 nil)
+        (horizon-l4 nil)
+        (horizon-l5 nil)
+        (horizon-l6 nil))
     (when (file-exists-p file-path)
       (with-temp-buffer
         (insert-file-contents file-path)
@@ -483,6 +503,12 @@ NEXT-DEADLINE is the earliest deadline string or empty string."
                      (cond
                       ((member todo-state org-done-keywords) (cl-incf done))
                       ((string= todo-state "TODO") (cl-incf todo)))
+                     ;; Collect horizon values from first TODO entry
+                     (when (and (null horizon-l3) (pearl-gtd-core-entry-todo-p))
+                       (setq horizon-l3 (org-entry-get nil "HORIZON_L3"))
+                       (setq horizon-l4 (org-entry-get nil "HORIZON_L4"))
+                       (setq horizon-l5 (org-entry-get nil "HORIZON_L5"))
+                       (setq horizon-l6 (org-entry-get nil "HORIZON_L6")))
                      (let ((deadline (org-entry-get nil "DEADLINE")))
                        (when deadline
                          (let ((d-time (org-time-string-to-time deadline)))
@@ -490,7 +516,14 @@ NEXT-DEADLINE is the earliest deadline string or empty string."
                                      (time-less-p d-time (org-time-string-to-time next-deadline)))
                              (setq next-deadline deadline)))))))))))
          nil nil)))
-    (list total todo done (or next-deadline ""))))
+    (list (number-to-string total)
+          (number-to-string todo)
+          (number-to-string done)
+          (or next-deadline "")
+          (or horizon-l3 "")
+          (or horizon-l4 "")
+          (or horizon-l5 "")
+          (or horizon-l6 ""))))
 
 (defun pearl-gtd-review--collect-stuck-projects ()
   "Collect projects with no associated TODO actions.
@@ -515,10 +548,15 @@ Returns list of entries formatted for project table display."
       (unless (member proj projects-with-todos)
         (let ((stats (pearl-gtd-review--get-project-stats proj)))
           (push (list proj nil "actions.org"
-                      (number-to-string (nth 0 stats))
-                      (number-to-string (nth 1 stats))
-                      (number-to-string (nth 2 stats))
-                      (nth 3 stats))
+                      (nth 0 stats)  ; Total
+                      (nth 1 stats)  ; Todo
+                      (nth 2 stats)  ; Done
+                      (nth 3 stats)  ; Next Deadline
+                      (nth 4 stats)  ; L3
+                      (nth 5 stats)  ; L4
+                      (nth 6 stats)  ; L5
+                      (nth 7 stats)  ; L6
+                      )
                 stuck-projects))))
     (nreverse stuck-projects)))
 
@@ -543,10 +581,15 @@ Returns list of entries formatted for project table display."
     (dolist (proj projects-with-todos)
       (let ((stats (pearl-gtd-review--get-project-stats proj)))
         (push (list proj nil "actions.org"
-                    (number-to-string (nth 0 stats))
-                    (number-to-string (nth 1 stats))
-                    (number-to-string (nth 2 stats))
-                    (nth 3 stats))
+                    (nth 0 stats)  ; Total
+                    (nth 1 stats)  ; Todo
+                    (nth 2 stats)  ; Done
+                    (nth 3 stats)  ; Next Deadline
+                    (nth 4 stats)  ; L3
+                    (nth 5 stats)  ; L4
+                    (nth 6 stats)  ; L5
+                    (nth 7 stats)  ; L6
+                    )
               active-projects)))
     (nreverse active-projects)))
 
@@ -570,18 +613,19 @@ Returns list of entry lists suitable for table display."
                        (scheduled (org-entry-get nil "SCHEDULED"))
                        (deadline (org-entry-get nil "DEADLINE"))
                        (context (org-entry-get nil "CONTEXT"))
-                       (delegated (org-entry-get nil "DELEGATED")))
-                   ;; Return 6 fields: head, id, file, todo-state, scheduled, deadline, context, delegated
-                   ;; Note: Project and Created fields are omitted for No Project section
-                   ;; Convert nil values to empty strings
+                       (delegated (org-entry-get nil "DELEGATED"))
+                       (horizon-l3 (org-entry-get nil "HORIZON_L3")))
+                   ;; Return 7 fields: head, id, file, todo-state, scheduled, deadline, context, delegated, horizon-l3
+                   ;; But for table display, we need 6 fields after head/id/file
                    (push (list head id "actions.org"
                                (or todo-state "")
                                (or scheduled "")
                                (or deadline "")
                                (or context "")
-                               (or delegated ""))
-                         entries)))))))
-         nil nil))
+                               (or delegated "")
+                               (or horizon-l3 ""))
+                         entries))))))
+         nil nil)))
     (nreverse entries)))
 
 (defun pearl-gtd-review--daily ()
