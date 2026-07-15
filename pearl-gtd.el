@@ -1,4 +1,4 @@
-;;; pearl-gtd.el --- Complete Getting Things Done (GTD) workflow for Emacs org-mode  -*- lexical-binding: t; -*-
+;;; pearl-gtd.el --- Complete Getting Things Done (GTD) workflow for org-mode  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 OverbearingPearl
 
