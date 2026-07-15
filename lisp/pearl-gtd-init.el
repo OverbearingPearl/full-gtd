@@ -1,13 +1,5 @@
 ;;; pearl-gtd-init.el --- Initialization functions for pearl-gtd  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2026 OverbearingPearl
-
-;; Author: OverbearingPearl <OverbearingPearl@outlook.com>
-;; Version: 0.1.0
-;; Package-Requires: ((emacs "27.1") (org "9.0"))
-;; Keywords: outlines, tools, convenience, productivity, gtd, org
-;; URL: https://github.com/OverbearingPearl/pearl-gtd
-
 ;;; Commentary:
 
 ;; This file provides initialization functions for pearl-gtd.

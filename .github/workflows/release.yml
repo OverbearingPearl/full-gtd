@@ -33,9 +33,18 @@ jobs:
 
       - name: Find all .el files
         run: |
-          find . -name "*.el" -not -path "./melpa/*" > el-files.txt
-          echo "Found .el files:"
-          cat el-files.txt
+          cd pearl-gtd
+          # Find all .el files with relative paths
+          find . -name "*.el" -not -path "./melpa/*" > ../all-el-files.txt
+          # Main package file with relative path
+          echo "./pearl-gtd.el" > ../main-el-files.txt
+
+          echo "All .el files:"
+          cat ../all-el-files.txt
+          echo ""
+          echo "Main package file (for package-lint):"
+          cat ../main-el-files.txt
+          cd ..
 
       - name: Install packages and run all checks
         run: |
@@ -47,17 +56,25 @@ jobs:
                 --eval "(package-install 'flycheck)" \
                 --eval "(package-install 'checkdoc)" 2>&1 | grep -v "^Loading"
 
-          # Read each .el file and run checks
+          # Run package-lint only on main package file
+          echo "========================================="
+          echo "Running package-lint on main package file..."
+          echo "========================================="
+          cd pearl-gtd
           while IFS= read -r file; do
-            echo "========================================="
-            echo "Checking $file..."
-
-            # Run package-lint
-            echo "--- package-lint ---"
+            echo "Checking $file with package-lint..."
             emacs -Q --batch \
                   --eval "(package-initialize)" \
                   -l package-lint \
                   -f package-lint-batch-and-exit "$file" 2>&1 || exit 1
+          done < ../main-el-files.txt
+
+          # Run flycheck and checkdoc on ALL files
+          echo "========================================="
+          echo "Running flycheck and checkdoc on ALL files..."
+          echo "========================================="
+          while IFS= read -r file; do
+            echo "Checking $file..."
 
             # Run flycheck
             echo "--- flycheck ---"
@@ -88,7 +105,7 @@ jobs:
                   --eval "(kill-emacs 0)" 2>&1 || exit 1
 
             echo "========================================="
-          done < el-files.txt
+          done < ../all-el-files.txt
 
       - name: Create recipe
         run: |
