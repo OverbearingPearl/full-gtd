@@ -1,11 +1,11 @@
-;;; pearl-gtd.el --- Complete GTD implementation for org-mode  -*- lexical-binding: t; -*-
+;;; pearl-gtd.el --- Complete Getting Things Done (GTD) workflow for Emacs org-mode  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 OverbearingPearl
 
 ;; Author: OverbearingPearl <OverbearingPearl@outlook.com>
 ;; Version: 0.1.0
 ;; Package-Requires: ((emacs "27.1") (org "9.0"))
-;; Keywords: outlines, tools, convenience, productivity, gtd, org
+;; Keywords: outlines, tools, convenience, productivity, gtd, org, task, management, workflow, todo, getting-things-done, david-allen, inbox, review, projects, actions, contexts, horizons, focus, productivity, organization, time-management
 ;; URL: https://github.com/OverbearingPearl/pearl-gtd
 
 ;;; Commentary:
@@ -13,6 +13,27 @@
 ;; This package provides a complete GTD implementation for org-mode,
 ;; including six horizon levels: Purpose, Vision, Goals, Areas,
 ;; Projects, and Actions.
+
+;; Pearl-GTD is a comprehensive implementation of David Allen's "Getting Things Done"
+;; methodology within Emacs org-mode. It covers all five core GTD workflow steps:
+;;
+;; 1. Capture - Collect what has your attention
+;; 2. Clarify - Process what it means
+;; 3. Organize - Put it where it belongs
+;; 4. Reflect - Review frequently
+;; 5. Engage - Simply do
+;;
+;; Features:
+;; • Complete GTD workflow with inbox processing
+;; • Six Horizon of Focus (Purpose, Vision, Goals, Areas, Projects, Actions)
+;; • Natural Planning Model for project planning
+;; • Weekly and daily review cycles
+;; • Context-based task filtering (@office, @home, @errands, etc.)
+;; • Two-Minute Rule implementation
+;; • Delegation tracking and reminders
+;; • All standard GTD lists (Projects, Next Actions, Waiting For, Someday/Maybe, Reference)
+;; • Brainstorming tools and organizing principles
+;; • Comprehensive vertical and horizontal focus management
 
 ;;; Code:
 
