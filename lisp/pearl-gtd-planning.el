@@ -60,7 +60,7 @@ Return string (may be empty)."
     (read-string prompt)))
 
 (defun pearl-gtd-planning--ask-brainstorm (project)
-  "Collect brainstorm items via temp buffer.  C-c C-c to finish.
+  "Collect brainstorm items via temp buffer.  `C-c C-c' to finish.
 Return list of written headlines."
   (let ((buf (get-buffer-create "*Pearl-GTD Brainstorm*")))
     (with-current-buffer buf
