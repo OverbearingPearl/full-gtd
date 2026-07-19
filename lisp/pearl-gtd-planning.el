@@ -202,7 +202,7 @@ DEST is the destination type.  CONTEXT is the context tag."
           ;; After modifications, get subtree content
           (let ((subtree-content (buffer-substring (point) (org-end-of-subtree))))
             (if (string= subtree-content "")
-                (error "subtree-content is empty for ID %s" id)
+                (error "Subtree content is empty for ID %s" id)
               ;; Delete from inbox
               (org-mark-subtree)
               (kill-region (region-beginning) (region-end))
