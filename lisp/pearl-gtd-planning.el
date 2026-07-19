@@ -60,7 +60,8 @@ Return string (may be empty)."
     (read-string prompt)))
 
 (defun pearl-gtd-planning--ask-brainstorm (project)
-  "Collect brainstorm items via temp buffer.  Press \\=\\C-c \\=\\C-c to finish.
+  "Collect brainstorm items via temp buffer.
+Press \\[exit-recursive-edit] to finish, \\[abort-recursive-edit] to abort.
 Return list of written headlines."
   (let ((buf (get-buffer-create "*Pearl-GTD Brainstorm*")))
     (with-current-buffer buf
