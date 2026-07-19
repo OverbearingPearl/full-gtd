@@ -47,6 +47,7 @@
 (require 'pearl-gtd-review)
 (require 'pearl-gtd-do)
 (require 'pearl-gtd-horizons)
+(require 'pearl-gtd-planning)
 
 (defun pearl-gtd-capture ()
   "Capture a new item to the inbox."
@@ -98,6 +99,11 @@
   (interactive)
   (pearl-gtd-horizons--view))
 
+(defun pearl-gtd-planning-start ()
+  "Start Natural Planning Model workflow."
+  (interactive)
+  (pearl-gtd-planning--start))
+
 (defun pearl-gtd-run-tests ()
   "Run all Pearl-GTD unit tests."
   (interactive)
@@ -111,7 +117,10 @@
       (let ((full-path (expand-file-name file test-dir)))
         (when (file-exists-p full-path)
           (load-file full-path)))))
-  (ert t))
+  ;; Use batch-compatible function to ensure output is visible in terminal
+  (if noninteractive
+      (ert-run-tests-batch-and-exit)
+    (ert t)))
 
 (defun pearl-gtd-reload-modules ()
   "Reload Pearl-GTD modules for updated code."

@@ -126,6 +126,13 @@ BUFFER-NAME is the name for the new buffer."
       (setq buffer-read-only nil)
       (erase-buffer)
       (org-mode)
+      ;; Add header line
+      (setq-local header-line-format
+                  (pcase pearl-gtd-do--current-view-type
+                    ('context "Context View | n/p/j/k: navigate | RET: jump | C: complete | r: rename | g: refresh | q: quit")
+                    ('delegated "Delegated View | n/p/j/k: navigate | RET: jump | C: complete | r: rename | g: refresh | q: quit")
+                    ('today "Today View | n/p/j/k: navigate | RET: jump | C: complete | r: rename | g: refresh | q: quit")
+                    (_ "Actions View | n/p/j/k: navigate | RET: jump | C: complete | r: rename | g: refresh | q: quit")))
       (if (null actions)
           (insert "(No actions found)\n")
         (insert "| Headline | Context | Status | Scheduled | Delegated | Project | Created |\n")
@@ -261,8 +268,7 @@ Context tags are normalized by removing the @ prefix for matching."
         (org-table-align))
       (setq buffer-read-only t)
       (goto-char (point-min))
-      (forward-line 2))
-    (with-current-buffer buffer-name
+      (forward-line 2)
       (setq pearl-gtd-do--current-view-type 'today))
     (pop-to-buffer buffer-name)
     (pearl-gtd-do-view-mode 1)))

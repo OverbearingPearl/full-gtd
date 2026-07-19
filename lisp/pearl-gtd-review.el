@@ -257,6 +257,12 @@
             (progn
               (pearl-gtd-review--remove-property-by-id id file "PROJECT")
               ;; Also remove horizon properties when leaving project
+              (pearl-gtd-review--remove-property-by-id id file "L3_AREA")
+              (pearl-gtd-review--remove-property-by-id id file "L4_GOAL")
+              (pearl-gtd-review--remove-property-by-id id file "L5_VISION")
+              (pearl-gtd-review--remove-property-by-id id file "L6_PURPOSE")
+              ;; Also remove old property names
+              ;; Also remove old property names
               (pearl-gtd-review--remove-property-by-id id file "HORIZON_L3")
               (pearl-gtd-review--remove-property-by-id id file "HORIZON_L4")
               (pearl-gtd-review--remove-property-by-id id file "HORIZON_L5")
@@ -337,6 +343,12 @@ where TYPE can be \\='project for project sections."
     (setq buffer-read-only nil)
     (erase-buffer)
     (org-mode)
+    ;; Add header line
+    (setq-local header-line-format
+                (pcase pearl-gtd-review--current-view-type
+                  ('daily "Daily Review | n/p/j/k: navigate | RET: jump | c/d/t/s/r/P: edit | C: complete | g: refresh | q: quit")
+                  ('weekly "Weekly Review | n/p/j/k: navigate | RET: jump | c/d/t/s/r/P: edit | C: complete | g: refresh | q: quit")
+                  (_ "Review | n/p/j/k: navigate | RET: jump | c/d/t/s/r/P: edit | C: complete | g: refresh | q: quit")))
     (setq pearl-gtd-review--entry-map (make-vector 100 nil))
     (let ((entry-index 0))
       (if (null sections)
@@ -350,11 +362,11 @@ where TYPE can be \\='project for project sections."
             (insert (format "** %s\n" title))
             (cond
              (is-project
-              (insert "| Project | Total | Todo | Done | Next Deadline | L3 | L4 | L5 | L6 |\n")
-              (insert "|---------+-------+------+------+---------------+----+----+----+----|\n"))
+              (insert "| Project | Total | Todo | Done | Next Deadline | L3_AREA | L4_GOAL | L5_VISION | L6_PURPOSE |\n")
+              (insert "|---------+-------+------+------+---------------+---------+---------+-----------+------------|\n"))
              (is-no-project
-              (insert "| Headline | Status | Scheduled | Deadline | Context | Delegated | L3 |\n")
-              (insert "|----------+--------+-----------+----------+---------+-----------+----|\n"))
+              (insert "| Headline | Status | Scheduled | Deadline | Context | Delegated | L3_AREA |\n")
+              (insert "|----------+--------+-----------+----------+---------+-----------+---------|\n"))
              (is-inbox
               (insert "| Headline | Created |\n")
               (insert "|----------+---------|\n"))
@@ -497,10 +509,10 @@ L3-L6 are horizon values from project entries."
                       ((string= todo-state "TODO") (cl-incf todo)))
                      ;; Collect horizon values from first TODO entry
                      (when (and (null horizon-l3) (pearl-gtd-core-entry-todo-p))
-                       (setq horizon-l3 (org-entry-get nil "HORIZON_L3"))
-                       (setq horizon-l4 (org-entry-get nil "HORIZON_L4"))
-                       (setq horizon-l5 (org-entry-get nil "HORIZON_L5"))
-                       (setq horizon-l6 (org-entry-get nil "HORIZON_L6")))
+                       (setq horizon-l3 (org-entry-get nil "L3_AREA"))
+                       (setq horizon-l4 (org-entry-get nil "L4_GOAL"))
+                       (setq horizon-l5 (org-entry-get nil "L5_VISION"))
+                       (setq horizon-l6 (org-entry-get nil "L6_PURPOSE")))
                      (let ((deadline (org-entry-get nil "DEADLINE")))
                        (when deadline
                          (let ((d-time (org-time-string-to-time deadline)))
@@ -606,7 +618,7 @@ Returns list of entry lists suitable for table display."
                        (deadline (org-entry-get nil "DEADLINE"))
                        (context (org-entry-get nil "CONTEXT"))
                        (delegated (org-entry-get nil "DELEGATED"))
-                       (horizon-l3 (org-entry-get nil "HORIZON_L3")))
+                       (horizon-l3 (org-entry-get nil "L3_AREA")))
                    ;; Return 7 fields: head, id, file, todo-state, scheduled, deadline, context, delegated, horizon-l3
                    ;; But for table display, we need 6 fields after head/id/file
                    (push (list head id "actions.org"

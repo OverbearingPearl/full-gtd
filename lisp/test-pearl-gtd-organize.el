@@ -68,12 +68,12 @@
          ((symbol-function 'completing-read) (lambda (&rest _) "")))
   :body (pearl-gtd-process-inbox)
   :asserts (progn
-             (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      "* TODO Task for office"))
-             (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      ":office:")))
+           (should (test-pearl-gtd-file-contains-p
+                    (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                    "* TODO Task for office"))
+           (should (test-pearl-gtd-file-contains-p
+                    (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                    ":office:")))
   :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-organize-user-renames-then-sets-context-and-schedule
@@ -100,19 +100,19 @@
          ((symbol-function 'completing-read) (lambda (&rest _) "")))
   :body (pearl-gtd-process-inbox)
   :asserts (progn
-             (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      "* TODO Prepare quarterly report"))
-             (should (test-pearl-gtd-file-lacks-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      "* Old vague name"))
-             (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      ":office:"))
-             (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      "SCHEDULED"))
-             (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory)))
+           (should (test-pearl-gtd-file-contains-p
+                    (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                    "* TODO Prepare quarterly report"))
+           (should (test-pearl-gtd-file-lacks-p
+                    (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                    "* Old vague name"))
+           (should (test-pearl-gtd-file-contains-p
+                    (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                    ":office:"))
+           (should (test-pearl-gtd-file-contains-p
+                    (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                    "SCHEDULED"))
+           (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory)))
   :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-organize-user-processes-empty-inbox
@@ -137,8 +137,8 @@
          ((symbol-function 'completing-read) (lambda (&rest _) "reference")))
   :body (pearl-gtd-process-inbox)
   :asserts (should (test-pearl-gtd-file-contains-p
-                    (expand-file-name "reference.org" pearl-gtd-init-base-directory)
-                    "* Renamed task"))
+            (expand-file-name "reference.org" pearl-gtd-init-base-directory)
+            "* Renamed task"))
   :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-organize-user-processes-two-items-differently
@@ -161,13 +161,14 @@
               (if (= count 1) "trash" "reference")))))
   :body (pearl-gtd-process-inbox)
   :asserts (progn
-             (should-not (test-pearl-gtd-file-contains-p
+           (let ((result (test-pearl-gtd-file-contains-p
                           (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                          "* Junk item"))
-             (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "reference.org" pearl-gtd-init-base-directory)
-                      "* Important article"))
-             (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory)))
+                          "* Junk item")))
+             (should-not (car result)))
+           (should (test-pearl-gtd-file-contains-p
+                    (expand-file-name "reference.org" pearl-gtd-init-base-directory)
+                    "* Important article"))
+           (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory)))
   :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-organize-user-executes-two-tasks-immediately
@@ -178,10 +179,7 @@
          ((symbol-function 'read-string) (lambda (&rest _) ""))
          ((symbol-function 'completing-read) (lambda (&rest _) "")))
   :body (pearl-gtd-process-inbox)
-  :asserts (progn
-             (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory))
-             ;; Both should be marked as executed (moved with nil target)
-             )
+  :asserts (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory))
   :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-organize-user-quits-during-assign
@@ -226,19 +224,19 @@
          ((symbol-function 'completing-read) (lambda (&rest _) "")))
   :body (pearl-gtd-process-inbox)
   :asserts (progn
-             (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      "* TODO Shared task"))
-             (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      ":PROJECT:\\s-*Alpha"))
-             (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      "Beta"))
-             (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      ":ID:"))
-             (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory)))
+           (should (test-pearl-gtd-file-contains-p
+                    (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                    "* TODO Shared task"))
+           (should (test-pearl-gtd-file-contains-p
+                    (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                    ":PROJECT:\\s-*Alpha"))
+           (should (test-pearl-gtd-file-contains-p
+                    (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                    "Beta"))
+           (should (test-pearl-gtd-file-contains-p
+                    (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                    ":ID:"))
+           (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory)))
   :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-organize-user-sets-schedule-with-default-deadline

@@ -15,7 +15,7 @@
 
 (defun pearl-gtd-horizons--get-project-horizon (project property)
   "Get horizon PROPERTY value for PROJECT from any of its actions.
-PROPERTY should be one of: HORIZON_L3, HORIZON_L4, HORIZON_L5, HORIZON_L6."
+PROPERTY should be one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE."
   (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
         (value nil))
     (when (file-exists-p file-path)
@@ -28,13 +28,18 @@ PROPERTY should be one of: HORIZON_L3, HORIZON_L4, HORIZON_L5, HORIZON_L6."
              (let ((proj (org-entry-get nil "PROJECT")))
                (when (and proj (member project (split-string proj "[, ]" t)))
                  (setq value (org-entry-get nil property))
+                 ;; Also check old property names for backward compatibility
+                 (unless value
+                   (setq value (org-entry-get nil (replace-regexp-in-string
+                                                  "^HORIZON_L" "L" (replace-regexp-in-string
+                                                                   "^L" "HORIZON_L" property)))))
                  (when value (throw 'found value)))))
            nil nil))))
     value))
 
 (defun pearl-gtd-horizons--set-project-horizon (project property value)
   "Set horizon PROPERTY to VALUE for all actions in PROJECT.
-PROPERTY should be one of: HORIZON_L3, HORIZON_L4, HORIZON_L5, HORIZON_L6."
+PROPERTY should be one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE."
   (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
         (count 0))
     (when (file-exists-p file-path)
@@ -58,19 +63,20 @@ PROPERTY should be one of: HORIZON_L3, HORIZON_L4, HORIZON_L5, HORIZON_L6."
 
 (defun pearl-gtd-horizons--check-hierarchy-constraint (project level)
   "Check hierarchy constraint for setting LEVEL horizon for PROJECT.
-LEVEL should be 3, 4, 5, or 6.
+LEVEL should be 3, 4, 5, 6, or 7 (for L6_PRINCIPLE).
 Returns t if constraint satisfied, nil otherwise."
   (cond
-   ((= level 3) t)  ; L3 can always be set
-   ((= level 4)
-    (let ((l3 (pearl-gtd-horizons--get-project-horizon project "HORIZON_L3")))
-      (and l3 (not (string= l3 "")))))
-   ((= level 5)
-    (let ((l4 (pearl-gtd-horizons--get-project-horizon project "HORIZON_L4")))
+   ((= level 3) t)  ; L3_AREA: no constraint
+   ((= level 4) t)  ; L4_GOAL: no constraint
+   ((= level 5)      ; L5_VISION: needs L4_GOAL
+    (let ((l4 (pearl-gtd-horizons--get-project-horizon project "L4_GOAL")))
       (and l4 (not (string= l4 "")))))
-   ((= level 6)
-    (let ((l5 (pearl-gtd-horizons--get-project-horizon project "HORIZON_L5")))
+   ((= level 6)      ; L6_PURPOSE: needs L5_VISION
+    (let ((l5 (pearl-gtd-horizons--get-project-horizon project "L5_VISION")))
       (and l5 (not (string= l5 "")))))
+   ((= level 7)      ; L6_PRINCIPLE: needs L6_PURPOSE
+    (let ((l6 (pearl-gtd-horizons--get-project-horizon project "L6_PURPOSE")))
+      (and l6 (not (string= l6 "")))))
    (t t)))
 
 (defun pearl-gtd-horizons--edit-horizon-at-point (level &optional project)
@@ -89,7 +95,17 @@ LEVEL should be 3, 4, 5, or 6."
     (when (or entry project)
       (let* ((id (when entry (car entry)))
              (file (when entry (cdr entry)))
-             (property (format "HORIZON_L%d" level))
+             (property (cond ((= level 3) "L3_AREA")
+                ((= level 4) "L4_GOAL")
+                ((= level 5) "L5_VISION")
+                ((= level 6) "L6_PURPOSE")
+                ((= level 7) "L6_PRINCIPLE")
+                (t (format "L%d_%s" level (cond ((= level 3) "AREA")
+                                               ((= level 4) "GOAL")
+                                               ((= level 5) "VISION")
+                                               ((= level 6) "PURPOSE")
+                                               ((= level 7) "PRINCIPLE")
+                                               (t "AREA"))))))
              (current-value (if project
                                 (pearl-gtd-horizons--get-project-horizon project property)
                               (pearl-gtd-review--get-property-by-id id file property)))
@@ -148,10 +164,14 @@ Returns alist: (L6-VALUE . (L5-VALUE . (L4-VALUE . (L3-VALUE . (PROJECTS . NO-PR
                   (head (org-get-heading t t))
                   (todo-state (org-get-todo-state))
                   (proj (org-entry-get nil "PROJECT"))
-                  (l3 (org-entry-get nil "HORIZON_L3"))
-                  (l4 (org-entry-get nil "HORIZON_L4"))
-                  (l5 (org-entry-get nil "HORIZON_L5"))
-                  (l6 (org-entry-get nil "HORIZON_L6"))
+                  (l3 (or (org-entry-get nil "L3_AREA")
+                          (org-entry-get nil "HORIZON_L3")))
+                  (l4 (or (org-entry-get nil "L4_GOAL")
+                          (org-entry-get nil "HORIZON_L4")))
+                  (l5 (or (org-entry-get nil "L5_VISION")
+                          (org-entry-get nil "HORIZON_L5")))
+                  (l6 (or (org-entry-get nil "L6_PURPOSE")
+                          (org-entry-get nil "HORIZON_L6")))
                   (entry (list head id todo-state)))
              ;; Only process if any horizon is set
              (when (or l3 l4 l5 l6)
@@ -221,6 +241,9 @@ Returns alist: (L6-VALUE . (L5-VALUE . (L4-VALUE . (L3-VALUE . (PROJECTS . NO-PR
       (setq buffer-read-only nil)
       (erase-buffer)
       (org-mode)
+      ;; Add header line
+      (setq-local header-line-format
+                  "Horizon View | RET: jump to task | g: refresh | q: quit")
 
       (insert "#+TITLE: Horizon View\n\n")
 
@@ -325,6 +348,7 @@ Returns alist: (L6-VALUE . (L5-VALUE . (L4-VALUE . (L3-VALUE . (PROJECTS . NO-PR
 (define-key pearl-gtd-review-view-mode-map (kbd "4") #'pearl-gtd-horizons--edit-l4-at-point)
 (define-key pearl-gtd-review-view-mode-map (kbd "5") #'pearl-gtd-horizons--edit-l5-at-point)
 (define-key pearl-gtd-review-view-mode-map (kbd "6") #'pearl-gtd-horizons--edit-l6-at-point)
+(define-key pearl-gtd-review-view-mode-map (kbd "7") #'pearl-gtd-horizons--edit-l7-at-point)
 
 (provide 'pearl-gtd-horizons)
 

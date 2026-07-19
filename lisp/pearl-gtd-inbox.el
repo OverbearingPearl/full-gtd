@@ -515,7 +515,7 @@ DEADLINE is the deadline date string (nil if not set)."
         (goto-char (point-min))
         (re-search-forward (concat "^\\*+[ \t]+\\(?:[A-Z]+[ \t]+\\)?"
                                    (regexp-quote (or new-headline headline))
-                                   "\\($\\| \\)") nil t)
+                                   "\\($\\| \\)"))
         (beginning-of-line)
         (org-mark-subtree)
         (setq subtree-content (buffer-substring (region-beginning) (region-end)))

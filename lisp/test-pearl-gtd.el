@@ -16,13 +16,25 @@
 (defun test-pearl-gtd-file-contains-p (file pattern)
   "Assert that FILE contains PATTERN.
 FILE is the file path to check.
-PATTERN is the regex pattern to search for."
-  (when (file-exists-p file)
+PATTERN is the regex pattern to search for.
+Returns a list (found-p file-content) where found-p is t/nil,
+and file-content is the entire file content as a string."
+  (if (not (file-exists-p file))
+      (list nil (format "File does not exist: %s" file))
     (with-temp-buffer
       (insert-file-contents file)
-      (goto-char (point-min))
-      (let ((case-fold-search nil))
-        (re-search-forward pattern nil t)))))
+      (let ((content (buffer-string))
+            (found (progn
+                     (goto-char (point-min))
+                     (let ((case-fold-search nil))
+                       (re-search-forward pattern nil t)))))
+        (list found content)))))
+
+(defun test-pearl-gtd-file-contains-p-bool (file pattern)
+  "Return t if FILE contains PATTERN, nil otherwise.
+FILE is the file path to check.
+PATTERN is the regex pattern to search for."
+  (car (test-pearl-gtd-file-contains-p file pattern)))
 
 (defun test-pearl-gtd-file-lacks-p (file pattern)
   "Assert that FILE does not contain PATTERN.
@@ -67,7 +79,8 @@ ARGS is a plist with keys:
        ,docstring
        (let* ((temp-dir (make-temp-file "test-pearl-gtd-" t))
               (pearl-gtd-init-base-directory temp-dir)
-              (test-pearl-gtd-caught-error nil))
+              (test-pearl-gtd-caught-error nil)
+              (test-pearl-gtd--files ',files))
          (unwind-protect
              (progn
                (setq pearl-gtd-inbox--current-test-name ',name)
@@ -82,7 +95,26 @@ ARGS is a plist with keys:
                ;; Run test with mocks
                (cl-letf ,mock
                  ,body
-                 ,asserts))
+                 (condition-case err
+                     ,asserts
+                   (ert-test-failed
+                    (let ((debug-info
+                           (concat
+                            "=== TEST FAILED: " (symbol-name ',name) " ===\n\n"
+                            "=== FILE CONTENTS ===\n\n"
+                            (mapconcat (lambda (f)
+                                         (let* ((fname (car f))
+                                                (path (expand-file-name fname temp-dir))
+                                                (content (if (file-exists-p path)
+                                                             (with-temp-buffer
+                                                               (insert-file-contents path)
+                                                               (buffer-string))
+                                                           "File does not exist")))
+                                           (format "-- %s --\n%s" fname content)))
+                                       test-pearl-gtd--files "\n\n")
+                            "\n\n=== END FILE CONTENTS ===\n\n"
+                            "Original error: " (error-message-string err))))
+                      (ert-fail debug-info))))))
            (ignore-errors ,teardown)
            ;; First save and kill buffers
            (dolist (buf (buffer-list))

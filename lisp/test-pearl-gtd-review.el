@@ -181,9 +181,10 @@
             (search-forward "Task to clear")
             (beginning-of-line)
             (pearl-gtd-review--edit-context-at-point)))
-  :asserts (should-not (test-pearl-gtd-file-contains-p
-                        (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                        ":CONTEXT:"))
+  :asserts (let ((result (test-pearl-gtd-file-contains-p
+                          (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                          ":CONTEXT:")))
+             (should-not (car result)))
   :teardown (kill-buffer "*Pearl-GTD Daily Review*"))
 
 (test-pearl-gtd-define-story test-pearl-gtd-review-edit-delegated-with-default
@@ -206,9 +207,10 @@
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       ":DELEGATED: Bob"))
-             (should-not (test-pearl-gtd-file-contains-p
-                          (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                          ":DELEGATED: John")))
+             (let ((result (test-pearl-gtd-file-contains-p
+                            (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                            ":DELEGATED: John")))
+               (should-not (car result))))
   :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
 
 (test-pearl-gtd-define-story test-pearl-gtd-review-edit-schedule-with-default
@@ -231,9 +233,10 @@
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "SCHEDULED: <2026-05-15"))
-             (should-not (test-pearl-gtd-file-contains-p
-                          (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                          "SCHEDULED: <2026-01-01")))
+             (let ((result (test-pearl-gtd-file-contains-p
+                            (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                            "SCHEDULED: <2026-01-01")))
+               (should-not (car result))))
   :teardown (kill-buffer "*Pearl-GTD Daily Review*"))
 
 (test-pearl-gtd-define-story test-pearl-gtd-review-jump-to-task-from-table
@@ -302,9 +305,10 @@
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "* TODO Updated task name"))
-             (should-not (test-pearl-gtd-file-contains-p
-                          (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                          "* TODO Old task name")))
+             (let ((result (test-pearl-gtd-file-contains-p
+                            (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                            "* TODO Old task name")))
+               (should-not (car result))))
   :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
 
 (test-pearl-gtd-define-story test-pearl-gtd-review-jump-across-sections-and-files

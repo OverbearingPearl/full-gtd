@@ -31,7 +31,7 @@ CONTEXTS is a list of normalized context strings (without @ prefix)."
   "Return non-nil if current entry is scheduled for today."
   (let* ((scheduled (org-entry-get nil "SCHEDULED"))
          (ct (current-time))
-         (today-pattern (format-time-string "<%Y-%m-%d" ct t)))
+         (today-pattern (format-time-string "<%Y-%m-%d" ct)))
     (and scheduled
          (string-match-p today-pattern scheduled))))
 

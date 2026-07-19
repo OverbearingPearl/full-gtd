@@ -17,12 +17,9 @@
   :mock (((symbol-function 'read-string) (lambda (&rest _) "Buy milk")))
   :body (pearl-gtd-capture)
   :asserts (progn
-             (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                      "* Buy milk"))
-             (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                      ":ID:")))
+             (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+               (should (test-pearl-gtd-file-contains-p-bool inbox-file "* Buy milk"))
+               (should (test-pearl-gtd-file-contains-p-bool inbox-file ":ID:"))))
   :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-capture-user-captures-idea-with-timestamp
@@ -32,12 +29,9 @@
   :mock (((symbol-function 'read-string) (lambda (&rest _) "Task with time")))
   :body (pearl-gtd-capture)
   :asserts (progn
-             (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                      ":CREATED:"))
-             (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                      ":ID:")))
+             (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+               (should (test-pearl-gtd-file-contains-p-bool inbox-file ":CREATED:"))
+               (should (test-pearl-gtd-file-contains-p-bool inbox-file ":ID:"))))
   :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-capture-user-captures-empty-string-creates-nothing
@@ -46,9 +40,9 @@
   :files nil
   :mock (((symbol-function 'read-string) (lambda (&rest _) "")))
   :body (pearl-gtd-capture)
-  :asserts (should-not (test-pearl-gtd-file-contains-p
-                        (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                        "* "))
+  :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+             (let ((result (test-pearl-gtd-file-contains-p inbox-file "* ")))
+               (should-not (car result))))
   :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-capture-user-captures-special-chars
@@ -57,9 +51,8 @@
   :files nil
   :mock (((symbol-function 'read-string) (lambda (&rest _) "Fix [urgent] bug")))
   :body (pearl-gtd-capture)
-  :asserts (should (test-pearl-gtd-file-contains-p
-                    (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                    "* Fix \\[urgent\\] bug"))
+  :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+             (should (test-pearl-gtd-file-contains-p-bool inbox-file "* Fix \\[urgent\\] bug")))
   :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-capture-user-captures-very-long-title
@@ -68,9 +61,8 @@
   :files nil
   :mock (((symbol-function 'read-string) (lambda (&rest _) "This is a very long title that exceeds normal length for testing purposes")))
   :body (pearl-gtd-capture)
-  :asserts (should (test-pearl-gtd-file-contains-p
-                    (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                    "* This is a very long title that exceeds normal length for testing purposes"))
+  :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+             (should (test-pearl-gtd-file-contains-p-bool inbox-file "* This is a very long title that exceeds normal length for testing purposes")))
   :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-capture-user-skips-capture-when-inbox-has-content
@@ -79,13 +71,11 @@
   :files (("inbox.org" "* Existing task\n"))
   :mock (((symbol-function 'read-string) (lambda (&rest _) "")))
   :body (pearl-gtd-capture)
-  :asserts (progn
-             (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                      "* Existing task"))
-             (should-not (test-pearl-gtd-file-contains-p
-                          (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                          "* Existing task\n* ")))
+  :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+             (let ((result1 (test-pearl-gtd-file-contains-p inbox-file "* Existing task")))
+               (should (car result1)))
+             (let ((result2 (test-pearl-gtd-file-contains-p inbox-file "* Existing task\n* ")))
+               (should-not (car result2))))
   :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-capture-user-captures-two-items-sequentially
@@ -100,16 +90,11 @@
   :body (progn
           (pearl-gtd-capture)
           (pearl-gtd-capture))
-  :asserts (progn
-             (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                      "* First task"))
-             (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                      "* Second task"))
-             ;; Verify both have IDs
+  :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+             (should (test-pearl-gtd-file-contains-p-bool inbox-file "* First task"))
+             (should (test-pearl-gtd-file-contains-p-bool inbox-file "* Second task"))
              (with-temp-buffer
-               (insert-file-contents (expand-file-name "inbox.org" pearl-gtd-init-base-directory))
+               (insert-file-contents inbox-file)
                (goto-char (point-min))
                (should (search-forward ":ID:" nil t))
                (should (search-forward ":ID:" nil t))))
@@ -127,14 +112,10 @@
   :body (progn
           (pearl-gtd-capture)
           (pearl-gtd-capture))
-  :asserts (progn
-             ;; Both entries exist
-             (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                      "* Buy milk"))
-             ;; Both have IDs (should find two :ID: occurrences)
+  :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+             (should (test-pearl-gtd-file-contains-p-bool inbox-file "* Buy milk"))
              (with-temp-buffer
-               (insert-file-contents (expand-file-name "inbox.org" pearl-gtd-init-base-directory))
+               (insert-file-contents inbox-file)
                (goto-char (point-min))
                (should (search-forward ":ID:" nil t))
                (should (search-forward ":ID:" nil t))))
@@ -146,13 +127,9 @@
   :files (("inbox.org" "* First existing task\n"))
   :mock (((symbol-function 'read-string) (lambda (&rest _) "New captured task")))
   :body (pearl-gtd-capture)
-  :asserts (progn
-             (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                      "* First existing task"))
-             (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                      "* New captured task")))
+  :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+             (should (test-pearl-gtd-file-contains-p-bool inbox-file "* First existing task"))
+             (should (test-pearl-gtd-file-contains-p-bool inbox-file "* New captured task")))
   :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-capture-preserves-two-existing-tasks
@@ -161,16 +138,10 @@
   :files (("inbox.org" "* Task one\n* Task two\n"))
   :mock (((symbol-function 'read-string) (lambda (&rest _) "Third task")))
   :body (pearl-gtd-capture)
-  :asserts (progn
-             (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                      "* Task one"))
-             (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                      "* Task two"))
-             (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                      "* Third task")))
+  :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+             (should (test-pearl-gtd-file-contains-p-bool inbox-file "* Task one"))
+             (should (test-pearl-gtd-file-contains-p-bool inbox-file "* Task two"))
+             (should (test-pearl-gtd-file-contains-p-bool inbox-file "* Third task")))
   :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-capture-user-captures-mixed-special-chars-in-batch
@@ -188,13 +159,9 @@
   :body (progn
           (pearl-gtd-capture)
           (pearl-gtd-capture))
-  :asserts (progn
-             (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                      "* Task \\[urgent\\] with brackets"))
-             (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                      "* Task \\* with asterisk")))
+  :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+             (should (test-pearl-gtd-file-contains-p-bool inbox-file "* Task \\[urgent\\] with brackets"))
+             (should (test-pearl-gtd-file-contains-p-bool inbox-file "* Task \\* with asterisk")))
   :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-capture-user-quits-during-input
@@ -206,7 +173,7 @@
          (condition-case err
              (pearl-gtd-capture)
            (quit (setq test-pearl-gtd-caught-error err))))
-:asserts (progn
+:asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
            (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory))
            (should (eq (car test-pearl-gtd-caught-error) 'quit)))
   :teardown nil)

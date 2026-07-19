@@ -125,15 +125,21 @@
            (beginning-of-line)
            (pearl-gtd-do--complete-task-at-point)))
   :asserts (progn
-             (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      "* DONE Task to complete"))
-             (should (test-pearl-gtd-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      ":ID:"))  ; Verify ID exists
-             (should-not (test-pearl-gtd-file-contains-p
-                          (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                          "* TODO Task to complete")))
+             (let* ((file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+                    (pattern1 "* DONE Task to complete")
+                    (result1 (test-pearl-gtd-file-contains-p file pattern1))
+                    (found1 (car result1)))
+               (should found1))
+             (let* ((file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+                    (pattern2 ":ID:")
+                    (result2 (test-pearl-gtd-file-contains-p file pattern2))
+                    (found2 (car result2)))
+               (should found2))
+             (let* ((file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+                    (pattern3 "* TODO Task to complete")
+                    (result3 (test-pearl-gtd-file-contains-p file pattern3))
+                    (found3 (car result3)))
+               (should-not found3)))
   :teardown (kill-buffer "*Pearl-GTD: All Actions*"))
 
 (test-pearl-gtd-define-story test-pearl-gtd-do-user-views-project-in-actions-table
