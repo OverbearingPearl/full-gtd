@@ -53,16 +53,18 @@ Return project name string after validation (non-empty and not existing)."
 
 (defun pearl-gtd-planning--ask-horizon (level description &optional optional)
   "Prompt for horizon value at LEVEL with DESCRIPTION.
+LEVEL is a number (3-7).  DESCRIPTION is a string describing the horizon.
 If OPTIONAL is non-nil, empty input is allowed.
-Return string (may be empty)."
+Return the input string (may be empty)."
   (let ((prompt (format "%s (L%d)%s: " description level
                         (if optional " (optional)" ""))))
     (read-string prompt)))
 
 (defun pearl-gtd-planning--ask-brainstorm (project)
-  "Collect brainstorm items via temp buffer for PROJECT.
-Press \\[exit-recursive-edit] to finish, \\[abort-recursive-edit] to abort.
-Return list of written headlines."
+  "Collect brainstorm items for PROJECT via temp buffer.
+Press C-c C-c to finish, C-c C-k to abort.
+Return list of written headline strings.
+Signal error if user aborts with C-c C-k."
   (let ((buf (get-buffer-create "*Pearl-GTD Brainstorm*")))
     (with-current-buffer buf
       (erase-buffer)
