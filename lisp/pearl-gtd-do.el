@@ -106,35 +106,29 @@ LAST-DATA-ROW is the position of the last data row in the table."
       (when (and id file)
         (cons id file)))))
 
-(defun pearl-gtd-do--create-actions-table-buffer (contexts buffer-name)
-  "Create a read-only table buffer showing actions filtered by CONTEXTS.
-CONTEXTS is a list of normalized context strings (without @ prefix), or nil for all.
-BUFFER-NAME is the name for the new buffer."
+(defun pearl-gtd-do--create-view-buffer (buffer-name predicates view-type &optional empty-msg contexts)
+  "Create a read-only table buffer showing actions filtered by PREDICATES.
+BUFFER-NAME is the name for the new buffer.
+PREDICATES is a list of predicate functions to apply.
+VIEW-TYPE is the symbol for `pearl-gtd-do--current-view-type'.
+EMPTY-MSG is the message to display when no entries found.
+CONTEXTS is stored for refreshing context views."
   (let* ((buffer (get-buffer-create buffer-name))
          (file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
-         (predicates (list #'pearl-gtd-core-entry-todo-p))
-         (actions nil))
-    ;; Add context predicate if contexts specified
-    (when contexts
-      (setq predicates
-            (append predicates
-                    (list (lambda () (pearl-gtd-core-entry-context-p contexts))))))
-    ;; Get filtered entries
-    (setq actions (pearl-gtd-core-filter-entries file-path predicates))
-    ;; Create buffer with results
+         (actions (pearl-gtd-core-filter-entries file-path predicates)))
     (with-current-buffer buffer
       (setq buffer-read-only nil)
       (erase-buffer)
       (org-mode)
       ;; Add header line
       (setq-local header-line-format
-                  (pcase pearl-gtd-do--current-view-type
+                  (pcase view-type
                     ('context "Context View | n/p/j/k: navigate | RET: jump | C: complete | r: rename | g: refresh | q: quit")
                     ('delegated "Delegated View | n/p/j/k: navigate | RET: jump | C: complete | r: rename | g: refresh | q: quit")
                     ('today "Today View | n/p/j/k: navigate | RET: jump | C: complete | r: rename | g: refresh | q: quit")
                     (_ "Actions View | n/p/j/k: navigate | RET: jump | C: complete | r: rename | g: refresh | q: quit")))
       (if (null actions)
-          (insert "(No actions found)\n")
+          (insert (format "%s\n" (or empty-msg "(No actions found)")))
         (insert "| Headline | Context | Status | Scheduled | Delegated | Project | Created |\n")
         (insert "|----------+---------+--------+-----------+-----------+---------+---------|\n")
         (dolist (action actions)
@@ -153,9 +147,20 @@ BUFFER-NAME is the name for the new buffer."
       (setq buffer-read-only t)
       (goto-char (point-min))
       (forward-line 2)
-      (setq pearl-gtd-do--current-view-type 'context
+      (setq pearl-gtd-do--current-view-type view-type
             pearl-gtd-do--current-view-contexts contexts)
       (current-buffer))))
+
+(defun pearl-gtd-do--create-actions-table-buffer (contexts buffer-name)
+  "Create a read-only table buffer showing actions filtered by CONTEXTS.
+CONTEXTS is a list of normalized context strings (without @ prefix), or nil for all.
+BUFFER-NAME is the name for the new buffer."
+  (let ((predicates (list #'pearl-gtd-core-entry-todo-p)))
+    (when contexts
+      (setq predicates
+            (append predicates
+                    (list (lambda () (pearl-gtd-core-entry-context-p contexts))))))
+    (pearl-gtd-do--create-view-buffer buffer-name predicates 'context "(No actions found)" contexts)))
 
 (defun pearl-gtd-do--collect-contexts ()
   "Collect all unique context tags from actions.org."
@@ -200,77 +205,18 @@ Context tags are normalized by removing the @ prefix for matching."
 
 (defun pearl-gtd-do--view-delegated ()
   "View all delegated tasks in table format."
-  (let* ((buffer-name "*Pearl-GTD: Delegated*")
-         (file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
-         (actions (pearl-gtd-core-filter-entries
-                   file-path
-                   (list #'pearl-gtd-core-entry-todo-p
-                         #'pearl-gtd-core-entry-delegated-p))))
-    (get-buffer-create buffer-name)
-    (with-current-buffer buffer-name
-      (setq buffer-read-only nil)
-      (erase-buffer)
-      (org-mode)
-      (if (null actions)
-          (insert "(No delegated tasks)\n")
-        (insert "| Headline | Context | Status | Scheduled | Delegated | Project | Created |\n")
-        (insert "|----------+---------+--------+-----------+-----------+---------+---------|\n")
-        (dolist (action actions)
-          (let* ((raw-headline (nth 0 action))
-                 (id (get-text-property 0 'pearl-gtd-id raw-headline))
-                 (file "actions.org")
-                 (escaped-headline (replace-regexp-in-string "|" "\\\\vert{}" raw-headline)))
-            (when id
-              (put-text-property 0 (length escaped-headline) 'pearl-gtd-id id escaped-headline)
-              (put-text-property 0 (length escaped-headline) 'pearl-gtd-file file escaped-headline))
-            (insert (format "| %s | %s | %s | %s | %s | %s | %s |\n"
-                           escaped-headline
-                           (nth 1 action) (nth 2 action) (nth 3 action)
-                           (nth 4 action) (nth 5 action) (nth 6 action)))))
-        (org-table-align))
-      (setq buffer-read-only t)
-      (goto-char (point-min))
-      (forward-line 2))
-    (with-current-buffer buffer-name
-      (setq pearl-gtd-do--current-view-type 'delegated))
-    (pop-to-buffer buffer-name)
+  (let ((buffer-name "*Pearl-GTD: Delegated*")
+        (predicates (list #'pearl-gtd-core-entry-todo-p
+                          #'pearl-gtd-core-entry-delegated-p)))
+    (pop-to-buffer (pearl-gtd-do--create-view-buffer buffer-name predicates 'delegated "(No delegated tasks)"))
     (pearl-gtd-do-view-mode 1)))
 
 (defun pearl-gtd-do--view-today ()
   "View actions scheduled for today in table format."
-  (let* ((buffer-name "*Pearl-GTD: Today*")
-         (file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
-         (actions (pearl-gtd-core-filter-entries
-                   file-path
-                   (list #'pearl-gtd-core-entry-todo-p
-                         #'pearl-gtd-core-entry-scheduled-today-p))))
-    (get-buffer-create buffer-name)
-    (with-current-buffer buffer-name
-      (setq buffer-read-only nil)
-      (erase-buffer)
-      (org-mode)
-      (if (null actions)
-          (insert "(No actions scheduled for today)\n")
-        (insert "| Headline | Context | Status | Scheduled | Delegated | Project | Created |\n")
-        (insert "|----------+---------+--------+-----------+-----------+---------+---------|\n")
-        (dolist (action actions)
-          (let* ((raw-headline (nth 0 action))
-                 (id (get-text-property 0 'pearl-gtd-id raw-headline))
-                 (file "actions.org")
-                 (escaped-headline (replace-regexp-in-string "|" "\\\\vert{}" raw-headline)))
-            (when id
-              (put-text-property 0 (length escaped-headline) 'pearl-gtd-id id escaped-headline)
-              (put-text-property 0 (length escaped-headline) 'pearl-gtd-file file escaped-headline))
-            (insert (format "| %s | %s | %s | %s | %s | %s | %s |\n"
-                           escaped-headline
-                           (nth 1 action) (nth 2 action) (nth 3 action)
-                           (nth 4 action) (nth 5 action) (nth 6 action)))))
-        (org-table-align))
-      (setq buffer-read-only t)
-      (goto-char (point-min))
-      (forward-line 2)
-      (setq pearl-gtd-do--current-view-type 'today))
-    (pop-to-buffer buffer-name)
+  (let ((buffer-name "*Pearl-GTD: Today*")
+        (predicates (list #'pearl-gtd-core-entry-todo-p
+                          #'pearl-gtd-core-entry-scheduled-today-p)))
+    (pop-to-buffer (pearl-gtd-do--create-view-buffer buffer-name predicates 'today "(No actions scheduled for today)"))
     (pearl-gtd-do-view-mode 1)))
 
 (defun pearl-gtd-do--goto-task ()
