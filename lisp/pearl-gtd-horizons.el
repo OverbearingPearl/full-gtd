@@ -124,25 +124,16 @@ LEVEL should be 3, 4, 5, or 6."
           (pearl-gtd-review--refresh-view)
           nil)))))
 
-(defun pearl-gtd-horizons--edit-l3-at-point (&optional project)
-  "Edit L3 horizon for entry at point or for PROJECT if provided."
-  (interactive)
-  (pearl-gtd-horizons--edit-horizon-at-point 3 project))
+(defmacro pearl-gtd-horizons--define-edit-fn (level)
+  "Define horizon editing function for LEVEL."
+  `(defun ,(intern (format "pearl-gtd-horizons--edit-l%d-at-point" level)) (&optional project)
+     ,(format "Edit L%d horizon for entry at point or for PROJECT if provided." level)
+     (interactive)
+     (pearl-gtd-horizons--edit-horizon-at-point ,level project)))
 
-(defun pearl-gtd-horizons--edit-l4-at-point (&optional project)
-  "Edit L4 horizon for entry at point or for PROJECT if provided."
-  (interactive)
-  (pearl-gtd-horizons--edit-horizon-at-point 4 project))
-
-(defun pearl-gtd-horizons--edit-l5-at-point (&optional project)
-  "Edit L5 horizon for entry at point or for PROJECT if provided."
-  (interactive)
-  (pearl-gtd-horizons--edit-horizon-at-point 5 project))
-
-(defun pearl-gtd-horizons--edit-l6-at-point (&optional project)
-  "Edit L6 horizon for entry at point or for PROJECT if provided."
-  (interactive)
-  (pearl-gtd-horizons--edit-horizon-at-point 6 project))
+;; Generate editing functions for L3-L7
+(dolist (level '(3 4 5 6 7))
+  (eval `(pearl-gtd-horizons--define-edit-fn ,level)))
 
 (defun pearl-gtd-horizons--collect-horizon-hierarchy ()
   "Collect all horizon data in hierarchical structure.
