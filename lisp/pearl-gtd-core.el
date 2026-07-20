@@ -56,7 +56,9 @@ CONTEXTS is a list of normalized context strings (without @ prefix)."
   "Filter entries in FILE-PATH using PREDICATES.
 PREDICATES is a list of predicate functions to apply.
 Each predicate is called with no arguments in the context of the entry.
-Return list of entries that pass all predicates."
+Return list of entries that pass all predicates.
+Entries are lists: (HEADLINE TAGS-STRING TODO-STATE SCHEDULED DELEGATED PROJECT CREATED).
+Nil values indicate unset properties."
   (let ((entries '()))
     (when (file-exists-p file-path)
       (with-temp-buffer
@@ -78,11 +80,11 @@ Return list of entries that pass all predicates."
                  (put-text-property 0 (length head) 'pearl-gtd-id id head))
                (push (list head
                           (mapconcat (lambda (c) (concat "@" c)) tags ",")
-                          (or todo-state "")
-                          (or scheduled "")
-                          (or delegated "")
-                          (or project "")
-                          (or created ""))
+                          todo-state
+                          scheduled
+                          delegated
+                          project
+                          created)
                      entries))))
          nil nil)))
     (nreverse entries)))
