@@ -162,7 +162,8 @@ Return (DESTINATION . CONTEXT) where DESTINATION is one of:
 (defun pearl-gtd-planning--execute-brainstorm-move (headline id project dest context)
   "Execute move for brainstorm item from inbox to DEST.
 HEADLINE is the item title.  ID is the org entry id.  PROJECT is the project name.
-DEST is the destination type.  CONTEXT is the context tag."
+DEST is the destination type.  CONTEXT is the context tag.
+Internal errors crash (no catch-all)."
   (let ((inbox-path (expand-file-name "inbox.org" pearl-gtd-init-base-directory))
         (target-file nil))
     (cond
@@ -175,9 +176,8 @@ DEST is the destination type.  CONTEXT is the context tag."
      ((string= dest "trash")
       (setq target-file nil)))
 
-    ;; Ensure inbox file exists
-    (unless (file-exists-p inbox-path)
-      (error "Inbox file not found: %s" inbox-path))
+    ;; Trust boundary: inbox must exist (internal state, crash if violated)
+    (cl-assert (file-exists-p inbox-path) t "Internal: inbox must exist")
 
     ;; Process in inbox buffer
     (let ((inbox-buffer (find-file-noselect inbox-path)))
@@ -185,38 +185,40 @@ DEST is the destination type.  CONTEXT is the context tag."
         (org-mode)
         (widen)
         (goto-char (point-min))
-        (if (not (re-search-forward (concat ":ID:[ \t]+" (regexp-quote id)) nil t))
-            (error "Entry with ID %s not found in inbox" id)
-          (org-back-to-heading)
-          ;; First make modifications (point is at heading)
-          ;; Remove brainstorm marker, no longer needed after organization
-          (org-delete-property "BRAINSTORM")
+        ;; Trust boundary: entry must exist (internal state, crash if violated)
+        (cl-assert (re-search-forward (concat ":ID:[ \t]+" (regexp-quote id)) nil t)
+                   t "Internal: brainstorm entry must exist in inbox")
+        (org-back-to-heading)
+        ;; First make modifications (point is at heading)
+        ;; Remove brainstorm marker, no longer needed after organization
+        (org-delete-property "BRAINSTORM")
 
-          (when (string= dest "next action")
-            (org-todo "TODO")
-            (when (and context (not (string= context "")))
-              (if (string-match "^@" context)
-                  (org-set-tags-to (list (substring context 1)))
-                (org-set-tags-to (list context)))))
+        (when (string= dest "next action")
+          (org-todo "TODO")
+          (when (and context (not (string= context "")))
+            (if (string-match "^@" context)
+                (org-set-tags-to (list (substring context 1)))
+              (org-set-tags-to (list context)))))
 
-          ;; After modifications, get subtree content
-          (let ((subtree-content (buffer-substring (point) (org-end-of-subtree))))
-            (if (string= subtree-content "")
-                (error "Subtree content is empty for ID %s" id)
-              ;; Delete from inbox
-              (org-mark-subtree)
-              (kill-region (region-beginning) (region-end))
-              (save-buffer)
-              ;; Insert to target if not trash
-              (when target-file
-                (let ((target-path (expand-file-name target-file pearl-gtd-init-base-directory)))
-                  (with-current-buffer (find-file-noselect target-path)
-                    (org-mode)
-                    (goto-char (point-max))
-                    (unless (bolp) (insert "\n"))
-                    (insert subtree-content)
-                    (unless (bolp) (insert "\n"))
-                    (save-buffer)))))))))))
+        ;; After modifications, get subtree content
+        (let ((subtree-content (buffer-substring (point) (org-end-of-subtree))))
+          ;; Trust boundary: content must exist (internal state, crash if violated)
+          (cl-assert (not (string= subtree-content ""))
+                     t "Internal: subtree content must not be empty")
+          ;; Delete from inbox
+          (org-mark-subtree)
+          (kill-region (region-beginning) (region-end))
+          (save-buffer)
+          ;; Insert to target if not trash
+          (when target-file
+            (let ((target-path (expand-file-name target-file pearl-gtd-init-base-directory)))
+              (with-current-buffer (find-file-noselect target-path)
+                (org-mode)
+                (goto-char (point-max))
+                (unless (bolp) (insert "\n"))
+                (insert subtree-content)
+                (unless (bolp) (insert "\n"))
+                (save-buffer)))))))))
 
 (defun pearl-gtd-planning--create-action (headline project context horizons)
   "Create a new action in actions.org.
