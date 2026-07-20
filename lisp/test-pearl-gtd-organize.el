@@ -122,7 +122,7 @@
   :mock nil
   :body (pearl-gtd-process-inbox)
   :asserts (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory))
-  :teardown nil)
+  :teardown (kill-buffer "*Pearl-GTD: Inbox*"))
 
 (test-pearl-gtd-define-story test-pearl-gtd-organize-user-handles-duplicate-titles
   "User processes entries with duplicate titles."

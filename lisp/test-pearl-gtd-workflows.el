@@ -277,10 +277,10 @@
 (test-pearl-gtd-define-story test-pearl-gtd-workflows-large-number-entries
   "System should handle 100+ entries without significant slowdown."
   :setup (pearl-gtd-init-initialize)
-  :files (("inbox.org" . ,(concat "* Task 1\n:PROPERTIES:\n:ID: perf-1\n:END:\n"
-                                   (mapconcat (lambda (i)
-                                               (format "* Task %d\n:PROPERTIES:\n:ID: perf-%d\n:END:\n" i i))
-                                             (number-sequence 2 100) ""))))
+  :files (("inbox.org" (concat "* Task 1\n:PROPERTIES:\n:ID: perf-1\n:END:\n"
+                               (mapconcat (lambda (i)
+                                           (format "* Task %d\n:PROPERTIES:\n:ID: perf-%d\n:END:\n" i i))
+                                         (number-sequence 2 100) ""))))
   :mock (((symbol-function 'y-or-n-p) (lambda (&rest _) nil))
          ((symbol-function 'read-string) (lambda (&rest _) ""))
          ((symbol-function 'completing-read) (lambda (&rest _) "trash")))

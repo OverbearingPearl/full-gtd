@@ -67,107 +67,79 @@ FILE is the file path to check.
 TITLE is the task title to search for."
   (test-pearl-gtd-file-contains-p file (format "* %s" title)))
 
+(defun test-pearl-gtd--create-files (temp-dir file-specs)
+  "Create files in TEMP-DIR from FILE-SPECS.
+Each spec is (FILENAME CONTENT).  CONTENT is a list of lines or a string."
+  (dolist (spec file-specs)
+    (let ((path (expand-file-name (car spec) temp-dir))
+          (content (cdr spec)))
+      (with-temp-file path
+        (insert (if (stringp content)
+                    content
+                  (mapconcat #'identity content "\n")))))))
+
+(defun test-pearl-gtd--cleanup (temp-dir)
+  "Kill buffers visiting files under TEMP-DIR, then delete TEMP-DIR."
+  (dolist (buf (buffer-list))
+    (when (and (buffer-file-name buf)
+               (string-prefix-p temp-dir (buffer-file-name buf)))
+      (with-current-buffer buf
+        (set-buffer-modified-p nil))
+      (kill-buffer buf)))
+  (when (file-directory-p temp-dir)
+    (delete-directory temp-dir t)))
+
+(defun test-pearl-gtd--debug-files (temp-dir file-names)
+  "Return multi-line debug string showing contents of files under TEMP-DIR.
+FILE-NAMES is a list of filenames (strings)."
+  (mapconcat
+   (lambda (fname)
+     (let ((path (expand-file-name fname temp-dir)))
+       (concat "-- " fname " --\n"
+               (if (file-exists-p path)
+                   (with-temp-buffer
+                     (insert-file-contents path)
+                     (buffer-string))
+                 "File does not exist"))))
+   file-names "\n\n"))
+
 (defmacro test-pearl-gtd-define-story (name docstring &rest args)
   "Define a user story test named NAME with DOCSTRING.
-ARGS is a plist with keys:
-:setup - Form to run before test
-:files - List of (filename content) to create, content can be:
-         - A string (may contain \\n for newlines)
-         - A list of strings (each element becomes a line)
-:mock - List of `cl-letf` bindings for user input simulation
-:body - The test body form
-:asserts - Assertion forms
-:teardown - Cleanup form"
+ARGS is a plist with:
+:setup    - Form to run before test.
+:files    - List of (FILENAME (LINE1 LINE2 ...)).  Each line is a string.
+:mock     - List of `cl-letf' bindings for input simulation.
+:body     - Test body form.
+:asserts  - Assertion forms.
+:teardown - Cleanup form run before automatic cleanup."
   (declare (indent defun))
-  (let ((setup (plist-get args :setup))
-        (files (plist-get args :files))
-        (mock (plist-get args :mock))
-        (body (plist-get args :body))
-        (asserts (plist-get args :asserts))
+  (let ((setup    (plist-get args :setup))
+        (files    (plist-get args :files))
+        (mock     (plist-get args :mock))
+        (body     (plist-get args :body))
+        (asserts  (plist-get args :asserts))
         (teardown (plist-get args :teardown)))
     `(ert-deftest ,name ()
        ,docstring
        (let* ((temp-dir (make-temp-file "test-pearl-gtd-" t))
               (pearl-gtd-init-base-directory temp-dir)
-              (test-pearl-gtd-caught-error nil)
-              (test-pearl-gtd--files ',files))
+              (test-pearl-gtd-caught-error nil))
          (unwind-protect
              (progn
-               (setq pearl-gtd-inbox--current-test-name ',name)
                ,setup
-               ;; Create test files - evaluate content expressions at runtime
-               ;; Support list of strings as content (joined by newlines)
-               ;; Use list construction to avoid nested backquote evaluation issues
-               ,@(mapcar (lambda (file-spec)
-                          (let* ((filename (car file-spec))
-                                 ;; Handle both ("f" . ,(expr)) and ("f" ,(expr)) forms
-                                 (raw-content (cdr file-spec))
-                                 ;; Unwrap comma expression or function call expression
-                                 (unwrapped (cond
-                                             ;; ("f" . ,(expr)) -> cdr is (\, expr)
-                                             ((and (listp raw-content)
-                                                   (eq (car raw-content) '\,))
-                                              (cadr raw-content))
-                                             ;; ("f" (expr)) where expr is a function call like (format ...), (concat ...)
-                                             ;; Detect by: raw-content is ((expr)) and (car raw-content) starts with a symbol
-                                             ((and (listp raw-content)
-                                                   (= (length raw-content) 1)
-                                                   (listp (car raw-content))
-                                                   (symbolp (caar raw-content)))
-                                              (car raw-content))
-                                             ;; Static content: string or list of strings
-                                             (t raw-content)))
-                                 ;; Process content form to avoid nested backquote issues
-                                 (processed-content
-                                  (cond
-                                   ;; Handle list of strings
-                                   ((and (listp unwrapped)
-                                         (cl-every #'stringp unwrapped))
-                                    `(mapconcat 'identity ',unwrapped "\n"))
-                                   ;; Expression or single string
-                                   (t unwrapped))))
-                            `(let ((file ,filename)
-                                   (content ,processed-content))
-                               (with-temp-file (expand-file-name file temp-dir)
-                                 (insert content)))))
-                        files)
-               ;; Run test with mocks
+               (test-pearl-gtd--create-files
+                temp-dir
+                (list ,@(mapcar (lambda (spec)
+                                  `(cons ,(car spec) ,(cadr spec)))
+                                files)))
                (cl-letf ,mock
-                 ,body
-                 (ert-info ((concat "=== FILE CONTENTS ===\n"
-                                    (mapconcat
-                                     (lambda (f)
-                                       (let* ((fname (car f))
-                                              (path (expand-file-name fname temp-dir))
-                                              (content-lines
-                                               (if (file-exists-p path)
-                                                   (with-temp-buffer
-                                                     (insert-file-contents path)
-                                                     (split-string (buffer-string) "\n"))
-                                                 (list "File does not exist"))))
-                                         (concat "-- " fname " --\n"
-                                                 (mapconcat (lambda (line)
-                                                              (if (string= line "")
-                                                                  ""
-                                                                (concat "  " line)))
-                                                            content-lines "\n"))))
-                                     test-pearl-gtd--files "\n\n")))
-                   ,asserts)))
+                 ,body)
+               (ert-info ((test-pearl-gtd--debug-files
+                           temp-dir
+                           ',(mapcar #'car files)))
+                 ,asserts))
            (ignore-errors ,teardown)
-           ;; First save and kill buffers
-           (dolist (buf (buffer-list))
-             (when (and (buffer-file-name buf)
-                        (string-prefix-p temp-dir (buffer-file-name buf)))
-               (when (buffer-modified-p buf)
-                 (with-current-buffer buf
-                   (save-buffer)))
-               (kill-buffer buf)))
-           ;; Then delete files
-           (dolist (file (directory-files temp-dir t "\\.org$"))
-             (when (file-exists-p file)
-               (delete-file file)))
-           ;; Finally delete directory
-           (delete-directory temp-dir))))))
+           (test-pearl-gtd--cleanup temp-dir))))))
 
 (provide 'test-pearl-gtd)
 
