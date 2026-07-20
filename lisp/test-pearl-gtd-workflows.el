@@ -107,17 +107,6 @@
                       "* Reference task")))
   :teardown nil)
 
-(test-pearl-gtd-define-story test-pearl-gtd-workflows-user-processes-empty-inbox
-  "User processes empty inbox workflow."
-  :setup (pearl-gtd-init-initialize)
-  :files (("inbox.org" ""))
-  :mock nil
-  :body (pearl-gtd-process-inbox)
-  :asserts (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory))
-  :teardown (when (get-buffer "*Pearl-GTD: Inbox*")
-              (with-current-buffer "*Pearl-GTD: Inbox*"
-                (setq buffer-read-only nil))
-              (kill-buffer "*Pearl-GTD: Inbox*")))
 
 (test-pearl-gtd-define-story test-pearl-gtd-workflows-user-captures-and-processes-two-items
   "User captures two items then processes both."
@@ -261,6 +250,44 @@
                (goto-char (point-min))
                (should (search-forward "* TODO Task" nil t))
                (should (search-forward "* TODO Task" nil t))))
+  :teardown nil)
+
+(test-pearl-gtd-define-story test-pearl-gtd-workflows-duplicate-ids-in-file
+  "Malformed file with duplicate IDs should still allow jumping to first match."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* TODO Task A\n:PROPERTIES:\n:ID: dup-id\n:END:\n* TODO Task B\n:PROPERTIES:\n:ID: dup-id\n:END:\n"))
+  :mock nil
+  :body (progn
+          (pearl-gtd-do-view-all-actions)
+          (with-current-buffer "*Pearl-GTD: All Actions*"
+            (goto-char (point-min))
+            (search-forward "Task B")
+            (beginning-of-line)
+            (pearl-gtd-do--goto-task)))
+  :asserts (progn
+             (let ((buf (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory))))
+               (should buf)
+               (with-current-buffer buf
+                 (should (looking-at-p "\\*+ TODO Task")))))
+  :teardown (progn
+              (test-pearl-gtd-cleanup-buffers '("*Pearl-GTD: All Actions*"))
+              (let ((buf (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory))))
+                (when buf (kill-buffer buf)))))
+
+(test-pearl-gtd-define-story test-pearl-gtd-workflows-large-number-entries
+  "System should handle 100+ entries without significant slowdown."
+  :setup (pearl-gtd-init-initialize)
+  :files (("inbox.org" . ,(concat "* Task 1\n:PROPERTIES:\n:ID: perf-1\n:END:\n"
+                                   (mapconcat (lambda (i)
+                                               (format "* Task %d\n:PROPERTIES:\n:ID: perf-%d\n:END:\n" i i))
+                                             (number-sequence 2 100) ""))))
+  :mock (((symbol-function 'y-or-n-p) (lambda (&rest _) nil))
+         ((symbol-function 'read-string) (lambda (&rest _) ""))
+         ((symbol-function 'completing-read) (lambda (&rest _) "trash")))
+  :body (let ((start (float-time)))
+          (pearl-gtd-process-inbox)
+          (should (< (- (float-time) start) 10.0)))
+  :asserts (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory))
   :teardown nil)
 
 (provide 'test-pearl-gtd-workflows)

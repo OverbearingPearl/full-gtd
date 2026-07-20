@@ -230,6 +230,62 @@
                (should (search-forward "*** TODO No project task" nil t))))
   :teardown (kill-buffer "*Pearl-GTD Horizons*"))
 
+(test-pearl-gtd-define-story test-pearl-gtd-horizons-clear-l3-cascade
+  "Clearing L3_AREA from project should remove inherited L3 from actions."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* TODO Task 1\n:PROPERTIES:\n:ID: cascade-1\n:PROJECT: TestProj\n:L3_AREA: Work\n:END:\n"))
+  :mock (((symbol-function 'read-string) (lambda (&rest _) "")))
+  :body (progn
+          (pearl-gtd-review-weekly)
+          (with-current-buffer "*Pearl-GTD Weekly Review*"
+            (goto-char (point-min))
+            (search-forward "** Projects - Active")
+            (search-forward "TestProj")
+            (beginning-of-line)
+            (pearl-gtd-horizons--edit-l3-at-point)))
+  :asserts (let ((content (with-temp-buffer
+                            (insert-file-contents
+                             (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+                            (buffer-string))))
+             (should-not (string-match-p ":L3_AREA:" content)))
+  :teardown (test-pearl-gtd-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
+
+(test-pearl-gtd-define-story test-pearl-gtd-horizons-constraint-l5-without-l4
+  "Setting L5_VISION without L4_GOAL must be rejected."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: constraint-1\n:PROJECT: ConstraintProj\n:L3_AREA: Area\n:END:\n"))
+  :mock (((symbol-function 'read-string) (lambda (&rest _) "VisionValue")))
+  :body (progn
+          (pearl-gtd-review-weekly)
+          (with-current-buffer "*Pearl-GTD Weekly Review*"
+            (goto-char (point-min))
+            (search-forward "** Projects - Active")
+            (search-forward "ConstraintProj")
+            (beginning-of-line)
+            (condition-case err
+                (pearl-gtd-horizons--edit-l5-at-point)
+              (error (should (string-match-p "L4" (error-message-string err)))))))
+  :asserts t
+  :teardown (test-pearl-gtd-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
+
+(test-pearl-gtd-define-story test-pearl-gtd-horizons-constraint-l6-without-l5
+  "Setting L6_PURPOSE without L5_VISION must be rejected."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: constraint-2\n:PROJECT: ConstraintProj2\n:L3_AREA: Area\n:L4_GOAL: Goal\n:END:\n"))
+  :mock (((symbol-function 'read-string) (lambda (&rest _) "PurposeValue")))
+  :body (progn
+          (pearl-gtd-review-weekly)
+          (with-current-buffer "*Pearl-GTD Weekly Review*"
+            (goto-char (point-min))
+            (search-forward "** Projects - Active")
+            (search-forward "ConstraintProj2")
+            (beginning-of-line)
+            (condition-case err
+                (pearl-gtd-horizons--edit-l6-at-point)
+              (error (should (string-match-p "L5" (error-message-string err)))))))
+  :asserts t
+  :teardown (test-pearl-gtd-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
+
 (provide 'test-pearl-gtd-horizons)
 
 ;;; test-pearl-gtd-horizons.el ends here

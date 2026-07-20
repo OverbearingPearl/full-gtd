@@ -309,6 +309,19 @@ Context tags are normalized by removing the @ prefix for matching."
           (org-table-align)
           (message "Task marked as complete"))))))
 
+(defun pearl-gtd-do--refresh-view ()
+  "Refresh the current view buffer based on its type."
+  (interactive)
+  (pcase pearl-gtd-do--current-view-type
+    ('context
+     (pearl-gtd-do--view-context pearl-gtd-do--current-view-contexts))
+    ('delegated
+     (pearl-gtd-do--view-delegated))
+    ('today
+     (pearl-gtd-do--view-today))
+    (_
+     (pearl-gtd-do--view-all-actions))))
+
 (defun pearl-gtd-do--rename-task-at-point ()
   "Rename the task at point in the view buffer."
   (interactive)

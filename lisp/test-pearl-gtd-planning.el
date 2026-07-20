@@ -444,6 +444,80 @@
               (when (get-buffer "*Pearl-GTD Planning Summary*")
                 (kill-buffer "*Pearl-GTD Planning Summary*"))))
 
+(test-pearl-gtd-define-story test-pearl-gtd-planning-empty-brainstorm
+  "Natural planning with no brainstorm items should still create project."
+  :setup (pearl-gtd-init-initialize)
+  :files nil
+  :mock (((symbol-function 'completing-read)
+          (lambda (prompt &rest _)
+            ;; For forced action creation at the end
+            "Next Action"))
+         ((symbol-function 'read-string)
+          (let ((inputs '("EmptyBrainstorm"  ; project name
+                         "Test Purpose"     ; L6
+                         ""                 ; L6 principle (optional)
+                         ""                 ; L5 (optional)
+                         "Test Goal"        ; L4
+                         "Test Area"        ; L3
+                         "Forced Action"    ; forced next action
+                         ""                 ; context (optional)
+                         ))
+                (idx 0))
+            (lambda (prompt &optional _initial _history)
+              (let ((val (nth idx inputs)))
+                (setq idx (1+ idx))
+                val))))
+         ((symbol-function 'recursive-edit)
+          (lambda ()
+            ;; Simulate empty brainstorm - do nothing, just return
+            nil)))
+  :body (pearl-gtd-planning-start)
+  :asserts (let ((content (with-temp-buffer
+                            (insert-file-contents
+                             (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+                            (buffer-string))))
+             (should (string-match-p ":L6_PURPOSE:\\s-*Test Purpose" content))
+             (should (string-match-p ":L4_GOAL:\\s-*Test Goal" content)))
+  :teardown (progn
+              (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
+              (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
+
+(test-pearl-gtd-define-story test-pearl-gtd-planning-all-trashed
+  "All brainstorm items trashed should force creation of one action."
+  :setup (pearl-gtd-init-initialize)
+  :files nil
+  :mock (((symbol-function 'completing-read)
+          (lambda (prompt &rest _)
+            (cond
+             ((string-match "Trash item 1" prompt) "Trash")
+             ((string-match "Trash item 2" prompt) "Trash")
+             ((string-match "Organize" prompt) "Trash")
+             (t "Next Action"))))
+         ((symbol-function 'read-string)
+          (test-pearl-gtd-planning--make-read-string-mock
+           ;; Added "Work" as L3_AREA value so "Forced Action" becomes the 7th value for action title
+           '("AllTrashed" "P" "" "G" "A" "Work" "Forced Action")))
+         ((symbol-function 'recursive-edit)
+          (lambda ()
+            (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
+              (with-current-buffer buf
+                (insert "Trash item 1\n")
+                (insert "Trash item 2\n"))))))
+  :body (pearl-gtd-planning-start)
+  :asserts (progn
+             (should-not (test-pearl-gtd-file-contains-p-bool
+                          (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                          "Trash item 1"))
+             (should-not (test-pearl-gtd-file-contains-p-bool
+                          (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                          "Trash item 2"))
+             (should (test-pearl-gtd-file-contains-p-bool
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      "Forced Action")))
+  :teardown (progn
+              (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
+              (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
+
 (provide 'test-pearl-gtd-planning)
 
 ;;; test-pearl-gtd-planning.el ends here

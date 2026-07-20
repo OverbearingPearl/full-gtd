@@ -26,7 +26,6 @@
                (should (search-forward "Task 1" nil t))
                (should (search-forward "Task 3" nil t))
                (should-not (search-forward "Task 2" nil t))
-               ;; Verify Context column displays "@office" format
                (goto-char (point-min))
                (should (search-forward "@office" nil t))))
   :teardown (kill-buffer "*Pearl-GTD: @office*"))
@@ -64,7 +63,6 @@
                (should (search-forward "Task A" nil t))
                (should (search-forward "Task B" nil t))
                (should (search-forward "Task C" nil t))
-               ;; Verify Context column displays tags with @prefix
                (goto-char (point-min))
                (should (search-forward "@office" nil t))
                (should (search-forward "@home" nil t))
@@ -82,7 +80,6 @@
              (with-current-buffer "*Pearl-GTD: Delegated*"
                (should (search-forward "Task X" nil t))
                (should (search-forward "John" nil t))
-               ;; Verify Context column displays tags with @prefix
                (goto-char (point-min))
                (should (search-forward "@office" nil t))))
   :teardown (kill-buffer "*Pearl-GTD: Delegated*"))
@@ -243,6 +240,81 @@
              (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
                    (buf (get-file-buffer actions-file)))
                (when buf (kill-buffer buf)))))
+
+(test-pearl-gtd-define-story test-pearl-gtd-do-refresh-after-external-change
+  "Refresh view should pick up external file changes."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* TODO Original\n:PROPERTIES:\n:ID: refresh-1\n:END:\n"))
+  :mock nil
+  :body (progn
+          (pearl-gtd-do-view-all-actions)
+          (with-temp-file (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+            (insert "* TODO Modified\n:PROPERTIES:\n:ID: refresh-1\n:END:\n"))
+          (with-current-buffer "*Pearl-GTD: All Actions*"
+            (pearl-gtd-do--refresh-view)))
+  :asserts (with-current-buffer "*Pearl-GTD: All Actions*"
+             (goto-char (point-min))
+             (should (search-forward "Modified" nil t))
+             (should-not (search-forward "Original" nil t)))
+  :teardown (test-pearl-gtd-cleanup-buffers '("*Pearl-GTD: All Actions*")))
+
+(test-pearl-gtd-define-story test-pearl-gtd-do-view-empty-actions-file
+  "Opening view on empty actions file should not error."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" ""))
+  :mock nil
+  :body (progn
+          (pearl-gtd-do-view-all-actions)
+          (pearl-gtd-review-weekly)
+          (pearl-gtd-review-daily))
+  :asserts (progn
+             (should (get-buffer "*Pearl-GTD: All Actions*"))
+             (should (get-buffer "*Pearl-GTD Weekly Review*"))
+             (should (get-buffer "*Pearl-GTD Daily Review*")))
+  :teardown (test-pearl-gtd-cleanup-buffers '("*Pearl-GTD: All Actions*"
+                                              "*Pearl-GTD Weekly Review*"
+                                              "*Pearl-GTD Daily Review*")))
+
+(test-pearl-gtd-define-story test-pearl-gtd-do-view-file-deleted-while-open
+  "File deleted while view is open should be handled gracefully."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: del-1\n:END:\n"))
+  :mock nil
+  :body (progn
+          (pearl-gtd-do-view-all-actions)
+          (delete-file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+          (with-current-buffer "*Pearl-GTD: All Actions*"
+            (condition-case nil
+                (pearl-gtd-do--refresh-view)
+              (error nil))))
+  :asserts (should (buffer-live-p (get-buffer "*Pearl-GTD: All Actions*")))
+  :teardown (test-pearl-gtd-cleanup-buffers '("*Pearl-GTD: All Actions*")))
+
+(test-pearl-gtd-define-story test-pearl-gtd-do-view-entry-deleted-while-navigating
+  "Entry deleted while navigating in view should not crash."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* TODO Task 1\n:PROPERTIES:\n:ID: nav-1\n:END:\n* TODO Task 2\n:PROPERTIES:\n:ID: nav-2\n:END:\n"))
+  :mock nil
+  :body (progn
+          (pearl-gtd-do-view-all-actions)
+          (with-current-buffer "*Pearl-GTD: All Actions*"
+            (with-current-buffer (find-file-noselect
+                                  (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+              (goto-char (point-min))
+              (re-search-forward "Task 1")
+              (org-mark-subtree)
+              (kill-region (region-beginning) (region-end))
+              (save-buffer))
+            (goto-char (point-min))
+            (condition-case nil
+                (pearl-gtd-do--goto-task)
+              (error nil))))
+  :asserts t
+  :teardown (progn
+              (test-pearl-gtd-cleanup-buffers '("*Pearl-GTD: All Actions*"))
+              (let ((buf (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory))))
+                (when buf (kill-buffer buf)))))
+
 
 (provide 'test-pearl-gtd-do)
 

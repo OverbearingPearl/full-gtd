@@ -230,6 +230,9 @@ DEADLINE is the deadline date string, or nil if not set.")
   "Capture a new item to the inbox with a timestamp."
   (let ((item (string-trim (read-string "Enter item to capture: "))))
     (unless (string-empty-p item)
+      ;; Sanitize: remove control chars and normalize newlines
+      (setq item (replace-regexp-in-string "[\x00-\x08\x0b-\x0c\x0e-\x1f\x7f]" "" item))
+      (setq item (replace-regexp-in-string "\n" " " item))
       (with-current-buffer (find-file-noselect (expand-file-name "inbox.org" pearl-gtd-init-base-directory))
         (goto-char (point-max))
         (insert (format "* %s\n:PROPERTIES:\n:CREATED: %s\n:END:\n" item (format-time-string "%Y-%m-%d %H:%M:%S")))
@@ -248,8 +251,9 @@ Returns a cons cell (NEW-HEADLINE . REMARKS)."
     ;; Ask for rename
     (setq pearl-gtd-inbox--current-prompt-type 'rename)
     (let ((rename (read-string (format "Rename '%s'? (RET to keep, or type new name): " headline))))
-      (when (not (string= rename ""))
-        (setq new-headline rename)
+      ;; Use string-trim to check for empty or whitespace-only input
+      (when (not (string= (string-trim rename) ""))
+        (setq new-headline (string-trim rename))
         (pearl-gtd-inbox--stage-change entry-ref 1 rename)))
     ;; Ask for remarks
     (setq pearl-gtd-inbox--current-prompt-type 'remarks)
@@ -347,6 +351,8 @@ REMARKS is the clarified remarks text (nil if none)."
     (setq pearl-gtd-inbox--current-prompt-type 'project)
     (let ((project-input (read-string (format "Project name(s) for '%s' (comma separated, RET to skip): " display-headline))))
       (let ((projects (mapcar #'string-trim (split-string project-input "," t))))
+        ;; Filter out empty strings
+        (setq projects (seq-filter (lambda (p) (not (string-empty-p p))) projects))
         (when projects
           (push (format ":PROJECT:%s:" (mapconcat 'identity projects ",")) tags))))
 
@@ -391,25 +397,32 @@ REMARKS is the clarified remarks text (nil if none)."
               (let ((staging-buffer (pearl-gtd-inbox--create-staging-buffer inbox-file " *inbox-processing*")))
                 (setq pearl-gtd-inbox-stage-buffer-name (buffer-name staging-buffer))
                 (pop-to-buffer staging-buffer)
-                (with-current-buffer staging-buffer
-                  (org-mode)
-                  (pearl-gtd-inbox--map-entries
-                   staging-buffer
-                   (lambda (headline entry-ref)
-                     (pearl-gtd-inbox--highlight-entry entry-ref)
-                     (pearl-gtd-inbox--process-entry headline staging-buffer entry-ref)))
-                  ;; Clear highlight after processing all entries
-                  (when pearl-gtd-inbox--current-highlight
-                    (delete-overlay pearl-gtd-inbox--current-highlight)
-                    (setq pearl-gtd-inbox--current-highlight nil))
-                  (pearl-gtd-inbox--clear-changes staging-buffer)
-                  (setq pearl-gtd-inbox--pending-moves (nreverse pearl-gtd-inbox--pending-moves))
-                  (dolist (move pearl-gtd-inbox--pending-moves)
-                    (pearl-gtd-inbox--do-move (nth 0 move) (nth 1 move) (nth 2 move) (nth 3 move) (nth 4 move) (nth 5 move)))
-                  (when (and (file-exists-p inbox-file)
-                             (= 0 (file-attribute-size (file-attributes inbox-file))))
-                    (delete-file inbox-file)))
-                (message "Inbox processing complete and changes applied per GTD workflow."))
+                (condition-case err
+                    (with-current-buffer staging-buffer
+                      (org-mode)
+                      (pearl-gtd-inbox--map-entries
+                       staging-buffer
+                       (lambda (headline entry-ref)
+                         (pearl-gtd-inbox--highlight-entry entry-ref)
+                         (pearl-gtd-inbox--process-entry headline staging-buffer entry-ref)))
+                      ;; Clear highlight after processing all entries
+                      (when pearl-gtd-inbox--current-highlight
+                        (delete-overlay pearl-gtd-inbox--current-highlight)
+                        (setq pearl-gtd-inbox--current-highlight nil))
+                      (pearl-gtd-inbox--clear-changes staging-buffer)
+                      (setq pearl-gtd-inbox--pending-moves (nreverse pearl-gtd-inbox--pending-moves))
+                      (dolist (move pearl-gtd-inbox--pending-moves)
+                        (pearl-gtd-inbox--do-move (nth 0 move) (nth 1 move) (nth 2 move) (nth 3 move) (nth 4 move) (nth 5 move)))
+                      ;; Only delete inbox if processing completed successfully and file is empty
+                      (when (and (file-exists-p inbox-file)
+                                 (= 0 (file-attribute-size (file-attributes inbox-file))))
+                        (delete-file inbox-file))
+                      (message "Inbox processing complete and changes applied per GTD workflow."))
+                  (quit
+                   ;; Ensure we don't delete inbox on quit - preserve original file
+                   (message "Inbox processing cancelled.")
+                   (kill-buffer staging-buffer)
+                   (signal 'quit nil))))  ; Re-signal quit for test to catch
             ;; Empty inbox - create buffer with message
             (let ((buffer-name "*Pearl-GTD: Inbox*"))
               (get-buffer-create buffer-name)

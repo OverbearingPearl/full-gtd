@@ -214,6 +214,31 @@
              (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory)))
   :teardown nil)
 
+(test-pearl-gtd-define-story test-pearl-gtd-clarify-quit-during-context
+  "Quitting (C-g) during context input should leave all tasks in inbox."
+  :setup (pearl-gtd-init-initialize)
+  :files (("inbox.org" "* First task\n:PROPERTIES:\n:ID: quit-1\n:END:\n* Second task\n:PROPERTIES:\n:ID: quit-2\n:END:\n"))
+  :mock (((symbol-function 'y-or-n-p) (lambda (&rest _) t))
+         ((symbol-function 'read-string)
+          (lambda (prompt &rest _)
+            (cond
+             ((string-match "Rename" prompt) "")
+             ((string-match "Remarks" prompt) "")
+             ((string-match "Context" prompt) (signal 'quit nil))
+             (t ""))))
+         ((symbol-function 'completing-read) (lambda (&rest _) "")))
+  :body (condition-case nil
+            (pearl-gtd-process-inbox)
+          (quit nil))
+  :asserts (progn
+             (should-not (test-pearl-gtd-file-contains-p-bool
+                          (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                          "First task"))
+             (should-not (test-pearl-gtd-file-contains-p-bool
+                          (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                          "Second task")))
+  :teardown nil)
+
 (provide 'test-pearl-gtd-clarify)
 
 ;;; test-pearl-gtd-clarify.el ends here

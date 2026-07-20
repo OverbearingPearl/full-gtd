@@ -53,6 +53,14 @@ BASE-DIR is the base directory to check."
     (or (not (file-exists-p inbox))
         (= 0 (file-attribute-size (file-attributes inbox))))))
 
+(defun test-pearl-gtd-cleanup-buffers (buffer-names)
+  "Safely kill all buffers in BUFFER-NAMES, ignoring errors."
+  (dolist (name buffer-names)
+    (when-let ((buf (get-buffer name)))
+      (with-current-buffer buf
+        (setq buffer-read-only nil))
+      (ignore-errors (kill-buffer buf)))))
+
 (defun test-pearl-gtd-task-exists-p (file title)
   "Check if task TITLE exists in FILE.
 FILE is the file path to check.
@@ -63,7 +71,9 @@ TITLE is the task title to search for."
   "Define a user story test named NAME with DOCSTRING.
 ARGS is a plist with keys:
 :setup - Form to run before test
-:files - List of (filename content) to create, content can be expression
+:files - List of (filename content) to create, content can be:
+         - A string (may contain \\n for newlines)
+         - A list of strings (each element becomes a line)
 :mock - List of `cl-letf` bindings for user input simulation
 :body - The test body form
 :asserts - Assertion forms
@@ -86,35 +96,63 @@ ARGS is a plist with keys:
                (setq pearl-gtd-inbox--current-test-name ',name)
                ,setup
                ;; Create test files - evaluate content expressions at runtime
+               ;; Support list of strings as content (joined by newlines)
+               ;; Use list construction to avoid nested backquote evaluation issues
                ,@(mapcar (lambda (file-spec)
-                          `(let ((file ,(car file-spec))
-                                 (content ,(cadr file-spec)))
-                             (with-temp-file (expand-file-name file temp-dir)
-                               (insert content))))
+                          (let* ((filename (car file-spec))
+                                 ;; Handle both ("f" . ,(expr)) and ("f" ,(expr)) forms
+                                 (raw-content (cdr file-spec))
+                                 ;; Unwrap comma expression or function call expression
+                                 (unwrapped (cond
+                                             ;; ("f" . ,(expr)) -> cdr is (\, expr)
+                                             ((and (listp raw-content)
+                                                   (eq (car raw-content) '\,))
+                                              (cadr raw-content))
+                                             ;; ("f" (expr)) where expr is a function call like (format ...), (concat ...)
+                                             ;; Detect by: raw-content is ((expr)) and (car raw-content) starts with a symbol
+                                             ((and (listp raw-content)
+                                                   (= (length raw-content) 1)
+                                                   (listp (car raw-content))
+                                                   (symbolp (caar raw-content)))
+                                              (car raw-content))
+                                             ;; Static content: string or list of strings
+                                             (t raw-content)))
+                                 ;; Process content form to avoid nested backquote issues
+                                 (processed-content
+                                  (cond
+                                   ;; Handle list of strings
+                                   ((and (listp unwrapped)
+                                         (cl-every #'stringp unwrapped))
+                                    `(mapconcat 'identity ',unwrapped "\n"))
+                                   ;; Expression or single string
+                                   (t unwrapped))))
+                            `(let ((file ,filename)
+                                   (content ,processed-content))
+                               (with-temp-file (expand-file-name file temp-dir)
+                                 (insert content)))))
                         files)
                ;; Run test with mocks
                (cl-letf ,mock
                  ,body
-                 (condition-case err
-                     ,asserts
-                   (ert-test-failed
-                    (let ((debug-info
-                           (concat
-                            "=== TEST FAILED: " (symbol-name ',name) " ===\n\n"
-                            "=== FILE CONTENTS ===\n\n"
-                            (mapconcat (lambda (f)
-                                         (let* ((fname (car f))
-                                                (path (expand-file-name fname temp-dir))
-                                                (content (if (file-exists-p path)
-                                                             (with-temp-buffer
-                                                               (insert-file-contents path)
-                                                               (buffer-string))
-                                                           "File does not exist")))
-                                           (format "-- %s --\n%s" fname content)))
-                                       test-pearl-gtd--files "\n\n")
-                            "\n\n=== END FILE CONTENTS ===\n\n"
-                            "Original error: " (error-message-string err))))
-                      (ert-fail debug-info))))))
+                 (ert-info ((concat "=== FILE CONTENTS ===\n"
+                                    (mapconcat
+                                     (lambda (f)
+                                       (let* ((fname (car f))
+                                              (path (expand-file-name fname temp-dir))
+                                              (content-lines
+                                               (if (file-exists-p path)
+                                                   (with-temp-buffer
+                                                     (insert-file-contents path)
+                                                     (split-string (buffer-string) "\n"))
+                                                 (list "File does not exist"))))
+                                         (concat "-- " fname " --\n"
+                                                 (mapconcat (lambda (line)
+                                                              (if (string= line "")
+                                                                  ""
+                                                                (concat "  " line)))
+                                                            content-lines "\n"))))
+                                     test-pearl-gtd--files "\n\n")))
+                   ,asserts)))
            (ignore-errors ,teardown)
            ;; First save and kill buffers
            (dolist (buf (buffer-list))

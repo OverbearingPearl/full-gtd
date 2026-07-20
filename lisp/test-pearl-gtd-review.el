@@ -450,7 +450,7 @@
                (search-forward "P10")
                (beginning-of-line)
                (should (search-forward-regexp "|\\s-*P10\\s-*|\\s-*1\\s-*|\\s-*1\\s-*|\\s-*0\\s-*|" (line-end-position) t))))
-  :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
+  :teardown (test-pearl-gtd-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
 
 (test-pearl-gtd-define-story test-pearl-gtd-review-weekly-no-project-table-no-project-column
   "No Project table should not have Project column and should be after Project sections."
@@ -500,6 +500,24 @@
                    (should-not (string-match-p "TestProject" line)))
                  (forward-line 1))))
   :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
+
+(test-pearl-gtd-define-story test-pearl-gtd-review-rename-updates-view-immediately
+  "Renaming task in review buffer should refresh display."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* TODO Old name\n:PROPERTIES:\n:ID: rename-view-1\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n"))
+  :mock (((symbol-function 'read-string) (lambda (&rest _) "New name")))
+  :body (progn
+          (pearl-gtd-review-weekly)
+          (with-current-buffer "*Pearl-GTD Weekly Review*"
+            (goto-char (point-min))
+            (search-forward "Old name")
+            (beginning-of-line)
+            (pearl-gtd-review--rename-task-at-point)))
+  :asserts (with-current-buffer "*Pearl-GTD Weekly Review*"
+             (goto-char (point-min))
+             (should (search-forward "New name" nil t))
+             (should-not (search-forward "Old name" nil t)))
+  :teardown (test-pearl-gtd-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
 
 (provide 'test-pearl-gtd-review)
 

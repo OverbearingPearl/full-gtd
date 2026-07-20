@@ -178,6 +178,50 @@
            (should (eq (car test-pearl-gtd-caught-error) 'quit)))
   :teardown nil)
 
+(test-pearl-gtd-define-story test-pearl-gtd-capture-newline-in-input
+  "Newline in capture input must be sanitized to prevent entry injection."
+  :setup (pearl-gtd-init-initialize)
+  :files nil
+  :mock (((symbol-function 'read-string) (lambda (&rest _) "Line1\n* Line2")))
+  :body (pearl-gtd-capture)
+  :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+             (with-temp-buffer
+               (insert-file-contents inbox-file)
+               (goto-char (point-min))
+               (let ((count 0))
+                 (while (re-search-forward "^\\* " nil t)
+                   (setq count (1+ count)))
+                 (should (= count 1)))
+               (should (search-forward "Line1" nil t))))
+  :teardown nil)
+
+(test-pearl-gtd-define-story test-pearl-gtd-capture-control-characters
+  "Control characters in input must be stripped or escaped."
+  :setup (pearl-gtd-init-initialize)
+  :files nil
+  :mock (((symbol-function 'read-string) (lambda (&rest _) "Task\x00with\x01null")))
+  :body (pearl-gtd-capture)
+  :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+             (with-temp-buffer
+               (insert-file-contents inbox-file)
+               (should-not (search-forward "\x00" nil t))
+               (should-not (search-forward "\x01" nil t))))
+  :teardown nil)
+
+(test-pearl-gtd-define-story test-pearl-gtd-capture-very-long-headline
+  "Headlines with 1000+ characters must be handled."
+  :setup (pearl-gtd-init-initialize)
+  :files nil
+  :mock (((symbol-function 'read-string)
+          (lambda (&rest _)
+            (concat "Very long task: " (make-string 1000 ?X)))))
+  :body (pearl-gtd-capture)
+  :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+             (should (file-exists-p inbox-file))
+             (let ((size (file-attribute-size (file-attributes inbox-file))))
+               (should (> size 1000))))
+  :teardown nil)
+
 (provide 'test-pearl-gtd-capture)
 
 ;;; test-pearl-gtd-capture.el ends here
