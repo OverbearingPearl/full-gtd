@@ -62,36 +62,6 @@ LAST-DATA-ROW is the position of the last data row in the table."
         (forward-line -1))
       (cons first-data (line-beginning-position)))))
 
-(defun pearl-gtd-do--next-row ()
-  "Move to next row in the actions table."
-  (interactive)
-  (let* ((boundaries (pearl-gtd-do--data-row-boundaries))
-         (last-data-row (cdr boundaries)))
-    (if (>= (line-beginning-position) last-data-row)
-        (beep)
-      (forward-line 1)
-      (while (and (not (eobp))
-                  (or (looking-at "|[-+]")      ; Skip separator
-                      (looking-at "| Headline") ; Skip header
-                      (not (looking-at "|"))))  ; Skip non-table
-        (forward-line 1))
-      (org-table-goto-column 1))))
-
-(defun pearl-gtd-do--previous-row ()
-  "Move to previous row in the actions table."
-  (interactive)
-  (let* ((boundaries (pearl-gtd-do--data-row-boundaries))
-         (first-data-row (car boundaries)))
-    (if (<= (line-beginning-position) first-data-row)
-        (beep)
-      (forward-line -1)
-      (while (and (not (bobp))
-                  (or (looking-at "|[-+]")      ; Skip separator
-                      (looking-at "| Headline") ; Skip header
-                      (not (looking-at "|"))))  ; Skip non-table
-        (forward-line -1))
-      (org-table-goto-column 1))))
-
 (defun pearl-gtd-do--get-entry-at-point ()
   "Get (ID . FILE) from current row in table using text properties."
   (save-excursion
@@ -286,6 +256,11 @@ Context tags are normalized by removing the @ prefix for matching."
               (save-buffer)
               (message "Task renamed to '%s'" new-name)))
           (pearl-gtd-do--refresh-view))))))
+
+(pearl-gtd-core-define-table-navigators
+  "pearl-gtd-do"
+  #'pearl-gtd-do--data-row-boundaries
+  "| Headline")
 
 (provide 'pearl-gtd-do)
 

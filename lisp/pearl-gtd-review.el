@@ -69,36 +69,6 @@
         (forward-line -1))
       (cons first-data (line-beginning-position)))))
 
-(defun pearl-gtd-review--next-row ()
-  "Move to next row in the table."
-  (interactive)
-  (let* ((boundaries (pearl-gtd-review--data-row-boundaries))
-         (last-data-row (cdr boundaries)))
-    (if (>= (line-beginning-position) last-data-row)
-        (beep)
-      (forward-line 1)
-      (while (and (not (eobp))
-                  (or (looking-at "|[-+]")
-                      (looking-at "| Headline[ \t]*|")
-                      (not (looking-at "|"))))
-        (forward-line 1))
-      (org-table-goto-column 1))))
-
-(defun pearl-gtd-review--previous-row ()
-  "Move to previous row in the table."
-  (interactive)
-  (let* ((boundaries (pearl-gtd-review--data-row-boundaries))
-         (first-data-row (car boundaries)))
-    (if (<= (line-beginning-position) first-data-row)
-        (beep)
-      (forward-line -1)
-      (while (and (not (bobp))
-                  (or (looking-at "|[-+]")
-                      (looking-at "| Headline[ \t]*|")
-                      (not (looking-at "|"))))
-        (forward-line -1))
-      (org-table-goto-column 1))))
-
 (defun pearl-gtd-review--get-entry-at-point ()
   "Get (ID . FILE) from current row in table using text properties."
   (save-excursion
@@ -794,6 +764,11 @@ Creates and pops to buffer *Pearl-GTD Project: PROJ-NAME*."
               (goto-char (point-min))
               (when (re-search-forward (concat ":ID:[ \t]+" (regexp-quote id)) nil t)
                 (org-back-to-heading)))))))))
+
+(pearl-gtd-core-define-table-navigators
+  "pearl-gtd-review"
+  #'pearl-gtd-review--data-row-boundaries
+  "| Headline[ \t]*|")
 
 (provide 'pearl-gtd-review)
 

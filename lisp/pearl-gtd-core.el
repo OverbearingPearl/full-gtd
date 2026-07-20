@@ -104,6 +104,48 @@ Return list of entries that pass all predicates."
          nil nil)))
     (mapcar (lambda (c) (concat "@" c)) contexts)))
 
+;;;; Macro for table navigation
+
+(defmacro pearl-gtd-core-define-table-navigators (prefix boundaries-func &optional header-regexp)
+  "Define table navigation functions for PREFIX using BOUNDARIES-FUNC.
+Creates PREFIX-next-row and PREFIX-previous-row interactive functions.
+BOUNDARIES-FUNC should return (first-row-pos . last-row-pos).
+HEADER-REGEXP matches header lines to skip (default: \"| Headline\")."
+  (let ((next-fn (intern (concat prefix "-next-row")))
+        (prev-fn (intern (concat prefix "-previous-row")))
+        (skip-fn (intern (concat prefix "--skip-line-p")))
+        (header-re (or header-regexp "| Headline")))
+    `(progn
+       (defun ,skip-fn ()
+         "Return non-nil if current line should be skipped during navigation."
+         (or (looking-at "|[-+]")                    ; separator line
+             (looking-at ,header-re)                  ; header line
+             (not (looking-at "|"))))                 ; non-table line
+
+       (defun ,next-fn ()
+         "Move to next data row in the table."
+         (interactive)
+         (let* ((boundaries (,boundaries-func))
+                (last-data-row (cdr boundaries)))
+           (if (>= (line-beginning-position) last-data-row)
+               (beep)
+             (forward-line 1)
+             (while (and (not (eobp)) (,skip-fn))
+               (forward-line 1))
+             (org-table-goto-column 1))))
+
+       (defun ,prev-fn ()
+         "Move to previous data row in the table."
+         (interactive)
+         (let* ((boundaries (,boundaries-func))
+                (first-data-row (car boundaries)))
+           (if (<= (line-beginning-position) first-data-row)
+               (beep)
+             (forward-line -1)
+             (while (and (not (bobp)) (,skip-fn))
+               (forward-line -1))
+             (org-table-goto-column 1)))))))
+
 (provide 'pearl-gtd-core)
 
 ;;; pearl-gtd-core.el ends here
