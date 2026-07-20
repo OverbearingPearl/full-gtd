@@ -260,13 +260,7 @@
               (pearl-gtd-review--remove-property-by-id id file "L3_AREA")
               (pearl-gtd-review--remove-property-by-id id file "L4_GOAL")
               (pearl-gtd-review--remove-property-by-id id file "L5_VISION")
-              (pearl-gtd-review--remove-property-by-id id file "L6_PURPOSE")
-              ;; Also remove old property names
-              ;; Also remove old property names
-              (pearl-gtd-review--remove-property-by-id id file "HORIZON_L3")
-              (pearl-gtd-review--remove-property-by-id id file "HORIZON_L4")
-              (pearl-gtd-review--remove-property-by-id id file "HORIZON_L5")
-              (pearl-gtd-review--remove-property-by-id id file "HORIZON_L6"))
+              (pearl-gtd-review--remove-property-by-id id file "L6_PURPOSE"))
           (pearl-gtd-review--set-property-by-id id file "PROJECT" new-value))
         (pearl-gtd-review--refresh-view)))))
 

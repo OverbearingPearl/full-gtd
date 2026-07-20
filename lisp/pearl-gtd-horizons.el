@@ -28,11 +28,6 @@ PROPERTY should be one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE."
              (let ((proj (org-entry-get nil "PROJECT")))
                (when (and proj (member project (split-string proj "[, ]" t)))
                  (setq value (org-entry-get nil property))
-                 ;; Also check old property names for backward compatibility
-                 (unless value
-                   (setq value (org-entry-get nil (replace-regexp-in-string
-                                                  "^HORIZON_L" "L" (replace-regexp-in-string
-                                                                   "^L" "HORIZON_L" property)))))
                  (when value (throw 'found value)))))
            nil nil))))
     value))
@@ -164,14 +159,10 @@ Returns alist: (L6-VALUE . (L5-VALUE . (L4-VALUE . (L3-VALUE . (PROJECTS . NO-PR
                   (head (org-get-heading t t))
                   (todo-state (org-get-todo-state))
                   (proj (org-entry-get nil "PROJECT"))
-                  (l3 (or (org-entry-get nil "L3_AREA")
-                          (org-entry-get nil "HORIZON_L3")))
-                  (l4 (or (org-entry-get nil "L4_GOAL")
-                          (org-entry-get nil "HORIZON_L4")))
-                  (l5 (or (org-entry-get nil "L5_VISION")
-                          (org-entry-get nil "HORIZON_L5")))
-                  (l6 (or (org-entry-get nil "L6_PURPOSE")
-                          (org-entry-get nil "HORIZON_L6")))
+                  (l3 (org-entry-get nil "L3_AREA"))
+                  (l4 (org-entry-get nil "L4_GOAL"))
+                  (l5 (org-entry-get nil "L5_VISION"))
+                  (l6 (org-entry-get nil "L6_PURPOSE"))
                   (entry (list head id todo-state)))
              ;; Only process if any horizon is set
              (when (or l3 l4 l5 l6)

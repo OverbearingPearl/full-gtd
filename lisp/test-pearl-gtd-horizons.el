@@ -137,7 +137,7 @@
 (test-pearl-gtd-define-story test-pearl-gtd-horizons-cannot-set-l6-without-l5
   "Cannot set L6 horizon without L5 set first."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* TODO Project task\n:PROPERTIES:\n:ID: p-1\n:PROJECT: TestProject\n:HORIZON_L3: Work\n:HORIZON_L4: Goal\n:END:\n"))
+  :files (("actions.org" "* TODO Project task\n:PROPERTIES:\n:ID: p-1\n:PROJECT: TestProject\n:L3_AREA: Work\n:L4_GOAL: Goal\n:END:\n"))
   :mock (((symbol-function 'read-string) (lambda (&rest _) "Purpose")))
   :body (progn
           (pearl-gtd-review-weekly)
@@ -185,7 +185,7 @@
 (test-pearl-gtd-define-story test-pearl-gtd-horizons-action-leaves-project-loses-horizon
   "Action leaving project loses project horizon."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: t1\n:PROJECT: TestProject\n:HORIZON_L3: Work\n:END:\n"))
+  :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: t1\n:PROJECT: TestProject\n:L3_AREA: Work\n:END:\n"))
   :mock (((symbol-function 'read-string) (lambda (&rest _) "")))
   :body (progn
           ;; Remove project from task
@@ -203,7 +203,7 @@
                     (found1 (car result1)))
                (should-not found1))
              (let* ((file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
-                    (pattern2 ":HORIZON_L3: Work")
+                    (pattern2 ":L3_AREA: Work")
                     (result2 (test-pearl-gtd-file-contains-p file pattern2))
                     (found2 (car result2)))
                (should-not found2)))
@@ -212,7 +212,7 @@
 (test-pearl-gtd-define-story test-pearl-gtd-horizons-view-shows-hierarchy
   "Horizon view shows L6 to L3 hierarchy with projects and actions."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* TODO No project task\n:PROPERTIES:\n:ID: np-1\n:HORIZON_L3: Personal\n:END:\n* TODO Project task\n:PROPERTIES:\n:ID: p-1\n:PROJECT: TestProject\n:HORIZON_L3: Work\n:HORIZON_L4: Goal\n:HORIZON_L5: Vision\n:HORIZON_L6: Purpose\n:END:\n"))
+  :files (("actions.org" "* TODO No project task\n:PROPERTIES:\n:ID: np-1\n:L3_AREA: Personal\n:END:\n* TODO Project task\n:PROPERTIES:\n:ID: p-1\n:PROJECT: TestProject\n:L3_AREA: Work\n:L4_GOAL: Goal\n:L5_VISION: Vision\n:L6_PURPOSE: Purpose\n:END:\n"))
   :mock nil
   :body (pearl-gtd-horizons-view)
   :asserts (progn
