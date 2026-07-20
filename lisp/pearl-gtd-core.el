@@ -24,7 +24,7 @@
   "Return non-nil if current entry has any of CONTEXTS.
 CONTEXTS is a list of normalized context strings (without @ prefix)."
   (when contexts
-    (let ((tags (org-get-tags-at)))
+    (let ((tags (org-get-tags)))
       (cl-intersection tags contexts :test #'string=))))
 
 (defun pearl-gtd-core-entry-scheduled-today-p ()
@@ -99,7 +99,7 @@ Return list of entries that pass all predicates."
         (org-map-entries
          (lambda ()
            (when (string= (org-get-todo-state) "TODO")
-             (dolist (tag (org-get-tags-at))
+             (dolist (tag (org-get-tags))
                (cl-pushnew tag contexts :test #'string=))))
          nil nil)))
     (mapcar (lambda (c) (concat "@" c)) contexts)))
