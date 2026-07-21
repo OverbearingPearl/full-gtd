@@ -62,18 +62,18 @@ Return the input string (may be empty)."
 
 (defun pearl-gtd-planning--ask-brainstorm (project)
   "Collect brainstorm items for PROJECT via temp buffer.
-Press C-c C-c to finish, C-c C-k to abort.
 Return list of written headline strings.
-Signal error if user aborts with C-c C-k."
+Signal error if user aborts."
   (let ((buf (get-buffer-create "*Pearl-GTD Brainstorm*")))
     (with-current-buffer buf
       (erase-buffer)
       (text-mode)
       (setq-local header-line-format
                   "One item per line | C-c C-c to finish | C-c C-k to abort")
-      (local-set-key (kbd "C-c C-c") 'exit-recursive-edit)
+      (local-set-key (kbd "C-c C-c") #'exit-recursive-edit)
       (local-set-key (kbd "C-c C-k")
                      (lambda ()
+                       (interactive)
                        (setq-local brainstorm-abort t)
                        (exit-recursive-edit)))
       (setq-local brainstorm-abort nil))
