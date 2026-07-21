@@ -6,162 +6,53 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
-  melpa-build:
+  build:
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: write
     steps:
-      - name: Checkout your package
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v3
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
         with:
-          path: pearl-gtd
+          python-version: '3.10'
 
-      - name: Checkout MELPA
-        uses: actions/checkout@v5
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          sudo apt-get update && sudo apt-get install -y emacs
+          git clone https://github.com/riscy/melpazoid.git ~/melpazoid
+          echo "(package-install 'package-build)" > ~/melpazoid/_requirements.el
+          pip install ~/melpazoid
+
+      - name: Run melpazoid
+        id: melpazoid_run
+        env:
+          LOCAL_REPO: ${{ github.workspace }}
+          RECIPE: (pearl-gtd :fetcher github :repo "${{ github.repository }}")
+          EXIST_OK: false
+        run: |
+          set -o pipefail
+          make -C ~/melpazoid 2>&1 | sed -r "s/\x1B\[[0-9;]*[mGK]//g" | tee build-logs.txt
+
+      - name: Build release package
+        if: success()
+        run: |
+          mkdir -p dist/pearl-gtd
+          cp pearl-gtd.el README.md README_zh.md LICENSE dist/pearl-gtd/
+          cp -r lisp dist/pearl-gtd/
+          cd dist
+          zip -r ../pearl-gtd-${{ github.ref_name }}.zip pearl-gtd/
+
+      - name: Create GitHub Release
+        if: success()
+        uses: softprops/action-gh-release@v1
         with:
-          repository: melpa/melpa
-          path: melpa
-
-      - name: Setup Emacs
-        uses: jcs090218/setup-emacs@master
-        with:
-          version: 29.1
-
-      - name: Install imagemagick and other build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y imagemagick
-
-      - name: Find all .el files
-        run: |
-          cd pearl-gtd
-          # Find all .el files with relative paths
-          find . -name "*.el" -not -path "./melpa/*" > ../all-el-files.txt
-          # Main package file with relative path
-          echo "./pearl-gtd.el" > ../main-el-files.txt
-
-          echo "All .el files:"
-          cat ../all-el-files.txt
-          echo ""
-          echo "Main package file (for package-lint):"
-          cat ../main-el-files.txt
-          cd ..
-
-      - name: Install packages and run all checks
-        run: |
-          exec > >(tee -a build-logs.txt) 2>&1
-          # First, refresh package archives and install required packages
-          emacs -Q --batch \
-                --eval "(package-refresh-contents)" \
-                --eval "(package-install 'package-lint)" \
-                --eval "(package-install 'flycheck)" \
-                --eval "(package-install 'checkdoc)" 2>&1 | grep -v "^Loading"
-
-          # Run package-lint only on main package file
-          echo "========================================="
-          echo "Running package-lint on main package file..."
-          echo "========================================="
-          cd pearl-gtd
-          while IFS= read -r file; do
-            echo "Checking $file with package-lint..."
-            emacs -Q --batch \
-                  --eval "(package-initialize)" \
-                  -l package-lint \
-                  -f package-lint-batch-and-exit "$file" 2>&1 || exit 1
-          done < ../main-el-files.txt
-
-          # Run flycheck and checkdoc on ALL files
-          echo "========================================="
-          echo "Running flycheck and checkdoc on ALL files..."
-          echo "========================================="
-          while IFS= read -r file; do
-            echo "Checking $file..."
-
-            # Run flycheck
-            echo "--- flycheck ---"
-            emacs -Q --batch \
-                  --eval "(package-initialize)" \
-                  -l flycheck \
-                  --eval "(setq flycheck-emacs-lisp-load-path '(\".\"))" \
-                  --eval "(require 'flycheck)" \
-                  --eval "(find-file \"$file\")" \
-                  --eval "(flycheck-mode 1)" \
-                  --eval "(flycheck-buffer)" \
-                  --eval "(when (flycheck-has-current-errors-p) (flycheck-list-errors) (kill-emacs 1))" \
-                  --eval "(kill-emacs 0)" 2>&1 || exit 1
-
-            # Run checkdoc
-            echo "--- checkdoc ---"
-            emacs -Q --batch \
-                  --eval "(package-initialize)" \
-                  -l checkdoc \
-                  --eval "(find-file \"$file\")" \
-                  --eval "(setq byte-compile-docstring-max-column 120)" \
-                  --eval "(setq checkdoc-verb-check-experimental-flag nil)" \
-                  --eval "(checkdoc-current-buffer)" \
-                  --eval "(let ((wbuf (get-buffer \"*Warnings*\"))) \
-                            (when (and wbuf (> (length (with-current-buffer wbuf (buffer-string))) 0)) \
-                              (princ (with-current-buffer wbuf (buffer-string))) \
-                              (kill-emacs 1)))" \
-                  --eval "(kill-emacs 0)" 2>&1 || exit 1
-
-            echo "========================================="
-          done < ../all-el-files.txt
-
-      - name: Create recipe
-        run: |
-          cat > melpa/recipes/pearl-gtd << 'EOF'
-          (pearl-gtd
-           :repo "${{ github.repository }}"
-           :fetcher github)
-          EOF
-
-      - name: Build package
-        run: |
-          exec > >(tee -a build-logs.txt) 2>&1
-          cd melpa
-          make recipes/pearl-gtd
-
-      - name: Verify package was built
-        run: |
-          # Check if any package files were generated
-          if ls melpa/packages/pearl-gtd-*.tar 2>/dev/null; then
-            echo "Package built successfully"
-            # List all built packages
-            ls -la melpa/packages/pearl-gtd-*.tar
-          else
-            echo "Error: No package file found"
-            exit 1
-          fi
-
-      - name: Check build output
-        run: |
-          # Ensure the tar file is not empty
-          for f in melpa/packages/pearl-gtd-*.tar; do
-            if [ -s "$f" ]; then
-              echo "Package $f is non-empty"
-              # Display some info about the package
-              tar -tzf "$f" | head -5
-            else
-              echo "Error: Package $f is empty"
-              exit 1
-            fi
-          done
-
-      - name: Quick load test
-        run: |
-          # Extract the package and try to load it in Emacs
-          for f in melpa/packages/pearl-gtd-*.tar; do
-            echo "Testing package: $f"
-            tar -xf "$f" -C /tmp
-            PACKAGE_DIR=$(basename "$f" .tar)
-            emacs -Q --batch \
-                  -L /tmp/"$PACKAGE_DIR" \
-                  -l /tmp/"$PACKAGE_DIR"/pearl-gtd.el \
-                  --eval "(message \"Package loaded successfully\")" \
-                  --eval "(condition-case err (progn (require 'pearl-gtd) (message \"Require succeeded\")) (error (message \"Require failed: %s\" err)))"
-            # Clean up
-            rm -rf /tmp/"$PACKAGE_DIR"
-          done
+          files: pearl-gtd-*.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Send failure notification
         if: failure()
@@ -170,28 +61,65 @@ jobs:
           server_address: ${{ secrets.SMTP_HOST }}
           server_port: ${{ secrets.SMTP_PORT }}
           secure: true
-          ignore_cert: true
           username: ${{ secrets.SMTP_USER }}
           password: ${{ secrets.SMTP_PASS }}
-          subject: "❌ MELPA Build Failed - ${{ github.repository }}"
+          subject: "pearl-gtd ${{ github.ref_name }} - Build Failed"
           html_body: |
-            <h2 style="color: #d32f2f; border-bottom: 2px solid #d32f2f; padding-bottom: 10px; margin-bottom: 20px;">MELPA Build Failed</h2>
-            <table style="border-collapse: collapse; font-family: Arial, sans-serif; margin: 20px 0;">
-              <tr>
-                <td style="padding: 10px; font-weight: bold; color: #555; width: 100px; border-bottom: 1px solid #eee;">Repository</td>
-                <td style="padding: 10px; border-bottom: 1px solid #eee;">${{ github.repository }}</td>
-              </tr>
-              <tr style="background-color: #f9f9f9;">
-                <td style="padding: 10px; font-weight: bold; color: #555; border-bottom: 1px solid #eee;">Branch</td>
-                <td style="padding: 10px; border-bottom: 1px solid #eee;">${{ github.ref }}</td>
-              </tr>
-              <tr>
-                <td style="padding: 10px; font-weight: bold; color: #555;">Commit</td>
-                <td style="padding: 10px; font-family: monospace; font-size: 0.9em; color: #333;">${{ github.sha }}</td>
-              </tr>
-            </table>
-            <hr style="border: none; border-top: 2px solid #eee; margin: 30px 0;">
-            <p style="color: #666; font-style: italic; margin-top: 20px;">Detailed error logs are attached to this email.</p>
+            <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;max-width:600px;margin:0 auto;">
+              <div style="background-color:#d32f2f;color:#ffffff;padding:20px;text-align:center;border-radius:8px 8px 0 0;">
+                <h1 style="margin:0;font-size:24px;">❌ Build Failed</h1>
+                <p style="margin:8px 0 0 0;opacity:0.9;font-size:14px;">pearl-gtd ${{ github.ref_name }}</p>
+              </div>
+
+              <div style="background-color:#ffffff;padding:24px;border:1px solid #e0e0e0;border-top:none;border-radius:0 0 8px 8px;">
+                <p style="color:#333;font-size:15px;line-height:1.6;">
+                  The CI workflow failed during <strong>MELPA compliance checks</strong> or <strong>release packaging</strong>.
+                  Click the button below to view the full run logs and identify the exact failure.
+                </p>
+
+                <div style="text-align:center;margin:24px 0;">
+                  <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                     style="display:inline-block;background-color:#1976d2;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:6px;font-weight:600;font-size:14px;">
+                    View Workflow Logs →
+                  </a>
+                </div>
+
+                <table style="width:100%;border-collapse:collapse;font-size:14px;color:#555;">
+                  <tr style="border-bottom:1px solid #f0f0f0;">
+                    <td style="padding:10px 0;font-weight:600;width:100px;">Repository</td>
+                    <td style="padding:10px 0;">
+                      <a href="${{ github.server_url }}/${{ github.repository }}" style="color:#1976d2;text-decoration:none;">${{ github.repository }}</a>
+                    </td>
+                  </tr>
+                  <tr style="border-bottom:1px solid #f0f0f0;">
+                    <td style="padding:10px 0;font-weight:600;">Branch/Tag</td>
+                    <td style="padding:10px 0;">
+                      <a href="${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}" style="color:#1976d2;text-decoration:none;">${{ github.ref_name }}</a>
+                    </td>
+                  </tr>
+                  <tr style="border-bottom:1px solid #f0f0f0;">
+                    <td style="padding:10px 0;font-weight:600;">Commit</td>
+                    <td style="padding:10px 0;font-family:monospace;font-size:13px;">
+                      <a href="${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}" style="color:#1976d2;text-decoration:none;">${{ github.sha }}</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:10px 0;font-weight:600;">Releases</td>
+                    <td style="padding:10px 0;">
+                      <a href="${{ github.server_url }}/${{ github.repository }}/releases" style="color:#1976d2;text-decoration:none;">View All Releases</a>
+                    </td>
+                  </tr>
+                </table>
+
+                <div style="margin-top:24px;padding:12px;background-color:#fff3e0;border-left:4px solid #ff9800;border-radius:4px;font-size:13px;color:#e65100;">
+                  <strong>Tip:</strong> The file <code>build-logs.txt</code> is attached to this email for offline review.
+                </div>
+              </div>
+
+              <div style="text-align:center;padding:16px;color:#999;font-size:12px;">
+                GitHub Actions · ${{ github.workflow }} · Run #${{ github.run_number }}
+              </div>
+            </div>
           to: ${{ secrets.NOTIFY_EMAIL }}
           from: ${{ secrets.SMTP_USER }}
           attachments: build-logs.txt
