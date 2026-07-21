@@ -9,7 +9,7 @@
 
 ;;; Code:
 
-(eval-when-compile
+(eval-and-compile
   (let ((dir (file-name-directory load-file-name)))
     (add-to-list 'load-path (expand-file-name ".." dir))
     (add-to-list 'load-path dir)))
