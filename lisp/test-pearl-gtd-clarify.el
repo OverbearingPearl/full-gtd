@@ -1,5 +1,9 @@
 ;;; test-pearl-gtd-clarify.el --- User stories: Clarify phase  -*- lexical-binding: t; -*-
 
+;; License: MIT
+;; URL: https://github.com/OverbearingPearl/pearl-gtd
+;; Package-Requires: ((emacs "27.1") (ert "1.0") (cl-lib "0.5"))
+
 ;;; Commentary:
 
 ;; User stories for clarifying inbox items.
@@ -23,7 +27,7 @@
              ((string-match "Assign" prompt) "reference")
              (t ""))))
          ((symbol-function 'completing-read)
-          (lambda (prompt collection &rest _)
+          (lambda (prompt _collection &rest _)
             (cond
              ((string-match "Assign" prompt) "reference")
              (t "")))))
@@ -54,7 +58,7 @@
              ((string-match "Assign" prompt) "reference")
              (t ""))))
          ((symbol-function 'completing-read)
-          (lambda (prompt collection &rest _)
+          (lambda (prompt _collection &rest _)
             (cond
              ((string-match "Assign" prompt) "reference")
              (t "")))))
@@ -77,7 +81,7 @@
              ((string-match "Assign" prompt) "reference")
              (t ""))))
          ((symbol-function 'completing-read)
-          (lambda (prompt collection &rest _)
+          (lambda (prompt _collection &rest _)
             (cond
              ((string-match "Assign" prompt) "reference")
              (t "")))))
@@ -199,7 +203,7 @@
                ((string-match "Project" prompt) "")
                (t "")))))
          ((symbol-function 'completing-read)
-          (lambda (prompt collection &rest _)
+          (lambda (prompt _collection &rest _)
             (cond
              ((string-match "Assign" prompt) "reference")
              (t "")))))

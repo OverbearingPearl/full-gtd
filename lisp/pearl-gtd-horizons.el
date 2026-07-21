@@ -1,5 +1,10 @@
 ;;; pearl-gtd-horizons.el --- Horizon system for pearl-gtd  -*- lexical-binding: t; -*-
 
+;; Copyright (C) 2026 OverbearingPearl
+;; License: MIT
+;; URL: https://github.com/OverbearingPearl/pearl-gtd
+;; Package-Requires: ((emacs "27.1") (cl-lib "0.5") (org "9.3"))
+
 ;;; Commentary:
 
 ;; This file handles the Horizon system for GTD (L3 Area through L6 Purpose/Principles).
@@ -59,7 +64,7 @@ PROPERTY should be one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE."
 
 (defun pearl-gtd-horizons--check-hierarchy-constraint (project level)
   "Check hierarchy constraint for setting LEVEL horizon for PROJECT.
-LEVEL should be a symbol: 'area, 'goal, 'vision, 'purpose, or 'principle.
+LEVEL should be a symbol: \\='area, \\='goal, \\='vision, \\='purpose, or \\='principle.
 L5 (vision) requires L4 (goal), L6 (purpose) requires L5 (vision),
 L6 (principle) requires L6 (purpose).
 Returns t if constraint satisfied, nil otherwise."
@@ -79,7 +84,7 @@ Returns t if constraint satisfied, nil otherwise."
 
 (defun pearl-gtd-horizons--edit-horizon-at-point (level &optional project)
   "Edit horizon LEVEL for entry at point or for PROJECT if provided.
-LEVEL should be a symbol: 'area, 'goal, 'vision, 'purpose, or 'principle."
+LEVEL should be a symbol: \\='area, \\='goal, \\='vision, \\='purpose, or \\='principle."
   (let* ((entry (unless project (pearl-gtd-review--get-entry-at-point)))
          (project (or project
                       (save-excursion
@@ -166,7 +171,8 @@ LEVEL should be a symbol: 'area, 'goal, 'vision, 'purpose, or 'principle."
 
 (defun pearl-gtd-horizons--collect-horizon-hierarchy ()
   "Collect all horizon data in hierarchical structure.
-Returns alist: (L6-VALUE . (L5-VALUE . (L4-VALUE . (L3-VALUE . (PROJECTS . NO-PROJECT-ACTIONS))))))"
+Returns alist: (L6-VALUE . (L5-VALUE . (L4-VALUE . (L3-VALUE .
+(PROJECTS . NO-PROJECT-ACTIONS))))))"
   (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
         (hierarchy (make-hash-table :test 'equal)))
     (when (file-exists-p file-path)
@@ -243,9 +249,8 @@ Returns alist: (L6-VALUE . (L5-VALUE . (L4-VALUE . (L3-VALUE . (PROJECTS . NO-PR
       (let ((value (gethash key hierarchy)))
         (pearl-gtd-horizons--insert-hierarchy-entry key value depth)))))
 
-(defun pearl-gtd-horizons-view ()
+(defun pearl-gtd-horizons--view ()
   "Display horizon hierarchy view."
-  (interactive)
   (let* ((buffer-name "*Pearl-GTD Horizons*")
          (hierarchy (pearl-gtd-horizons--collect-horizon-hierarchy)))
     (with-current-buffer (get-buffer-create buffer-name)
@@ -355,11 +360,14 @@ Returns alist: (L6-VALUE . (L5-VALUE . (L4-VALUE . (L3-VALUE . (PROJECTS . NO-PR
               (put-text-property (point) (line-end-position) 'pearl-gtd-file "actions.org"))))))))
 
 ;; Add horizon editing keybindings to review mode
-(define-key pearl-gtd-review-view-mode-map (kbd "3") #'pearl-gtd-horizons--edit-area-at-point)
-(define-key pearl-gtd-review-view-mode-map (kbd "4") #'pearl-gtd-horizons--edit-goal-at-point)
-(define-key pearl-gtd-review-view-mode-map (kbd "5") #'pearl-gtd-horizons--edit-vision-at-point)
-(define-key pearl-gtd-review-view-mode-map (kbd "6") #'pearl-gtd-horizons--edit-purpose-at-point)
-(define-key pearl-gtd-review-view-mode-map (kbd "7") #'pearl-gtd-horizons--edit-principle-at-point)
+(defvar pearl-gtd-horizons--review-bindings
+  (let ((map pearl-gtd-review-view-mode-map))
+    (define-key map (kbd "3") #'pearl-gtd-horizons--edit-area-at-point)
+    (define-key map (kbd "4") #'pearl-gtd-horizons--edit-goal-at-point)
+    (define-key map (kbd "5") #'pearl-gtd-horizons--edit-vision-at-point)
+    (define-key map (kbd "6") #'pearl-gtd-horizons--edit-purpose-at-point)
+    (define-key map (kbd "7") #'pearl-gtd-horizons--edit-principle-at-point)
+    map))
 
 (provide 'pearl-gtd-horizons)
 

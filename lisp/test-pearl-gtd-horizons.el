@@ -1,5 +1,9 @@
 ;;; test-pearl-gtd-horizons.el --- User stories: 6 Horizons  -*- lexical-binding: t; -*-
 
+;; License: MIT
+;; URL: https://github.com/OverbearingPearl/pearl-gtd
+;; Package-Requires: ((emacs "27.1") (ert "1.0") (cl-lib "0.5"))
+
 ;;; Commentary:
 
 ;; User stories for 6 Horizons of Focus.
@@ -82,7 +86,7 @@
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Project task\n:PROPERTIES:\n:ID: p-1\n:PROJECT: TestProject\n:L3_AREA: Work\n:END:\n"))
   :mock (((symbol-function 'read-string)
-          (lambda (prompt &optional initial _history)
+          (lambda (prompt &optional _initial _history)
             (cond
              ((string-match "L4" prompt) "Goal: Complete project")
              ((string-match "L5" prompt) "Vision: Professional growth")

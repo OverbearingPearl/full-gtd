@@ -1,5 +1,9 @@
 ;;; test-pearl-gtd-setup.el --- User stories: System initialization  -*- lexical-binding: t; -*-
 
+;; License: MIT
+;; URL: https://github.com/OverbearingPearl/pearl-gtd
+;; Package-Requires: ((emacs "27.1") (ert "1.0") (cl-lib "0.5"))
+
 ;;; Commentary:
 
 ;; User stories for initializing the Pearl-GTD system.

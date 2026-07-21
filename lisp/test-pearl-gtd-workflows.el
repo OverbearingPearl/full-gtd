@@ -1,5 +1,9 @@
 ;;; test-pearl-gtd-workflows.el --- User stories: End-to-end workflows  -*- lexical-binding: t; -*-
 
+;; License: MIT
+;; URL: https://github.com/OverbearingPearl/pearl-gtd
+;; Package-Requires: ((emacs "27.1") (ert "1.0") (cl-lib "0.5"))
+
 ;;; Commentary:
 
 ;; Complete user workflows spanning multiple phases.
@@ -32,7 +36,7 @@
              ((string-match "actionable" prompt) t)
              (t nil))))
          ((symbol-function 'completing-read)
-          (lambda (prompt collection &rest _)
+          (lambda (prompt _collection &rest _)
             (cond
              ((string-match "Assign" prompt) "reference")
              (t "")))))
@@ -93,7 +97,7 @@
            ((string-match "Assign.*Reference" prompt) "reference")
            (t ""))))
        ((symbol-function 'completing-read)
-        (lambda (prompt collection &rest _)
+        (lambda (prompt _collection &rest _)
           (cond
            ((string-match "Assign" prompt) "reference")
            (t "")))))
@@ -125,7 +129,7 @@
                (t "")))))
          ((symbol-function 'y-or-n-p) (lambda (&rest _) nil))
          ((symbol-function 'completing-read)
-          (lambda (prompt collection &rest _)
+          (lambda (prompt _collection &rest _)
             (cond
              ((string-match "Assign" prompt) "reference")
              (t "")))))
@@ -165,7 +169,7 @@
              ((string-match "actionable" prompt) t)
              (t nil))))
          ((symbol-function 'completing-read)
-          (lambda (prompt collection &rest _)
+          (lambda (prompt _collection &rest _)
             (cond
              ((string-match "Assign" prompt) "actions")
              (t "")))))
@@ -205,7 +209,7 @@
                (insert-file-contents (expand-file-name "inbox.org" pearl-gtd-init-base-directory))
                (goto-char (point-min))
                (should (search-forward ":ID:" nil t))
-               (let ((id-pos (point)))
+               (let ((_id-pos (point)))
                  (should-not (search-forward "existing-id-1" nil t)))))
   :teardown nil)
 
@@ -234,7 +238,7 @@
              ((string-match "actionable" prompt) t)
              (t nil))))
          ((symbol-function 'completing-read)
-          (lambda (prompt collection &rest _)
+          (lambda (prompt _collection &rest _)
             (cond
              ((string-match "Assign" prompt) "actions")
              (t "")))))

@@ -1,5 +1,9 @@
 ;;; test-pearl-gtd-do.el --- User stories: Do/Work phase  -*- lexical-binding: t; -*-
 
+;; License: MIT
+;; URL: https://github.com/OverbearingPearl/pearl-gtd
+;; Package-Requires: ((emacs "27.1") (ert "1.0") (cl-lib "0.5"))
+
 ;;; Commentary:
 
 ;; User stories for executing tasks.
@@ -15,7 +19,7 @@
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task 1 :office:\n:PROPERTIES:\n:ID: task-1-id\n:END:\n* TODO Task 2 :home:\n:PROPERTIES:\n:ID: task-2-id\n:END:\n* TODO Task 3 :office:\n:PROPERTIES:\n:ID: task-3-id\n:END:\n"))
   :mock (((symbol-function 'completing-read)
-          (lambda (prompt collection &rest _)
+          (lambda (prompt _collection &rest _)
             (cond
              ((string-match "Select context" prompt) "@office")
              (t "")))))

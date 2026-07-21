@@ -1,5 +1,9 @@
 ;;; test-pearl-gtd-organize.el --- User stories: Organize phase  -*- lexical-binding: t; -*-
 
+;; License: MIT
+;; URL: https://github.com/OverbearingPearl/pearl-gtd
+;; Package-Requires: ((emacs "27.1") (ert "1.0") (cl-lib "0.5"))
+
 ;;; Commentary:
 
 ;; User stories for organizing items into appropriate categories.
@@ -16,7 +20,7 @@
   :files (("inbox.org" "* Junk item\n"))
   :mock (((symbol-function 'y-or-n-p) (lambda (&rest _) nil))
          ((symbol-function 'read-string)
-          (lambda (prompt &rest _)
+          (lambda (_prompt &rest _)
             (pcase pearl-gtd-inbox--current-prompt-type
               ('rename "")
               ('remarks "")
@@ -32,7 +36,7 @@
   :files (("inbox.org" "* Article about Emacs\n"))
   :mock (((symbol-function 'y-or-n-p) (lambda (&rest _) nil))
          ((symbol-function 'read-string)
-          (lambda (prompt &rest _)
+          (lambda (_prompt &rest _)
             (pcase pearl-gtd-inbox--current-prompt-type
               ('rename "")
               ('remarks "")
@@ -55,7 +59,7 @@
              ((string-match "actionable" prompt) t)
              (t nil))))
          ((symbol-function 'read-string)
-          (lambda (prompt &rest _)
+          (lambda (_prompt &rest _)
             (pcase pearl-gtd-inbox--current-prompt-type
               ('rename "")
               ('remarks "")
@@ -148,7 +152,7 @@
   :mock (((symbol-function 'y-or-n-p) (lambda (&rest _) nil))
          ((symbol-function 'read-string)
           (let ((responses '(nil "Important article")))
-            (lambda (prompt &rest _)
+            (lambda (_prompt &rest _)
               (or (pop responses) ""))))
          ((symbol-function 'completing-read)
           (let ((responses '("trash" "reference")))
@@ -245,7 +249,7 @@
              ((string-match "actionable" prompt) t)
              (t nil))))
          ((symbol-function 'read-string)
-          (lambda (prompt &rest _)
+          (lambda (_prompt &rest _)
             (pcase pearl-gtd-inbox--current-prompt-type
               ('rename "")
               ('remarks "")
@@ -278,7 +282,7 @@
              ((string-match "actionable" prompt) t)
              (t nil))))
          ((symbol-function 'read-string)
-          (lambda (prompt &rest _)
+          (lambda (_prompt &rest _)
             (pcase pearl-gtd-inbox--current-prompt-type
               ('rename "")
               ('remarks "")
@@ -311,7 +315,7 @@
              ((string-match "actionable" prompt) t)
              (t nil))))
          ((symbol-function 'read-string)
-          (lambda (prompt &rest _)
+          (lambda (_prompt &rest _)
             (pcase pearl-gtd-inbox--current-prompt-type
               ('rename "")
               ('remarks "")
@@ -344,7 +348,7 @@
              ((string-match "actionable" prompt) t)
              (t nil))))
          ((symbol-function 'read-string)
-          (lambda (prompt &rest _)
+          (lambda (_prompt &rest _)
             (pcase pearl-gtd-inbox--current-prompt-type
               ('rename "")
               ('remarks "")

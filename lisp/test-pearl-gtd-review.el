@@ -1,5 +1,9 @@
 ;;; test-pearl-gtd-review.el --- User stories: Review phase  -*- lexical-binding: t; -*-
 
+;; License: MIT
+;; URL: https://github.com/OverbearingPearl/pearl-gtd
+;; Package-Requires: ((emacs "27.1") (ert "1.0") (cl-lib "0.5"))
+
 ;;; Commentary:
 
 ;; User stories for periodic reviews.
@@ -370,7 +374,7 @@
                (should (search-forward "Task B" nil t))
                ;; Verify table column count matches header (Created column must exist)
                (goto-char (point-min))
-               (let* ((header-start (search-forward "| Headline |" nil t))
+               (let* ((_header-start (search-forward "| Headline |" nil t))
                       (header-line (buffer-substring (line-beginning-position) (line-end-position)))
                       (pipe-count (cl-count ?| header-line)))
                  ;; 8 columns = 9 pipes (Headline Status Scheduled Deadline Context Delegated Project Created)

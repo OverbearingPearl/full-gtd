@@ -1,5 +1,10 @@
 ;;; pearl-gtd-do.el --- Do/Work phase for pearl-gtd  -*- lexical-binding: t; -*-
 
+;; Copyright (C) 2026 OverbearingPearl
+;; License: MIT
+;; URL: https://github.com/OverbearingPearl/pearl-gtd
+;; Package-Requires: ((emacs "27.1") (cl-lib "0.5") (org "9.3"))
+
 ;;; Commentary:
 
 ;; This file handles the "Do" phase of GTD, focusing on executing tasks and viewing contexts.
@@ -21,10 +26,10 @@
 (defvar pearl-gtd-do-view-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "q") #'quit-window)
-    (define-key map (kbd "n") #'pearl-gtd-do--next-row)
-    (define-key map (kbd "p") #'pearl-gtd-do--previous-row)
-    (define-key map (kbd "j") #'pearl-gtd-do--next-row)
-    (define-key map (kbd "k") #'pearl-gtd-do--previous-row)
+    (define-key map (kbd "n") #'pearl-gtd-do-next-row)
+    (define-key map (kbd "p") #'pearl-gtd-do-previous-row)
+    (define-key map (kbd "j") #'pearl-gtd-do-next-row)
+    (define-key map (kbd "k") #'pearl-gtd-do-previous-row)
     (define-key map (kbd "C") #'pearl-gtd-do--complete-task-at-point)
     (define-key map (kbd "RET") #'pearl-gtd-do--goto-task)
     (define-key map (kbd "g") #'pearl-gtd-do--refresh-view)
@@ -220,9 +225,8 @@ Context tags are normalized by removing the @ prefix for matching."
   (let ((entry (pearl-gtd-do--get-entry-at-point)))
     (when entry
       (let* ((id (car entry))
-             (file (cdr entry))
-             (actions-file (expand-file-name file pearl-gtd-init-base-directory)))
-        (let ((buffer (find-file-noselect actions-file)))
+             (file (cdr entry)))
+        (let ((buffer (find-file-noselect (expand-file-name file pearl-gtd-init-base-directory))))
           (pop-to-buffer buffer)
           (goto-char (point-min))
           (if (re-search-forward (concat ":ID:[ \t]+" (regexp-quote id)) nil t)
@@ -236,7 +240,7 @@ Context tags are normalized by removing the @ prefix for matching."
     (when entry
       (let ((id (car entry))
             (file (cdr entry)))
-        (with-entry-at-id id file
+        (pearl-gtd-core-with-entry-at-id id file
           (let ((org-log-done 'time)) (org-todo "DONE")))
         (let ((inhibit-read-only t))
           (org-table-goto-column 3)
@@ -267,7 +271,7 @@ Context tags are normalized by removing the @ prefix for matching."
              (file (cdr entry))
              (new-name (read-string "New task name: ")))
         (when (and new-name (not (string= new-name "")))
-          (with-entry-at-id id file
+          (pearl-gtd-core-with-entry-at-id id file
             (org-edit-headline new-name))
           (pearl-gtd-do--refresh-view))))))
 

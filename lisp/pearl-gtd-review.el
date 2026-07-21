@@ -1,5 +1,10 @@
 ;;; pearl-gtd-review.el --- Review phase for pearl-gtd  -*- lexical-binding: t; -*-
 
+;; Copyright (C) 2026 OverbearingPearl
+;; License: MIT
+;; URL: https://github.com/OverbearingPearl/pearl-gtd
+;; Package-Requires: ((emacs "27.1") (cl-lib "0.5") (org "9.3"))
+
 ;;; Commentary:
 
 ;; This file handles the "Review" phase of GTD.
@@ -21,10 +26,10 @@
 (defvar pearl-gtd-review-view-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "q") #'pearl-gtd-review--quit-or-return)
-    (define-key map (kbd "n") #'pearl-gtd-review--next-row)
-    (define-key map (kbd "p") #'pearl-gtd-review--previous-row)
-    (define-key map (kbd "j") #'pearl-gtd-review--next-row)
-    (define-key map (kbd "k") #'pearl-gtd-review--previous-row)
+    (define-key map (kbd "n") #'pearl-gtd-review-next-row)
+    (define-key map (kbd "p") #'pearl-gtd-review-previous-row)
+    (define-key map (kbd "j") #'pearl-gtd-review-next-row)
+    (define-key map (kbd "k") #'pearl-gtd-review-previous-row)
     (define-key map (kbd "RET") #'pearl-gtd-review--goto-task-at-point)
     (define-key map (kbd "g") #'pearl-gtd-review--refresh-view)
     ;; Property editing with defaults
@@ -86,22 +91,22 @@
 
 (defun pearl-gtd-review--get-property-by-id (id file property)
   "Get PROPERTY value of entry with ID in FILE."
-  (with-entry-at-id id file
+  (pearl-gtd-core-with-entry-at-id id file
     (org-entry-get nil property)))
 
 (defun pearl-gtd-review--set-property-by-id (id file property value)
   "Set PROPERTY to VALUE for entry with ID in FILE."
-  (with-entry-at-id id file
+  (pearl-gtd-core-with-entry-at-id id file
     (org-entry-put nil property value)))
 
 (defun pearl-gtd-review--remove-property-by-id (id file property)
   "Remove PROPERTY from entry with ID in FILE."
-  (with-entry-at-id id file
+  (pearl-gtd-core-with-entry-at-id id file
     (org-delete-property property)))
 
 (defun pearl-gtd-review--get-scheduled-by-id (id file)
   "Get scheduled date string for entry with ID in FILE."
-  (with-entry-at-id id file
+  (pearl-gtd-core-with-entry-at-id id file
     (let ((s (org-entry-get nil "SCHEDULED")))
       (when s
         (string-match "<\\([0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\)" s)
@@ -109,13 +114,14 @@
 
 (defun pearl-gtd-review--get-headline-by-id (id file)
   "Get headline of entry with ID in FILE."
-  (with-entry-at-id id file
+  (pearl-gtd-core-with-entry-at-id id file
     (org-get-heading t t)))
 
 (defmacro pearl-gtd-review-define-property-editor (name property prompt &optional extra-cleanup)
   "Define property editor function with NAME for PROPERTY.
 PROMPT is the user prompt string.
-EXTRA-CLEANUP is a form to execute when removing the property (e.g., also remove DELEGATED_DATE)."
+EXTRA-CLEANUP is a form to execute when removing the property
+(e.g., also remove DELEGATED_DATE)."
   (let ((fn-name (intern (concat "pearl-gtd-review--edit-" name "-at-point")))
         (getter (intern (concat "pearl-gtd-review--get-property-by-id")))
         (setter (intern (concat "pearl-gtd-review--set-property-by-id")))
@@ -152,12 +158,11 @@ EXTRA-CLEANUP is a form to execute when removing the property (e.g., also remove
              (current-scheduled (pearl-gtd-review--get-scheduled-by-id id file))
              (default-value (or current-scheduled ""))
              (new-value (read-string "Schedule date YYYY-MM-DD (empty to remove): " default-value)))
-        (pearl-gtd-review--with-entry-buffer id file
-          (lambda ()
-            (if (string= new-value "")
-                (org-schedule '(4))
-              (org-schedule nil new-value))
-            (save-buffer)))
+        (pearl-gtd-core-with-entry-at-id id file
+          (if (string= new-value "")
+              (org-schedule '(4))
+            (org-schedule nil new-value))
+          (save-buffer))
         (pearl-gtd-review--refresh-view)))))
 
 (defun pearl-gtd-review--set-deadline-at-point ()
@@ -169,11 +174,10 @@ EXTRA-CLEANUP is a form to execute when removing the property (e.g., also remove
              (file (cdr entry))
              (deadline (read-string "Deadline (YYYY-MM-DD): "))
              (reminder (read-string "Reminder days before: " "0")))
-        (pearl-gtd-review--with-entry-buffer id file
-          (lambda ()
-            (org-deadline nil deadline)
-            (org-set-property "REMINDER_DAYS" reminder)
-            (save-buffer)))
+        (pearl-gtd-core-with-entry-at-id id file
+          (org-deadline nil deadline)
+          (org-set-property "REMINDER_DAYS" reminder)
+          (save-buffer))
         (pearl-gtd-review--refresh-view)))))
 
 (defun pearl-gtd-review--rename-task-at-point ()
@@ -186,10 +190,9 @@ EXTRA-CLEANUP is a form to execute when removing the property (e.g., also remove
              (current-headline (pearl-gtd-review--get-headline-by-id id file))
              (new-name (read-string "New task name: " current-headline)))
         (when (and new-name (not (string= new-name "")) (not (string= new-name current-headline)))
-          (pearl-gtd-review--with-entry-buffer id file
-            (lambda ()
-              (org-edit-headline new-name)
-              (save-buffer)))
+          (pearl-gtd-core-with-entry-at-id id file
+            (org-edit-headline new-name)
+            (save-buffer))
           (pearl-gtd-review--refresh-view))))))
 
 (pearl-gtd-review-define-property-editor "project" "PROJECT" "Project (empty to remove): "
@@ -206,24 +209,12 @@ EXTRA-CLEANUP is a form to execute when removing the property (e.g., also remove
     (when entry
       (let ((id (car entry))
             (file (cdr entry)))
-        (pearl-gtd-review--with-entry-buffer id file
-          (lambda ()
-            (let ((org-log-done 'time))
-              (org-todo "DONE"))
-            (save-buffer)))
+        (pearl-gtd-core-with-entry-at-id id file
+          (let ((org-log-done 'time))
+            (org-todo "DONE"))
+          (save-buffer))
         (pearl-gtd-review--refresh-view)))))
 
-(defun pearl-gtd-review--goto-task-at-point ()
-  "Jump to task in source file."
-  (interactive)
-  (let ((entry (pearl-gtd-review--get-entry-at-point)))
-    (when entry
-      (let ((id (car entry))
-            (file (cdr entry)))
-        (find-file (expand-file-name file pearl-gtd-init-base-directory))
-        (goto-char (point-min))
-        (when (re-search-forward (concat ":ID:[ \t]+" (regexp-quote id)) nil t)
-          (org-back-to-heading))))))
 
 (defun pearl-gtd-review--refresh-view ()
   "Refresh current review view."
@@ -248,8 +239,7 @@ The number of fields determines the table format:
 - 7 fields: Status, Scheduled, Deadline, Context, Delegated, Project (standard)
 - 6 fields: Status, Scheduled, Deadline, Context, Delegated, L3 (No Project)
 - 8 fields: Total, Todo, Done, Next Deadline, L3, L4, L5, L6 (Project rows)"
-  (let* ((headline-escaped (replace-regexp-in-string "|" "\\\\vert{}" head))
-         (field-count (length fields)))
+  (let* ((headline-escaped (replace-regexp-in-string "|" "\\\\vert{}" head)))
     ;; Insert headline with properties
     (insert "| ")
     (let ((start (point)))

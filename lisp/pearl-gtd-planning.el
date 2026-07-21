@@ -1,5 +1,10 @@
 ;;; pearl-gtd-planning.el --- Natural Planning Model for pearl-gtd  -*- lexical-binding: t; -*-
 
+;; Copyright (C) 2026 OverbearingPearl
+;; License: MIT
+;; URL: https://github.com/OverbearingPearl/pearl-gtd
+;; Package-Requires: ((emacs "27.1") (cl-lib "0.5") (org "9.3"))
+
 ;;; Commentary:
 
 ;; This file implements the GTD Natural Planning Model.
@@ -16,7 +21,7 @@
 (defvar pearl-gtd-planning--current-project nil
   "Current project name during planning session.")
 
-(defun pearl-gtd-planning--project-exists-p (project-name)
+(defun pearl-gtd-planning--project-exists-p (proj-name)
   "Check if PROJECT-NAME already exists in actions.org.
 Handles multi-project tags (comma-separated)."
   (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
@@ -30,7 +35,7 @@ Handles multi-project tags (comma-separated)."
             (let ((project-value (match-string 1)))
               ;; Split by comma and trim whitespace
               (dolist (proj (split-string project-value "," t))
-                (when (string= (string-trim proj) project-name)
+                (when (string= (string-trim proj) proj-name)
                   (throw 'found t)))))
           nil)))))
 
@@ -161,7 +166,7 @@ Return (DESTINATION . CONTEXT) where DESTINATION is one of:
 
     (cons (intern (replace-regexp-in-string " " "-" dest)) context)))
 
-(defun pearl-gtd-planning--execute-brainstorm-move (headline id project dest context)
+(defun pearl-gtd-planning--execute-brainstorm-move (_headline id _project dest context)
   "Execute move for brainstorm item from inbox to DEST.
 HEADLINE is the item title.  ID is the org entry id.  PROJECT is the project name.
 DEST is the destination type.  CONTEXT is the context tag.
@@ -199,8 +204,8 @@ Internal errors crash (no catch-all)."
           (org-todo "TODO")
           (when (and context (not (string= context "")))
             (if (string-match "^@" context)
-                (org-set-tags-to (list (substring context 1)))
-              (org-set-tags-to (list context)))))
+                (org-set-tags (list (substring context 1)))
+              (org-set-tags (list context)))))
 
         ;; After modifications, get subtree content
         (let ((subtree-content (buffer-substring (point) (org-end-of-subtree))))
@@ -237,8 +242,8 @@ HORIZONS is an alist of horizon properties."
       (org-set-property "PROJECT" (or project "NoProject"))
       (when (and context (stringp context) (not (string= context "")))
         (if (string-match "^@" context)
-            (org-set-tags-to (list (substring context 1)))
-          (org-set-tags-to (list context))))
+            (org-set-tags (list (substring context 1)))
+          (org-set-tags (list context))))
       (dolist (horizon horizons)
         (let ((prop (car horizon))
               (val (cdr horizon)))

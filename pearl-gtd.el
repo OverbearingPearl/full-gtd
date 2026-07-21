@@ -4,9 +4,10 @@
 
 ;; Author: OverbearingPearl <OverbearingPearl@outlook.com>
 ;; Version: 0.1.0
-;; Package-Requires: ((emacs "27.1"))
-;; Keywords: outlines, tools, convenience, gtd, org, task, management, workflow, todo, getting-things-done, inbox, review, projects, actions, contexts, horizons, focus, productivity, organization, time-management
+;; License: MIT
 ;; URL: https://github.com/OverbearingPearl/pearl-gtd
+;; Package-Requires: ((emacs "27.1") (cl-lib "0.5") (org "9.3"))
+;; Keywords: outlines, tools, convenience, gtd, org, task, management, workflow, todo, getting-things-done, inbox, review, projects, actions, contexts, horizons, focus, productivity, organization, time-management
 
 ;;; Commentary:
 
@@ -48,6 +49,8 @@
 (require 'pearl-gtd-do)
 (require 'pearl-gtd-horizons)
 (require 'pearl-gtd-planning)
+
+(declare-function pearl-gtd-horizons--view "pearl-gtd-horizons")
 
 (defun pearl-gtd-capture ()
   "Capture a new item to the inbox."
@@ -133,12 +136,12 @@
       (when (string-match "^[^.]+\\.el$" file)
         (let ((feature (intern (file-name-base file))))
           (when (featurep feature)
-            (condition-case err
+            (condition-case nil
                 (unload-feature feature)
               (error nil))))))
     ;; Unload pearl-gtd.el if loaded
     (when (featurep 'pearl-gtd)
-      (condition-case err
+      (condition-case nil
           (unload-feature 'pearl-gtd)
         (error nil)))
     ;; Load pearl-gtd.el from root directory

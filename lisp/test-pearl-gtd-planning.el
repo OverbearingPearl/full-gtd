@@ -1,5 +1,9 @@
 ;;; test-pearl-gtd-planning.el --- User stories: Natural Planning Model  -*- lexical-binding: t; -*-
 
+;; License: MIT
+;; URL: https://github.com/OverbearingPearl/pearl-gtd
+;; Package-Requires: ((emacs "27.1") (ert "1.0") (cl-lib "0.5"))
+
 ;;; Commentary:
 
 ;; User stories for GTD Natural Planning Model.

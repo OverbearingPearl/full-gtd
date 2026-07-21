@@ -1,5 +1,10 @@
 ;;; pearl-gtd-inbox.el --- Inbox handling for pearl-gtd  -*- lexical-binding: t; -*-
 
+;; Copyright (C) 2026 OverbearingPearl
+;; License: MIT
+;; URL: https://github.com/OverbearingPearl/pearl-gtd
+;; Package-Requires: ((emacs "27.1") (cl-lib "0.5") (org "9.3"))
+
 ;;; Commentary:
 
 ;; This file handles inbox-related functions for pearl-gtd, including capture and processing with user interaction via staging, fully aligned with GTD workflow.
@@ -63,7 +68,7 @@ Optional BUFFER-NAME specifies the buffer name.  Return the created buffer."
       (org-map-entries
        (lambda ()
          (push (list (org-get-heading t t)
-                     (org-get-tags-at)
+                     (org-get-tags)
                      (org-get-todo-state)
                      (org-entry-get nil "CREATED"))
                headlines)))
@@ -310,7 +315,7 @@ ENTRY-REF is a cons cell (BUFFER . ROW)."
                  `(completed (executed ,h)))
              `(collect-fields ,h ,r nil)))
 
-          (`(collect-fields ,h ,r ,fields)
+          (`(collect-fields ,h ,r ,_fields)
            (let* ((ctx (read-string (format "Context for '%s' (RET to skip): " h)))
                   (sched (read-string (format "Schedule for '%s' (RET to skip): " h)))
                   (dead (if (and sched (not (string= sched "")))
@@ -362,7 +367,8 @@ ENTRY-REF is a cons cell (BUFFER . ROW)."
     (pearl-gtd-inbox--apply-staged-changes buffer row context)))
 
 (defun pearl-gtd-inbox--process ()
-  "Process the inbox according to GTD clarify and organize steps, with user interaction via staging buffer."
+  "Process the inbox according to GTD clarify and organize steps,
+with user interaction via staging buffer."
   (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
     (setq pearl-gtd-inbox--pending-moves '())
     (when (and pearl-gtd-inbox-stage-buffer-name (get-buffer pearl-gtd-inbox-stage-buffer-name))
@@ -468,10 +474,10 @@ DEADLINE is the deadline date string (nil if not set)."
                ;; Context tag format: @context - remove @ and set as only tag (overwrite old)
                ((string-match "^@\\(.+\\)$" comp)
                 (let ((tag (match-string 1 comp)))
-                  (org-set-tags-to (list tag))))
+                  (org-set-tags (list tag))))
                ;; Simple tag without @ (fallback, also ensure unique)
                ((not (string-match "^:" comp))
-                (org-set-tags-to (list comp))))))
+                (org-set-tags (list comp))))))
           (save-buffer))))
     ;; Add deadline if set and not empty
     (when (and deadline (not (string= deadline "")))
@@ -521,6 +527,10 @@ DEADLINE is the deadline date string (nil if not set)."
           (insert subtree-content)
           (unless (bolp) (insert "\n"))
           (save-buffer))))))
+
+(defun pearl-gtd-inbox--apply-staged-changes (_buffer _row _context)
+  "Apply staged changes for entry.  No-op in current implementation."
+  nil)
 
 (provide 'pearl-gtd-inbox)
 

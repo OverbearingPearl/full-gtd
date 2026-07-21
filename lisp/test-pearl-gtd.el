@@ -1,5 +1,9 @@
 ;;; test-pearl-gtd.el --- Test infrastructure and entry point  -*- lexical-binding: t; -*-
 
+;; License: MIT
+;; URL: https://github.com/OverbearingPearl/pearl-gtd
+;; Package-Requires: ((emacs "27.1") (ert "1.0") (cl-lib "0.5"))
+
 ;;; Commentary:
 
 ;; This file provides shared infrastructure for Pearl-GTD user story tests.

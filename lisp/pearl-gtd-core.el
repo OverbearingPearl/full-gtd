@@ -1,5 +1,10 @@
 ;;; pearl-gtd-core.el --- Core infrastructure for pearl-gtd  -*- lexical-binding: t; -*-
 
+;; Copyright (C) 2026 OverbearingPearl
+;; License: MIT
+;; URL: https://github.com/OverbearingPearl/pearl-gtd
+;; Package-Requires: ((emacs "27.1") (cl-lib "0.5") (org "9.3"))
+
 ;;; Commentary:
 
 ;; This file provides core infrastructure for Pearl-GTD, including
@@ -57,7 +62,8 @@ CONTEXTS is a list of normalized context strings (without @ prefix)."
 PREDICATES is a list of predicate functions to apply.
 Each predicate is called with no arguments in the context of the entry.
 Return list of entries that pass all predicates.
-Entries are lists: (HEADLINE TAGS-STRING TODO-STATE SCHEDULED DELEGATED PROJECT CREATED ID FILE DEADLINE CONTEXT L3_AREA L4_GOAL L5_VISION L6_PURPOSE).
+Entries are lists: (HEADLINE TAGS-STRING TODO-STATE SCHEDULED DELEGATED
+PROJECT CREATED ID FILE DEADLINE CONTEXT L3_AREA L4_GOAL L5_VISION L6_PURPOSE).
 Nil values indicate unset properties."
   (let ((entries '())
         (file-name (file-name-nondirectory file-path)))
@@ -70,7 +76,7 @@ Nil values indicate unset properties."
            (when (cl-every (lambda (pred) (funcall pred)) predicates)
              (let* ((head (org-get-heading t t))
                     (id (org-entry-get nil "ID"))
-                    (tags (org-get-tags-at))
+                    (tags (org-get-tags))
                     (todo-state (org-get-todo-state))
                     (scheduled (org-entry-get nil "SCHEDULED"))
                     (deadline (org-entry-get nil "DEADLINE"))
@@ -146,7 +152,7 @@ HEADER-REGEXP matches header lines to skip (default: \"| Headline\")."
        (defun ,next-fn ()
          "Move to next data row in the table."
          (interactive)
-         (let* ((boundaries (,boundaries-func))
+         (let* ((boundaries (funcall ,boundaries-func))
                 (last-data-row (cdr boundaries)))
            (if (>= (line-beginning-position) last-data-row)
                (beep)
@@ -158,7 +164,7 @@ HEADER-REGEXP matches header lines to skip (default: \"| Headline\")."
        (defun ,prev-fn ()
          "Move to previous data row in the table."
          (interactive)
-         (let* ((boundaries (,boundaries-func))
+         (let* ((boundaries (funcall ,boundaries-func))
                 (first-data-row (car boundaries)))
            (if (<= (line-beginning-position) first-data-row)
                (beep)
@@ -169,7 +175,7 @@ HEADER-REGEXP matches header lines to skip (default: \"| Headline\")."
 
 ;;;; Macros for file operations
 
-(defmacro with-file-buffer (file-path &rest body)
+(defmacro pearl-gtd-core-with-file-buffer (file-path &rest body)
   "Execute BODY in buffer of FILE-PATH (expanded relative to base dir).
 Buffer is saved if modified after BODY.  Internal errors crash (no catch-all)."
   (declare (indent 1))
@@ -183,11 +189,11 @@ Buffer is saved if modified after BODY.  Internal errors crash (no catch-all)."
          (when (buffer-modified-p)
            (save-buffer))))))
 
-(defmacro with-entry-at-id (id file &rest body)
+(defmacro pearl-gtd-core-with-entry-at-id (id file &rest body)
   "Execute BODY with point at entry ID in FILE.
 Signals error if entry not found (internal state violation)."
   (declare (indent 2))
-  `(with-file-buffer ,file
+  `(pearl-gtd-core-with-file-buffer ,file
      (goto-char (point-min))
      (let ((id-val ,id))
        (cl-assert (re-search-forward (concat ":ID:[ \t]+" (regexp-quote id-val)) nil t)
