@@ -366,7 +366,7 @@
              (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory)))
   :teardown nil)
 
-(test-pearl-gtd-define-story test-pearl-gtd-organize-pipe-in-headline
+(test-pearl-gtd-define-story test-pearl-gtd-organize-user-enters-pipe-in-headline
   "Pipe character in headline must not break org-table formatting."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Task | with pipe\n:PROPERTIES:\n:ID: pipe-1\n:END:\n"))
@@ -384,7 +384,7 @@
                  (should (search-forward "Task | with pipe" nil t)))))
   :teardown nil)
 
-(test-pearl-gtd-define-story test-pearl-gtd-organize-unicode-in-content
+(test-pearl-gtd-define-story test-pearl-gtd-organize-user-enters-unicode-content
   "Unicode and emoji must be handled correctly in all fields."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Task with unicode: 中文 and emoji: 😀\n:PROPERTIES:\n:ID: unicode-1\n:END:\n"))
@@ -401,7 +401,7 @@
                       "😀")))
   :teardown nil)
 
-(test-pearl-gtd-define-story test-pearl-gtd-organize-leap-year-valid
+(test-pearl-gtd-define-story test-pearl-gtd-organize-user-sets-leap-year-date
   "Leap year date February 29 must be accepted."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Leap task\n:PROPERTIES:\n:ID: leap-1\n:END:\n"))
@@ -414,7 +414,7 @@
             "2024-02-29")
   :teardown nil)
 
-(test-pearl-gtd-define-story test-pearl-gtd-organize-far-future-date
+(test-pearl-gtd-define-story test-pearl-gtd-organize-user-sets-far-future-date
   "Dates far in the future (year 9999) must be handled."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Future task\n:PROPERTIES:\n:ID: future-1\n:END:\n"))
@@ -427,7 +427,7 @@
             "9999-12-31")
   :teardown nil)
 
-(test-pearl-gtd-define-story test-pearl-gtd-organize-invalid-date-format
+(test-pearl-gtd-define-story test-pearl-gtd-organize-handles-invalid-date-format
   "Invalid date format should not crash the system."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Bad date task\n:PROPERTIES:\n:ID: bad-date-1\n:END:\n"))
@@ -441,7 +441,7 @@
              (should (file-exists-p (expand-file-name "actions.org" pearl-gtd-init-base-directory))))
   :teardown nil)
 
-(test-pearl-gtd-define-story test-pearl-gtd-organize-project-with-comma
+(test-pearl-gtd-define-story test-pearl-gtd-organize-user-enters-project-with-comma
   "Project name containing comma must not be split incorrectly."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Complex project task\n:PROPERTIES:\n:ID: proj-comma-1\n:END:\n"))
@@ -464,7 +464,7 @@
                (should-not (string-match-p ":PROJECT: Company\n.*:PROJECT: Inc" content))))
   :teardown nil)
 
-(test-pearl-gtd-define-story test-pearl-gtd-organize-empty-project-name
+(test-pearl-gtd-define-story test-pearl-gtd-organize-user-skips-project-name
   "Empty or whitespace-only project name should be treated as no project."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* No project task\n:PROPERTIES:\n:ID: empty-proj-1\n:END:\n"))
@@ -491,7 +491,7 @@
              (should-not (string-match-p ":PROJECT:[ \t]*[^ \t\n\r]" content)))
   :teardown nil)
 
-(test-pearl-gtd-define-story test-pearl-gtd-organize-very-long-project-name
+(test-pearl-gtd-define-story test-pearl-gtd-organize-user-enters-long-project-name
   "Very long project names (500+ chars) must be handled."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Long project task\n:PROPERTIES:\n:ID: long-proj-1\n:END:\n"))

@@ -65,7 +65,7 @@
              (should (test-pearl-gtd-file-contains-p-bool inbox-file "* This is a very long title that exceeds normal length for testing purposes")))
   :teardown nil)
 
-(test-pearl-gtd-define-story test-pearl-gtd-capture-user-skips-capture-when-inbox-has-content
+(test-pearl-gtd-define-story test-pearl-gtd-capture-user-cancels-capture-when-inbox-has-content
   "User cancels capture when inbox already has content, inbox unchanged."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Existing task\n"))
@@ -132,7 +132,7 @@
              (should (test-pearl-gtd-file-contains-p-bool inbox-file "* New captured task")))
   :teardown nil)
 
-(test-pearl-gtd-define-story test-pearl-gtd-capture-preserves-two-existing-tasks
+(test-pearl-gtd-define-story test-pearl-gtd-capture-user-preserves-two-existing-tasks
   "Capture preserves two existing tasks in inbox."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Task one\n* Task two\n"))
@@ -178,7 +178,7 @@
            (should (eq (car test-pearl-gtd-caught-error) 'quit)))
   :teardown nil)
 
-(test-pearl-gtd-define-story test-pearl-gtd-capture-newline-in-input
+(test-pearl-gtd-define-story test-pearl-gtd-capture-sanitizes-newline-in-input
   "Newline in capture input must be sanitized to prevent entry injection."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -195,7 +195,7 @@
                (should (search-forward "Line1" nil t))))
   :teardown nil)
 
-(test-pearl-gtd-define-story test-pearl-gtd-capture-control-characters
+(test-pearl-gtd-define-story test-pearl-gtd-capture-strips-control-characters
   "Control characters in input must be stripped or escaped."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -208,7 +208,7 @@
                (should-not (search-forward "\x01" nil t))))
   :teardown nil)
 
-(test-pearl-gtd-define-story test-pearl-gtd-capture-very-long-headline
+(test-pearl-gtd-define-story test-pearl-gtd-capture-user-captures-very-long-headline
   "Headlines with 1000+ characters must be handled."
   :setup (pearl-gtd-init-initialize)
   :files nil

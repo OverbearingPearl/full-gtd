@@ -10,7 +10,7 @@
 (require 'pearl-gtd)
 (require 'test-pearl-gtd)
 
-(test-pearl-gtd-define-story test-pearl-gtd-horizons-weekly-review-shows-columns
+(test-pearl-gtd-define-story test-pearl-gtd-horizons-user-views-horizon-columns
   "Weekly review shows horizon columns for project and no-project tables."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO No project task\n:PROPERTIES:\n:ID: np-1\n:END:\n* TODO Project task\n:PROPERTIES:\n:ID: p-1\n:PROJECT: TestProject\n:END:\n"))
@@ -37,8 +37,8 @@
                (should-not (search-forward-regexp "|\\s-*L6\\s-*|" (line-end-position) t))))
   :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
 
-(test-pearl-gtd-define-story test-pearl-gtd-horizons-set-l3-for-no-project-action
-  "Set L3 horizon for no-project action in weekly review."
+(test-pearl-gtd-define-story test-pearl-gtd-horizons-user-sets-area-for-action
+  "Set Area (L3) horizon for no-project action in weekly review."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO No project task\n:PROPERTIES:\n:ID: np-1\n:END:\n"))
   :mock (((symbol-function 'read-string) (lambda (&rest _) "Personal")))
@@ -57,8 +57,8 @@
              (should found))
   :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
 
-(test-pearl-gtd-define-story test-pearl-gtd-horizons-set-l3-for-project
-  "Set L3 horizon for project in weekly review."
+(test-pearl-gtd-define-story test-pearl-gtd-horizons-user-sets-area-for-project
+  "Set Area (L3) horizon for project in weekly review."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Project task\n:PROPERTIES:\n:ID: p-1\n:PROJECT: TestProject\n:END:\n"))
   :mock (((symbol-function 'read-string) (lambda (&rest _) "Work")))
@@ -77,8 +77,8 @@
              (should found))
   :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
 
-(test-pearl-gtd-define-story test-pearl-gtd-horizons-set-l4-l5-l6-for-project
-  "Set L4, L5, L6 horizons for project with hierarchy constraints."
+(test-pearl-gtd-define-story test-pearl-gtd-horizons-user-sets-goal-through-purpose
+  "Set Goal (L4), Vision (L5), and Purpose (L6) horizons for project with hierarchy constraints."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Project task\n:PROPERTIES:\n:ID: p-1\n:PROJECT: TestProject\n:L3_AREA: Work\n:END:\n"))
   :mock (((symbol-function 'read-string)
@@ -116,43 +116,8 @@
                (should found3)))
   :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
 
-(test-pearl-gtd-define-story test-pearl-gtd-horizons-cannot-set-l5-without-l4
-  "Cannot set L5_VISION without L4_GOAL set first."
-  :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* TODO Project task\n:PROPERTIES:\n:ID: p-1\n:PROJECT: TestProject\n:L3_AREA: Work\n:END:\n"))
-  :mock (((symbol-function 'read-string) (lambda (&rest _) "Vision")))
-  :body (progn
-          (pearl-gtd-review-weekly)
-          (with-current-buffer "*Pearl-GTD Weekly Review*"
-            (goto-char (point-min))
-            (search-forward "** Projects - Active")
-            (search-forward "TestProject")
-            (beginning-of-line)
-            (condition-case err
-                (pearl-gtd-horizons--edit-vision-at-point)
-              (error (should (string-match-p "L4 Goal must be set first" (error-message-string err)))))))
-  :asserts t
-  :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
 
-(test-pearl-gtd-define-story test-pearl-gtd-horizons-cannot-set-l6-without-l5
-  "Cannot set L6 horizon without L5 set first."
-  :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* TODO Project task\n:PROPERTIES:\n:ID: p-1\n:PROJECT: TestProject\n:L3_AREA: Work\n:L4_GOAL: Goal\n:END:\n"))
-  :mock (((symbol-function 'read-string) (lambda (&rest _) "Purpose")))
-  :body (progn
-          (pearl-gtd-review-weekly)
-          (with-current-buffer "*Pearl-GTD Weekly Review*"
-            (goto-char (point-min))
-            (search-forward "** Projects - Active")
-            (search-forward "TestProject")
-            (beginning-of-line)
-            (condition-case err
-                (pearl-gtd-horizons--edit-purpose-at-point)
-              (error (should (string-match-p "L5 Vision must be set first" (error-message-string err)))))))
-  :asserts t
-  :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
-
-(test-pearl-gtd-define-story test-pearl-gtd-horizons-project-horizon-inheritance
+(test-pearl-gtd-define-story test-pearl-gtd-horizons-user-sees-horizon-inheritance
   "Project horizon inheritance to its actions."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task 1\n:PROPERTIES:\n:ID: t1\n:PROJECT: TestProject\n:END:\n* TODO Task 2\n:PROPERTIES:\n:ID: t2\n:PROJECT: TestProject\n:END:\n"))
@@ -182,7 +147,7 @@
              )
   :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
 
-(test-pearl-gtd-define-story test-pearl-gtd-horizons-action-leaves-project-loses-horizon
+(test-pearl-gtd-define-story test-pearl-gtd-horizons-user-removes-project-clears-horizon
   "Action leaving project loses project horizon."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: t1\n:PROJECT: TestProject\n:L3_AREA: Work\n:END:\n"))
@@ -209,7 +174,7 @@
                (should-not found2)))
   :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
 
-(test-pearl-gtd-define-story test-pearl-gtd-horizons-view-shows-hierarchy
+(test-pearl-gtd-define-story test-pearl-gtd-horizons-user-views-hierarchy
   "Horizon view shows L6 to L3 hierarchy with projects and actions."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO No project task\n:PROPERTIES:\n:ID: np-1\n:L3_AREA: Personal\n:END:\n* TODO Project task\n:PROPERTIES:\n:ID: p-1\n:PROJECT: TestProject\n:L3_AREA: Work\n:L4_GOAL: Goal\n:L5_VISION: Vision\n:L6_PURPOSE: Purpose\n:END:\n"))
@@ -230,8 +195,8 @@
                (should (search-forward "*** TODO No project task" nil t))))
   :teardown (kill-buffer "*Pearl-GTD Horizons*"))
 
-(test-pearl-gtd-define-story test-pearl-gtd-horizons-clear-l3-cascade
-  "Clearing L3_AREA from project should remove inherited L3 from actions."
+(test-pearl-gtd-define-story test-pearl-gtd-horizons-user-clears-area-cascades-to-actions
+  "Clearing Area (L3) from project should remove inherited Area from actions."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task 1\n:PROPERTIES:\n:ID: cascade-1\n:PROJECT: TestProj\n:L3_AREA: Work\n:END:\n"))
   :mock (((symbol-function 'read-string) (lambda (&rest _) "")))
@@ -250,8 +215,8 @@
              (should-not (string-match-p ":L3_AREA:" content)))
   :teardown (test-pearl-gtd-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
 
-(test-pearl-gtd-define-story test-pearl-gtd-horizons-constraint-l5-without-l4
-  "Setting L5_VISION without L4_GOAL must be rejected."
+(test-pearl-gtd-define-story test-pearl-gtd-horizons-constraint-rejects-vision-without-goal
+  "User is blocked when attempting to set Vision (L5) without Goal (L4)."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: constraint-1\n:PROJECT: ConstraintProj\n:L3_AREA: Area\n:END:\n"))
   :mock (((symbol-function 'read-string) (lambda (&rest _) "VisionValue")))
@@ -268,8 +233,8 @@
   :asserts t
   :teardown (test-pearl-gtd-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
 
-(test-pearl-gtd-define-story test-pearl-gtd-horizons-constraint-l6-without-l5
-  "Setting L6_PURPOSE without L5_VISION must be rejected."
+(test-pearl-gtd-define-story test-pearl-gtd-horizons-constraint-rejects-purpose-without-vision
+  "User is blocked when attempting to set Purpose (L6) without Vision (L5)."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: constraint-2\n:PROJECT: ConstraintProj2\n:L3_AREA: Area\n:L4_GOAL: Goal\n:END:\n"))
   :mock (((symbol-function 'read-string) (lambda (&rest _) "PurposeValue")))
@@ -286,8 +251,8 @@
   :asserts t
   :teardown (test-pearl-gtd-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
 
-(test-pearl-gtd-define-story test-pearl-gtd-horizons-constraint-l7-without-l6
-  "Setting L6 Principle without L6 Purpose must be rejected."
+(test-pearl-gtd-define-story test-pearl-gtd-horizons-constraint-rejects-principle-without-purpose
+  "User is blocked when attempting to set L6 Principle without L6 Purpose."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: constraint-3\n:PROJECT: ConstraintProj3\n:L3_AREA: Area\n:L4_GOAL: Goal\n:L5_VISION: Vision\n:END:\n"))
   :mock (((symbol-function 'read-string) (lambda (&rest _) "PrincipleValue")))

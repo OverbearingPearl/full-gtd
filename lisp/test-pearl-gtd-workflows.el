@@ -143,7 +143,7 @@
                       "* Second capture")))
   :teardown nil)
 
-(test-pearl-gtd-define-story test-pearl-gtd-workflows-id-preserved-after-processing
+(test-pearl-gtd-define-story test-pearl-gtd-workflows-user-sees-id-preserved-after-processing
   "ID is preserved when task is moved from inbox to actions."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -185,7 +185,7 @@
              (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory)))
   :teardown nil)
 
-(test-pearl-gtd-define-story test-pearl-gtd-workflows-duplicate-titles-different-files
+(test-pearl-gtd-define-story test-pearl-gtd-workflows-user-sees-duplicate-titles-get-different-ids
   "Same title in different files gets different IDs."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Buy milk\n:PROPERTIES:\n:ID: existing-id-1\n:END:\n"))

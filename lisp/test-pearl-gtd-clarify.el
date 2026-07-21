@@ -214,7 +214,7 @@
              (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory)))
   :teardown nil)
 
-(test-pearl-gtd-define-story test-pearl-gtd-clarify-quit-during-context
+(test-pearl-gtd-define-story test-pearl-gtd-clarify-user-quits-during-context
   "Quitting (C-g) during context input should leave all tasks in inbox."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* First task\n:PROPERTIES:\n:ID: quit-1\n:END:\n* Second task\n:PROPERTIES:\n:ID: quit-2\n:END:\n"))

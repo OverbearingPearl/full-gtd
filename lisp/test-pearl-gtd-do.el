@@ -242,7 +242,7 @@
                (when buf (kill-buffer buf)))))
 
 (test-pearl-gtd-define-story test-pearl-gtd-do-refresh-after-external-change
-  "Refresh view should pick up external file changes."
+  "User refreshes view after external file changes."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Original\n:PROPERTIES:\n:ID: refresh-1\n:END:\n"))
   :mock nil
@@ -259,7 +259,7 @@
   :teardown (test-pearl-gtd-cleanup-buffers '("*Pearl-GTD: All Actions*")))
 
 (test-pearl-gtd-define-story test-pearl-gtd-do-view-empty-actions-file
-  "Opening view on empty actions file should not error."
+  "User views empty actions file without errors."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" ""))
   :mock nil
@@ -276,7 +276,7 @@
                                               "*Pearl-GTD Daily Review*")))
 
 (test-pearl-gtd-define-story test-pearl-gtd-do-view-file-deleted-while-open
-  "File deleted while view is open should be handled gracefully."
+  "User handles gracefully when file is deleted while viewing."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: del-1\n:END:\n"))
   :mock nil
@@ -291,7 +291,7 @@
   :teardown (test-pearl-gtd-cleanup-buffers '("*Pearl-GTD: All Actions*")))
 
 (test-pearl-gtd-define-story test-pearl-gtd-do-view-entry-deleted-while-navigating
-  "Entry deleted while navigating in view should not crash."
+  "User handles gracefully when entry is deleted while navigating."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task 1\n:PROPERTIES:\n:ID: nav-1\n:END:\n* TODO Task 2\n:PROPERTIES:\n:ID: nav-2\n:END:\n"))
   :mock nil
