@@ -102,9 +102,11 @@ Return the created buffer."
                           "N/A"
                         )
                )
+               (headline (nth 0 entry))
+               (escaped-headline (replace-regexp-in-string "|" "\\\\vert{}" headline))
               )
           (insert (format "| %s | | %s | %s |\n"
-                          (nth 0 entry)
+                          escaped-headline
                           age-str
                           (mapconcat #'identity (nth 1 entry) ",")
                   )
@@ -130,6 +132,8 @@ Calls FUNC with headline and entry-ref for each entry."
           (let ((current-row (line-number-at-pos)))
             (when (looking-at "|")
               (let ((headline (string-trim (org-table-get-field 1))))
+                ;; Unescape pipe characters that were escaped for table display
+                (setq headline (replace-regexp-in-string "\\\\vert{}" "|" headline))
                 (when (and headline (not (string= headline "")))
                   (push (cons headline (cons buffer current-row)) entries)
                 )
@@ -339,173 +343,153 @@ DEADLINE is the deadline date string, or nil if not set."
   )
 )
 
-;;;; Compute Layer (Pure Functions with User Interaction)
+;;;; State Machine Layer
 
-(defun pearl-gtd-inbox--clarify-entry-compute (headline)
-  "Collect clarify decisions for HEADLINE via user interaction.
-Returns (NEW-HEADLINE . REMARKS)."
-  (let* ((rename (read-string (format "Rename '%s'? (RET to keep, or type new name): " headline)))
-         (new-headline (let ((trimmed (string-trim rename)))
-                        (unless (string= trimmed "") trimmed)
-                       )
-         )
-         (remark-text (read-string (format "Add remarks for '%s'? (RET to skip, or type remarks): "
-                                          (or new-headline headline)
-                                   )
-                      )
-         )
-         (remarks (unless (string= remark-text "") remark-text))
-        )
-    (cons new-headline remarks)
-  )
-)
+(defun pearl-gtd-inbox--transition (state input)
+  "State machine transition function.
+STATE is current state symbol, INPUT is user input.
+Returns next state or (next-state . payload)."
+  (pcase `(,state ,input)
+    ;; Clarifying phase
+    (`(clarify (rename . ,new-name)) `(clarify . ,new-name))
+    (`(clarify (remarks . ,remarks)) `(classify . ,remarks))
 
-(defun pearl-gtd-inbox--compute-actionable-action (headline new-headline remarks)
-  "Compute action spec for actionable entry.
-Returns action spec: (clarify-and-move TARGET PROPS NEW-HEADLINE REMARKS DEADLINE) or (execute ...)."
-  (let ((display-headline (or new-headline headline)))
-    (if (y-or-n-p (format "Can '%s' be done in 2 minutes? " display-headline))
-        (list 'execute new-headline remarks)
-      ;; Collect additional fields
-      (let* ((context (let ((c (read-string (format "Context for '%s' (e.g. @home, RET to skip): " display-headline))))
-                       (unless (string= c "") c)
-                      )
-             )
-             (schedule (let ((s (read-string (format "Schedule for '%s' (e.g. 2026-04-10, RET to skip): " display-headline))))
-                        (unless (string= s "") s)
-                       )
-             )
-             (deadline (if schedule
-                          (let ((d (read-string (format "Deadline for '%s' (RET to use schedule, or enter date): " display-headline))))
-                            (if (string= d "") schedule d)
-                          )
-                        (let ((d (read-string (format "Deadline for '%s' (RET to skip): " display-headline))))
-                          (unless (string= d "") d)
-                        )
-                       )
-             )
-             (delegatee (let ((d (read-string (format "Delegate '%s' to (e.g. John, RET to skip): " display-headline))))
-                         (unless (string= d "") d)
-                        )
-             )
-             (projects (let ((p (read-string (format "Project name(s) for '%s' (comma separated, RET to skip): " display-headline))))
-                        (seq-filter (lambda (s) (not (string-empty-p s)))
-                                   (mapcar #'string-trim (split-string p "," t))
-                        )
-                       )
-             )
-             (props (pearl-gtd-inbox--build-props context schedule delegatee projects))
-            )
-        (list 'clarify-and-move "actions.org" props new-headline remarks deadline)
-      )
-    )
-  )
-)
+    ;; Classification
+    (`(classify ,headline ,remarks . ,_)
+     `(deciding ,headline ,remarks))
+    (`(deciding ,headline ,remarks actionable)
+     `(specify-actionable ,headline ,remarks))
+    (`(deciding ,headline ,remarks non-actionable)
+     `(specify-non-actionable ,headline ,remarks))
 
-(defun pearl-gtd-inbox--build-props (context schedule delegatee projects)
-  "Build properties string from components."
-  (let ((tags '()))
-    (when context (push context tags))
-    (when schedule (push (format ":SCHEDULED:%s:" schedule) tags))
-    (when delegatee (push (format ":DELEGATED:%s:" delegatee) tags))
-    (when projects (push (format ":PROJECT:%s:" (mapconcat #'identity projects ",")) tags))
-    (mapconcat #'identity (nreverse tags) " ")
-  )
-)
+    ;; Actionable specification
+    (`(specify-actionable ,headline ,remarks (two-minute . t))
+     `(execute ,headline ,remarks))
+    (`(specify-actionable ,headline ,remarks (two-minute . nil))
+     `(collect-fields ,headline ,remarks nil))
+    (`(collect-fields ,headline ,remarks ,fields (context . ,ctx))
+     `(collect-fields ,headline ,remarks ,(cons `(context . ,ctx) fields)))
+    (`(collect-fields ,headline ,remarks ,fields (schedule . ,date))
+     `(collect-fields ,headline ,remarks ,(cons `(schedule . ,date) fields)))
+    (`(collect-fields ,headline ,remarks ,fields (deadline . ,date))
+     `(collect-fields ,headline ,remarks ,(cons `(deadline . ,date) fields)))
+    (`(collect-fields ,headline ,remarks ,fields (delegate . ,person))
+     `(collect-fields ,headline ,remarks ,(cons `(delegate . ,person) fields)))
+    (`(collect-fields ,headline ,remarks ,fields (project . ,proj))
+     `(collect-fields ,headline ,remarks ,(cons `(project . ,proj) fields)))
+    (`(collect-fields ,headline ,remarks ,fields done)
+     `(move-to-actions ,headline ,remarks ,(nreverse fields)))
 
-(defun pearl-gtd-inbox--compute-non-actionable-action (headline new-headline remarks)
-  "Compute action spec for non-actionable entry."
-  (let* ((display-headline (or new-headline headline))
-         (assign-to (completing-read (format "Assign '%s' to: " display-headline)
-                                    '("reference" "someday" "trash") nil t
-                    )
-         )
-        )
-    (pcase assign-to
-      ("reference" (list 'clarify-and-move "reference.org" nil new-headline remarks nil))
-      ("someday" (list 'clarify-and-move "someday.org" nil new-headline remarks nil))
-      ("trash" (list 'delete new-headline remarks))
-      (_ (error "Internal: invalid assignment target %s" assign-to))
-    )
-  )
-)
+    ;; Non-actionable specification
+    (`(specify-non-actionable ,headline ,remarks (destination . "reference"))
+     `(move-to "reference.org" ,headline ,remarks))
+    (`(specify-non-actionable ,headline ,remarks (destination . "someday"))
+     `(move-to "someday.org" ,headline ,remarks))
+    (`(specify-non-actionable ,headline ,remarks (destination . "trash"))
+     `(delete ,headline ,remarks))
 
-(defun pearl-gtd-inbox--compute-action-spec (headline new-headline remarks)
-  "Compute complete action spec based on user decisions."
-  (let ((display-headline (or new-headline headline)))
-    (if (y-or-n-p (format "Is '%s' actionable? " display-headline))
-        (pearl-gtd-inbox--compute-actionable-action headline new-headline remarks)
-      (pearl-gtd-inbox--compute-non-actionable-action headline new-headline remarks)
-    )
-  )
-)
+    ;; Terminal states
+    (`(execute ,headline ,remarks) `(completed (execute ,headline ,remarks)))
+    (`(move-to ,file ,headline ,remarks) `(completed (move ,file ,headline ,remarks)))
+    (`(move-to-actions ,headline ,remarks ,fields) `(completed (move-action ,headline ,remarks ,fields)))
+    (`(delete ,headline ,remarks) `(completed (delete ,headline ,remarks)))
 
-;;;; Execution Layer (Thin State Wrapper)
+    (_ (error "Invalid transition: state=%S input=%S" state input))))
 
-(defun pearl-gtd-inbox--compute-actions (headline spec entry-ref)
-  "Compute action instructions for HEADLINE based on SPEC.
-ENTRY-REF is (BUFFER . ROW) for row information.
-Returns list of instructions: (TYPE . PAYLOAD)."
-  (let ((row (cdr entry-ref))
-        (instructions '()))
-    (pcase (car spec)
-      ('clarify-and-move
-       (let ((target (nth 1 spec))
-             (props (nth 2 spec))
-             (new-headline (nth 3 spec))
-             (remarks (nth 4 spec))
-             (deadline (nth 5 spec)))
-         (push `(stage-change ,row 2 ,(or remarks "")) instructions)
-         (push `(stage-change ,row 1 ,(or new-headline headline)) instructions)
-         (when (and props (string= target "actions.org"))
-           (push `(stage-change ,row 4 ,props) instructions))
-         (push `(move ,headline ,target ,props ,new-headline ,remarks ,deadline) instructions)))
-
-      ('execute
-       (let ((new-headline (nth 1 spec))
-             (remarks (nth 2 spec)))
-         (push `(mark-executed ,row) instructions)
-         (push `(move ,headline nil nil ,new-headline ,remarks nil) instructions)))
-
-      ('delete
-       (let ((new-headline (nth 1 spec))
-             (remarks (nth 2 spec)))
-         (push `(mark-deleted ,row) instructions)
-         (push `(move ,headline nil nil ,new-headline ,remarks nil) instructions)))
-
-      (_ (error "Internal: unknown action type %s" (car spec))))
-    (nreverse instructions)))
-
-(defun pearl-gtd-inbox--apply-actions (buffer instructions)
-  "Apply INSTRUCTIONS to BUFFER. Internal errors crash (no catch-all)."
-  (with-current-buffer buffer
-    (dolist (inst instructions)
-      (pcase inst
-        (`(stage-change ,row ,col ,value)
-         (pearl-gtd-inbox--stage-change-impl row col value))
-        (`(mark-executed ,row)
-         (pearl-gtd-inbox--mark-executed-impl row))
-        (`(mark-deleted ,row)
-         (pearl-gtd-inbox--mark-deleted-impl row))
-        (`(move ,headline ,target ,props ,new-headline ,remarks ,deadline)
-         (push (list headline target props new-headline remarks deadline)
-               pearl-gtd-inbox--pending-moves))
-        (_ (error "Internal: unknown instruction %s" inst))))))
+(defun pearl-gtd-inbox--fields-to-props (fields)
+  "Convert FIELDS alist to properties string."
+  (let ((parts '()))
+    (dolist (f fields)
+      (pcase f
+        (`(context . ,ctx)
+         (when ctx (push ctx parts)))
+        (`(schedule . ,sched)
+         (when sched (push (format ":SCHEDULED:%s:" sched) parts)))
+        (`(delegate . ,deleg)
+         (when deleg (push (format ":DELEGATED:%s:" deleg) parts)))
+        (`(project . ,proj)
+         (when proj (push (format ":PROJECT:%s:" proj) parts)))))
+    (mapconcat #'identity (nreverse parts) " ")))
 
 ;;;; Entry Point
 
 (defun pearl-gtd-inbox--process-entry (headline buffer entry-ref)
-  "Process entry with separation of concerns."
-  (pearl-gtd-inbox--highlight-entry entry-ref)
-  (let* ((clarify-result (pearl-gtd-inbox--clarify-entry-compute headline))
-         (new-headline (car clarify-result))
-         (remarks (cdr clarify-result))
-         (action-spec (pearl-gtd-inbox--compute-action-spec headline new-headline remarks))
-         ;; 计算层：生成指令列表
-         (instructions (pearl-gtd-inbox--compute-actions headline action-spec entry-ref)))
-    ;; 状态层：统一执行
-    (pearl-gtd-inbox--apply-actions buffer instructions))
-)
+  "Process entry using explicit state machine."
+  (let ((original-headline headline)
+        (state `(clarify . ,headline))
+        (row (cdr entry-ref))
+        (context '()))
+    (while (not (eq (car-safe state) 'completed))
+      (pearl-gtd-inbox--highlight-entry entry-ref)
+      (setq state
+        (pcase state
+          (`(clarify . ,current-headline)
+           (let* ((rename (read-string (format "Rename '%s'? (RET to keep): " current-headline)))
+                  (new-name (let ((trimmed (string-trim rename))) (unless (string= trimmed "") trimmed)))
+                  (remark-text (read-string (format "Add remarks for '%s'? (RET to skip): "
+                                                   (or new-name current-headline))))
+                  (remarks (unless (string= remark-text "") remark-text)))
+             (setq context `(:headline ,(or new-name current-headline) :remarks ,remarks))
+             `(deciding ,(or new-name current-headline) ,remarks)))
+
+          (`(deciding ,h ,r)
+           (if (y-or-n-p (format "Is '%s' actionable? " h))
+               `(specify-actionable ,h ,r)
+             `(specify-non-actionable ,h ,r)))
+
+          (`(specify-actionable ,h ,r)
+           (if (y-or-n-p (format "Can '%s' be done in 2 minutes? " h))
+               `(execute ,h ,r)
+             `(collect-fields ,h ,r nil)))
+
+          (`(collect-fields ,h ,r ,fields)
+           (let* ((ctx (read-string (format "Context for '%s' (RET to skip): " h)))
+                  (sched (read-string (format "Schedule for '%s' (RET to skip): " h)))
+                  (dead (if (and sched (not (string= sched "")))
+                           (read-string (format "Deadline for '%s' (RET to use schedule): " h))
+                         (read-string (format "Deadline for '%s' (RET to skip): " h))))
+                  (deleg (read-string (format "Delegate '%s' to (RET to skip): " h)))
+                  (projs (read-string (format "Project name(s) for '%s' (comma separated, RET to skip): " h))))
+             `(move-to-actions ,h ,r ,(list
+                                        (cons 'context (unless (string= ctx "") ctx))
+                                        (cons 'schedule (unless (string= sched "") sched))
+                                        (cons 'deadline (if (string= dead "")
+                                                           (unless (string= sched "") sched)
+                                                         dead))
+                                        (cons 'delegate (unless (string= deleg "") deleg))
+                                        (cons 'project (unless (string= projs "") projs))))))
+
+          (`(specify-non-actionable ,h ,r)
+           (let ((dest (completing-read (format "Assign '%s' to: " h)
+                                       '("reference" "someday" "trash") nil t)))
+             (pcase dest
+               ("reference" `(move-to "reference.org" ,h ,r))
+               ("someday" `(move-to "someday.org" ,h ,r))
+               ("trash" `(delete ,h ,r)))))
+
+          (`(execute ,h ,r)
+           (pearl-gtd-inbox--mark-executed entry-ref)
+           (push (list original-headline nil nil h r nil) pearl-gtd-inbox--pending-moves)
+           `(completed (executed ,h)))
+
+          (`(move-to ,file ,h ,r)
+           (push (list original-headline file nil h r nil) pearl-gtd-inbox--pending-moves)
+           `(completed (moved ,file ,h)))
+
+          (`(move-to-actions ,h ,r ,fields)
+           (let ((props (pearl-gtd-inbox--fields-to-props fields))
+                 (deadline (cdr (assoc 'deadline fields))))
+             (push (list original-headline "actions.org" props h r deadline) pearl-gtd-inbox--pending-moves))
+           `(completed (moved-to-actions ,h)))
+
+          (`(delete ,h ,r)
+           (pearl-gtd-inbox--mark-deleted entry-ref)
+           (push (list original-headline nil nil h r nil) pearl-gtd-inbox--pending-moves)
+           `(completed (deleted ,h)))
+
+          (_ (error "Unknown state: %S" state)))))
+    ;; Apply staged changes after state machine completes
+    (pearl-gtd-inbox--apply-staged-changes buffer row context)))
 
 (defun pearl-gtd-inbox--process ()
   "Process the inbox according to GTD clarify and organize steps, with user interaction via staging buffer."
@@ -659,8 +643,8 @@ DEADLINE is the deadline date string (nil if not set)."
         )
       )
     )
-    ;; Add deadline if set
-    (when deadline
+    ;; Add deadline if set and not empty
+    (when (and deadline (not (string= deadline "")))
       (with-current-buffer (find-file-noselect inbox-path)
         (org-mode)
         (goto-char (point-min))
