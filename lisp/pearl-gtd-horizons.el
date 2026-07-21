@@ -82,23 +82,24 @@ PROPERTY should be one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE."
 
 (defun pearl-gtd-horizons--check-hierarchy-constraint (project level)
   "Check hierarchy constraint for setting LEVEL horizon for PROJECT.
-LEVEL should be 3, 4, 5, 6 (Purpose), or 7 (Principle internally).
-L5 requires L4, L6-Purpose requires L5, L6-Principle requires L6-Purpose.
+LEVEL should be a symbol: 'area, 'goal, 'vision, 'purpose, or 'principle.
+L5 (vision) requires L4 (goal), L6 (purpose) requires L5 (vision),
+L6 (principle) requires L6 (purpose).
 Returns t if constraint satisfied, nil otherwise."
   (cond
-   ((= level 3) t)  ; L3_AREA: no constraint
-   ((= level 4) t)  ; L4_GOAL: no constraint
-   ((= level 5)      ; L5_VISION: needs L4_GOAL
+   ((eq level 'area) t)    ; L3_AREA: no constraint
+   ((eq level 'goal) t)    ; L4_GOAL: no constraint
+   ((eq level 'vision)     ; L5_VISION: needs L4_GOAL
     (let ((l4 (pearl-gtd-horizons--get-project-horizon project "L4_GOAL")))
       (and l4 (not (string= l4 "")))
     )
    )
-   ((= level 6)      ; L6_PURPOSE: needs L5_VISION
+   ((eq level 'purpose)    ; L6_PURPOSE: needs L5_VISION
     (let ((l5 (pearl-gtd-horizons--get-project-horizon project "L5_VISION")))
       (and l5 (not (string= l5 "")))
     )
    )
-   ((= level 7)      ; L6_PRINCIPLE: needs L6_PURPOSE
+   ((eq level 'principle)  ; L6_PRINCIPLE: needs L6_PURPOSE
     (let ((l6 (pearl-gtd-horizons--get-project-horizon project "L6_PURPOSE")))
       (and l6 (not (string= l6 "")))
     )
@@ -109,7 +110,7 @@ Returns t if constraint satisfied, nil otherwise."
 
 (defun pearl-gtd-horizons--edit-horizon-at-point (level &optional project)
   "Edit horizon LEVEL for entry at point or for PROJECT if provided.
-LEVEL should be 3, 4, 5, 6 (Purpose), or 7 (Principle, requires Purpose)."
+LEVEL should be a symbol: 'area, 'goal, 'vision, 'purpose, or 'principle."
   (let* ((entry (unless project (pearl-gtd-review--get-entry-at-point)))
          (project (or project
                       (save-excursion
@@ -130,28 +131,24 @@ LEVEL should be 3, 4, 5, 6 (Purpose), or 7 (Principle, requires Purpose)."
     (when (or entry project)
       (let* ((id (when entry (car entry)))
              (file (when entry (cdr entry)))
-             (property (cond ((= level 3) "L3_AREA")
-                ((= level 4) "L4_GOAL")
-                ((= level 5) "L5_VISION")
-                ((= level 6) "L6_PURPOSE")
-                ((= level 7) "L6_PRINCIPLE")
-                (t (format "L%d_%s" level (cond ((= level 3) "AREA")
-                                               ((= level 4) "GOAL")
-                                               ((= level 5) "VISION")
-                                               ((= level 6) "PURPOSE")
-                                               ((= level 7) "PRINCIPLE")
-                                               (t "AREA")
-                                          )
-                   )
-                )
-                       )
-             )
+             (property (cond ((eq level 'area)    "L3_AREA")
+                             ((eq level 'goal)    "L4_GOAL")
+                             ((eq level 'vision)  "L5_VISION")
+                             ((eq level 'purpose) "L6_PURPOSE")
+                             ((eq level 'principle) "L6_PRINCIPLE")
+                             (t (error "Internal: unknown horizon level %S" level))))
              (current-value (if project
                                 (pearl-gtd-horizons--get-project-horizon project property)
                               (pearl-gtd-review--get-property-by-id id file property)
                             )
              )
-             (new-value (read-string (format "Horizon L%d (empty to remove): " level)
+             (new-value (read-string (format "Horizon %s (empty to remove): "
+                                             (cond ((eq level 'area)    "L3 Area")
+                                                   ((eq level 'goal)    "L4 Goal")
+                                                   ((eq level 'vision)  "L5 Vision")
+                                                   ((eq level 'purpose) "L6 Purpose")
+                                                   ((eq level 'principle) "L6 Principle")
+                                                   (t (symbol-name level))))
                                      (or current-value "")
                         )
              )
@@ -160,16 +157,27 @@ LEVEL should be 3, 4, 5, 6 (Purpose), or 7 (Principle, requires Purpose)."
             (progn
               ;; For project, check hierarchy constraint
               (unless (pearl-gtd-horizons--check-hierarchy-constraint project level)
-                (error "L%d must be set first" (- level 1))
+                (error "%s must be set first"
+                       (cond ((eq level 'vision)  "L4 Goal")
+                             ((eq level 'purpose) "L5 Vision")
+                             ((eq level 'principle) "L6 Purpose")
+                             (t "Previous horizon")))
               )
               (let ((count (pearl-gtd-horizons--set-project-horizon project property new-value)))
-                (message "Set L%d horizon for %d actions in project %s" level count project)
+                (message "Set %s horizon for %d actions in project %s"
+                         (cond ((eq level 'area)    "L3 Area")
+                               ((eq level 'goal)    "L4 Goal")
+                               ((eq level 'vision)  "L5 Vision")
+                               ((eq level 'purpose) "L6 Purpose")
+                               ((eq level 'principle) "L6 Principle")
+                               (t (symbol-name level)))
+                         count project)
               )
               (pearl-gtd-review--refresh-view)
               project
             )  ; Return project name
-          ;; For no-project action, only L3 is allowed
-          (if (= level 3)
+          ;; For no-project action, only area is allowed
+          (if (eq level 'area)
               (if (string= new-value "")
                   (pearl-gtd-review--remove-property-by-id id file property)
                 (pearl-gtd-review--set-property-by-id id file property new-value)
@@ -184,19 +192,30 @@ LEVEL should be 3, 4, 5, 6 (Purpose), or 7 (Principle, requires Purpose)."
   )
 )
 
-(defmacro pearl-gtd-horizons--define-edit-fn (level)
-  "Define horizon editing function for LEVEL."
-  `(defun ,(intern (format "pearl-gtd-horizons--edit-l%d-at-point" level)) (&optional project)
-     ,(format "Edit L%d horizon for entry at point or for PROJECT if provided." level)
-     (interactive)
-     (pearl-gtd-horizons--edit-horizon-at-point ,level project)
-   )
-)
+(defun pearl-gtd-horizons--edit-area-at-point (&optional project)
+  "Edit L3 Area horizon for entry at point or for PROJECT if provided."
+  (interactive)
+  (pearl-gtd-horizons--edit-horizon-at-point 'area project))
 
-;; Generate editing functions for L3-L7
-(dolist (level '(3 4 5 6 7))
-  (eval `(pearl-gtd-horizons--define-edit-fn ,level))
-)
+(defun pearl-gtd-horizons--edit-goal-at-point (&optional project)
+  "Edit L4 Goal horizon for entry at point or for PROJECT if provided."
+  (interactive)
+  (pearl-gtd-horizons--edit-horizon-at-point 'goal project))
+
+(defun pearl-gtd-horizons--edit-vision-at-point (&optional project)
+  "Edit L5 Vision horizon for entry at point or for PROJECT if provided."
+  (interactive)
+  (pearl-gtd-horizons--edit-horizon-at-point 'vision project))
+
+(defun pearl-gtd-horizons--edit-purpose-at-point (&optional project)
+  "Edit L6 Purpose horizon for entry at point or for PROJECT if provided."
+  (interactive)
+  (pearl-gtd-horizons--edit-horizon-at-point 'purpose project))
+
+(defun pearl-gtd-horizons--edit-principle-at-point (&optional project)
+  "Edit L6 Principle horizon for entry at point or for PROJECT if provided."
+  (interactive)
+  (pearl-gtd-horizons--edit-horizon-at-point 'principle project))
 
 (defun pearl-gtd-horizons--collect-horizon-hierarchy ()
   "Collect all horizon data in hierarchical structure.
@@ -476,11 +495,11 @@ Returns alist: (L6-VALUE . (L5-VALUE . (L4-VALUE . (L3-VALUE . (PROJECTS . NO-PR
 )
 
 ;; Add horizon editing keybindings to review mode
-(define-key pearl-gtd-review-view-mode-map (kbd "3") #'pearl-gtd-horizons--edit-l3-at-point)
-(define-key pearl-gtd-review-view-mode-map (kbd "4") #'pearl-gtd-horizons--edit-l4-at-point)
-(define-key pearl-gtd-review-view-mode-map (kbd "5") #'pearl-gtd-horizons--edit-l5-at-point)
-(define-key pearl-gtd-review-view-mode-map (kbd "6") #'pearl-gtd-horizons--edit-l6-at-point)
-(define-key pearl-gtd-review-view-mode-map (kbd "7") #'pearl-gtd-horizons--edit-l7-at-point)
+(define-key pearl-gtd-review-view-mode-map (kbd "3") #'pearl-gtd-horizons--edit-area-at-point)
+(define-key pearl-gtd-review-view-mode-map (kbd "4") #'pearl-gtd-horizons--edit-goal-at-point)
+(define-key pearl-gtd-review-view-mode-map (kbd "5") #'pearl-gtd-horizons--edit-vision-at-point)
+(define-key pearl-gtd-review-view-mode-map (kbd "6") #'pearl-gtd-horizons--edit-purpose-at-point)
+(define-key pearl-gtd-review-view-mode-map (kbd "7") #'pearl-gtd-horizons--edit-principle-at-point)
 
 (provide 'pearl-gtd-horizons)
 

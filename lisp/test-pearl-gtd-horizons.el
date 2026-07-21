@@ -49,7 +49,7 @@
             (search-forward "** actions.org - No Project")
             (search-forward "No project task")
             (beginning-of-line)
-            (pearl-gtd-horizons--edit-l3-at-point)))
+            (pearl-gtd-horizons--edit-area-at-point)))
   :asserts (let* ((file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
                   (pattern ":L3_AREA: +Personal")
                   (result (test-pearl-gtd-file-contains-p file pattern))
@@ -69,7 +69,7 @@
             (search-forward "** Projects - Active")
             (search-forward "TestProject")
             (beginning-of-line)
-            (pearl-gtd-horizons--edit-l3-at-point)))
+            (pearl-gtd-horizons--edit-area-at-point)))
   :asserts (let* ((file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
                   (pattern ":L3_AREA: +Work")
                   (result (test-pearl-gtd-file-contains-p file pattern))
@@ -95,9 +95,9 @@
             (search-forward "** Projects - Active")
             (search-forward "TestProject")
             (beginning-of-line)
-            (let ((proj (pearl-gtd-horizons--edit-l4-at-point)))
-              (pearl-gtd-horizons--edit-l5-at-point proj)
-              (pearl-gtd-horizons--edit-l6-at-point proj))))
+            (let ((proj (pearl-gtd-horizons--edit-goal-at-point)))
+              (pearl-gtd-horizons--edit-vision-at-point proj)
+              (pearl-gtd-horizons--edit-purpose-at-point proj))))
   :asserts (progn
              (let* ((file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
                     (pattern1 ":L4_GOAL: +Goal: Complete project")
@@ -129,8 +129,8 @@
             (search-forward "TestProject")
             (beginning-of-line)
             (condition-case err
-                (pearl-gtd-horizons--edit-l5-at-point)
-              (error (should (string-match-p "L4 must be set first" (error-message-string err)))))))
+                (pearl-gtd-horizons--edit-vision-at-point)
+              (error (should (string-match-p "L4 Goal must be set first" (error-message-string err)))))))
   :asserts t
   :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
 
@@ -147,8 +147,8 @@
             (search-forward "TestProject")
             (beginning-of-line)
             (condition-case err
-                (pearl-gtd-horizons--edit-l6-at-point)
-              (error (should (string-match-p "L5 must be set first" (error-message-string err)))))))
+                (pearl-gtd-horizons--edit-purpose-at-point)
+              (error (should (string-match-p "L5 Vision must be set first" (error-message-string err)))))))
   :asserts t
   :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
 
@@ -164,7 +164,7 @@
             (search-forward "** Projects - Active")
             (search-forward "TestProject")
             (beginning-of-line)
-            (pearl-gtd-horizons--edit-l3-at-point)))
+            (pearl-gtd-horizons--edit-area-at-point)))
   :asserts (progn
              (let* ((file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
                     (pattern ":L3_AREA: +Work")
@@ -242,7 +242,7 @@
             (search-forward "** Projects - Active")
             (search-forward "TestProj")
             (beginning-of-line)
-            (pearl-gtd-horizons--edit-l3-at-point)))
+            (pearl-gtd-horizons--edit-area-at-point)))
   :asserts (let ((content (with-temp-buffer
                             (insert-file-contents
                              (expand-file-name "actions.org" pearl-gtd-init-base-directory))
@@ -263,8 +263,8 @@
             (search-forward "ConstraintProj")
             (beginning-of-line)
             (condition-case err
-                (pearl-gtd-horizons--edit-l5-at-point)
-              (error (should (string-match-p "L4" (error-message-string err)))))))
+                (pearl-gtd-horizons--edit-vision-at-point)
+              (error (should (string-match-p "L4 Goal must be set first" (error-message-string err)))))))
   :asserts t
   :teardown (test-pearl-gtd-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
 
@@ -281,13 +281,13 @@
             (search-forward "ConstraintProj2")
             (beginning-of-line)
             (condition-case err
-                (pearl-gtd-horizons--edit-l6-at-point)
-              (error (should (string-match-p "L5" (error-message-string err)))))))
+                (pearl-gtd-horizons--edit-purpose-at-point)
+              (error (should (string-match-p "L5 Vision must be set first" (error-message-string err)))))))
   :asserts t
   :teardown (test-pearl-gtd-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
 
 (test-pearl-gtd-define-story test-pearl-gtd-horizons-constraint-l7-without-l6
-  "Setting L7 (Principle) without L6 (Purpose) must be rejected."
+  "Setting L6 Principle without L6 Purpose must be rejected."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: constraint-3\n:PROJECT: ConstraintProj3\n:L3_AREA: Area\n:L4_GOAL: Goal\n:L5_VISION: Vision\n:END:\n"))
   :mock (((symbol-function 'read-string) (lambda (&rest _) "PrincipleValue")))
@@ -299,8 +299,8 @@
             (search-forward "ConstraintProj3")
             (beginning-of-line)
             (condition-case err
-                (pearl-gtd-horizons--edit-l7-at-point)
-              (error (should (string-match-p "L6" (error-message-string err)))))))
+                (pearl-gtd-horizons--edit-principle-at-point)
+              (error (should (string-match-p "L6 Purpose must be set first" (error-message-string err)))))))
   :asserts t
   :teardown (test-pearl-gtd-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
 

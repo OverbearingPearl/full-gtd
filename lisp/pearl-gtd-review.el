@@ -38,10 +38,11 @@
     (define-key map (kbd "C") #'pearl-gtd-review--complete-task-at-point)
     (define-key map (kbd "P") #'pearl-gtd-review--edit-project-at-point)
     ;; Horizon editing
-    (define-key map (kbd "3") #'pearl-gtd-horizons--edit-l3-at-point)
-    (define-key map (kbd "4") #'pearl-gtd-horizons--edit-l4-at-point)
-    (define-key map (kbd "5") #'pearl-gtd-horizons--edit-l5-at-point)
-    (define-key map (kbd "6") #'pearl-gtd-horizons--edit-l6-at-point)
+    (define-key map (kbd "3") #'pearl-gtd-horizons--edit-area-at-point)
+    (define-key map (kbd "4") #'pearl-gtd-horizons--edit-goal-at-point)
+    (define-key map (kbd "5") #'pearl-gtd-horizons--edit-vision-at-point)
+    (define-key map (kbd "6") #'pearl-gtd-horizons--edit-purpose-at-point)
+    (define-key map (kbd "7") #'pearl-gtd-horizons--edit-principle-at-point)
     map
   )
 )
