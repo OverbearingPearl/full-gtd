@@ -10,7 +10,9 @@
 ;;; Code:
 
 (eval-and-compile
-  (add-to-list 'load-path (file-name-directory (or load-file-name buffer-file-name))))
+  (let ((dir (file-name-directory (or load-file-name buffer-file-name))))
+    (add-to-list 'load-path (expand-file-name ".." dir))
+    (add-to-list 'load-path dir)))
 (require 'ert)
 (require 'pearl-gtd)
 (require 'pearl-gtd-test)
@@ -105,7 +107,7 @@
 (pearl-gtd-test-define-story pearl-gtd-test-do-user-views-scheduled-for-today
   "User views actions scheduled for today."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" (format "* TODO Task today\nSCHEDULED: <%s>\n:PROPERTIES:\n:ID: today-task-id\n:END:\n" (format-time-string "%Y-%m-%d %a"))))
+  :files (("actions.org" (format "* TODO Task today\nSCHEDULED: <%s>\n:PROPERTIES:\n:ID: today-task-id\n:END:\n" (format-time-string "%F %a"))))
   :mock nil
   :body (pearl-gtd-do-view-today)
   :asserts (progn
@@ -185,7 +187,7 @@
   "User views today's tasks with project and created columns."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" (format "* TODO Today task\nSCHEDULED: <%s>\n:PROPERTIES:\n:PROJECT: Current Sprint\n:CREATED: 2026-01-20\n:END:\n"
-                                  (format-time-string "%Y-%m-%d %a"))))
+                                  (format-time-string "%F %a"))))
   :mock nil
   :body (pearl-gtd-do-view-today)
   :asserts (progn

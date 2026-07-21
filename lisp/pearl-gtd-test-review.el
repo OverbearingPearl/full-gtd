@@ -10,7 +10,9 @@
 ;;; Code:
 
 (eval-and-compile
-  (add-to-list 'load-path (file-name-directory (or load-file-name buffer-file-name))))
+  (let ((dir (file-name-directory (or load-file-name buffer-file-name))))
+    (add-to-list 'load-path (expand-file-name ".." dir))
+    (add-to-list 'load-path dir)))
 (require 'ert)
 (require 'pearl-gtd)
 (require 'pearl-gtd-test)
@@ -151,7 +153,7 @@
 (pearl-gtd-test-define-story pearl-gtd-test-review-user-edits-context-with-default
   "Press 'c' to edit context with current value as default."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" (concat "* TODO Task with context\nSCHEDULED: <" (format-time-string "%Y-%m-%d %a") ">\n:PROPERTIES:\n:ID: edit-ctx-1\n:CONTEXT: home\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n")))
+  :files (("actions.org" (concat "* TODO Task with context\nSCHEDULED: <" (format-time-string "%F %a") ">\n:PROPERTIES:\n:ID: edit-ctx-1\n:CONTEXT: home\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n")))
   :mock (((symbol-function 'read-string)
           (lambda (prompt &optional initial _history)
             (should (string-match-p "home" initial))
@@ -173,7 +175,7 @@
 (pearl-gtd-test-define-story pearl-gtd-test-review-user-removes-context-by-empty-input
   "Press 'c' and delete all to remove context property."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" (concat "* TODO Task to clear\nSCHEDULED: <" (format-time-string "%Y-%m-%d %a") ">\n:PROPERTIES:\n:ID: edit-ctx-2\n:CONTEXT: home\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n")))
+  :files (("actions.org" (concat "* TODO Task to clear\nSCHEDULED: <" (format-time-string "%F %a") ">\n:PROPERTIES:\n:ID: edit-ctx-2\n:CONTEXT: home\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n")))
   :mock (((symbol-function 'read-string)
           (lambda (_prompt &optional initial _history)
             (should (string= initial "home"))
@@ -221,10 +223,10 @@
 (pearl-gtd-test-define-story pearl-gtd-test-review-user-edits-schedule-with-default
   "Press 't' to edit scheduled date with current value as default."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" (concat "* TODO Scheduled task\nSCHEDULED: <" (format-time-string "%Y-%m-%d %a") ">\n:PROPERTIES:\n:ID: edit-sch-1\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n")))
+  :files (("actions.org" (concat "* TODO Scheduled task\nSCHEDULED: <" (format-time-string "%F %a") ">\n:PROPERTIES:\n:ID: edit-sch-1\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n")))
   :mock (((symbol-function 'read-string)
           (lambda (_prompt &optional initial _history)
-            (should (string-match-p (format-time-string "%Y-%m-%d") (or initial "")))
+            (should (string-match-p (format-time-string "%F") (or initial "")))
             "2026-05-15")))
   :body (progn
           (pearl-gtd-review-daily)

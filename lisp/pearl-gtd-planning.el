@@ -347,7 +347,7 @@ HORIZONS is an alist of horizon properties."
           (insert (format "- %s\n" (plist-get s :headline)))))
 
       (insert (format "\n* End\nPlanning completed at %s\n"
-                     (format-time-string "%Y-%m-%d %H:%M:%S"))))
+                     (format-time-string "%F %T"))))
 
     (pop-to-buffer buffer)
     (goto-char (point-min))))
