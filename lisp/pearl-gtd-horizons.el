@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2026 OverbearingPearl
 ;; License: MIT
+;; SPDX-License-Identifier: MIT
 ;; URL: https://github.com/OverbearingPearl/pearl-gtd
-;; Package-Requires: ((emacs "27.1") (cl-lib "0.5") (org "9.3"))
 
 ;;; Commentary:
 
@@ -171,8 +171,8 @@ LEVEL should be a symbol: \\='area, \\='goal, \\='vision, \\='purpose, or \\='pr
 
 (defun pearl-gtd-horizons--collect-horizon-hierarchy ()
   "Collect all horizon data in hierarchical structure.
-Returns alist: (L6-VALUE . (L5-VALUE . (L4-VALUE . (L3-VALUE .
-(PROJECTS . NO-PROJECT-ACTIONS))))))"
+Returns alist mapping L6 to L5, L5 to L4, L4 to L3,
+and L3 to a list of projects and no-project actions."
   (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
         (hierarchy (make-hash-table :test 'equal)))
     (when (file-exists-p file-path)

@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2026 OverbearingPearl
 ;; License: MIT
+;; SPDX-License-Identifier: MIT
 ;; URL: https://github.com/OverbearingPearl/pearl-gtd
-;; Package-Requires: ((emacs "27.1") (cl-lib "0.5") (org "9.3"))
 
 ;;; Commentary:
 
@@ -22,7 +22,7 @@
   "Current project name during planning session.")
 
 (defun pearl-gtd-planning--project-exists-p (proj-name)
-  "Check if PROJECT-NAME already exists in actions.org.
+  "Check if PROJ-NAME already exists in actions.org.
 Handles multi-project tags (comma-separated)."
   (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
     (when (file-exists-p file-path)
@@ -102,7 +102,7 @@ Signal error if user aborts."
                       (insert "* " item "\n")
                       (org-set-property "PROJECT" project)
                       (org-set-property "BRAINSTORM" "t")
-                      (org-set-property "CREATED" (format-time-string "%Y-%m-%d %H:%M:%S"))
+                      (org-set-property "CREATED" (format-time-string "%F %T"))
                       (org-id-get-create)
                       (save-buffer))))
                 lines))))

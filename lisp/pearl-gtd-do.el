@@ -2,13 +2,14 @@
 
 ;; Copyright (C) 2026 OverbearingPearl
 ;; License: MIT
+;; SPDX-License-Identifier: MIT
 ;; URL: https://github.com/OverbearingPearl/pearl-gtd
-;; Package-Requires: ((emacs "27.1") (cl-lib "0.5") (org "9.3"))
 
 ;;; Commentary:
 
-;; This file handles the "Do" phase of GTD, focusing on executing tasks and viewing contexts.
-;; Delegation tracking and reminders are handled in the Review phase.
+;; This file handles the "Do" phase of GTD, focusing on executing
+;; tasks and viewing contexts.  Delegation tracking and reminders are
+;; handled in the Review phase.
 
 ;;; Code:
 
@@ -153,7 +154,8 @@ Optional CONTEXTS is a list of contexts for the view."
 
 (defun pearl-gtd-do--create-actions-table-buffer (contexts buffer-name)
   "Create a read-only table buffer showing actions filtered by CONTEXTS.
-CONTEXTS is a list of normalized context strings (without @ prefix), or nil for all.
+CONTEXTS is a list of normalized context strings (without @ prefix),
+or nil for all.
 BUFFER-NAME is the name for the new buffer."
   (let ((predicates (list #'pearl-gtd-core-entry-todo-p)))
     (when contexts
@@ -169,7 +171,8 @@ BUFFER-NAME is the name for the new buffer."
 
 (defun pearl-gtd-do--view-context (context-input)
   "Internal function to view tasks by CONTEXT-INPUT in table format.
-CONTEXT-INPUT can be a single context string, comma-separated string, or nil for all.
+CONTEXT-INPUT can be a single context string, comma-separated string,
+or nil for all.
 Context tags are normalized by removing the @ prefix for matching."
   (let* ((raw-input context-input)
          (contexts (cond

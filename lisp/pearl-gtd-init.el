@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2026 OverbearingPearl
 ;; License: MIT
+;; SPDX-License-Identifier: MIT
 ;; URL: https://github.com/OverbearingPearl/pearl-gtd
-;; Package-Requires: ((emacs "27.1") (cl-lib "0.5") (org "9.3"))
 
 ;;; Commentary:
 
@@ -15,8 +15,8 @@
   "Base directory for Pearl-GTD.")
 
 (defun pearl-gtd-init--initialize ()
-  "Initialize the Pearl-GTD system by creating the base directory
-and necessary files."
+  "Initialize the Pearl-GTD system.
+Create the base directory and necessary files."
   (let ((dir pearl-gtd-init-base-directory))
     (unless (file-directory-p dir)
       (make-directory dir))

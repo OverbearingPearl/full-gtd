@@ -2,12 +2,14 @@
 
 ;; Copyright (C) 2026 OverbearingPearl
 ;; License: MIT
+;; SPDX-License-Identifier: MIT
 ;; URL: https://github.com/OverbearingPearl/pearl-gtd
-;; Package-Requires: ((emacs "27.1") (cl-lib "0.5") (org "9.3"))
 
 ;;; Commentary:
 
-;; This file handles inbox-related functions for pearl-gtd, including capture and processing with user interaction via staging, fully aligned with GTD workflow.
+;; This file handles inbox-related functions for pearl-gtd,
+;; including capture and processing with user interaction via staging,
+;; fully aligned with GTD workflow.
 
 ;;; Code:
 
@@ -40,7 +42,9 @@
   "A list to store staged changes, e.g., ((row col new-value) ...).")
 
 (defvar pearl-gtd-inbox--current-prompt-type nil
-  "Current prompt type: 'rename, 'remarks, 'context, 'schedule, 'deadline, 'delegate, 'project.")
+  "Current prompt type.
+Possible values include \\='rename, \\='remarks, \\='context,
+\\='schedule, \\='deadline, \\='delegate, and \\='project.")
 
 (defvar-local pearl-gtd-inbox--current-highlight nil
   "Current highlight overlay in the staging buffer.")
@@ -256,7 +260,7 @@ DEADLINE is the deadline date string, or nil if not set.")
       (setq item (replace-regexp-in-string "\n" " " item))
       (with-current-buffer (find-file-noselect (expand-file-name "inbox.org" pearl-gtd-init-base-directory))
         (goto-char (point-max))
-        (insert (format "* %s\n:PROPERTIES:\n:CREATED: %s\n:END:\n" item (format-time-string "%Y-%m-%d %H:%M:%S")))
+        (insert (format "* %s\n:PROPERTIES:\n:CREATED: %s\n:END:\n" item (format-time-string "%F %T")))
         (forward-line -2)
         (org-id-get-create)
         (save-buffer)))))
@@ -367,8 +371,8 @@ ENTRY-REF is a cons cell (BUFFER . ROW)."
     (pearl-gtd-inbox--apply-staged-changes buffer row context)))
 
 (defun pearl-gtd-inbox--process ()
-  "Process the inbox according to GTD clarify and organize steps,
-with user interaction via staging buffer."
+  "Process the inbox according to GTD clarify and organize steps.
+Use user interaction via staging buffer."
   (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
     (setq pearl-gtd-inbox--pending-moves '())
     (when (and pearl-gtd-inbox-stage-buffer-name (get-buffer pearl-gtd-inbox-stage-buffer-name))
@@ -380,7 +384,7 @@ with user interaction via staging buffer."
               (let ((staging-buffer (pearl-gtd-inbox--create-staging-buffer inbox-file " *inbox-processing*")))
                 (setq pearl-gtd-inbox-stage-buffer-name (buffer-name staging-buffer))
                 (pop-to-buffer staging-buffer)
-                (condition-case err
+                (condition-case _err
                     (with-current-buffer staging-buffer
                       (org-mode)
                       (pearl-gtd-inbox--map-entries

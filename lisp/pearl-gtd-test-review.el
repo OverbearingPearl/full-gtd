@@ -1,8 +1,8 @@
 ;;; pearl-gtd-test-review.el --- User stories: Review phase  -*- lexical-binding: t; -*-
 
 ;; License: MIT
+;; SPDX-License-Identifier: MIT
 ;; URL: https://github.com/OverbearingPearl/pearl-gtd
-;; Package-Requires: ((emacs "27.1") (ert "1.0") (cl-lib "0.5"))
 
 ;;; Commentary:
 
@@ -10,6 +10,7 @@
 
 ;;; Code:
 
+(add-to-list 'load-path (file-name-directory (or load-file-name buffer-file-name)))
 (require 'ert)
 (require 'pearl-gtd)
 (require 'pearl-gtd-test)

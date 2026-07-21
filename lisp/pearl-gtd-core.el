@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2026 OverbearingPearl
 ;; License: MIT
+;; SPDX-License-Identifier: MIT
 ;; URL: https://github.com/OverbearingPearl/pearl-gtd
-;; Package-Requires: ((emacs "27.1") (cl-lib "0.5") (org "9.3"))
 
 ;;; Commentary:
 
@@ -36,7 +36,7 @@ CONTEXTS is a list of normalized context strings (without @ prefix)."
   "Return non-nil if current entry is scheduled for today."
   (let* ((scheduled (org-entry-get nil "SCHEDULED"))
          (ct (current-time))
-         (today-pattern (format-time-string "<%Y-%m-%d" ct)))
+         (today-pattern (format-time-string "<%F" ct)))
     (and scheduled
          (string-match-p today-pattern scheduled))))
 
@@ -44,7 +44,7 @@ CONTEXTS is a list of normalized context strings (without @ prefix)."
   "Return non-nil if current entry was closed today."
   (let* ((closed (org-entry-get nil "CLOSED")))
     (and closed
-         (string-match-p (format-time-string "\\[%Y-%m-%d" (current-time) t) closed))))
+         (string-match-p (format-time-string "\\[%F" (current-time) t) closed))))
 
 (defun pearl-gtd-core-entry-delegated-p ()
   "Return non-nil if current entry is delegated."

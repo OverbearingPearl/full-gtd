@@ -5,8 +5,9 @@
 ;; Author: OverbearingPearl <OverbearingPearl@outlook.com>
 ;; Version: 0.1.0
 ;; License: MIT
+;; SPDX-License-Identifier: MIT
 ;; URL: https://github.com/OverbearingPearl/pearl-gtd
-;; Package-Requires: ((emacs "27.1") (cl-lib "0.5") (org "9.3"))
+;; Package-Requires: ((emacs "27.1") (cl-lib "1.0") (org "9.3") (ert "1.0"))
 ;; Keywords: outlines, tools, convenience, gtd, org, task, management, workflow, todo, getting-things-done, inbox, review, projects, actions, contexts, horizons, focus, productivity, organization, time-management
 
 ;;; Commentary:
@@ -38,6 +39,11 @@
 
 ;;; Code:
 
+(require 'cl-lib)
+(require 'ert)
+(declare-function ert-delete-all-tests "ert")
+(declare-function ert-run-tests-batch-and-exit "ert")
+
 (defvar pearl-gtd-directory (file-name-directory load-file-name))
 
 (add-to-list 'load-path (expand-file-name "lisp" pearl-gtd-directory))
@@ -63,7 +69,8 @@
   (pearl-gtd-inbox--process))
 
 (defun pearl-gtd-init-initialize ()
-  "Initialize the Pearl-GTD system by creating the base directory and necessary files."
+  "Initialize the Pearl-GTD system.
+Create the base directory and necessary files."
   (interactive)
   (pearl-gtd-init--initialize))
 
@@ -116,7 +123,7 @@
   (pearl-gtd-reload-modules)
   ;; Load test files automatically from the lisp directory
   (let ((test-dir (expand-file-name "lisp" pearl-gtd-directory)))
-    (dolist (file (directory-files test-dir nil "test-.*\\.el$"))
+    (dolist (file (directory-files test-dir nil "pearl-gtd-test-.*\\.el$"))
       (let ((full-path (expand-file-name file test-dir)))
         (when (file-exists-p full-path)
           (load-file full-path)))))

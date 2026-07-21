@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2026 OverbearingPearl
 ;; License: MIT
+;; SPDX-License-Identifier: MIT
 ;; URL: https://github.com/OverbearingPearl/pearl-gtd
-;; Package-Requires: ((emacs "27.1") (cl-lib "0.5") (org "9.3"))
 
 ;;; Commentary:
 
@@ -256,8 +256,9 @@ The number of fields determines the table format:
 
 (defun pearl-gtd-review--build-table-data (sections)
   "Build table data from SECTIONS.
-Returns (SECTIONS-DATA . META) where SECTIONS-DATA is list of (TITLE TYPE ENTRIES).
-META is alist with keys :entry-map and :entry-index."
+Returns SECTIONS-DATA and META.
+SECTIONS-DATA is a list of \=(TITLE TYPE ENTRIES).
+META is an alist with keys :entry-map and :entry-index."
   (let ((entry-map (make-vector 100 nil))
         (entry-index 0)
         (sections-data '()))
