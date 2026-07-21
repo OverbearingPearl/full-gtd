@@ -11,7 +11,6 @@
 
 ;;; Code:
 
-(add-to-list 'load-path (expand-file-name ".."))
 (require 'ert)
 (require 'pearl-gtd)
 (require 'pearl-gtd-test)

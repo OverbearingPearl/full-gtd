@@ -9,7 +9,6 @@
 
 ;;; Code:
 
-(add-to-list 'load-path (expand-file-name ".."))
 (require 'ert)
 (require 'pearl-gtd-init)
 (require 'pearl-gtd-test)
