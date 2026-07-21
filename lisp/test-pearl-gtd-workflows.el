@@ -24,82 +24,54 @@
              ((string-match "Schedule" prompt) "")
              ((string-match "Delegate" prompt) "")
              ((string-match "Project" prompt) "")
-             (t "")
-            )
-          )
-         )
+             (t ""))))
          ((symbol-function 'y-or-n-p)
           (lambda (prompt &rest _)
             (cond
              ((string-match "2 minutes" prompt) nil)
              ((string-match "actionable" prompt) t)
-             (t nil)
-            )
-          )
-         )
+             (t nil))))
          ((symbol-function 'completing-read)
           (lambda (prompt collection &rest _)
             (cond
              ((string-match "Assign" prompt) "reference")
-             (t "")
-            )
-          )
-         )
-        )
+             (t "")))))
   :body (progn
           (pearl-gtd-capture)
-          (pearl-gtd-process-inbox)
-        )
+          (pearl-gtd-process-inbox))
   :asserts (progn
              (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory))
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      "* TODO Buy gift for mom"
-                     )
-             )
+                      "* TODO Buy gift for mom"))
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      "Check Amazon first"
-                     )
-             )
+                      "Check Amazon first"))
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      ":errands:"
-                     )
-             )
+                      ":errands:"))
              ;; Verify ID is preserved after processing
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      ":ID:"
-                     )
-             )
-           )
-  :teardown nil
-)
+                      ":ID:")))
+  :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-workflows-user-interrupts-processing
   "User interrupts processing midway."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Task to interrupt\n"))
   :mock (((symbol-function 'read-string) (lambda (&rest _) (signal 'quit nil)))
-         ((symbol-function 'y-or-n-p) (lambda (&rest _) t))
-        )
+         ((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
   :body (progn
          (condition-case err
              (pearl-gtd-process-inbox)
-           (quit (setq test-pearl-gtd-caught-error err))
-         )
-        )
+           (quit (setq test-pearl-gtd-caught-error err))))
 :asserts (progn
            (should (test-pearl-gtd-file-contains-p
                     (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                    "* Task to interrupt"
-                   )
-           )
-           (should (eq (car test-pearl-gtd-caught-error) 'quit))
-         )
-  :teardown nil
-)
+                    "* Task to interrupt"))
+           (should (eq (car test-pearl-gtd-caught-error) 'quit)))
+  :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-workflows-user-processes-mixed-destinations
   "User processes entries with mixed destinations."
@@ -111,10 +83,7 @@
            ((string-match "Action task.*actionable" prompt) t)
            ((string-match "Action task.*2 minutes" prompt) nil)
            ((string-match "Reference task.*actionable" prompt) nil)
-           (t t)
-          )
-        )
-         )
+           (t t))))
        ((symbol-function 'read-string)
         (lambda (prompt &rest _)
           (cond
@@ -122,34 +91,21 @@
            ((string-match "Add remarks" prompt) "")
            ((string-match "Context.*Action task" prompt) "@office")
            ((string-match "Assign.*Reference" prompt) "reference")
-           (t "")
-          )
-        )
-       )
+           (t ""))))
        ((symbol-function 'completing-read)
         (lambda (prompt collection &rest _)
           (cond
            ((string-match "Assign" prompt) "reference")
-           (t "")
-          )
-        )
-       )
-        )
+           (t "")))))
   :body (pearl-gtd-process-inbox)
   :asserts (progn
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      "* TODO Action task"
-                     )
-             )
+                      "* TODO Action task"))
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "reference.org" pearl-gtd-init-base-directory)
-                      "* Reference task"
-                     )
-             )
-           )
-  :teardown nil
-)
+                      "* Reference task")))
+  :teardown nil)
 
 
 (test-pearl-gtd-define-story test-pearl-gtd-workflows-user-captures-and-processes-two-items
@@ -166,41 +122,26 @@
                ((string-match "Rename" prompt) "")
                ((string-match "Add remarks" prompt) "")
                ((string-match "Assign" prompt) "reference")
-               (t "")
-              )
-            )
-          )
-         )
+               (t "")))))
          ((symbol-function 'y-or-n-p) (lambda (&rest _) nil))
          ((symbol-function 'completing-read)
           (lambda (prompt collection &rest _)
             (cond
              ((string-match "Assign" prompt) "reference")
-             (t "")
-            )
-          )
-         )
-        )
+             (t "")))))
   :body (progn
           (pearl-gtd-capture)
           (pearl-gtd-capture)
-          (pearl-gtd-process-inbox)
-        )
+          (pearl-gtd-process-inbox))
   :asserts (progn
              (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory))
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "reference.org" pearl-gtd-init-base-directory)
-                      "* First capture"
-                     )
-             )
+                      "* First capture"))
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "reference.org" pearl-gtd-init-base-directory)
-                      "* Second capture"
-                     )
-             )
-           )
-  :teardown nil
-)
+                      "* Second capture")))
+  :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-workflows-user-sees-id-preserved-after-processing
   "ID is preserved when task is moved from inbox to actions."
@@ -216,50 +157,33 @@
              ((string-match "Schedule" prompt) "")
              ((string-match "Delegate" prompt) "")
              ((string-match "Project" prompt) "")
-             (t "")
-            )
-          )
-         )
+             (t ""))))
          ((symbol-function 'y-or-n-p)
           (lambda (prompt &rest _)
             (cond
              ((string-match "2 minutes" prompt) nil)
              ((string-match "actionable" prompt) t)
-             (t nil)
-            )
-          )
-         )
+             (t nil))))
          ((symbol-function 'completing-read)
           (lambda (prompt collection &rest _)
             (cond
              ((string-match "Assign" prompt) "actions")
-             (t "")
-            )
-          )
-         )
-        )
+             (t "")))))
   :body (progn
           (pearl-gtd-capture)
-          (pearl-gtd-process-inbox)
-        )
+          (pearl-gtd-process-inbox))
   :asserts (progn
              ;; Task moved to actions.org
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      "* TODO Test task"
-                     )
-             )
+                      "* TODO Test task"))
              ;; ID preserved in actions.org
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      ":ID:"
-                     )
-             )
+                      ":ID:"))
              ;; Inbox is empty
-             (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory))
-           )
-  :teardown nil
-)
+             (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory)))
+  :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-workflows-user-sees-duplicate-titles-get-different-ids
   "Same title in different files gets different IDs."
@@ -269,31 +193,21 @@
           (lambda (prompt &rest _)
             (cond
              ((string-match "Enter item" prompt) "Buy milk")
-             (t "")
-            )
-          )
-         )
-        )
+             (t "")))))
   :body (pearl-gtd-capture)
   :asserts (progn
              ;; New entry in inbox
              (should (test-pearl-gtd-file-contains-p
                       (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                      "* Buy milk"
-                     )
-             )
+                      "* Buy milk"))
              ;; New entry has different ID
              (with-temp-buffer
                (insert-file-contents (expand-file-name "inbox.org" pearl-gtd-init-base-directory))
                (goto-char (point-min))
                (should (search-forward ":ID:" nil t))
                (let ((id-pos (point)))
-                 (should-not (search-forward "existing-id-1" nil t))
-               )
-             )
-           )
-  :teardown nil
-)
+                 (should-not (search-forward "existing-id-1" nil t)))))
+  :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-workflows-user-processes-duplicate-titles
   "User captures two tasks with same title, both processed correctly."
@@ -312,34 +226,22 @@
                ((string-match "Schedule" prompt) "")
                ((string-match "Delegate" prompt) "")
                ((string-match "Project" prompt) "")
-               (t "")
-              )
-            )
-          )
-         )
+               (t "")))))
          ((symbol-function 'y-or-n-p)
           (lambda (prompt &rest _)
             (cond
              ((string-match "2 minutes" prompt) nil)
              ((string-match "actionable" prompt) t)
-             (t nil)
-            )
-          )
-         )
+             (t nil))))
          ((symbol-function 'completing-read)
           (lambda (prompt collection &rest _)
             (cond
              ((string-match "Assign" prompt) "actions")
-             (t "")
-            )
-          )
-         )
-        )
+             (t "")))))
   :body (progn
           (pearl-gtd-capture)
           (pearl-gtd-capture)
-          (pearl-gtd-process-inbox)
-        )
+          (pearl-gtd-process-inbox))
   :asserts (progn
              (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory))
              ;; Should have two tasks in actions.org
@@ -347,11 +249,8 @@
                (insert-file-contents (expand-file-name "actions.org" pearl-gtd-init-base-directory))
                (goto-char (point-min))
                (should (search-forward "* TODO Task" nil t))
-               (should (search-forward "* TODO Task" nil t))
-             )
-           )
-  :teardown nil
-)
+               (should (search-forward "* TODO Task" nil t))))
+  :teardown nil)
 
 (test-pearl-gtd-define-story test-pearl-gtd-workflows-duplicate-ids-in-file
   "Malformed file with duplicate IDs should still allow jumping to first match."
@@ -364,48 +263,32 @@
             (goto-char (point-min))
             (search-forward "Task B")
             (beginning-of-line)
-            (pearl-gtd-do--goto-task)
-          )
-        )
+            (pearl-gtd-do--goto-task)))
   :asserts (progn
              (let ((buf (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory))))
                (should buf)
                (with-current-buffer buf
-                 (should (looking-at-p "\\*+ TODO Task"))
-               )
-             )
-           )
+                 (should (looking-at-p "\\*+ TODO Task")))))
   :teardown (progn
               (test-pearl-gtd-cleanup-buffers '("*Pearl-GTD: All Actions*"))
               (let ((buf (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory))))
-                (when buf (kill-buffer buf))
-              )
-            )
-)
+                (when buf (kill-buffer buf)))))
 
 (test-pearl-gtd-define-story test-pearl-gtd-workflows-large-number-entries
   "System should handle 100+ entries without significant slowdown."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" (concat "* Task 1\n:PROPERTIES:\n:ID: perf-1\n:END:\n"
                                (mapconcat (lambda (i)
-                                           (format "* Task %d\n:PROPERTIES:\n:ID: perf-%d\n:END:\n" i i)
-                                          )
-                                         (number-sequence 2 100) ""
-                               )
-                       )
-          )
-         )
+                                           (format "* Task %d\n:PROPERTIES:\n:ID: perf-%d\n:END:\n" i i))
+                                         (number-sequence 2 100) ""))))
   :mock (((symbol-function 'y-or-n-p) (lambda (&rest _) nil))
          ((symbol-function 'read-string) (lambda (&rest _) ""))
-         ((symbol-function 'completing-read) (lambda (&rest _) "trash"))
-        )
+         ((symbol-function 'completing-read) (lambda (&rest _) "trash")))
   :body (let ((start (float-time)))
           (pearl-gtd-process-inbox)
-          (should (< (- (float-time) start) 10.0))
-        )
+          (should (< (- (float-time) start) 10.0)))
   :asserts (should (test-pearl-gtd-inbox-empty-p pearl-gtd-init-base-directory))
-  :teardown nil
-)
+  :teardown nil)
 
 (provide 'test-pearl-gtd-workflows)
 

@@ -11,8 +11,7 @@
 (require 'cl-lib)
 
 (defvar test-pearl-gtd-caught-error nil
-  "Variable to store caught errors during tests."
-)
+  "Variable to store caught errors during tests.")
 
 (defun test-pearl-gtd-file-contains-p (file pattern)
   "Assert that FILE contains PATTERN.
@@ -28,23 +27,14 @@ and file-content is the entire file content as a string."
             (found (progn
                      (goto-char (point-min))
                      (let ((case-fold-search nil))
-                       (re-search-forward pattern nil t)
-                     )
-                   )
-            )
-           )
-        (list found content)
-      )
-    )
-  )
-)
+                       (re-search-forward pattern nil t)))))
+        (list found content)))))
 
 (defun test-pearl-gtd-file-contains-p-bool (file pattern)
   "Return t if FILE contains PATTERN, nil otherwise.
 FILE is the file path to check.
 PATTERN is the regex pattern to search for."
-  (car (test-pearl-gtd-file-contains-p file pattern))
-)
+  (car (test-pearl-gtd-file-contains-p file pattern)))
 
 (defun test-pearl-gtd-file-lacks-p (file pattern)
   "Assert that FILE does not contain PATTERN.
@@ -54,74 +44,50 @@ PATTERN is the string to search for."
     (insert-file-contents file)
     (goto-char (point-min))
     (let ((case-fold-search nil))
-      (not (search-forward pattern nil t))
-    )
-  )
-)
+      (not (search-forward pattern nil t)))))
 
 (defun test-pearl-gtd-inbox-empty-p (base-dir)
   "Check if inbox is visually empty (missing or zero size).
 BASE-DIR is the base directory to check."
   (let ((inbox (expand-file-name "inbox.org" base-dir)))
     (or (not (file-exists-p inbox))
-        (= 0 (file-attribute-size (file-attributes inbox)))
-    )
-  )
-)
+        (= 0 (file-attribute-size (file-attributes inbox))))))
 
 (defun test-pearl-gtd-cleanup-buffers (buffer-names)
   "Safely kill all buffers in BUFFER-NAMES, ignoring errors."
   (dolist (name buffer-names)
     (when-let ((buf (get-buffer name)))
       (with-current-buffer buf
-        (setq buffer-read-only nil)
-      )
-      (ignore-errors (kill-buffer buf))
-    )
-  )
-)
+        (setq buffer-read-only nil))
+      (ignore-errors (kill-buffer buf)))))
 
 (defun test-pearl-gtd-task-exists-p (file title)
   "Check if task TITLE exists in FILE.
 FILE is the file path to check.
 TITLE is the task title to search for."
-  (test-pearl-gtd-file-contains-p file (format "* %s" title))
-)
+  (test-pearl-gtd-file-contains-p file (format "* %s" title)))
 
 (defun test-pearl-gtd--create-files (temp-dir file-specs)
   "Create files in TEMP-DIR from FILE-SPECS.
 Each spec is (FILENAME CONTENT).  CONTENT is a list of lines or a string."
   (dolist (spec file-specs)
     (let ((path (expand-file-name (car spec) temp-dir))
-          (content (cdr spec))
-         )
+          (content (cdr spec)))
       (with-temp-file path
         (insert (if (stringp content)
                     content
-                  (mapconcat #'identity content "\n")
-                )
-        )
-      )
-    )
-  )
-)
+                  (mapconcat #'identity content "\n")))))))
 
 (defun test-pearl-gtd--cleanup (temp-dir)
   "Kill buffers visiting files under TEMP-DIR, then delete TEMP-DIR."
   (dolist (buf (buffer-list))
     (when (and (buffer-file-name buf)
-               (string-prefix-p temp-dir (buffer-file-name buf))
-          )
+               (string-prefix-p temp-dir (buffer-file-name buf)))
       (with-current-buffer buf
-        (set-buffer-modified-p nil)
-      )
-      (kill-buffer buf)
-    )
-  )
+        (set-buffer-modified-p nil))
+      (kill-buffer buf)))
   (when (file-directory-p temp-dir)
-    (delete-directory temp-dir t)
-  )
-)
+    (delete-directory temp-dir t)))
 
 (defun test-pearl-gtd--debug-files (temp-dir file-names)
   "Return multi-line debug string showing contents of files under TEMP-DIR.
@@ -133,16 +99,9 @@ FILE-NAMES is a list of filenames (strings)."
                (if (file-exists-p path)
                    (with-temp-buffer
                      (insert-file-contents path)
-                     (buffer-string)
-                   )
-                 "File does not exist"
-               )
-       )
-     )
-   )
-   file-names "\n\n"
-  )
-)
+                     (buffer-string))
+                 "File does not exist"))))
+   file-names "\n\n"))
 
 (defmacro test-pearl-gtd-define-story (name docstring &rest args)
   "Define a user story test named NAME with DOCSTRING.
@@ -159,44 +118,28 @@ ARGS is a plist with:
         (mock     (plist-get args :mock))
         (body     (plist-get args :body))
         (asserts  (plist-get args :asserts))
-        (teardown (plist-get args :teardown))
-       )
+        (teardown (plist-get args :teardown)))
     `(ert-deftest ,name ()
        ,docstring
        (let* ((temp-dir (make-temp-file "test-pearl-gtd-" t))
               (pearl-gtd-init-base-directory temp-dir)
-              (test-pearl-gtd-caught-error nil)
-             )
+              (test-pearl-gtd-caught-error nil))
          (unwind-protect
              (progn
                ,setup
                (test-pearl-gtd--create-files
                 temp-dir
                 (list ,@(mapcar (lambda (spec)
-                                  `(cons ,(car spec) ,(cadr spec))
-                                )
-                                files
-                        )
-                )
-               )
+                                  `(cons ,(car spec) ,(cadr spec)))
+                                files)))
                (cl-letf ,mock
-                 ,body
-               )
+                 ,body)
                (ert-info ((test-pearl-gtd--debug-files
                            temp-dir
-                           ',(mapcar #'car files)
-                          )
-                         )
-                 ,asserts
-               )
-             )
+                           ',(mapcar #'car files)))
+                 ,asserts))
            (ignore-errors ,teardown)
-           (test-pearl-gtd--cleanup temp-dir)
-         )
-       )
-     )
-  )
-)
+           (test-pearl-gtd--cleanup temp-dir))))))
 
 (provide 'test-pearl-gtd)
 
