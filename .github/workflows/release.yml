@@ -26,6 +26,9 @@ jobs:
           echo "(package-install 'package-build)" > ~/melpazoid/_requirements.el
           pip install ~/melpazoid
 
+      - name: Initialize build log
+        run: echo "=== Starting MELPA Build Test ===" > build-logs.txt
+
       - name: Run melpazoid
         id: melpazoid_run
         env:
@@ -34,16 +37,21 @@ jobs:
           EXIST_OK: false
         run: |
           set -o pipefail
-          make -C ~/melpazoid 2>&1 | sed -r "s/\x1B\[[0-9;]*[mGK]//g" | tee build-logs.txt
+          echo "=== Running melpazoid ===" >> build-logs.txt
+          make -C ~/melpazoid 2>&1 | sed -r "s/\x1B\[[0-9;]*[mGK]//g" | tee -a build-logs.txt
 
       - name: Build release package
+        id: build_release
         if: success()
         run: |
-          mkdir -p dist/pearl-gtd
-          cp pearl-gtd.el README.md README_zh.md LICENSE dist/pearl-gtd/
-          cp -r lisp dist/pearl-gtd/
-          cd dist
-          zip -r ../pearl-gtd-${{ github.ref_name }}.zip pearl-gtd/
+          {
+            echo "=== Building release package ==="
+            mkdir -p dist/pearl-gtd
+            cp pearl-gtd.el README.md README_zh.md LICENSE dist/pearl-gtd/
+            cp -r lisp dist/pearl-gtd/
+            cd dist
+            zip -r ../pearl-gtd-${{ github.ref_name }}.zip pearl-gtd/
+          } 2>&1 | tee -a build-logs.txt
 
       - name: Create GitHub Release
         if: success()
