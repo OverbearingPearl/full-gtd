@@ -4,7 +4,7 @@
 
 ;; Author: OverbearingPearl <OverbearingPearl@outlook.com>
 ;; Version: 0.1.0
-;; Package-Requires: ((emacs "27.1") (org "9.0"))
+;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: outlines, tools, convenience, productivity, gtd, org, task, management, workflow, todo, getting-things-done, david-allen, inbox, review, projects, actions, contexts, horizons, focus, productivity, organization, time-management
 ;; URL: https://github.com/OverbearingPearl/pearl-gtd
 
