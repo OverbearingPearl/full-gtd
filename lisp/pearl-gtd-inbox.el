@@ -48,8 +48,7 @@
 
 (defun pearl-gtd-inbox--create-staging-buffer (file-path &optional buffer-name)
   "Create a staging buffer from FILE-PATH.
-Optional BUFFER-NAME specifies the buffer name.
-Return the created buffer."
+Optional BUFFER-NAME specifies the buffer name.  Return the created buffer."
   (setq pearl-gtd-inbox--staging-original-file file-path
         pearl-gtd-inbox--staging-changes nil
         pearl-gtd-inbox--marked-deleted-rows '()
@@ -128,7 +127,7 @@ ENTRY-REF is a cons cell (BUFFER . ROW)."
           (setq pearl-gtd-inbox--current-highlight ov))))))
 
 (defun pearl-gtd-inbox--mark-deleted-impl (row)
-  "Mark ROW as deleted. Internal implementation for state layer."
+  "Mark ROW as deleted.  Internal implementation for state layer."
   (let ((inhibit-read-only t))
     (save-excursion
       (goto-char (point-min))
@@ -149,7 +148,7 @@ ENTRY-REF is a cons cell (BUFFER . ROW)."
       (pearl-gtd-inbox--mark-deleted-impl row))))
 
 (defun pearl-gtd-inbox--mark-executed-impl (row)
-  "Mark ROW as executed. Internal implementation for state layer."
+  "Mark ROW as executed.  Internal implementation for state layer."
   (let ((inhibit-read-only t))
     (save-excursion
       (goto-char (point-min))
@@ -328,7 +327,10 @@ Returns next state or (next-state . payload)."
 ;;;; Entry Point
 
 (defun pearl-gtd-inbox--process-entry (headline buffer entry-ref)
-  "Process entry using explicit state machine."
+  "Process entry using explicit state machine.
+HEADLINE is the entry's headline text.
+BUFFER is the staging buffer.
+ENTRY-REF is a cons cell (BUFFER . ROW)."
   (let ((original-headline headline)
         (state `(clarify . ,headline))
         (row (cdr entry-ref))
