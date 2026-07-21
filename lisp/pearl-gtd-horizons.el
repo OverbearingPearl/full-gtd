@@ -18,6 +18,8 @@
 (require 'pearl-gtd-core)
 (require 'pearl-gtd-review)
 
+(declare-function pearl-gtd-horizons-view "pearl-gtd")
+
 (defun pearl-gtd-horizons--get-project-horizon (project property)
   "Get horizon PROPERTY value for PROJECT from any of its actions.
 PROPERTY should be one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE."

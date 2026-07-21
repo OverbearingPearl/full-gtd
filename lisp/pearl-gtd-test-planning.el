@@ -11,12 +11,13 @@
 
 ;;; Code:
 
-(eval-and-compile
-  (let ((dir (file-name-directory (or load-file-name buffer-file-name))))
+(eval-when-compile
+  (let ((dir (file-name-directory load-file-name)))
     (add-to-list 'load-path (expand-file-name ".." dir))
-    (load-file (expand-file-name "pearl-gtd-test.el" dir))))
+    (add-to-list 'load-path dir)))
 (require 'ert)
 (require 'pearl-gtd)
+(require 'pearl-gtd-test)
 
 ;; Helper to simulate sequential inputs for read-string
 (defun pearl-gtd-test-planning--make-read-string-mock (inputs)
