@@ -63,7 +63,8 @@ PROPERTY should be one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE."
 
 (defun pearl-gtd-horizons--check-hierarchy-constraint (project level)
   "Check hierarchy constraint for setting LEVEL horizon for PROJECT.
-LEVEL should be a symbol: \\='area, \\='goal, \\='vision, \\='purpose, or \\='principle.
+LEVEL should be a symbol: \\='area, \\='goal, \\='vision, \\='purpose,
+or \\='principle.
 L5 (vision) requires L4 (goal), L6 (purpose) requires L5 (vision),
 L6 (principle) requires L6 (purpose).
 Returns t if constraint satisfied, nil otherwise."

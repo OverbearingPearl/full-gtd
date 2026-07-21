@@ -6,7 +6,7 @@
 ;; Version: 0.1.0
 ;; SPDX-License-Identifier: MIT
 ;; URL: https://github.com/OverbearingPearl/pearl-gtd
-;; Package-Requires: ((emacs "27.1") (cl-lib "0.7.1") (org "9.3"))
+;; Package-Requires: ((emacs "27.1") (org "9.3"))
 ;; Keywords: outlines, tools, convenience, gtd, org, task, management, workflow, todo, getting-things-done, inbox, review, projects, actions, contexts, horizons, focus, productivity, organization, time-management
 
 ;;; Commentary:

@@ -144,9 +144,10 @@ action created."
 
 (defun pearl-gtd-planning--process-brainstorm-item (headline id project)
   "Process single brainstorm item with forced completion.
-HEADLINE is the item title.  ID is the org entry id.  PROJECT is the project name.
+HEADLINE is the item title.  ID is the org entry id.
+PROJECT is the project name.
 Return (DESTINATION . CONTEXT) where DESTINATION is one of:
-'next-action, 'reference, 'someday, 'trash."
+\\='next-action, \\='reference, \\='someday, \\='trash."
   (let ((dest nil)
         (context "")
         (valid-destinations '("Next Action" "Reference" "Someday" "Trash")))
@@ -168,8 +169,9 @@ Return (DESTINATION . CONTEXT) where DESTINATION is one of:
 
 (defun pearl-gtd-planning--execute-brainstorm-move (_headline id _project dest context)
   "Execute move for brainstorm item from inbox to DEST.
-HEADLINE is the item title.  ID is the org entry id.  PROJECT is the project name.
-DEST is the destination type.  CONTEXT is the context tag.
+HEADLINE is the item title.  ID is the org entry id.
+PROJECT is the project name.  DEST is the destination type.
+CONTEXT is the context tag.
 Internal errors crash (no catch-all)."
   (let ((inbox-path (expand-file-name "inbox.org" pearl-gtd-init-base-directory))
         (target-file nil))

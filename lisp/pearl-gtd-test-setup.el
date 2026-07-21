@@ -9,7 +9,8 @@
 
 ;;; Code:
 
-(add-to-list 'load-path (file-name-directory (or load-file-name buffer-file-name)))
+(when load-file-name
+  (add-to-list 'load-path (file-name-directory load-file-name)))
 (require 'ert)
 (require 'pearl-gtd-init)
 (require 'pearl-gtd-test)

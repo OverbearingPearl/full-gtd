@@ -120,7 +120,7 @@
   "Define property editor function with NAME for PROPERTY.
 PROMPT is the user prompt string.
 EXTRA-CLEANUP is a form to execute when removing the property
-(e.g., also remove DELEGATED_DATE)."
+\(e.g., also remove DELEGATED_DATE)."
   (let ((fn-name (intern (concat "pearl-gtd-review--edit-" name "-at-point")))
         (getter (intern (concat "pearl-gtd-review--get-property-by-id")))
         (setter (intern (concat "pearl-gtd-review--set-property-by-id")))
