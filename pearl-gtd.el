@@ -4,7 +4,6 @@
 
 ;; Author: OverbearingPearl <OverbearingPearl@outlook.com>
 ;; Version: 0.1.0
-;; License: MIT
 ;; SPDX-License-Identifier: MIT
 ;; URL: https://github.com/OverbearingPearl/pearl-gtd
 ;; Package-Requires: ((emacs "27.1") (cl-lib "0.7.1") (org "9.3"))

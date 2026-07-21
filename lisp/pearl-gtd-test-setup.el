@@ -1,6 +1,5 @@
 ;;; pearl-gtd-test-setup.el --- User stories: System initialization  -*- lexical-binding: t; -*-
 
-;; License: MIT
 ;; SPDX-License-Identifier: MIT
 ;; URL: https://github.com/OverbearingPearl/pearl-gtd
 

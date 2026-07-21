@@ -1,6 +1,5 @@
 ;;; pearl-gtd-test.el --- Test infrastructure and entry point  -*- lexical-binding: t; -*-
 
-;; License: MIT
 ;; SPDX-License-Identifier: MIT
 ;; URL: https://github.com/OverbearingPearl/pearl-gtd
 

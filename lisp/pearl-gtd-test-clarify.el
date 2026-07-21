@@ -1,6 +1,5 @@
 ;;; pearl-gtd-test-clarify.el --- User stories: Clarify phase  -*- lexical-binding: t; -*-
 
-;; License: MIT
 ;; SPDX-License-Identifier: MIT
 ;; URL: https://github.com/OverbearingPearl/pearl-gtd
 
