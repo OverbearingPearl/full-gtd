@@ -10,6 +10,9 @@
 
 ;;; Code:
 
+(eval-and-compile
+  (add-to-list 'load-path (file-name-directory (or load-file-name buffer-file-name))))
+
 (require 'ert)
 (require 'cl-lib)
 

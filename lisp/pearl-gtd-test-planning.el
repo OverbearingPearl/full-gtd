@@ -11,10 +11,8 @@
 
 ;;; Code:
 
-;; Ensure load-path includes lisp directory for pearl-gtd-test
-(let ((load-dir (file-name-directory (or load-file-name buffer-file-name default-directory))))
-  (when load-dir
-    (add-to-list 'load-path load-dir)))
+(eval-and-compile
+  (add-to-list 'load-path (file-name-directory (or load-file-name buffer-file-name))))
 (require 'ert)
 (require 'pearl-gtd)
 (require 'pearl-gtd-test)

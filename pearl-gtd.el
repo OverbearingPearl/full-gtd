@@ -44,7 +44,8 @@
 
 (defvar pearl-gtd-directory (file-name-directory load-file-name))
 
-(add-to-list 'load-path (expand-file-name "lisp" pearl-gtd-directory))
+(eval-and-compile
+  (add-to-list 'load-path (expand-file-name "lisp" (file-name-directory (or load-file-name buffer-file-name)))))
 
 (require 'pearl-gtd-init)
 (require 'pearl-gtd-inbox)
