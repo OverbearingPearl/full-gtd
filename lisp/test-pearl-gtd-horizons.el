@@ -34,8 +34,11 @@
                (should (search-forward-regexp "|\\s-*Headline\\s-*|\\s-*Status\\s-*|\\s-*Scheduled\\s-*|\\s-*Deadline\\s-*|\\s-*Context\\s-*|\\s-*Delegated\\s-*|\\s-*L3_AREA\\s-*|" nil t))
                (should-not (search-forward-regexp "|\\s-*L4\\s-*|" (line-end-position) t))
                (should-not (search-forward-regexp "|\\s-*L5\\s-*|" (line-end-position) t))
-               (should-not (search-forward-regexp "|\\s-*L6\\s-*|" (line-end-position) t))))
-  :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
+               (should-not (search-forward-regexp "|\\s-*L6\\s-*|" (line-end-position) t))
+             )
+           )
+  :teardown (kill-buffer "*Pearl-GTD Weekly Review*")
+)
 
 (test-pearl-gtd-define-story test-pearl-gtd-horizons-user-sets-area-for-action
   "Set Area (L3) horizon for no-project action in weekly review."
@@ -49,13 +52,18 @@
             (search-forward "** actions.org - No Project")
             (search-forward "No project task")
             (beginning-of-line)
-            (pearl-gtd-horizons--edit-area-at-point)))
+            (pearl-gtd-horizons--edit-area-at-point)
+          )
+        )
   :asserts (let* ((file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
                   (pattern ":L3_AREA: +Personal")
                   (result (test-pearl-gtd-file-contains-p file pattern))
-                  (found (car result)))
-             (should found))
-  :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
+                  (found (car result))
+                 )
+             (should found)
+           )
+  :teardown (kill-buffer "*Pearl-GTD Weekly Review*")
+)
 
 (test-pearl-gtd-define-story test-pearl-gtd-horizons-user-sets-area-for-project
   "Set Area (L3) horizon for project in weekly review."
@@ -69,13 +77,18 @@
             (search-forward "** Projects - Active")
             (search-forward "TestProject")
             (beginning-of-line)
-            (pearl-gtd-horizons--edit-area-at-point)))
+            (pearl-gtd-horizons--edit-area-at-point)
+          )
+        )
   :asserts (let* ((file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
                   (pattern ":L3_AREA: +Work")
                   (result (test-pearl-gtd-file-contains-p file pattern))
-                  (found (car result)))
-             (should found))
-  :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
+                  (found (car result))
+                 )
+             (should found)
+           )
+  :teardown (kill-buffer "*Pearl-GTD Weekly Review*")
+)
 
 (test-pearl-gtd-define-story test-pearl-gtd-horizons-user-sets-goal-through-purpose
   "Set Goal (L4), Vision (L5), and Purpose (L6) horizons for project with hierarchy constraints."
@@ -87,7 +100,11 @@
              ((string-match "L4" prompt) "Goal: Complete project")
              ((string-match "L5" prompt) "Vision: Professional growth")
              ((string-match "L6" prompt) "Purpose: Make impact")
-             (t "")))))
+             (t "")
+            )
+          )
+         )
+        )
   :body (progn
           (pearl-gtd-review-weekly)
           (with-current-buffer "*Pearl-GTD Weekly Review*"
@@ -97,24 +114,35 @@
             (beginning-of-line)
             (let ((proj (pearl-gtd-horizons--edit-goal-at-point)))
               (pearl-gtd-horizons--edit-vision-at-point proj)
-              (pearl-gtd-horizons--edit-purpose-at-point proj))))
+              (pearl-gtd-horizons--edit-purpose-at-point proj)
+            )
+          )
+        )
   :asserts (progn
              (let* ((file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
                     (pattern1 ":L4_GOAL: +Goal: Complete project")
                     (result1 (test-pearl-gtd-file-contains-p file pattern1))
-                    (found1 (car result1)))
-               (should found1))
+                    (found1 (car result1))
+                   )
+               (should found1)
+             )
              (let* ((file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
                     (pattern2 ":L5_VISION: +Vision: Professional growth")
                     (result2 (test-pearl-gtd-file-contains-p file pattern2))
-                    (found2 (car result2)))
-               (should found2))
+                    (found2 (car result2))
+                   )
+               (should found2)
+             )
              (let* ((file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
                     (pattern3 ":L6_PURPOSE: +Purpose: Make impact")
                     (result3 (test-pearl-gtd-file-contains-p file pattern3))
-                    (found3 (car result3)))
-               (should found3)))
-  :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
+                    (found3 (car result3))
+                   )
+               (should found3)
+             )
+           )
+  :teardown (kill-buffer "*Pearl-GTD Weekly Review*")
+)
 
 
 (test-pearl-gtd-define-story test-pearl-gtd-horizons-user-sees-horizon-inheritance
@@ -129,23 +157,32 @@
             (search-forward "** Projects - Active")
             (search-forward "TestProject")
             (beginning-of-line)
-            (pearl-gtd-horizons--edit-area-at-point)))
+            (pearl-gtd-horizons--edit-area-at-point)
+          )
+        )
   :asserts (progn
              (let* ((file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
                     (pattern ":L3_AREA: +Work")
                     (result (test-pearl-gtd-file-contains-p file pattern))
-                    (found (car result)))
-               (should found))
+                    (found (car result))
+                   )
+               (should found)
+             )
              ;; Both tasks should inherit L3 from project
              (let ((file (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
                (with-temp-buffer
                  (insert-file-contents file)
                  (let ((count 0))
                    (while (re-search-forward ":L3_AREA: +Work" nil t)
-                     (cl-incf count))
-                   (should (= count 2)))))  ; 2 tasks, no project entry
-             )
-  :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
+                     (cl-incf count)
+                   )
+                   (should (= count 2))
+                 )
+               )
+             )  ; 2 tasks, no project entry
+           )
+  :teardown (kill-buffer "*Pearl-GTD Weekly Review*")
+)
 
 (test-pearl-gtd-define-story test-pearl-gtd-horizons-user-removes-project-clears-horizon
   "Action leaving project loses project horizon."
@@ -160,19 +197,27 @@
             (search-forward "** actions.org - Next Actions")
             (search-forward "Task")
             (beginning-of-line)
-            (pearl-gtd-review--edit-project-at-point)))
+            (pearl-gtd-review--edit-project-at-point)
+          )
+        )
   :asserts (progn
              (let* ((file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
                     (pattern1 ":PROJECT: TestProject")
                     (result1 (test-pearl-gtd-file-contains-p file pattern1))
-                    (found1 (car result1)))
-               (should-not found1))
+                    (found1 (car result1))
+                   )
+               (should-not found1)
+             )
              (let* ((file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
                     (pattern2 ":L3_AREA: Work")
                     (result2 (test-pearl-gtd-file-contains-p file pattern2))
-                    (found2 (car result2)))
-               (should-not found2)))
-  :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
+                    (found2 (car result2))
+                   )
+               (should-not found2)
+             )
+           )
+  :teardown (kill-buffer "*Pearl-GTD Weekly Review*")
+)
 
 (test-pearl-gtd-define-story test-pearl-gtd-horizons-user-views-hierarchy
   "Horizon view shows L6 to L3 hierarchy with projects and actions."
@@ -192,8 +237,11 @@
                (should (search-forward "****** TestProject" nil t))
                (should (search-forward "******* TODO Project task" nil t))
                (should (search-forward "** Personal" nil t))
-               (should (search-forward "*** TODO No project task" nil t))))
-  :teardown (kill-buffer "*Pearl-GTD Horizons*"))
+               (should (search-forward "*** TODO No project task" nil t))
+             )
+           )
+  :teardown (kill-buffer "*Pearl-GTD Horizons*")
+)
 
 (test-pearl-gtd-define-story test-pearl-gtd-horizons-user-clears-area-cascades-to-actions
   "Clearing Area (L3) from project should remove inherited Area from actions."
@@ -207,13 +255,21 @@
             (search-forward "** Projects - Active")
             (search-forward "TestProj")
             (beginning-of-line)
-            (pearl-gtd-horizons--edit-area-at-point)))
+            (pearl-gtd-horizons--edit-area-at-point)
+          )
+        )
   :asserts (let ((content (with-temp-buffer
                             (insert-file-contents
-                             (expand-file-name "actions.org" pearl-gtd-init-base-directory))
-                            (buffer-string))))
-             (should-not (string-match-p ":L3_AREA:" content)))
-  :teardown (test-pearl-gtd-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
+                             (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                            )
+                            (buffer-string)
+                          )
+                 )
+                )
+             (should-not (string-match-p ":L3_AREA:" content))
+           )
+  :teardown (test-pearl-gtd-cleanup-buffers '("*Pearl-GTD Weekly Review*"))
+)
 
 (test-pearl-gtd-define-story test-pearl-gtd-horizons-constraint-rejects-vision-without-goal
   "User is blocked when attempting to set Vision (L5) without Goal (L4)."
@@ -229,9 +285,13 @@
             (beginning-of-line)
             (condition-case err
                 (pearl-gtd-horizons--edit-vision-at-point)
-              (error (should (string-match-p "L4 Goal must be set first" (error-message-string err)))))))
+              (error (should (string-match-p "L4 Goal must be set first" (error-message-string err))))
+            )
+          )
+        )
   :asserts t
-  :teardown (test-pearl-gtd-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
+  :teardown (test-pearl-gtd-cleanup-buffers '("*Pearl-GTD Weekly Review*"))
+)
 
 (test-pearl-gtd-define-story test-pearl-gtd-horizons-constraint-rejects-purpose-without-vision
   "User is blocked when attempting to set Purpose (L6) without Vision (L5)."
@@ -247,9 +307,13 @@
             (beginning-of-line)
             (condition-case err
                 (pearl-gtd-horizons--edit-purpose-at-point)
-              (error (should (string-match-p "L5 Vision must be set first" (error-message-string err)))))))
+              (error (should (string-match-p "L5 Vision must be set first" (error-message-string err))))
+            )
+          )
+        )
   :asserts t
-  :teardown (test-pearl-gtd-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
+  :teardown (test-pearl-gtd-cleanup-buffers '("*Pearl-GTD Weekly Review*"))
+)
 
 (test-pearl-gtd-define-story test-pearl-gtd-horizons-constraint-rejects-principle-without-purpose
   "User is blocked when attempting to set L6 Principle without L6 Purpose."
@@ -265,9 +329,13 @@
             (beginning-of-line)
             (condition-case err
                 (pearl-gtd-horizons--edit-principle-at-point)
-              (error (should (string-match-p "L6 Purpose must be set first" (error-message-string err)))))))
+              (error (should (string-match-p "L6 Purpose must be set first" (error-message-string err))))
+            )
+          )
+        )
   :asserts t
-  :teardown (test-pearl-gtd-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
+  :teardown (test-pearl-gtd-cleanup-buffers '("*Pearl-GTD Weekly Review*"))
+)
 
 (provide 'test-pearl-gtd-horizons)
 
