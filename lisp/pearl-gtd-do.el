@@ -83,7 +83,8 @@ LAST-DATA-ROW is the position of the last data row in the table."
 
 (defun pearl-gtd-do--build-table-data (predicates)
   "Build table data from actions.org filtered by PREDICATES.
-Returns (HEADER . ROWS) where ROWS is list of (HEADLINE CONTEXT STATUS SCHEDULED DELEGATED PROJECT CREATED ID FILE)."
+Returns (HEADER . ROWS) where ROWS is list of
+\(HEADLINE CONTEXT STATUS SCHEDULED DELEGATED PROJECT CREATED ID FILE)."
   (let* ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
          (entries (pearl-gtd-core-filter-entries file-path predicates))
          (header "| Headline | Context | Status | Scheduled | Delegated | Project | Created |")

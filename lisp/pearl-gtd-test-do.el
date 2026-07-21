@@ -9,8 +9,8 @@
 
 ;;; Code:
 
-(when load-file-name
-  (add-to-list 'load-path (file-name-directory load-file-name)))
+(when-let ((dir (file-name-directory (or load-file-name buffer-file-name))))
+  (add-to-list 'load-path dir))
 (require 'ert)
 (require 'pearl-gtd)
 (require 'pearl-gtd-test)
