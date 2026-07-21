@@ -125,13 +125,14 @@ Returns (HEADER . ROWS) where ROWS is list of (HEADLINE CONTEXT STATUS SCHEDULED
       (goto-char (point-min))
       (forward-line 2))))
 
-(defun pearl-gtd-do--create-view-buffer (buffer-name predicates view-type &optional empty-msg contexts)
+(defun pearl-gtd-do--create-view-buffer (buffer-name predicates view-type
+                                                  &optional empty-msg contexts)
   "Create a read-only table buffer showing actions filtered by PREDICATES.
 BUFFER-NAME is the name of the buffer to create.
 PREDICATES is a list of predicate functions to filter entries.
 VIEW-TYPE is a symbol indicating the type of view.
-Optional EMPTY-MSG is the message to display when no actions are found.
-Optional CONTEXTS is a list of contexts for the view."
+Optional EMPTY-MSG is the message to display when no actions are
+found.  Optional CONTEXTS is a list of contexts for the view."
   (let* ((buffer (get-buffer-create buffer-name))
          (table-data (pearl-gtd-do--build-table-data predicates)))
     (if (null (cdr table-data))

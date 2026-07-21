@@ -7,7 +7,7 @@
 ;; License: MIT
 ;; SPDX-License-Identifier: MIT
 ;; URL: https://github.com/OverbearingPearl/pearl-gtd
-;; Package-Requires: ((emacs "27.1") (cl-lib "1.0") (org "9.3") (ert "1.0"))
+;; Package-Requires: ((emacs "27.1") (cl-lib "0.7.1") (org "9.3"))
 ;; Keywords: outlines, tools, convenience, gtd, org, task, management, workflow, todo, getting-things-done, inbox, review, projects, actions, contexts, horizons, focus, productivity, organization, time-management
 
 ;;; Commentary:
@@ -40,7 +40,6 @@
 ;;; Code:
 
 (require 'cl-lib)
-(require 'ert)
 (declare-function ert-delete-all-tests "ert")
 (declare-function ert-run-tests-batch-and-exit "ert")
 
@@ -123,6 +122,10 @@ Create the base directory and necessary files."
   (pearl-gtd-reload-modules)
   ;; Load test files automatically from the lisp directory
   (let ((test-dir (expand-file-name "lisp" pearl-gtd-directory)))
+    ;; First load the test infrastructure
+    (let ((test-file (expand-file-name "pearl-gtd-test.el" test-dir)))
+      (when (file-exists-p test-file)
+        (load-file test-file)))
     (dolist (file (directory-files test-dir nil "pearl-gtd-test-.*\\.el$"))
       (let ((full-path (expand-file-name file test-dir)))
         (when (file-exists-p full-path)

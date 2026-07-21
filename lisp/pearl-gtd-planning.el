@@ -110,7 +110,8 @@ Signal error if user aborts."
 
 (defun pearl-gtd-planning--organize-brainstorm-items (project)
   "Organize all brainstorm items from inbox for PROJECT.
-Force completion of all items.  Return t if at least one next action created."
+Force completion of all items.  Return t if at least one next
+action created."
   (let ((inbox-path (expand-file-name "inbox.org" pearl-gtd-init-base-directory))
         (has-next-action nil)
         (items-to-process '()))
