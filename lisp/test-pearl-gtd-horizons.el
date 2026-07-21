@@ -286,6 +286,24 @@
   :asserts t
   :teardown (test-pearl-gtd-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
 
+(test-pearl-gtd-define-story test-pearl-gtd-horizons-constraint-l7-without-l6
+  "Setting L7 (Principle) without L6 (Purpose) must be rejected."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: constraint-3\n:PROJECT: ConstraintProj3\n:L3_AREA: Area\n:L4_GOAL: Goal\n:L5_VISION: Vision\n:END:\n"))
+  :mock (((symbol-function 'read-string) (lambda (&rest _) "PrincipleValue")))
+  :body (progn
+          (pearl-gtd-review-weekly)
+          (with-current-buffer "*Pearl-GTD Weekly Review*"
+            (goto-char (point-min))
+            (search-forward "** Projects - Active")
+            (search-forward "ConstraintProj3")
+            (beginning-of-line)
+            (condition-case err
+                (pearl-gtd-horizons--edit-l7-at-point)
+              (error (should (string-match-p "L6" (error-message-string err)))))))
+  :asserts t
+  :teardown (test-pearl-gtd-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
+
 (provide 'test-pearl-gtd-horizons)
 
 ;;; test-pearl-gtd-horizons.el ends here
