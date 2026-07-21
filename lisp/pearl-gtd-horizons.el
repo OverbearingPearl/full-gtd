@@ -18,8 +18,7 @@
   "Get horizon PROPERTY value for PROJECT from any of its actions.
 PROPERTY should be one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE."
   (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
-        (value nil)
-       )
+        (value nil))
     (when (file-exists-p file-path)
       (with-temp-buffer
         (insert-file-contents file-path)
@@ -30,25 +29,15 @@ PROPERTY should be one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE."
              (let ((proj (org-entry-get nil "PROJECT")))
                (when (and proj (member project (split-string proj "[, ]" t)))
                  (setq value (org-entry-get nil property))
-                 (when value (throw 'found value))
-               )
-             )
-           )
-           nil nil
-          )
-        )
-      )
-    )
-    value
-  )
-)
+                 (when value (throw 'found value)))))
+           nil nil))))
+    value))
 
 (defun pearl-gtd-horizons--set-project-horizon (project property value)
   "Set horizon PROPERTY to VALUE for all actions in PROJECT.
 PROPERTY should be one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE."
   (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
-        (count 0)
-       )
+        (count 0))
     (when (file-exists-p file-path)
       (let ((buf (find-file-noselect file-path)))
         (with-current-buffer buf
@@ -59,26 +48,14 @@ PROPERTY should be one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE."
                (when (and proj (member project (split-string proj "[, ]" t)))
                  (if (string= value "")
                      (org-delete-property property)
-                   (org-entry-put nil property value)
-                 )
-                 (cl-incf count)
-               )
-             )
-           )
-           nil nil
-          )
+                   (org-entry-put nil property value))
+                 (cl-incf count))))
+           nil nil)
           (when (> count 0)
-            (save-buffer)
-          )
-        )
-      )
+            (save-buffer))))
       (let ((buf (get-file-buffer file-path)))
-        (when buf (kill-buffer buf))
-      )
-    )
-    count
-  )
-)
+        (when buf (kill-buffer buf))))
+    count))
 
 (defun pearl-gtd-horizons--check-hierarchy-constraint (project level)
   "Check hierarchy constraint for setting LEVEL horizon for PROJECT.
@@ -91,22 +68,14 @@ Returns t if constraint satisfied, nil otherwise."
    ((eq level 'goal) t)    ; L4_GOAL: no constraint
    ((eq level 'vision)     ; L5_VISION: needs L4_GOAL
     (let ((l4 (pearl-gtd-horizons--get-project-horizon project "L4_GOAL")))
-      (and l4 (not (string= l4 "")))
-    )
-   )
+      (and l4 (not (string= l4 "")))))
    ((eq level 'purpose)    ; L6_PURPOSE: needs L5_VISION
     (let ((l5 (pearl-gtd-horizons--get-project-horizon project "L5_VISION")))
-      (and l5 (not (string= l5 "")))
-    )
-   )
+      (and l5 (not (string= l5 "")))))
    ((eq level 'principle)  ; L6_PRINCIPLE: needs L6_PURPOSE
     (let ((l6 (pearl-gtd-horizons--get-project-horizon project "L6_PURPOSE")))
-      (and l6 (not (string= l6 "")))
-    )
-   )
-   (t t)
-  )
-)
+      (and l6 (not (string= l6 "")))))
+   (t t)))
 
 (defun pearl-gtd-horizons--edit-horizon-at-point (level &optional project)
   "Edit horizon LEVEL for entry at point or for PROJECT if provided.
@@ -116,18 +85,11 @@ LEVEL should be a symbol: 'area, 'goal, 'vision, 'purpose, or 'principle."
                       (save-excursion
                         (beginning-of-line)
                         (let ((end (line-end-position))
-                              (proj nil)
-                             )
+                              (proj nil))
                           (while (and (< (point) end) (not proj))
                             (setq proj (get-text-property (point) 'pearl-gtd-project))
-                            (forward-char 1)
-                          )
-                          proj
-                        )
-                      )
-                  )
-         )
-        )
+                            (forward-char 1))
+                          proj)))))
     (when (or entry project)
       (let* ((id (when entry (car entry)))
              (file (when entry (cdr entry)))
@@ -139,9 +101,7 @@ LEVEL should be a symbol: 'area, 'goal, 'vision, 'purpose, or 'principle."
                              (t (error "Internal: unknown horizon level %S" level))))
              (current-value (if project
                                 (pearl-gtd-horizons--get-project-horizon project property)
-                              (pearl-gtd-review--get-property-by-id id file property)
-                            )
-             )
+                              (pearl-gtd-review--get-property-by-id id file property)))
              (new-value (read-string (format "Horizon %s (empty to remove): "
                                              (cond ((eq level 'area)    "L3 Area")
                                                    ((eq level 'goal)    "L4 Goal")
@@ -149,10 +109,7 @@ LEVEL should be a symbol: 'area, 'goal, 'vision, 'purpose, or 'principle."
                                                    ((eq level 'purpose) "L6 Purpose")
                                                    ((eq level 'principle) "L6 Principle")
                                                    (t (symbol-name level))))
-                                     (or current-value "")
-                        )
-             )
-            )
+                                     (or current-value ""))))
         (if project
             (progn
               ;; For project, check hierarchy constraint
@@ -161,8 +118,7 @@ LEVEL should be a symbol: 'area, 'goal, 'vision, 'purpose, or 'principle."
                        (cond ((eq level 'vision)  "L4 Goal")
                              ((eq level 'purpose) "L5 Vision")
                              ((eq level 'principle) "L6 Purpose")
-                             (t "Previous horizon")))
-              )
+                             (t "Previous horizon"))))
               (let ((count (pearl-gtd-horizons--set-project-horizon project property new-value)))
                 (message "Set %s horizon for %d actions in project %s"
                          (cond ((eq level 'area)    "L3 Area")
@@ -171,26 +127,17 @@ LEVEL should be a symbol: 'area, 'goal, 'vision, 'purpose, or 'principle."
                                ((eq level 'purpose) "L6 Purpose")
                                ((eq level 'principle) "L6 Principle")
                                (t (symbol-name level)))
-                         count project)
-              )
+                         count project))
               (pearl-gtd-review--refresh-view)
-              project
-            )  ; Return project name
+              project)  ; Return project name
           ;; For no-project action, only area is allowed
           (if (eq level 'area)
               (if (string= new-value "")
                   (pearl-gtd-review--remove-property-by-id id file property)
-                (pearl-gtd-review--set-property-by-id id file property new-value)
-              )
-            (error "Only L3 horizon can be set for no-project actions")
-          )
+                (pearl-gtd-review--set-property-by-id id file property new-value))
+            (error "Only L3 horizon can be set for no-project actions"))
           (pearl-gtd-review--refresh-view)
-          nil
-        )
-      )
-    )
-  )
-)
+          nil)))))
 
 (defun pearl-gtd-horizons--edit-area-at-point (&optional project)
   "Edit L3 Area horizon for entry at point or for PROJECT if provided."
@@ -221,8 +168,7 @@ LEVEL should be a symbol: 'area, 'goal, 'vision, 'purpose, or 'principle."
   "Collect all horizon data in hierarchical structure.
 Returns alist: (L6-VALUE . (L5-VALUE . (L4-VALUE . (L3-VALUE . (PROJECTS . NO-PROJECT-ACTIONS))))))"
   (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
-        (hierarchy (make-hash-table :test 'equal))
-       )
+        (hierarchy (make-hash-table :test 'equal)))
     (when (file-exists-p file-path)
       (with-temp-buffer
         (insert-file-contents file-path)
@@ -237,8 +183,7 @@ Returns alist: (L6-VALUE . (L5-VALUE . (L4-VALUE . (L3-VALUE . (PROJECTS . NO-PR
                   (l4 (org-entry-get nil "L4_GOAL"))
                   (l5 (org-entry-get nil "L5_VISION"))
                   (l6 (org-entry-get nil "L6_PURPOSE"))
-                  (entry (list head id todo-state))
-                 )
+                  (entry (list head id todo-state)))
              ;; Only process if any horizon is set
              (when (or l3 l4 l5 l6)
                ;; For entries with only L3 set, put them at top level
@@ -246,13 +191,9 @@ Returns alist: (L6-VALUE . (L5-VALUE . (L4-VALUE . (L3-VALUE . (PROJECTS . NO-PR
                    (let* ((l3-key (or l3 ""))
                           ;; Get or create top-level L3 entry
                           (l3-entry (or (gethash l3-key hierarchy)
-                                        (puthash l3-key (list nil nil) hierarchy)
-                                    )
-                          )
-                         )
+                                        (puthash l3-key (list nil nil) hierarchy))))
                      ;; Add to no-project list
-                     (setcdr l3-entry (cons entry (cdr l3-entry)))
-                   )
+                     (setcdr l3-entry (cons entry (cdr l3-entry))))
                  ;; For entries with L4/L5/L6, build full hierarchy
                  (let* ((l6-key (or l6 ""))
                         (l5-key (or l5 ""))
@@ -260,25 +201,16 @@ Returns alist: (L6-VALUE . (L5-VALUE . (L4-VALUE . (L3-VALUE . (PROJECTS . NO-PR
                         (l3-key (or l3 ""))
                         ;; Get or create L6 level
                         (l6-entry (or (gethash l6-key hierarchy)
-                                      (puthash l6-key (make-hash-table :test 'equal) hierarchy)
-                                  )
-                        )
+                                      (puthash l6-key (make-hash-table :test 'equal) hierarchy)))
                         ;; Get or create L5 level
                         (l5-entry (or (gethash l5-key l6-entry)
-                                      (puthash l5-key (make-hash-table :test 'equal) l6-entry)
-                                  )
-                        )
+                                      (puthash l5-key (make-hash-table :test 'equal) l6-entry)))
                         ;; Get or create L4 level
                         (l4-entry (or (gethash l4-key l5-entry)
-                                      (puthash l4-key (make-hash-table :test 'equal) l5-entry)
-                                  )
-                        )
+                                      (puthash l4-key (make-hash-table :test 'equal) l5-entry)))
                         ;; Get or create L3 level (this is a list, not hash)
                         (l3-entry (or (gethash l3-key l4-entry)
-                                      (puthash l3-key (list nil nil) l4-entry)
-                                  )
-                        )
-                       )
+                                      (puthash l3-key (list nil nil) l4-entry))))
                    ;; Now add the entry to the appropriate place
                    (if (and proj (not (string= proj "")))
                        ;; Project action - add to project's list
@@ -286,30 +218,14 @@ Returns alist: (L6-VALUE . (L5-VALUE . (L4-VALUE . (L3-VALUE . (PROJECTS . NO-PR
                          (dolist (p projects)
                            (let* ((project-list (car l3-entry))
                                   (existing (assoc p project-list))
-                                  (entry-with-proj (list head id todo-state p))
-                                 )
+                                  (entry-with-proj (list head id todo-state p)))
                              (if existing
                                  (setcdr existing (cons entry-with-proj (cdr existing)))
-                               (setcar l3-entry (cons (list p entry-with-proj) project-list))
-                             )
-                           )
-                         )
-                       )
+                               (setcar l3-entry (cons (list p entry-with-proj) project-list))))))
                      ;; No-project action - add to no-project list
-                     (setcdr l3-entry (cons entry (cdr l3-entry)))
-                   )
-                 )
-               )
-             )
-           )
-         )
-         nil nil
-        )
-      )
-    )
-    hierarchy
-  )
-)
+                     (setcdr l3-entry (cons entry (cdr l3-entry)))))))))
+         nil nil)))
+    hierarchy))
 
 (defun pearl-gtd-horizons--insert-hierarchy (hierarchy depth)
   "Insert horizon HIERARCHY at DEPTH level."
@@ -317,41 +233,28 @@ Returns alist: (L6-VALUE . (L5-VALUE . (L4-VALUE . (L3-VALUE . (PROJECTS . NO-PR
   (let ((sorted-keys (sort (hash-table-keys hierarchy)
                            (lambda (a b)
                              (let ((a-nested (hash-table-p (gethash a hierarchy)))
-                                   (b-nested (hash-table-p (gethash b hierarchy)))
-                                  )
+                                   (b-nested (hash-table-p (gethash b hierarchy))))
                                (cond
                                 ((and a-nested b-nested) (string< a b))
                                 (a-nested t)
                                 (b-nested nil)
-                                (t (string< a b))
-                               )
-                             )
-                           )
-                     )
-        )
-       )
+                                (t (string< a b))))))))
     (dolist (key sorted-keys)
       (let ((value (gethash key hierarchy)))
-        (pearl-gtd-horizons--insert-hierarchy-entry key value depth)
-      )
-    )
-  )
-)
+        (pearl-gtd-horizons--insert-hierarchy-entry key value depth)))))
 
 (defun pearl-gtd-horizons-view ()
   "Display horizon hierarchy view."
   (interactive)
   (let* ((buffer-name "*Pearl-GTD Horizons*")
-         (hierarchy (pearl-gtd-horizons--collect-horizon-hierarchy))
-        )
+         (hierarchy (pearl-gtd-horizons--collect-horizon-hierarchy)))
     (with-current-buffer (get-buffer-create buffer-name)
       (setq buffer-read-only nil)
       (erase-buffer)
       (org-mode)
       ;; Add header line
       (setq-local header-line-format
-                  "Horizon View | RET: jump to task | g: refresh | q: quit"
-      )
+                  "Horizon View | RET: jump to task | g: refresh | q: quit")
 
       (insert "#+TITLE: Horizon View\n\n")
 
@@ -362,53 +265,36 @@ Returns alist: (L6-VALUE . (L5-VALUE . (L4-VALUE . (L3-VALUE . (PROJECTS . NO-PR
         (let ((sorted-keys (sort (hash-table-keys hierarchy)
                                  (lambda (a b)
                                    (let ((a-nested (hash-table-p (gethash a hierarchy)))
-                                         (b-nested (hash-table-p (gethash b hierarchy)))
-                                        )
+                                         (b-nested (hash-table-p (gethash b hierarchy))))
                                      ;; Both nested or both leaf: sort alphabetically
                                      ;; One nested, one leaf: nested first
                                      (cond
                                       ((and a-nested b-nested) (string< a b))
                                       (a-nested t)
                                       (b-nested nil)
-                                      (t (string< a b))
-                                     )
-                                   )
-                                 )
-                           )
-              )
-             )
+                                      (t (string< a b))))))))
           (dolist (key sorted-keys)
             (let ((value (gethash key hierarchy)))
-              (pearl-gtd-horizons--insert-hierarchy-entry key value 2)
-            )
-          )
-        )
-      )
+              (pearl-gtd-horizons--insert-hierarchy-entry key value 2)))))
 
       (setq buffer-read-only t)
-      (goto-char (point-min))
-    )
+      (goto-char (point-min)))
     (pop-to-buffer buffer-name)
-    (pearl-gtd-horizons-view-mode 1)
-  )
-)
+    (pearl-gtd-horizons-view-mode 1)))
 
 (defvar pearl-gtd-horizons-view-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "q") #'quit-window)
     (define-key map (kbd "RET") #'pearl-gtd-horizons--goto-task-at-point)
     (define-key map (kbd "g") #'pearl-gtd-horizons-view)
-    map
-  )
-)
+    map))
 
 (define-minor-mode pearl-gtd-horizons-view-mode
   "Minor mode for horizon hierarchy view."
   :init-value nil
   :lighter " Pearl-Horizons"
   :keymap pearl-gtd-horizons-view-mode-map
-  :interactive nil
-)
+  :interactive nil)
 
 (defun pearl-gtd-horizons--goto-task-at-point ()
   "Jump to task in source file from horizon view."
@@ -416,83 +302,57 @@ Returns alist: (L6-VALUE . (L5-VALUE . (L4-VALUE . (L3-VALUE . (PROJECTS . NO-PR
   (save-excursion
     (beginning-of-line)
     (let ((id (get-text-property (point) 'pearl-gtd-id))
-          (file (get-text-property (point) 'pearl-gtd-file))
-         )
+          (file (get-text-property (point) 'pearl-gtd-file)))
       (when (and id file)
         (find-file (expand-file-name file pearl-gtd-init-base-directory))
         (goto-char (point-min))
         (when (re-search-forward (concat ":ID:[ \t]+" (regexp-quote id)) nil t)
-          (org-back-to-heading)
-        )
-      )
-    )
-  )
-)
+          (org-back-to-heading))))))
 
 (defun pearl-gtd-horizons--insert-hierarchy-entry (key value depth)
   "Insert a single hierarchy entry with KEY and VALUE at DEPTH."
   ;; Always insert level header, even for empty keys
   (if (string= key "")
       (insert (make-string depth ?*) " (No L" (number-to-string (+ 3 depth)) ")\n")
-    (insert (make-string depth ?*) " " key "\n")
-  )
+    (insert (make-string depth ?*) " " key "\n"))
 
   (if (hash-table-p value)
       (pearl-gtd-horizons--insert-hierarchy value (1+ depth))
     (let ((projects (car value))
-          (no-project-actions (cdr value))
-         )
+          (no-project-actions (cdr value)))
       ;; Insert projects
       (dolist (project projects)
         (let ((project-name (car project))
-              (actions (cdr project))
-             )
+              (actions (cdr project)))
           (insert (make-string (1+ depth) ?*) " " project-name "\n")
           (dolist (action actions)
             (let ((head (nth 0 action))
                   (id (nth 1 action))
-                  (todo-state (nth 2 action))
-                 )
+                  (todo-state (nth 2 action)))
               (when head
                 (insert (make-string (+ 2 depth) ?*) " "
                         (if (string= todo-state "TODO") "TODO " "DONE ")
-                        head "\n"
-                )
+                        head "\n")
                 ;; Add text properties for jumping
                 (save-excursion
                   (forward-line -1)
                   (beginning-of-line)
                   (put-text-property (point) (line-end-position) 'pearl-gtd-id id)
-                  (put-text-property (point) (line-end-position) 'pearl-gtd-file "actions.org")
-                )
-              )
-            )
-          )
-        )
-      )
+                  (put-text-property (point) (line-end-position) 'pearl-gtd-file "actions.org")))))))
       ;; Insert no-project actions
       (dolist (action no-project-actions)
         (let ((head (nth 0 action))
               (id (nth 1 action))
-              (todo-state (nth 2 action))
-             )
+              (todo-state (nth 2 action)))
           (when head
             (insert (make-string (1+ depth) ?*) " "
                     (if (string= todo-state "TODO") "TODO " "DONE ")
-                    head "\n"
-            )
+                    head "\n")
             (save-excursion
               (forward-line -1)
               (beginning-of-line)
               (put-text-property (point) (line-end-position) 'pearl-gtd-id id)
-              (put-text-property (point) (line-end-position) 'pearl-gtd-file "actions.org")
-            )
-          )
-        )
-      )
-    )
-  )
-)
+              (put-text-property (point) (line-end-position) 'pearl-gtd-file "actions.org"))))))))
 
 ;; Add horizon editing keybindings to review mode
 (define-key pearl-gtd-review-view-mode-map (kbd "3") #'pearl-gtd-horizons--edit-area-at-point)

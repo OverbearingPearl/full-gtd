@@ -14,56 +14,41 @@
 
 (defun pearl-gtd-core-entry-todo-p ()
   "Return non-nil if current entry is a TODO item."
-  (string= (org-get-todo-state) "TODO")
-)
+  (string= (org-get-todo-state) "TODO"))
 
 (defun pearl-gtd-core-entry-done-p ()
   "Return non-nil if current entry is a DONE item."
-  (string= (org-get-todo-state) "DONE")
-)
+  (string= (org-get-todo-state) "DONE"))
 
 (defun pearl-gtd-core-entry-context-p (contexts)
   "Return non-nil if current entry has any of CONTEXTS.
 CONTEXTS is a list of normalized context strings (without @ prefix)."
   (when contexts
     (let ((tags (org-get-tags)))
-      (cl-intersection tags contexts :test #'string=)
-    )
-  )
-)
+      (cl-intersection tags contexts :test #'string=))))
 
 (defun pearl-gtd-core-entry-scheduled-today-p ()
   "Return non-nil if current entry is scheduled for today."
   (let* ((scheduled (org-entry-get nil "SCHEDULED"))
          (ct (current-time))
-         (today-pattern (format-time-string "<%Y-%m-%d" ct))
-        )
+         (today-pattern (format-time-string "<%Y-%m-%d" ct)))
     (and scheduled
-         (string-match-p today-pattern scheduled)
-    )
-  )
-)
+         (string-match-p today-pattern scheduled))))
 
 (defun pearl-gtd-core-entry-completed-today-p ()
   "Return non-nil if current entry was closed today."
   (let* ((closed (org-entry-get nil "CLOSED")))
     (and closed
-         (string-match-p (format-time-string "\\[%Y-%m-%d" (current-time) t) closed)
-    )
-  )
-)
+         (string-match-p (format-time-string "\\[%Y-%m-%d" (current-time) t) closed))))
 
 (defun pearl-gtd-core-entry-delegated-p ()
   "Return non-nil if current entry is delegated."
-  (org-entry-get nil "DELEGATED")
-)
+  (org-entry-get nil "DELEGATED"))
 
 (defun pearl-gtd-core-entry-overdue-p ()
   "Return non-nil if current entry is overdue."
   (let ((scheduled (org-entry-get nil "SCHEDULED")))
-    (and scheduled (time-less-p (org-time-string-to-time scheduled) (current-time)))
-  )
-)
+    (and scheduled (time-less-p (org-time-string-to-time scheduled) (current-time)))))
 
 ;;;; Filters
 
@@ -89,32 +74,20 @@ Nil values indicate unset properties."
                     (scheduled (org-entry-get nil "SCHEDULED"))
                     (delegated (org-entry-get nil "DELEGATED"))
                     (project (org-entry-get nil "PROJECT"))
-                    (created (org-entry-get nil "CREATED"))
-                   )
+                    (created (org-entry-get nil "CREATED")))
                ;; Attach ID as text property to headline for precise navigation
                (when id
-                 (put-text-property 0 (length head) 'pearl-gtd-id id head)
-               )
+                 (put-text-property 0 (length head) 'pearl-gtd-id id head))
                (push (list head
                           (mapconcat (lambda (c) (concat "@" c)) tags ",")
                           todo-state
                           scheduled
                           delegated
                           project
-                          created
-                     )
-                     entries
-               )
-             )
-           )
-         )
-         nil nil
-        )
-      )
-    )
-    (nreverse entries)
-  )
-)
+                          created)
+                     entries))))
+         nil nil)))
+    (nreverse entries)))
 
 ;;;; Data Collection
 
@@ -129,17 +102,9 @@ Nil values indicate unset properties."
          (lambda ()
            (when (string= (org-get-todo-state) "TODO")
              (dolist (tag (org-get-tags))
-               (cl-pushnew tag contexts :test #'string=)
-             )
-           )
-         )
-         nil nil
-        )
-      )
-    )
-    (mapcar (lambda (c) (concat "@" c)) contexts)
-  )
-)
+               (cl-pushnew tag contexts :test #'string=))))
+         nil nil)))
+    (mapcar (lambda (c) (concat "@" c)) contexts)))
 
 ;;;; Macro for table navigation
 
@@ -151,53 +116,37 @@ HEADER-REGEXP matches header lines to skip (default: \"| Headline\")."
   (let ((next-fn (intern (concat prefix "-next-row")))
         (prev-fn (intern (concat prefix "-previous-row")))
         (skip-fn (intern (concat prefix "--skip-line-p")))
-        (header-re (or header-regexp "| Headline"))
-       )
+        (header-re (or header-regexp "| Headline")))
     `(progn
        (defun ,skip-fn ()
          "Return non-nil if current line should be skipped during navigation."
          (or (looking-at "|[-+]")                    ; separator line
              (looking-at ,header-re)                  ; header line
-             (not (looking-at "|"))
-         )
-       )                 ; non-table line
+             (not (looking-at "|"))))                 ; non-table line
 
        (defun ,next-fn ()
          "Move to next data row in the table."
          (interactive)
          (let* ((boundaries (,boundaries-func))
-                (last-data-row (cdr boundaries))
-               )
+                (last-data-row (cdr boundaries)))
            (if (>= (line-beginning-position) last-data-row)
                (beep)
              (forward-line 1)
              (while (and (not (eobp)) (,skip-fn))
-               (forward-line 1)
-             )
-             (org-table-goto-column 1)
-           )
-         )
-       )
+               (forward-line 1))
+             (org-table-goto-column 1))))
 
        (defun ,prev-fn ()
          "Move to previous data row in the table."
          (interactive)
          (let* ((boundaries (,boundaries-func))
-                (first-data-row (car boundaries))
-               )
+                (first-data-row (car boundaries)))
            (if (<= (line-beginning-position) first-data-row)
                (beep)
              (forward-line -1)
              (while (and (not (bobp)) (,skip-fn))
-               (forward-line -1)
-             )
-             (org-table-goto-column 1)
-           )
-         )
-       )
-     )
-  )
-)
+               (forward-line -1))
+             (org-table-goto-column 1)))))))
 
 ;;;; Macros for file operations
 
