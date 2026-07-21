@@ -12,10 +12,9 @@
 (eval-and-compile
   (let ((dir (file-name-directory (or load-file-name buffer-file-name))))
     (add-to-list 'load-path (expand-file-name ".." dir))
-    (add-to-list 'load-path dir)))
+    (load-file (expand-file-name "pearl-gtd-test.el" dir))))
 (require 'ert)
 (require 'pearl-gtd-init)
-(require 'pearl-gtd-test)
 
 (pearl-gtd-test-define-story pearl-gtd-test-setup-user-initializes-gtd-system-for-first-time
   "User runs M-x pearl-gtd-init-initialize for the first time."

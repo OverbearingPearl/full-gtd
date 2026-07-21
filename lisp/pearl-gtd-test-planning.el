@@ -14,10 +14,9 @@
 (eval-and-compile
   (let ((dir (file-name-directory (or load-file-name buffer-file-name))))
     (add-to-list 'load-path (expand-file-name ".." dir))
-    (add-to-list 'load-path dir)))
+    (load-file (expand-file-name "pearl-gtd-test.el" dir))))
 (require 'ert)
 (require 'pearl-gtd)
-(require 'pearl-gtd-test)
 
 ;; Helper to simulate sequential inputs for read-string
 (defun pearl-gtd-test-planning--make-read-string-mock (inputs)
@@ -374,7 +373,7 @@
   :mock (((symbol-function 'completing-read)
           (lambda (prompt _collection &rest _)
             (cond
-             ((string-match-p "Organize" prompt) "Next Action")  ; 改为大写，匹配 "Organize '...' to: "
+             ((string-match-p "Organize" prompt) "Next Action")
              (t "Next Action"))))
          ((symbol-function 'read-string)
           (pearl-gtd-test-planning--make-read-string-mock
@@ -409,7 +408,6 @@
   "Planning must reject existing project names and force new name."
   :setup (progn
            (pearl-gtd-init-initialize)
-           ;; 预创建已有项目，使用 with-temp-file 确保写入完成
            (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
              (with-temp-file actions-file
                (insert "* TODO Existing task\n:PROPERTIES:\n:PROJECT: ExistingProject\n:END:\n"))
@@ -420,8 +418,8 @@
                (error "Setup failed: ExistingProject not found in actions.org"))))
   :files nil
   :mock (((symbol-function 'read-string)
-          (let ((inputs '("ExistingProject"    ; 第一次输入：重复名称
-                         "NewUniqueProject"   ; 第二次输入：有效新名称
+          (let ((inputs '("ExistingProject"
+                         "NewUniqueProject"
                          "Purpose" "" "" "Goal" "Area" "@ctx"))
                 (index 0))
             (lambda (prompt &optional _initial _history)
