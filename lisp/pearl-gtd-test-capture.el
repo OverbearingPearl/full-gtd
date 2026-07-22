@@ -43,8 +43,8 @@
   :files nil
   :mock (((symbol-function 'read-string) (lambda (&rest _) "")))
   :body (pearl-gtd-capture)
-  :asserts (let ((_inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
-             (let ((result (pearl-gtd-validate-file-contains-p _inbox-file "* ")))
+  :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+             (let ((result (pearl-gtd-validate-file-contains-p inbox-file "* ")))
                (should-not (car result))))
   :teardown nil)
 

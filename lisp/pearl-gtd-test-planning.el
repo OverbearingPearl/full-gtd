@@ -419,7 +419,7 @@
                          "NewUniqueProject"
                          "Purpose" "" "" "Goal" "Area" "@ctx"))
                 (index 0))
-            (lambda (prompt &optional _initial _history)
+            (lambda (_prompt &optional _initial _history)
               (let ((val (nth index inputs)))
                 (setq index (1+ index))
                 val))))
@@ -465,7 +465,7 @@
                          ""                 ; context (optional)
                          ))
                 (idx 0))
-            (lambda (prompt &optional _initial _history)
+            (lambda (_prompt &optional _initial _history)
               (let ((val (nth idx inputs)))
                 (setq idx (1+ idx))
                 val))))

@@ -213,8 +213,8 @@
                  (should (looking-at-p "\\*+ TODO Jump target task")))))
   :teardown (progn
              (kill-buffer "*Pearl-GTD: All Actions*")
-             (let ((actions-file-teardown (expand-file-name "actions.org" pearl-gtd-init-base-directory))
-                   (buf (get-file-buffer actions-file-teardown)))
+             (let* ((actions-file-teardown (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+                    (buf (get-file-buffer actions-file-teardown)))
                (when buf (kill-buffer buf)))))
 
 (pearl-gtd-validate-define-story pearl-gtd-test-do-user-jumps-to-first-duplicate-task
@@ -240,8 +240,8 @@
                  (should (search-forward ":ID: third-id" nil t)))))
   :teardown (progn
              (kill-buffer "*Pearl-GTD: All Actions*")
-             (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
-                   (buf (get-file-buffer actions-file)))
+             (let* ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+                     (buf (get-file-buffer actions-file)))
                (when buf (kill-buffer buf)))))
 
 (pearl-gtd-validate-define-story pearl-gtd-test-do-refresh-after-external-change

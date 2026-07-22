@@ -19,7 +19,7 @@
   :files (("inbox.org" "* Junk item\n"))
   :mock (((symbol-function 'y-or-n-p) (lambda (&rest _) nil))
          ((symbol-function 'read-string)
-          (lambda (prompt &rest _)
+          (lambda (_prompt &rest _)
             (pcase pearl-gtd-inbox--current-prompt-type
               ('rename "")
               ('remarks "")
@@ -90,7 +90,7 @@
              ((string-match "actionable" prompt) t)
              (t nil))))
          ((symbol-function 'read-string)
-          (lambda (prompt &rest _)
+          (lambda (_prompt &rest _)
             (pcase pearl-gtd-inbox--current-prompt-type
               ('rename "Prepare quarterly report")
               ('remarks "")
