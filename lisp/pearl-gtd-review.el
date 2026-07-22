@@ -141,7 +141,6 @@ EXTRA-CLEANUP is a form to execute when removing the property
                (,setter id file ,property new-value))
              (pearl-gtd-review--refresh-view)))))))
 
-;; 替换原有函数定义
 (pearl-gtd-review-define-property-editor "context" "CONTEXT" "Context (empty to remove): ")
 
 (pearl-gtd-review-define-property-editor "delegated" "DELEGATED" "Delegated to (empty to remove): "
