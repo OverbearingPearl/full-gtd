@@ -204,9 +204,9 @@
   :files nil
   :mock (((symbol-function 'read-string) (lambda (&rest _) "Task\x00with\x01null")))
   :body (pearl-gtd-capture)
-  :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+  :asserts (let ((_inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
              (with-temp-buffer
-               (insert-file-contents inbox-file)
+               (insert-file-contents _inbox-file)
                (should-not (search-forward "\x00" nil t))
                (should-not (search-forward "\x01" nil t))))
   :teardown nil)

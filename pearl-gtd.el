@@ -42,7 +42,10 @@
 (declare-function ert-delete-all-tests "ert")
 (declare-function ert-run-tests-batch-and-exit "ert")
 
-(defvar pearl-gtd-directory (file-name-directory load-file-name))
+(defvar pearl-gtd-directory nil
+  "Root directory of Pearl-GTD.")
+(when load-file-name
+  (setq pearl-gtd-directory (file-name-directory load-file-name)))
 
 (eval-and-compile
   (add-to-list 'load-path (expand-file-name "lisp" pearl-gtd-directory)))

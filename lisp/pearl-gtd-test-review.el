@@ -151,7 +151,7 @@
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" (concat "* TODO Task with context\nSCHEDULED: <" (format-time-string "%F %a") ">\n:PROPERTIES:\n:ID: edit-ctx-1\n:CONTEXT: home\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n")))
   :mock (((symbol-function 'read-string)
-          (lambda (prompt &optional initial _history)
+          (lambda (_prompt &optional initial _history)
             (should (string-match-p "home" initial))
             "office")))
   :body (progn
