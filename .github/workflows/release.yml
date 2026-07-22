@@ -42,7 +42,7 @@ jobs:
 
       - name: Build release package
         id: build_release
-        if: success()
+        if: success() && endsWith(github.ref_name, '.0')
         run: |
           {
             echo "=== Building release package ==="
@@ -54,7 +54,7 @@ jobs:
           } 2>&1 | tee -a build-logs.txt
 
       - name: Create GitHub Release
-        if: success()
+        if: success() && endsWith(github.ref_name, '.0')
         uses: softprops/action-gh-release@v1
         with:
           files: pearl-gtd-*.zip
