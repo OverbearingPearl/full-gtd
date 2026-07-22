@@ -11,30 +11,21 @@
 
 ;;; Commentary:
 
-;; This package provides a complete GTD implementation for org-mode,
-;; including six horizon levels: Purpose, Vision, Goals, Areas,
-;; Projects, and Actions.
-
-;; Pearl-GTD is a comprehensive implementation of David Allen's "Getting Things Done"
-;; methodology within Emacs org-mode. It covers all five core GTD workflow steps:
+;; Pearl-GTD implements David Allen's complete "Getting Things Done" methodology
+;; for Emacs org-mode, covering all five workflow steps: Capture, Clarify,
+;; Organize, Reflect, and Engage.
 ;;
-;; 1. Capture - Collect what has your attention
-;; 2. Clarify - Process what it means
-;; 3. Organize - Put it where it belongs
-;; 4. Reflect - Review frequently
-;; 5. Engage - Simply do
+;; Key features:
+;; • Full GTD workflow with inbox processing and staging buffer
+;; • Natural Planning Model for project planning with forced completion
+;; • Six Horizons of Focus (L3-L6) with hierarchy constraints
+;; • Daily and weekly review cycles with horizon columns
+;; • Context-based filtering and delegation tracking
+;; • Standard GTD lists: Projects, Next Actions, Waiting For, Someday/Maybe, Reference
 ;;
-;; Features:
-;; • Complete GTD workflow with inbox processing
-;; • Six Horizon of Focus (Purpose, Vision, Goals, Areas, Projects, Actions)
-;; • Natural Planning Model for project planning
-;; • Weekly and daily review cycles
-;; • Context-based task filtering (@office, @home, @errands, etc.)
-;; • Two-Minute Rule implementation
-;; • Delegation tracking and reminders
-;; • All standard GTD lists (Projects, Next Actions, Waiting For, Someday/Maybe, Reference)
-;; • Brainstorming tools and organizing principles
-;; • Comprehensive vertical and horizontal focus management
+;; This is the only Emacs package that implements the complete framework
+;; from the original book, including both horizontal (workflow) and vertical
+;; (horizons) focus management.
 
 ;;; Code:
 
