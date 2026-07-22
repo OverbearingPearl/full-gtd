@@ -276,7 +276,7 @@
   :setup (pearl-gtd-init-initialize)
   :files nil
   :mock (((symbol-function 'completing-read)
-          (lambda (prompt _collection &rest _)
+          (lambda (_prompt _collection &rest _)
             "Next Action"))
          ((symbol-function 'read-string)
           ;; Simulate user trying to skip required fields, then providing them
@@ -292,7 +292,7 @@
                          "Valid Area"  ; Accept this
                          "@ctx"        ; Context for next action (during organizing)
                          )))
-            (lambda (prompt &optional _initial _history)
+            (lambda (_prompt &optional _initial _history)
               (let ((next (nth calls inputs)))
                 (setq calls (1+ calls))
                 next))))
