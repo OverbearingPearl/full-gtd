@@ -38,14 +38,14 @@
              (t ""))))
          ((symbol-function 'read-string)
           (pearl-gtd-test-planning--make-read-string-mock
-           '("NewWebsite"                    ; New project name (first read-string call)
-             "Improve user experience"       ; Purpose (L6) - required
-             "Keep it simple"                ; Principle (L6) - optional but filled
-             "Industry leader"               ; Vision (L5) - optional but filled
-             "Launch in Q2"                  ; Goal (L4) - required
-             "Product Development"           ; Area (L3) - required
-             "@design"                       ; Context for item 1
-             "@dev"                          ; Context for item 2
+           '("NewWebsite"               ; New project name (first read-string call)
+             "Improve user experience"  ; Purpose (L6) - required
+             "Keep it simple"           ; Principle (L6) - optional but filled
+             "Industry leader"          ; Vision (L5) - optional but filled
+             "Launch in Q2"             ; Goal (L4) - required
+             "Product Development"      ; Area (L3) - required
+             "@design"                  ; Context for item 1
+             "@dev"                     ; Context for item 2
              )))
          ((symbol-function 'recursive-edit)
           (lambda ()
@@ -130,13 +130,13 @@
              (t "Next Action"))))
          ((symbol-function 'read-string)
           (pearl-gtd-test-planning--make-read-string-mock
-           '("MinimalProject"       ; New project name
-             "Just do it"          ; Purpose
-             ""                    ; Principle (empty - optional)
-             ""                    ; Vision (empty - optional)
-             "Ship it"             ; Goal
-             "Engineering"         ; Area
-             ""                    ; Context empty
+           '("MinimalProject"  ; New project name
+             "Just do it"      ; Purpose
+             ""                ; Principle (empty - optional)
+             ""                ; Vision (empty - optional)
+             "Ship it"         ; Goal
+             "Engineering"     ; Area
+             ""                ; Context empty
              )))
          ((symbol-function 'recursive-edit)
           (lambda ()
@@ -282,17 +282,17 @@
          ((symbol-function 'read-string)
           ;; Simulate user trying to skip required fields, then providing them
           (let ((calls 0)
-                (inputs '("ValidateTest"   ; New project name
-                         ""            ; Try empty Purpose (rejected/loop)
-                         "Valid Purpose" ; Accept this
-                         ""            ; Try empty Principle (allowed)
-                         ""            ; Try empty Vision (allowed)
-                         ""            ; Try empty Goal (rejected/loop)
-                         "Valid Goal"  ; Accept this
-                         ""            ; Try empty Area (rejected/loop)
-                         "Valid Area"  ; Accept this
-                         "@ctx"        ; Context for next action (during organizing)
-                         )))
+                (inputs '("ValidateTest"  ; New project name
+                          ""              ; Try empty Purpose (rejected/loop)
+                          "Valid Purpose" ; Accept this
+                          ""              ; Try empty Principle (allowed)
+                          ""              ; Try empty Vision (allowed)
+                          ""              ; Try empty Goal (rejected/loop)
+                          "Valid Goal"    ; Accept this
+                          ""              ; Try empty Area (rejected/loop)
+                          "Valid Area"    ; Accept this
+                          "@ctx"          ; Context for next action (during organizing)
+                          )))
             (lambda (_prompt &optional _initial _history)
               (let ((next (nth calls inputs)))
                 (setq calls (1+ calls))
@@ -330,7 +330,7 @@
              (t "Trash"))))
          ((symbol-function 'read-string)
           (pearl-gtd-test-planning--make-read-string-mock
-           '("TrashTest"                ; New project name
+           '("TrashTest"        ; New project name
              "P" "" "" "G" "A")))
          ((symbol-function 'recursive-edit)
           (lambda ()
@@ -375,9 +375,9 @@
              (t "Next Action"))))
          ((symbol-function 'read-string)
           (pearl-gtd-test-planning--make-read-string-mock
-           '("NoContext"                  ; New project name
-             "P" "" "" "G" "A"            ; Horizons
-             ""                            ; Context for brainstorm item (empty, Next Action needs context prompt)
+           '("NoContext"        ; New project name
+             "P" "" "" "G" "A"  ; Horizons
+             ""                 ; Context for brainstorm item (empty, Next Action needs context prompt)
              )))
          ((symbol-function 'recursive-edit)
           (lambda ()
@@ -457,13 +457,13 @@
             "Next Action"))
          ((symbol-function 'read-string)
           (let ((inputs '("EmptyBrainstorm"  ; project name
-                         "Test Purpose"     ; L6
-                         ""                 ; L6 principle (optional)
-                         ""                 ; L5 (optional)
-                         "Test Goal"        ; L4
-                         "Test Area"        ; L3
-                         "Forced Action"    ; forced next action
-                         ""                 ; context (optional)
+                          "Test Purpose"     ; L6
+                          ""                 ; L6 principle (optional)
+                          ""                 ; L5 (optional)
+                          "Test Goal"        ; L4
+                          "Test Area"        ; L3
+                          "Forced Action"    ; forced next action
+                          ""                 ; context (optional)
                          ))
                 (idx 0))
             (lambda (_prompt &optional _initial _history)

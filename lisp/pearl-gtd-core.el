@@ -145,9 +145,9 @@ HEADER-REGEXP matches header lines to skip (default: \"| Headline\")."
     `(progn
        (defun ,skip-fn ()
          "Return non-nil if current line should be skipped during navigation."
-         (or (looking-at "|[-+]")                    ; separator line
-             (looking-at ,header-re)                  ; header line
-             (not (looking-at "|"))))                 ; non-table line
+         (or (looking-at "|[-+]")     ; separator line
+             (looking-at ,header-re)  ; header line
+             (not (looking-at "|")))) ; non-table line
 
        (defun ,next-fn ()
          "Move to next data row in the table."
