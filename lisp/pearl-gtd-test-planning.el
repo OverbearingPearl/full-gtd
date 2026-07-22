@@ -474,12 +474,12 @@
             ;; Simulate empty brainstorm - do nothing, just return
             nil)))
   :body (pearl-gtd-planning-start)
-  :asserts (let ((_content (with-temp-buffer
+  :asserts (let ((content (with-temp-buffer
                             (insert-file-contents
                              (expand-file-name "actions.org" pearl-gtd-init-base-directory))
                             (buffer-string))))
-             (should (string-match-p ":L6_PURPOSE:\\s-*Test Purpose" _content))
-             (should (string-match-p ":L4_GOAL:\\s-*Test Goal" _content)))
+             (should (string-match-p ":L6_PURPOSE:\\s-*Test Purpose" content))
+             (should (string-match-p ":L4_GOAL:\\s-*Test Goal" content)))
   :teardown (progn
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
               (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
