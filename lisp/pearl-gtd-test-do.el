@@ -1,5 +1,6 @@
 ;;; pearl-gtd-test-do.el --- User stories: Do/Work phase  -*- lexical-binding: t; -*-
 
+;; License: MIT
 ;; SPDX-License-Identifier: MIT
 ;; URL: https://github.com/OverbearingPearl/pearl-gtd
 

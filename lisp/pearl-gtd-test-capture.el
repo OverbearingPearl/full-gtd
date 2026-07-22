@@ -1,5 +1,6 @@
 ;;; pearl-gtd-test-capture.el --- User stories: Capture phase  -*- lexical-binding: t; -*-
 
+;; License: MIT
 ;; SPDX-License-Identifier: MIT
 ;; URL: https://github.com/OverbearingPearl/pearl-gtd
 

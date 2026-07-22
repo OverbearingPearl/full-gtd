@@ -1,5 +1,6 @@
 ;;; pearl-gtd-test-workflows.el --- User stories: End-to-end workflows  -*- lexical-binding: t; -*-
 
+;; License: MIT
 ;; SPDX-License-Identifier: MIT
 ;; URL: https://github.com/OverbearingPearl/pearl-gtd
 

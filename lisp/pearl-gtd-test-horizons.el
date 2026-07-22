@@ -1,5 +1,6 @@
 ;;; pearl-gtd-test-horizons.el --- User stories: 6 Horizons  -*- lexical-binding: t; -*-
 
+;; License: MIT
 ;; SPDX-License-Identifier: MIT
 ;; URL: https://github.com/OverbearingPearl/pearl-gtd
 
