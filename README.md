@@ -7,22 +7,22 @@ A complete [Getting Things Done](https://gettingthingsdone.com/) implementation 
 
   ANYTIME
   =======
-  +------------------+        +------------------+
-  |    CAPTURE       |------->|     PROCESS      |
-  | pearl-gtd-capture| inbox  |pearl-gtd-process |
-  |                  | full   |    -inbox        |
-  +------------------+        +------------------+
+  +-------------------+            +-------------------------+
+  |      CAPTURE      |----------->|         PROCESS         |
+  | pearl-gtd-capture | inbox full | pearl-gtd-process-inbox |
+  +-------------------+            +-------------------------+
 
 
   WHEN STARTING A PROJECT
   =======================
-  +-----------------------------------------------+
-  |                   PLANNING                    |
-  |          pearl-gtd-planning-start             |
-  |                                               |
-  |  Purpose -> Principle -> Vision -> Brainstorm |
-  |         -> Organize -> Next Actions           |
-  +-----------------------------------------------+
+  +------------------------------------------------+
+  |                    PLANNING                    |
+  |            pearl-gtd-planning-start            |
+  |                                                |
+  |  Purpose/Principle -> Vision -> Goals -> Areas |
+  |                    -> Brainstorm -> Organize   |
+  |                    -> Next Actions             |
+  +------------------------------------------------+
 
 
   EVERY MORNING
@@ -49,16 +49,16 @@ A complete [Getting Things Done](https://gettingthingsdone.com/) implementation 
 
   WHEN WORKING / FEELING LOST
   ===========================
-  +-------------------------------+    +------------------------------+
-  |            ENGAGE             |    |           HORIZONS           |
-  | pearl-gtd-do-view-by-context  |    |    pearl-gtd-horizons-view   |
-  | pearl-gtd-do-view-all-actions |    |                              |
-  |                               |    |  L6 Purpose                  |
-  |       all next actions        |    |    -> L5 Vision              |
-  |       filter by context       |    |      -> L4 Goals             |
-  |       delegated tracking      |    |        -> L3 Area            |
-  |                               |    |          -> Projects/Actions |
-  +-------------------------------+    +------------------------------+
+  +-------------------------------+    +-------------------------------+
+  |            ENGAGE             |    |           HORIZONS            |
+  | pearl-gtd-do-view-by-context  |    |    pearl-gtd-horizons-view    |
+  | pearl-gtd-do-view-all-actions |    |                               |
+  |                               |    |  L6 Purpose                   |
+  |       all next actions        |    |    -> L5 Vision               |
+  |       filter by context       |    |      -> L4 Goals              |
+  |       delegated tracking      |    |        -> L3 Area             |
+  |                               |    |          -> Projects/Actions  |
+  +-------------------------------+    +-------------------------------+
   ```
 
 ## Why Pearl-GTD?
