@@ -98,22 +98,28 @@ This package is for you if you've read the book and want your tool to match the 
 ## A Day with Pearl-GTD
 
 **Morning:**
+
 1. `pearl-gtd-review-daily` — Check today's calendar and next actions
 
 **Throughout the day:**
+
 2. `pearl-gtd-capture` — Dump anything into inbox
 3. `pearl-gtd-do-view-by-context` — Pick actions by context (@office, @home, @errands)
 
 **When inbox piles up:**
+
 4. `pearl-gtd-process-inbox` — Clarify and organize each item
 
 **Starting a new project:**
+
 5. `pearl-gtd-planning-start` — Run the Natural Planning Model
 
 **Feeling lost:**
+
 6. `pearl-gtd-horizons-view` — Check if today's work aligns with L6 Purpose
 
 **Weekend:**
+
 7. `pearl-gtd-review-weekly` — Full system review
 
 ## Core Features
