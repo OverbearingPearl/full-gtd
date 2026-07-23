@@ -15,14 +15,12 @@ A complete [Getting Things Done](https://gettingthingsdone.com/) implementation 
 
   WHEN STARTING A PROJECT
   =======================
-  +-----------------------------------------------+
-  |                   PLANNING                    |
-  |           pearl-gtd-planning-start            |
-  |                                               |
-  |  Purpose&Principle -> Vision -> Goal -> Area  |
-  |                    -> Brainstorm -> Organize  |
-  |                    -> Next Actions            |
-  +-----------------------------------------------+
+  +-----------------------------------------------------------------------+
+  |                                PLANNING                               |
+  |                        pearl-gtd-planning-start                       |
+  |                                                                       |
+  | Purpose&Principle -> Vision -> Brainstorm -> Organize -> Next Actions |
+  +-----------------------------------------------------------------------+
 
 
   EVERY MORNING
@@ -97,6 +95,27 @@ This package is for you if you've read the book and want your tool to match the 
 6. `C-c g a` — View all next actions
 7. `C-c g h` — View the Six Horizons hierarchy
 
+## A Day with Pearl-GTD
+
+**Morning:**
+1. `pearl-gtd-review-daily` — Check today's calendar and next actions
+
+**Throughout the day:**
+2. `pearl-gtd-capture` — Dump anything into inbox
+3. `pearl-gtd-do-view-by-context` — Pick actions by context (@office, @home, @errands)
+
+**When inbox piles up:**
+4. `pearl-gtd-process-inbox` — Clarify and organize each item
+
+**Starting a new project:**
+5. `pearl-gtd-planning-start` — Run the Natural Planning Model
+
+**Feeling lost:**
+6. `pearl-gtd-horizons-view` — Check if today's work aligns with L6 Purpose
+
+**Weekend:**
+7. `pearl-gtd-review-weekly` — Full system review
+
 ## Core Features
 
 ### 1. Capture & Inbox Processing
@@ -150,7 +169,7 @@ Most GTD software becomes a todo‑list app with extra steps. Pearl‑GTD stays 
 
 - **Capture must be frictionless** – One key, no categorization, no thinking.
 - **The Natural Planning Model is not optional** – It’s how projects actually get done.
-- **Horizons are not tags** – They are a hierarchy. L4 goals must connect to L3 areas, which must connect to L2 projects. If a goal has no projects, it’s a fantasy.
+- **Horizons are not tags** – They are a hierarchy. L4 goals must connect to L2 projects. If a goal has no projects, it’s a fantasy.
 - **Review is the engine** – Without weekly review, GTD decays into a mess of stale lists. The tool enforces the habit.
 
 Emacs is the right host because GTD is fundamentally **text and structure**. Org‑mode gives us outlines, tags, links, and agenda views. Pearl‑GTD adds the **workflow layer** on top.
@@ -179,6 +198,7 @@ Or with `use‑package`:
 (use-package pearl-gtd
   :ensure t
   :bind (("C-c g c" . pearl-gtd-capture)
+         ("C-c g i" . pearl-gtd-process-inbox)
          ("C-c g p" . pearl-gtd-planning-start)
          ("C-c g r" . pearl-gtd-review-weekly)
          ("C-c g d" . pearl-gtd-review-daily)
