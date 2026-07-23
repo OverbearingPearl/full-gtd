@@ -2,6 +2,7 @@
 
 ;; Copyright (C) 2026 OverbearingPearl
 ;; Author: OverbearingPearl <OverbearingPearl@outlook.com>
+;; Assisted-by: Kimi:kimi-k2.5, DeepSeek:deepseek-v3.2, Claude:claude-sonnet-4.6
 ;; URL: https://github.com/OverbearingPearl/pearl-gtd
 ;; License: MIT
 ;; SPDX-License-Identifier: MIT
