@@ -1,8 +1,10 @@
 ;;; pearl-gtd-test-organize.el --- User stories: Organize phase  -*- lexical-binding: t; -*-
 
+;; Copyright (C) 2026 OverbearingPearl
+;; Author: OverbearingPearl <OverbearingPearl@outlook.com>
+;; URL: https://github.com/OverbearingPearl/pearl-gtd
 ;; License: MIT
 ;; SPDX-License-Identifier: MIT
-;; URL: https://github.com/OverbearingPearl/pearl-gtd
 
 ;;; Commentary:
 

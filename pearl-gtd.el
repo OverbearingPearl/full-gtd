@@ -1,14 +1,13 @@
 ;;; pearl-gtd.el --- Complete Getting Things Done (GTD) workflow for org-mode  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 OverbearingPearl
-
 ;; Author: OverbearingPearl <OverbearingPearl@outlook.com>
-;; Version: 0.1.0
-;; License: MIT
-;; SPDX-License-Identifier: MIT
 ;; URL: https://github.com/OverbearingPearl/pearl-gtd
+;; Version: 0.1.0
 ;; Package-Requires: ((emacs "27.1") (org "9.3"))
 ;; Keywords: outlines, tools, convenience, org, todo, gtd, calendar
+;; License: MIT
+;; SPDX-License-Identifier: MIT
 
 ;;; Commentary:
 

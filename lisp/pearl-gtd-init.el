@@ -1,9 +1,10 @@
 ;;; pearl-gtd-init.el --- Initialization functions for pearl-gtd  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 OverbearingPearl
+;; Author: OverbearingPearl <OverbearingPearl@outlook.com>
+;; URL: https://github.com/OverbearingPearl/pearl-gtd
 ;; License: MIT
 ;; SPDX-License-Identifier: MIT
-;; URL: https://github.com/OverbearingPearl/pearl-gtd
 
 ;;; Commentary:
 
