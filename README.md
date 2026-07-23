@@ -1,11 +1,9 @@
 # Pearl-GTD
 
-[English](README.md) | [中文](README_zh.md)
-
 A complete [Getting Things Done](https://gettingthingsdone.com/) implementation for Emacs org-mode, covering the full David Allen framework — including the Natural Planning Model and the Six Horizons of Focus.
 
 ```
-                          PEARL-GTD: FIVE WORKFLOWS
+                        PEARL-GTD: FIVE WORKFLOWS
 
   ANYTIME
   =======
@@ -43,25 +41,24 @@ A complete [Getting Things Done](https://gettingthingsdone.com/) implementation 
   |                            WEEKLY REVIEW                                |
   |                       pearl-gtd-review-weekly                           |
   |                                                                         |
-  |  inbox -> overdue -> deadlines -> completed -> delegated -> next actions|
-  |         -> stuck projects -> active projects -> no-project actions      |
-  |         -> someday/maybe                                                |
+  | inbox -> overdue -> deadlines -> completed -> delegated -> next actions |
+  |       -> stuck projects -> active projects -> no-project actions        |
+  |       -> someday/maybe                                                  |
   +-------------------------------------------------------------------------+
 
 
   WHEN WORKING / FEELING LOST
   ===========================
-  +------------------------+    +------------------------+
-  |        ENGAGE          |    |       HORIZONS         |
-  | pearl-gtd-do-view-all  |    | pearl-gtd-horizons-view|
-  |      -actions          |    |                        |
-  |                        |    |  L6 Purpose            |
-  |  all next actions      |    |    -> L5 Vision        |
-  |  filter by context     |    |      -> L4 Goals       |
-  |  delegated tracking    |    |        -> L3 Area      |
-  |                        |    |          -> Projects/  |
-  |                        |    |             Actions    |
-  +------------------------+    +------------------------+
+  +-------------------------------+    +------------------------------+
+  |            ENGAGE             |    |           HORIZONS           |
+  | pearl-gtd-do-view-by-context  |    |    pearl-gtd-horizons-view   |
+  | pearl-gtd-do-view-all-actions |    |                              |
+  |                               |    |  L6 Purpose                  |
+  |       all next actions        |    |    -> L5 Vision              |
+  |       filter by context       |    |      -> L4 Goals             |
+  |       delegated tracking      |    |        -> L3 Area            |
+  |                               |    |          -> Projects/Actions |
+  +-------------------------------+    +------------------------------+
   ```
 
 ## Why Pearl-GTD?
