@@ -15,14 +15,14 @@ A complete [Getting Things Done](https://gettingthingsdone.com/) implementation 
 
   WHEN STARTING A PROJECT
   =======================
-  +------------------------------------------------+
-  |                    PLANNING                    |
-  |            pearl-gtd-planning-start            |
-  |                                                |
-  |  Purpose/Principle -> Vision -> Goals -> Areas |
-  |                    -> Brainstorm -> Organize   |
-  |                    -> Next Actions             |
-  +------------------------------------------------+
+  +-----------------------------------------------+
+  |                   PLANNING                    |
+  |           pearl-gtd-planning-start            |
+  |                                               |
+  |  Purpose&Principle -> Vision -> Goal -> Area  |
+  |                    -> Brainstorm -> Organize  |
+  |                    -> Next Actions            |
+  +-----------------------------------------------+
 
 
   EVERY MORNING
@@ -122,9 +122,8 @@ Horizons are stored as Org properties (`L3_AREA` … `L6_PURPOSE`) and obey stri
 
 - **L3 Area** – Ongoing responsibilities (e.g., “Health”, “Career”)
 - **L4 Goal** – 1‑2 year objectives
-- **L5 Vision** – 3‑5 year picture (requires L4 Goal)
-- **L6 Purpose** – Life purpose (requires L5 Vision)
-- **L6 Principle** – Guiding principles (requires L6 Purpose)
+- **L5 Vision** – 3‑5 year picture
+- **L6 Purpose & Principle** – Life purpose and guiding principles
 
 Horizons are inherited from projects to their actions. The horizon view (`pearl‑gtd‑horizons‑view`) shows the full hierarchy from Purpose down to individual tasks.
 
