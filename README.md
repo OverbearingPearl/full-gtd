@@ -59,6 +59,12 @@ A complete [Getting Things Done](https://gettingthingsdone.com/) implementation 
   +-------------------------------+    +-------------------------------+
   ```
 
+## Status
+
+v0.1.0 — Core workflows are complete and stable.
+UI polish (menus, key hints, progress indicators) is ongoing.
+Feedback on interaction friction is especially welcome.
+
 ## Why Pearl-GTD?
 
 Existing Emacs GTD packages handle lists and agendas well, but omit two pillars of Allen's original model:
