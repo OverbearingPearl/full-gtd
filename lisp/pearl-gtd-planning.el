@@ -79,13 +79,37 @@ Handles multi-project tags (comma-separated)."
                   (throw 'found t)))))
           nil)))))
 
+(defun pearl-gtd-planning--collect-brainstorm-projects ()
+  "Collect unique project names from inbox.org entries with BRAINSTORM property.
+Returns list of unique project names from entries where BRAINSTORM is \"t\"."
+  (let ((inbox-path (expand-file-name "inbox.org" pearl-gtd-init-base-directory))
+        (projects '()))
+    (when (file-exists-p inbox-path)
+      (with-temp-buffer
+        (insert-file-contents inbox-path)
+        (org-mode)
+        (org-map-entries
+         (lambda ()
+           (when (string= (org-entry-get nil "BRAINSTORM") "t")
+             (let ((proj (org-entry-get nil "PROJECT")))
+               (when proj
+                 ;; Handle multi-project tags (comma-separated)
+                 (dolist (p (split-string proj "," t))
+                   (let ((trimmed (string-trim p)))
+                     (when (not (string= trimmed ""))
+                       (cl-pushnew trimmed projects :test #'string=))))))))
+         nil nil)))
+    (nreverse projects)))
+
 (defun pearl-gtd-planning--select-project ()
-  "Prompt user to create new project name.
+  "Prompt user to create new project name with completion from brainstorm projects.
 Return project name string after validation (non-empty and not existing)."
-  (let ((project-name ""))
+  (let ((project-name "")
+        (brainstorm-projects (pearl-gtd-planning--collect-brainstorm-projects)))
     (while (or (string= project-name "")
                (pearl-gtd-planning--project-exists-p project-name))
-      (setq project-name (read-string "Project name: <Unique identifier> (e.g., Website-Redesign, Q1-Marketing): "))
+      (setq project-name (completing-read "Project name: <Unique identifier> (e.g., Website-Redesign, Q1-Marketing) [TAB for brainstorm projects]: "
+                                          brainstorm-projects nil nil))
       (cond
        ((string= project-name "")
         (message "Project name cannot be empty, please re-enter.")
@@ -121,14 +145,38 @@ Return the input string (guaranteed non-empty when OPTIONAL is nil)."
         (setq input (read-string prompt)))
       input)))
 
+(defun pearl-gtd-planning--collect-brainstorm-items (project)
+  "Collect brainstorm item headlines for PROJECT from inbox.org.
+Returns list of headline strings."
+  (let ((inbox-path (expand-file-name "inbox.org" pearl-gtd-init-base-directory))
+        (items '()))
+    (when (file-exists-p inbox-path)
+      (with-temp-buffer
+        (insert-file-contents inbox-path)
+        (org-mode)
+        (org-map-entries
+         (lambda ()
+           (when (and (string= (org-entry-get nil "BRAINSTORM") "t")
+                      (let ((proj (org-entry-get nil "PROJECT")))
+                        (and proj (string= proj project))))
+             (push (org-get-heading t t) items)))
+         nil nil)))
+    (nreverse items)))
+
 (defun pearl-gtd-planning--ask-brainstorm (project)
   "Collect brainstorm items for PROJECT via temp buffer.
+If PROJECT already has brainstorm items in inbox, they are pre-populated.
 Return list of written headline strings.
 Signal error if user aborts."
-  (let ((buf (get-buffer-create "*Pearl-GTD Brainstorm*")))
+  (let ((buf (get-buffer-create "*Pearl-GTD Brainstorm*"))
+        (existing-items (pearl-gtd-planning--collect-brainstorm-items project)))
     (with-current-buffer buf
       (erase-buffer)
       (text-mode)
+      ;; Pre-populate with existing items if any
+      (when existing-items
+        (insert (string-join existing-items "\n"))
+        (unless (bolp) (insert "\n")))
       (setq-local header-line-format
                   "One item per line (e.g., Redesign homepage) | C-c C-c finish | C-c C-k abort")
       (local-set-key (kbd "C-c C-c") #'exit-recursive-edit)

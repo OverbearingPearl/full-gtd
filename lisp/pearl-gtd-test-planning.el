@@ -29,14 +29,25 @@
             (funcall next prompt)
           next)))))
 
+(defun pearl-gtd-test-planning--make-completing-read-mock (inputs)
+  "Create a mock for `completing-read' that cycles through INPUTS."
+  (let ((remaining inputs))
+    (lambda (prompt &optional _collection _predicate _require-match _initial-input _hist _def _inherit-input-method)
+      (let ((next (pop remaining)))
+        (if (functionp next)
+            (funcall next prompt)
+          next)))))
+
 (pearl-gtd-validate-define-story pearl-gtd-test-planning-user-completes-full-workflow
   "User completes natural planning with all fields filled, creating project with horizons and actions."
   :setup (pearl-gtd-init-initialize)
   :files nil
-  :mock (((symbol-function 'read-string)
+  :mock (((symbol-function 'completing-read)
+          (pearl-gtd-test-planning--make-completing-read-mock
+           '("NewWebsite")))            ; New project name
+         ((symbol-function 'read-string)
           (pearl-gtd-test-planning--make-read-string-mock
-           '("NewWebsite"               ; New project name
-             "Improve user experience"  ; Purpose (L6) - required
+           '("Improve user experience"  ; Purpose (L6) - required
              "Keep it simple"           ; Principle (L6) - optional but filled
              "Industry leader"          ; Vision (L5) - optional but filled
              "Launch in Q2"             ; Goal (L4) - required
@@ -120,10 +131,12 @@
   "Principle and Area can be empty, others are mandatory."
   :setup (pearl-gtd-init-initialize)
   :files nil
-  :mock (((symbol-function 'read-string)
+  :mock (((symbol-function 'completing-read)
+          (pearl-gtd-test-planning--make-completing-read-mock
+           '("MinimalProject")))       ; New project name
+         ((symbol-function 'read-string)
           (pearl-gtd-test-planning--make-read-string-mock
-           '("MinimalProject"  ; New project name
-             "Just do it"      ; Purpose
+           '("Just do it"      ; Purpose
              ""                ; Principle (empty - optional)
              "A vision"        ; Vision (now required)
              "Ship it"         ; Goal
@@ -175,10 +188,12 @@
   "User must organize all brainstorm items before proceeding, no skipping allowed."
   :setup (pearl-gtd-init-initialize)
   :files nil
-  :mock (((symbol-function 'read-string)
+  :mock (((symbol-function 'completing-read)
+          (pearl-gtd-test-planning--make-completing-read-mock
+           '("ForceComplete")))         ; New project name
+         ((symbol-function 'read-string)
           (pearl-gtd-test-planning--make-read-string-mock
-           '("ForceComplete"                      ; New project name
-             "Purpose" "" "Vision" "Goal" "Area"  ; Horizons
+           '("Purpose" "" "Vision" "Goal" "Area"  ; Horizons
              "@office"                            ; Default context
              )))
          ((symbol-function 'pearl-gtd-inbox--read-destination-key)
@@ -230,10 +245,12 @@
   "If all brainstorm items go to Trash/Ref/Someday, user is forced to create one Next Action."
   :setup (pearl-gtd-init-initialize)
   :files nil
-  :mock (((symbol-function 'read-string)
+  :mock (((symbol-function 'completing-read)
+          (pearl-gtd-test-planning--make-completing-read-mock
+           '("ForceAction")))            ; New project name
+         ((symbol-function 'read-string)
           (pearl-gtd-test-planning--make-read-string-mock
-           '("ForceAction"                        ; New project name
-             "Purpose" "" "Vision" "Goal" "Area"  ; Horizons
+           '("Purpose" "" "Vision" "Goal" "Area"  ; Horizons
              ""                                   ; Default context (empty)
              "Forced next action"                 ; Mandatory action created at end
              )))
@@ -280,11 +297,13 @@
   "Purpose, Vision, and Goal cannot be empty; code loops until valid input."
   :setup (pearl-gtd-init-initialize)
   :files nil
-  :mock (((symbol-function 'read-string)
+  :mock (((symbol-function 'completing-read)
+          (lambda (_prompt &optional _collection _predicate _require-match _initial-input _hist _def _inherit-input-method)
+            "ValidateTest"))             ; New project name
+         ((symbol-function 'read-string)
           ;; Simulate user trying to skip required fields, then providing them
           (let ((calls 0)
-                (inputs '("ValidateTest"  ; New project name
-                          ""              ; Try empty Purpose (rejected/loop)
+                (inputs '(""              ; Try empty Purpose (rejected/loop)
                           "Valid Purpose" ; Accept this
                           ""              ; Try empty Principle (allowed)
                           ""              ; Try empty Vision (rejected/loop)
@@ -333,10 +352,12 @@
   "Trash destination removes item completely without creating file entry."
   :setup (pearl-gtd-init-initialize)
   :files nil
-  :mock (((symbol-function 'read-string)
+  :mock (((symbol-function 'completing-read)
+          (pearl-gtd-test-planning--make-completing-read-mock
+           '("TrashTest")))              ; New project name
+         ((symbol-function 'read-string)
           (pearl-gtd-test-planning--make-read-string-mock
-           '("TrashTest"         ; New project name
-             "P" "" "V" "G" "A"  ; Horizons
+           '("P" "" "V" "G" "A"  ; Horizons
              ""                  ; Default context (empty)
              )))
          ((symbol-function 'pearl-gtd-inbox--read-destination-key)
@@ -377,10 +398,12 @@
   "Context can be skipped for Next Action (empty string)."
   :setup (pearl-gtd-init-initialize)
   :files nil
-  :mock (((symbol-function 'read-string)
+  :mock (((symbol-function 'completing-read)
+          (pearl-gtd-test-planning--make-completing-read-mock
+           '("NoContext")))              ; New project name
+         ((symbol-function 'read-string)
           (pearl-gtd-test-planning--make-read-string-mock
-           '("NoContext"         ; New project name
-             "P" "" "V" "G" "A"  ; Horizons
+           '("P" "" "V" "G" "A"  ; Horizons
              ""                  ; Default context (empty)
              )))
          ((symbol-function 'pearl-gtd-inbox--read-destination-key)
@@ -425,15 +448,17 @@
                        (string-match-p "ExistingProject" (buffer-string)))
                (error "Setup failed: ExistingProject not found in actions.org"))))
   :files nil
-  :mock (((symbol-function 'read-string)
+  :mock (((symbol-function 'completing-read)
           (let ((inputs '("ExistingProject"
-                          "NewUniqueProject"
-                          "Purpose" "" "Vision" "Goal" "Area" "@ctx"))
+                          "NewUniqueProject"))
                 (index 0))
-            (lambda (_prompt &optional _initial _history)
+            (lambda (_prompt &optional _collection _predicate _require-match _initial-input _hist _def _inherit-input-method)
               (let ((val (nth index inputs)))
                 (setq index (1+ index))
                 val))))
+         ((symbol-function 'read-string)
+          (pearl-gtd-test-planning--make-read-string-mock
+           '("Purpose" "" "Vision" "Goal" "Area" "@ctx")))
          ((symbol-function 'pearl-gtd-inbox--read-destination-key)
           (lambda (_) ?a))
          ((symbol-function 'pearl-gtd-core-read-date) (lambda (&rest _) ""))
@@ -464,9 +489,11 @@
   "Natural planning with no brainstorm items should still create project."
   :setup (pearl-gtd-init-initialize)
   :files nil
-  :mock (((symbol-function 'read-string)
-          (let ((inputs '("EmptyBrainstorm"  ; project name
-                          "Test Purpose"     ; L6
+  :mock (((symbol-function 'completing-read)
+          (pearl-gtd-test-planning--make-completing-read-mock
+           '("EmptyBrainstorm")))        ; project name
+         ((symbol-function 'read-string)
+          (let ((inputs '("Test Purpose"     ; L6
                           ""                 ; L6 principle (optional)
                           "Test Vision"      ; L5 (now required)
                           "Test Goal"        ; L4
@@ -496,16 +523,19 @@
              (should (string-match-p "Forced Action" content)))
   :teardown (progn
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
-              (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
+              (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))
+              (when (get-buffer "*Pearl-GTD: Inbox*") (kill-buffer "*Pearl-GTD: Inbox*"))))
 
 (pearl-gtd-validate-define-story pearl-gtd-test-planning-user-trashes-all-items-forces-action
   "All brainstorm items trashed should force creation of one action."
   :setup (pearl-gtd-init-initialize)
   :files nil
-  :mock (((symbol-function 'read-string)
+  :mock (((symbol-function 'completing-read)
+          (pearl-gtd-test-planning--make-completing-read-mock
+           '("AllTrashed")))              ; project name
+         ((symbol-function 'read-string)
           (pearl-gtd-test-planning--make-read-string-mock
-           ;; Added "Work" as L3_AREA value so "Forced Action" becomes the 7th value for action title
-           '("AllTrashed" "P" "" "G" "A" "Work" "@ctx" "Forced Action")))
+           '("P" "" "G" "A" "Work" "@ctx" "Forced Action")))
          ((symbol-function 'pearl-gtd-inbox--read-destination-key)
           (let ((calls 0))
             (lambda (_headline)
@@ -536,9 +566,12 @@
   "User quits (C-g) during organize phase, staging buffer should be cleaned."
   :setup (pearl-gtd-init-initialize)
   :files nil
-  :mock (((symbol-function 'read-string)
+  :mock (((symbol-function 'completing-read)
+          (pearl-gtd-test-planning--make-completing-read-mock
+           '("QuitTest")))                ; project name
+         ((symbol-function 'read-string)
           (pearl-gtd-test-planning--make-read-string-mock
-           '("QuitTest" "P" "" "V" "G" "A" "@office")))
+           '("P" "" "V" "G" "A" "@office")))
          ((symbol-function 'pearl-gtd-inbox--read-destination-key)
           (lambda (_) (signal 'quit nil)))  ; User quits immediately
          ((symbol-function 'recursive-edit)
@@ -566,9 +599,12 @@
   "User clarifies a brainstorm item before organizing to next action."
   :setup (pearl-gtd-init-initialize)
   :files nil
-  :mock (((symbol-function 'read-string)
+  :mock (((symbol-function 'completing-read)
+          (pearl-gtd-test-planning--make-completing-read-mock
+           '("ClarifyTest")))             ; project name
+         ((symbol-function 'read-string)
           (pearl-gtd-test-planning--make-read-string-mock
-           '("ClarifyTest" "Purpose" "" "Vision" "Goal" "Area" "@office")))
+           '("Purpose" "" "Vision" "Goal" "Area" "@office")))
          ((symbol-function 'pearl-gtd-inbox--read-destination-key)
           (let ((calls 0))
             (lambda (_headline)
@@ -611,9 +647,12 @@
              (with-temp-file inbox-file
                (insert "* Old brainstorm idea\n:PROPERTIES:\n:PROJECT: OldProject\n:BRAINSTORM: t\n:END:\n"))))
   :files nil
-  :mock (((symbol-function 'read-string)
+  :mock (((symbol-function 'completing-read)
+          (pearl-gtd-test-planning--make-completing-read-mock
+           '("NewProject")))              ; project name
+         ((symbol-function 'read-string)
           (pearl-gtd-test-planning--make-read-string-mock
-           '("NewProject" "Purpose" "" "Vision" "Goal" "Area" "@ctx" "Forced action")))
+           '("Purpose" "" "Vision" "Goal" "Area" "@ctx" "Forced action")))
          ((symbol-function 'pearl-gtd-inbox--read-destination-key)
           (lambda (_) ?a))
          ((symbol-function 'pearl-gtd-core-read-date) (lambda (&rest _) ""))
@@ -641,6 +680,133 @@
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
               (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))
               (when (get-buffer "*Pearl-GTD Brainstorm Organize*") (kill-buffer "*Pearl-GTD Brainstorm Organize*"))))
+
+(pearl-gtd-validate-define-story pearl-gtd-test-planning-collects-brainstorm-projects-from-inbox
+  "Collects unique project names from inbox entries with BRAINSTORM property."
+  :setup (pearl-gtd-init-initialize)
+  :files (("inbox.org" "* Brainstorm item 1\n:PROPERTIES:\n:ID: bs-1\n:BRAINSTORM: t\n:PROJECT: AlphaProject\n:END:\n* Brainstorm item 2\n:PROPERTIES:\n:ID: bs-2\n:BRAINSTORM: t\n:PROJECT: BetaProject\n:END:\n* Not brainstorm\n:PROPERTIES:\n:ID: bs-3\n:PROJECT: GammaProject\n:END:\n"))
+  :mock nil
+  :body (let ((projects (pearl-gtd-planning--collect-brainstorm-projects)))
+          (should (member "AlphaProject" projects))
+          (should (member "BetaProject" projects))
+          (should-not (member "GammaProject" projects)))
+  :asserts t
+  :teardown nil)
+
+(pearl-gtd-validate-define-story pearl-gtd-test-planning-brainstorm-projects-deduplicated
+  "Brainstorm projects with same name are deduplicated in completion list."
+  :setup (pearl-gtd-init-initialize)
+  :files (("inbox.org" "* Item 1\n:PROPERTIES:\n:ID: bs-1\n:BRAINSTORM: t\n:PROJECT: SharedProject\n:END:\n* Item 2\n:PROPERTIES:\n:ID: bs-2\n:BRAINSTORM: t\n:PROJECT: SharedProject\n:END:\n* Item 3\n:PROPERTIES:\n:ID: bs-3\n:BRAINSTORM: t\n:PROJECT: MultiA,MultiB\n:END:\n"))
+  :mock nil
+  :body (let ((projects (pearl-gtd-planning--collect-brainstorm-projects)))
+          (should (= 3 (length projects)))
+          (should (member "SharedProject" projects))
+          (should (member "MultiA" projects))
+          (should (member "MultiB" projects)))
+  :asserts t
+  :teardown nil)
+
+(pearl-gtd-validate-define-story pearl-gtd-test-planning-user-selects-brainstorm-project-from-completion
+  "User selects an existing brainstorm project from completion list, existing items pre-populated."
+  :setup (progn
+           (pearl-gtd-init-initialize)
+           ;; Pre-seed inbox with existing brainstorm items for this project
+           (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+             (with-temp-file inbox-file
+               (insert "* Existing idea 1\n:PROPERTIES:\n:ID: bs-1\n:BRAINSTORM: t\n:PROJECT: ExistingBrainstormProject\n:END:\n")
+               (insert "* Existing idea 2\n:PROPERTIES:\n:ID: bs-2\n:BRAINSTORM: t\n:PROJECT: ExistingBrainstormProject\n:END:\n")
+               ;; Add another project to verify isolation
+               (insert "* Other project idea\n:PROPERTIES:\n:ID: bs-3\n:BRAINSTORM: t\n:PROJECT: OtherProject\n:END:\n"))))
+  :files nil
+  :mock (((symbol-function 'completing-read)
+          (lambda (_prompt _collection &rest _)
+            "ExistingBrainstormProject"))
+         ((symbol-function 'read-string)
+          (pearl-gtd-test-planning--make-read-string-mock
+           '("Purpose" "" "Vision" "Goal" "Area" "@ctx")))
+         ((symbol-function 'pearl-gtd-core-read-date) (lambda (&rest _) ""))
+         ((symbol-function 'pearl-gtd-inbox--read-delegate) (lambda () ""))
+         ((symbol-function 'pearl-gtd-inbox--read-destination-key)
+          (let ((calls 0))
+            (lambda (_headline)
+              (setq calls (1+ calls))
+              ?a)))  ; All items -> Action
+         ((symbol-function 'recursive-edit)
+          (lambda ()
+            ;; Verify pre-populated content exists in buffer
+            (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
+              (with-current-buffer buf
+                ;; Verify existing items are pre-loaded
+                (should (string-match-p "Existing idea 1" (buffer-string)))
+                (should (string-match-p "Existing idea 2" (buffer-string)))
+                ;; Verify other project's item is NOT loaded
+                (should-not (string-match-p "Other project idea" (buffer-string)))
+                ;; Add a new item to existing ones
+                (goto-char (point-max))
+                (insert "New project idea\n"))))))
+  :body (pearl-gtd-planning-start)
+  :asserts (progn
+             ;; Verify all items (existing + new) were processed to actions
+             (should (pearl-gtd-validate-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      "Existing idea 1"))
+             (should (pearl-gtd-validate-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      "Existing idea 2"))
+             (should (pearl-gtd-validate-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      "New project idea"))
+             ;; Verify project association
+             (should (pearl-gtd-validate-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      ":PROJECT: ExistingBrainstormProject")))
+  :teardown (progn
+              (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
+              (when (get-buffer "*Pearl-GTD Brainstorm*") (kill-buffer "*Pearl-GTD Brainstorm*"))
+              (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))
+              (when (get-buffer "*Pearl-GTD: Inbox*") (kill-buffer "*Pearl-GTD: Inbox*"))))
+
+(pearl-gtd-validate-define-story pearl-gtd-test-planning-new-project-no-preload
+  "New project without existing brainstorm items starts with empty buffer."
+  :setup (pearl-gtd-init-initialize)
+  :files nil
+  :mock (((symbol-function 'completing-read)
+          (pearl-gtd-test-planning--make-completing-read-mock
+           '("BrandNewProject")))
+         ((symbol-function 'read-string)
+          (pearl-gtd-test-planning--make-read-string-mock
+           '("Purpose" "" "Vision" "Goal" "Area" "@ctx" "Forced action")))
+         ((symbol-function 'pearl-gtd-inbox--read-destination-key)
+          (lambda (_) ?a))
+         ((symbol-function 'pearl-gtd-core-read-date) (lambda (&rest _) ""))
+         ((symbol-function 'pearl-gtd-inbox--read-delegate) (lambda () ""))
+         ((symbol-function 'recursive-edit)
+          (lambda ()
+            (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
+              (with-current-buffer buf
+                ;; Verify buffer is empty (no pre-loaded content)
+                (should (string= (string-trim (buffer-string)) ""))
+                ;; Add new content
+                (insert "Fresh idea\n"))))))
+  :body (pearl-gtd-planning-start)
+  :asserts (progn
+             (should (pearl-gtd-validate-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      "Fresh idea")))
+  :teardown (progn
+              (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
+              (when (get-buffer "*Pearl-GTD Brainstorm*") (kill-buffer "*Pearl-GTD Brainstorm*"))
+              (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
+
+(pearl-gtd-validate-define-story pearl-gtd-test-planning-empty-inbox-no-brainstorm-projects
+  "Empty inbox returns empty list of brainstorm projects."
+  :setup (pearl-gtd-init-initialize)
+  :files (("inbox.org" ""))
+  :mock nil
+  :body (let ((projects (pearl-gtd-planning--collect-brainstorm-projects)))
+          (should (null projects)))
+  :asserts t
+  :teardown nil)
 
 (provide 'pearl-gtd-test-planning)
 
