@@ -195,7 +195,7 @@ context of each entry; only entries matching the predicate are included."
 
 (defun pearl-gtd-inbox--map-entries (buffer func)
   "Map over all entries in BUFFER.
-Calls FUNC with headline and entry-ref for each entry."
+Calls FUNC with headline, entry-ref, and original-tags for each entry."
   (with-current-buffer buffer
     (save-excursion
       (goto-char (point-min))
@@ -204,14 +204,15 @@ Calls FUNC with headline and entry-ref for each entry."
         (while (not (eobp))
           (let ((current-row (line-number-at-pos)))
             (when (looking-at "|")
-              (let ((headline (string-trim (org-table-get-field 1))))
+              (let ((headline (string-trim (org-table-get-field 1)))
+                    (tags-field (string-trim (org-table-get-field 4))))
                 ;; Unescape pipe characters that were escaped for table display
                 (setq headline (replace-regexp-in-string "\\\\vert{}" "|" headline))
                 (when (and headline (not (string= headline "")))
-                  (push (cons headline (cons buffer current-row)) entries)))))
+                  (push (list headline (cons buffer current-row) tags-field) entries)))))
           (forward-line 1))
         (dolist (entry (nreverse entries))
-          (funcall func (car entry) (cdr entry)))))))
+          (funcall func (nth 0 entry) (nth 1 entry) (nth 2 entry)))))))
 
 (defun pearl-gtd-inbox--highlight-entry (entry-ref)
   "Highlight ENTRY-REF in staging buffer.
@@ -379,9 +380,10 @@ DEADLINE is the deadline date string, or nil if not set.")
 
 ;;;; Entry Point
 
-(defun pearl-gtd-inbox--process-entry (headline buffer entry-ref &optional default-context default-project)
+(defun pearl-gtd-inbox--process-entry (headline buffer entry-ref original-tags &optional default-context default-project)
   "Process entry with new streamlined flow.
-Optional DEFAULT-CONTEXT and DEFAULT-PROJECT are passed to action attribute collection."
+Optional DEFAULT-CONTEXT and DEFAULT-PROJECT are passed to action attribute collection.
+ORIGINAL-TAGS is the original tags string from the staging buffer."
   (let ((current-headline headline)
         (current-remarks nil)
         (dest nil))
@@ -405,22 +407,43 @@ Optional DEFAULT-CONTEXT and DEFAULT-PROJECT are passed to action attribute coll
     (pcase dest
       ('execute
        (pearl-gtd-inbox--mark-executed entry-ref)
+       (pearl-gtd-inbox--stage-change entry-ref 4 "Executed")
        (push (list headline nil nil current-headline current-remarks nil)
              pearl-gtd-inbox--pending-moves))
       ('trash
        (pearl-gtd-inbox--mark-deleted entry-ref)
+       (pearl-gtd-inbox--stage-change entry-ref 4 "Trashed")
        (push (list headline nil nil current-headline current-remarks nil)
              pearl-gtd-inbox--pending-moves))
       ('ref
+       (pearl-gtd-inbox--stage-change entry-ref 4 "Reference")
        (push (list headline "reference.org" nil current-headline current-remarks nil)
              pearl-gtd-inbox--pending-moves))
       ('someday
+       (pearl-gtd-inbox--stage-change entry-ref 4 "Someday")
        (push (list headline "someday.org" nil current-headline current-remarks nil)
              pearl-gtd-inbox--pending-moves))
       ('action
        (let* ((attrs (pearl-gtd-inbox--collect-action-attrs buffer default-context default-project))
-              (deadline (cdr (assoc 'deadline attrs))))
+              (deadline (cdr (assoc 'deadline attrs)))
+              (context (cdr (assoc 'context attrs)))
+              (project (cdr (assoc 'project attrs)))
+              (tags-summary original-tags))
+         ;; Build tags summary from original tags + new attributes
+         (when (and context (not (string= context "")))
+           (setq tags-summary (if (string= tags-summary "")
+                                 context
+                               (concat tags-summary "," context))))
+         (when (and project (not (string= project "")))
+           (setq tags-summary (if (string= tags-summary "")
+                                 (concat "Project:" project)
+                               (concat tags-summary ",Project:" project))))
+         (when (and deadline (not (string= deadline "")))
+           (setq tags-summary (if (string= tags-summary "")
+                                 (concat "Deadline:" deadline)
+                               (concat tags-summary ",Deadline:" deadline))))
          (when buffer (pop-to-buffer buffer))
+         (pearl-gtd-inbox--stage-change entry-ref 4 tags-summary)
          (push (list headline "actions.org"
                      (pearl-gtd-inbox--fields-to-props attrs)
                      current-headline current-remarks deadline)
@@ -455,9 +478,9 @@ DEFAULT-CONTEXT and DEFAULT-PROJECT are used when BRAINSTORM is non-nil."
                       (org-mode)
                       (pearl-gtd-inbox--map-entries
                        staging-buffer
-                       (lambda (headline entry-ref)
+                       (lambda (headline entry-ref original-tags)
                          (pearl-gtd-inbox--highlight-entry entry-ref)
-                         (pearl-gtd-inbox--process-entry headline staging-buffer entry-ref default-context default-project)))
+                         (pearl-gtd-inbox--process-entry headline staging-buffer entry-ref original-tags default-context default-project)))
                       (when pearl-gtd-inbox--current-highlight
                         (delete-overlay pearl-gtd-inbox--current-highlight)
                         (setq pearl-gtd-inbox--current-highlight nil))

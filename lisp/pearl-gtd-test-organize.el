@@ -59,6 +59,24 @@
                     ":office:")))
   :teardown nil)
 
+(pearl-gtd-validate-define-story pearl-gtd-test-inbox-staging-shows-tags
+  "Staging buffer displays existing org tags."
+  :setup (pearl-gtd-init-initialize)
+  :files (("inbox.org" "* Task with tag :office:\n:PROPERTIES:\n:ID: tag-test\n:END:\n"))
+  :mock (((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) ?a))
+         ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil)))
+         ((symbol-function 'pearl-gtd-inbox--collect-action-attrs)
+          (lambda (&optional _staging-buffer _default-context _default-project)
+            '((context . "") (schedule . "") (deadline . "")
+              (delegate . "") (project . "")))))
+  :body (pearl-gtd-process-inbox)
+  :asserts (with-current-buffer " *inbox-processing*"
+             (goto-char (point-min))
+             (search-forward "Task with tag")
+             (beginning-of-line)
+             (should (search-forward "| office |" (line-end-position) t)))
+  :teardown (kill-buffer " *inbox-processing*"))
+
 (pearl-gtd-validate-define-story pearl-gtd-test-organize-user-renames-then-sets-context-and-schedule
   "User renames task and sets @office context with schedule."
   :setup (pearl-gtd-init-initialize)
