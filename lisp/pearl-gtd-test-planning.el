@@ -117,7 +117,7 @@
                 (kill-buffer "*Pearl-GTD Planning Summary*"))))
 
 (pearl-gtd-validate-define-story pearl-gtd-test-planning-user-skips-optional-fields
-  "Principle and Vision can be empty, others are mandatory."
+  "Principle and Area can be empty, others are mandatory."
   :setup (pearl-gtd-init-initialize)
   :files nil
   :mock (((symbol-function 'read-string)
@@ -125,9 +125,9 @@
            '("MinimalProject"  ; New project name
              "Just do it"      ; Purpose
              ""                ; Principle (empty - optional)
-             ""                ; Vision (empty - optional)
+             "A vision"        ; Vision (now required)
              "Ship it"         ; Goal
-             "Engineering"     ; Area
+             ""                ; Area (empty - optional)
              ""                ; Default context (empty)
              )))
          ((symbol-function 'pearl-gtd-inbox--read-destination-key)
@@ -151,18 +151,19 @@
                             (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                             ":L6_PRINCIPLE:")))
                (should-not (car result)))
-             ;; Verify L5_VISION does NOT exist
+             ;; Verify L3_AREA does NOT exist
              (let ((result (pearl-gtd-validate-file-contains-p
                             (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                            ":L5_VISION:")))
+                            ":L3_AREA:")))
                (should-not (car result)))
-             ;; But Goal and Area must exist
+             ;; Verify L5_VISION exists
              (should (pearl-gtd-validate-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      ":L4_GOAL: Ship it"))
+                      ":L5_VISION: A vision"))
+             ;; But Goal must exist
              (should (pearl-gtd-validate-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      ":L3_AREA: Engineering")))
+                      ":L4_GOAL: Ship it")))
   :teardown (progn
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
               (when (get-buffer "*Pearl-GTD Planning Summary*")
@@ -176,9 +177,9 @@
   :files nil
   :mock (((symbol-function 'read-string)
           (pearl-gtd-test-planning--make-read-string-mock
-           '("ForceComplete"                ; New project name
-             "Purpose" "" "" "Goal" "Area"  ; Horizons
-             "@office"                      ; Default context
+           '("ForceComplete"                      ; New project name
+             "Purpose" "" "Vision" "Goal" "Area"  ; Horizons
+             "@office"                            ; Default context
              )))
          ((symbol-function 'pearl-gtd-inbox--read-destination-key)
           (let ((calls 0))
@@ -231,10 +232,10 @@
   :files nil
   :mock (((symbol-function 'read-string)
           (pearl-gtd-test-planning--make-read-string-mock
-           '("ForceAction"                  ; New project name
-             "Purpose" "" "" "Goal" "Area"  ; Horizons
-             ""                             ; Default context (empty)
-             "Forced next action"           ; Mandatory action created at end
+           '("ForceAction"                        ; New project name
+             "Purpose" "" "Vision" "Goal" "Area"  ; Horizons
+             ""                                   ; Default context (empty)
+             "Forced next action"                 ; Mandatory action created at end
              )))
          ((symbol-function 'pearl-gtd-inbox--read-destination-key)
           (let ((calls 0))
@@ -276,7 +277,7 @@
 
 
 (pearl-gtd-validate-define-story pearl-gtd-test-planning-user-provides-required-fields
-  "Purpose, Goal, and Area cannot be empty; code loops until valid input."
+  "Purpose, Vision, and Goal cannot be empty; code loops until valid input."
   :setup (pearl-gtd-init-initialize)
   :files nil
   :mock (((symbol-function 'read-string)
@@ -286,11 +287,11 @@
                           ""              ; Try empty Purpose (rejected/loop)
                           "Valid Purpose" ; Accept this
                           ""              ; Try empty Principle (allowed)
-                          ""              ; Try empty Vision (allowed)
+                          ""              ; Try empty Vision (rejected/loop)
+                          "Valid Vision"  ; Accept this
                           ""              ; Try empty Goal (rejected/loop)
                           "Valid Goal"    ; Accept this
-                          ""              ; Try empty Area (rejected/loop)
-                          "Valid Area"    ; Accept this
+                          ""              ; Try empty Area (allowed)
                           "@ctx"          ; Default context
                           )))
             (lambda (_prompt &optional _initial _history)
@@ -314,10 +315,15 @@
                       ":L6_PURPOSE: Valid Purpose"))
              (should (pearl-gtd-validate-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      ":L4_GOAL: Valid Goal"))
+                      ":L5_VISION: Valid Vision"))
              (should (pearl-gtd-validate-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      ":L3_AREA: Valid Area")))
+                      ":L4_GOAL: Valid Goal"))
+             ;; Verify L3_AREA does NOT exist
+             (let ((result (pearl-gtd-validate-file-contains-p
+                            (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                            ":L3_AREA:")))
+               (should-not (car result))))
   :teardown (progn
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
               (when (get-buffer "*Pearl-GTD Planning Summary*")
@@ -329,9 +335,9 @@
   :files nil
   :mock (((symbol-function 'read-string)
           (pearl-gtd-test-planning--make-read-string-mock
-           '("TrashTest"        ; New project name
-             "P" "" "" "G" "A"  ; Horizons
-             ""                 ; Default context (empty)
+           '("TrashTest"         ; New project name
+             "P" "" "V" "G" "A"  ; Horizons
+             ""                  ; Default context (empty)
              )))
          ((symbol-function 'pearl-gtd-inbox--read-destination-key)
           (lambda (_) ?t))  ; Trash
@@ -373,9 +379,9 @@
   :files nil
   :mock (((symbol-function 'read-string)
           (pearl-gtd-test-planning--make-read-string-mock
-           '("NoContext"        ; New project name
-             "P" "" "" "G" "A"  ; Horizons
-             ""                 ; Default context (empty)
+           '("NoContext"         ; New project name
+             "P" "" "V" "G" "A"  ; Horizons
+             ""                  ; Default context (empty)
              )))
          ((symbol-function 'pearl-gtd-inbox--read-destination-key)
           (lambda (_) ?a))  ; Action
@@ -422,7 +428,7 @@
   :mock (((symbol-function 'read-string)
           (let ((inputs '("ExistingProject"
                           "NewUniqueProject"
-                          "Purpose" "" "" "Goal" "Area" "@ctx"))
+                          "Purpose" "" "Vision" "Goal" "Area" "@ctx"))
                 (index 0))
             (lambda (_prompt &optional _initial _history)
               (let ((val (nth index inputs)))
@@ -462,7 +468,7 @@
           (let ((inputs '("EmptyBrainstorm"  ; project name
                           "Test Purpose"     ; L6
                           ""                 ; L6 principle (optional)
-                          ""                 ; L5 (optional)
+                          "Test Vision"      ; L5 (now required)
                           "Test Goal"        ; L4
                           "Test Area"        ; L3
                           "@office"          ; Default context
@@ -485,6 +491,7 @@
                              (expand-file-name "actions.org" pearl-gtd-init-base-directory))
                             (buffer-string))))
              (should (string-match-p ":L6_PURPOSE:\\s-*Test Purpose" content))
+             (should (string-match-p ":L5_VISION:\\s-*Test Vision" content))
              (should (string-match-p ":L4_GOAL:\\s-*Test Goal" content))
              (should (string-match-p "Forced Action" content)))
   :teardown (progn
@@ -531,7 +538,7 @@
   :files nil
   :mock (((symbol-function 'read-string)
           (pearl-gtd-test-planning--make-read-string-mock
-           '("QuitTest" "P" "" "" "G" "A" "@office")))
+           '("QuitTest" "P" "" "V" "G" "A" "@office")))
          ((symbol-function 'pearl-gtd-inbox--read-destination-key)
           (lambda (_) (signal 'quit nil)))  ; User quits immediately
          ((symbol-function 'recursive-edit)
@@ -561,7 +568,7 @@
   :files nil
   :mock (((symbol-function 'read-string)
           (pearl-gtd-test-planning--make-read-string-mock
-           '("ClarifyTest" "Purpose" "" "" "Goal" "Area" "@office")))
+           '("ClarifyTest" "Purpose" "" "Vision" "Goal" "Area" "@office")))
          ((symbol-function 'pearl-gtd-inbox--read-destination-key)
           (let ((calls 0))
             (lambda (_headline)
@@ -606,7 +613,7 @@
   :files nil
   :mock (((symbol-function 'read-string)
           (pearl-gtd-test-planning--make-read-string-mock
-           '("NewProject" "Purpose" "" "" "Goal" "Area" "@ctx" "Forced action")))
+           '("NewProject" "Purpose" "" "Vision" "Goal" "Area" "@ctx" "Forced action")))
          ((symbol-function 'pearl-gtd-inbox--read-destination-key)
           (lambda (_) ?a))
          ((symbol-function 'pearl-gtd-core-read-date) (lambda (&rest _) ""))

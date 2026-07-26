@@ -13,17 +13,17 @@
 ;; Provides a guided workflow for project planning with forced completion.
 ;;
 ;; **Theoretical Boundaries**
-;; - Purpose (L6) and Goal (L4) are mandatory per Natural Planning Model:
+;; - Purpose (L6), Vision (L5) and Goal (L4) are mandatory per Natural Planning Model:
 ;;   * Purpose answers "Why does this project exist?" (Allen: without sufficient
 ;;     purpose, the project should not exist).
+;;   * Vision defines the 3‑5‑year strategic direction (Allen: essential for
+;;     alignment and long-term clarity).
 ;;   * Goal defines the concrete outcome vision (Allen: essential for effective
 ;;     project planning).
-;; - Vision (L5) and Principle (L6) are optional per Horizons of Focus design:
-;;   * Vision belongs to 3‑5‑year strategic horizon; tactical projects may skip.
+;; - Principle (L6) and Area (L3) are optional per Horizons of Focus design:
 ;;   * Principles are only required when value conflicts or constraints exist.
-;; - Area (L3) is mandatory as a system‑implementation requirement (ensures
-;;   project anchoring for Reviews and Horizons views), though not strictly
-;;   required by GTD for every individual project.
+;;   * Area is a system‑implementation convenience for Reviews and Horizons views,
+;;     though not strictly required by GTD for every individual project.
 
 ;;; Code:
 
@@ -318,9 +318,9 @@ HORIZONS is an alist of horizon properties."
   ;; 1. Define horizons
   (let* ((purpose (pearl-gtd-planning--ask-horizon 6 "Purpose" nil))
          (principle (pearl-gtd-planning--ask-horizon 6 "Principle" t 7))
-         (vision (pearl-gtd-planning--ask-horizon 5 "Vision" t))
+         (vision (pearl-gtd-planning--ask-horizon 5 "Vision" nil))
          (goal (pearl-gtd-planning--ask-horizon 4 "Goal" nil))
-         (area (pearl-gtd-planning--ask-horizon 3 "Area" nil))
+         (area (pearl-gtd-planning--ask-horizon 3 "Area" t))
          (default-context (read-string
                           (format "Default context for '%s' [RET none]: <@location/tool> (e.g., @phone, @office): "
                                   pearl-gtd-planning--current-project)))
