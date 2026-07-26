@@ -52,8 +52,6 @@
 (require 'pearl-gtd-horizons)
 (require 'pearl-gtd-planning)
 
-(declare-function pearl-gtd-horizons--view "pearl-gtd-horizons")
-
 (defun pearl-gtd-capture ()
   "Capture a new item to the inbox."
   (interactive)
