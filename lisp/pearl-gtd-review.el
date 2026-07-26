@@ -144,9 +144,9 @@ EXTRA-CLEANUP is a form to execute when removing the property
                (,setter id file ,property new-value))
              (pearl-gtd-review--refresh-view)))))))
 
-(pearl-gtd-review-define-property-editor "context" "CONTEXT" "Context (empty to remove): ")
+(pearl-gtd-review-define-property-editor "context" "CONTEXT" "Context (RET=remove, e.g., @office): ")
 
-(pearl-gtd-review-define-property-editor "delegated" "DELEGATED" "Delegated to (empty to remove): "
+(pearl-gtd-review-define-property-editor "delegated" "DELEGATED" "Delegated to (RET=remove, e.g., John): "
   (pearl-gtd-review--remove-property-by-id id file "DELEGATED_DATE"))
 
 (defun pearl-gtd-review--edit-scheduled-at-point ()
@@ -158,7 +158,7 @@ EXTRA-CLEANUP is a form to execute when removing the property
              (file (cdr entry))
              (current-scheduled (pearl-gtd-review--get-scheduled-by-id id file))
              (default-value (or current-scheduled ""))
-             (new-value (read-string "Schedule date YYYY-MM-DD (empty to remove): " default-value)))
+             (new-value (read-string "Schedule date (RET=remove, e.g., 2023-12-25): " default-value)))
         (pearl-gtd-core-with-entry-at-id id file
           (if (string= new-value "")
               (org-schedule '(4))
@@ -173,8 +173,8 @@ EXTRA-CLEANUP is a form to execute when removing the property
     (when entry
       (let* ((id (car entry))
              (file (cdr entry))
-             (deadline (read-string "Deadline (YYYY-MM-DD): "))
-             (reminder (read-string "Reminder days before: " "0")))
+             (deadline (read-string "Deadline (e.g., 2023-12-25): "))
+             (reminder (read-string "Reminder days before (e.g., 3): " "0")))
         (pearl-gtd-core-with-entry-at-id id file
           (org-deadline nil deadline)
           (org-set-property "REMINDER_DAYS" reminder)
@@ -189,14 +189,14 @@ EXTRA-CLEANUP is a form to execute when removing the property
       (let* ((id (car entry))
              (file (cdr entry))
              (current-headline (pearl-gtd-review--get-headline-by-id id file))
-             (new-name (read-string "New task name: " current-headline)))
+             (new-name (read-string "New task name (e.g., Prepare quarterly report): " current-headline)))
         (when (and new-name (not (string= new-name "")) (not (string= new-name current-headline)))
           (pearl-gtd-core-with-entry-at-id id file
             (org-edit-headline new-name)
             (save-buffer))
           (pearl-gtd-review--refresh-view))))))
 
-(pearl-gtd-review-define-property-editor "project" "PROJECT" "Project (empty to remove): "
+(pearl-gtd-review-define-property-editor "project" "PROJECT" "Project (RET=remove, e.g., Website-Redesign): "
   (progn
     (pearl-gtd-review--remove-property-by-id id file "L3_AREA")
     (pearl-gtd-review--remove-property-by-id id file "L4_GOAL")

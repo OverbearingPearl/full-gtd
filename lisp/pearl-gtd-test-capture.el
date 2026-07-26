@@ -21,7 +21,10 @@
   "User runs M-x pearl-gtd-capture and inputs 'Buy milk'."
   :setup (pearl-gtd-init-initialize)
   :files nil
-  :mock (((symbol-function 'read-string) (lambda (&rest _) "Buy milk")))
+  :mock (((symbol-function 'read-string) (lambda (prompt &rest _)
+                                           (cond
+                                            ((string-match "Capture to inbox" prompt) "Buy milk")
+                                            (t "")))))
   :body (pearl-gtd-capture)
   :asserts (progn
              (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
@@ -33,7 +36,10 @@
   "Captured items automatically get CREATED timestamp."
   :setup (pearl-gtd-init-initialize)
   :files nil
-  :mock (((symbol-function 'read-string) (lambda (&rest _) "Task with time")))
+  :mock (((symbol-function 'read-string) (lambda (prompt &rest _)
+                                           (cond
+                                            ((string-match "Capture to inbox" prompt) "Task with time")
+                                            (t "")))))
   :body (pearl-gtd-capture)
   :asserts (progn
              (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
@@ -45,7 +51,10 @@
   "User attempts to capture an empty string."
   :setup (pearl-gtd-init-initialize)
   :files nil
-  :mock (((symbol-function 'read-string) (lambda (&rest _) "")))
+  :mock (((symbol-function 'read-string) (lambda (prompt &rest _)
+                                           (cond
+                                            ((string-match "Capture to inbox" prompt) "")
+                                            (t "")))))
   :body (pearl-gtd-capture)
   :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
              (let ((result (pearl-gtd-validate-file-contains-p inbox-file "* ")))
@@ -56,7 +65,10 @@
   "User captures task with special characters."
   :setup (pearl-gtd-init-initialize)
   :files nil
-  :mock (((symbol-function 'read-string) (lambda (&rest _) "Fix [urgent] bug")))
+  :mock (((symbol-function 'read-string) (lambda (prompt &rest _)
+                                           (cond
+                                            ((string-match "Capture to inbox" prompt) "Fix [urgent] bug")
+                                            (t "")))))
   :body (pearl-gtd-capture)
   :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
              (should (pearl-gtd-validate-file-contains-p-bool inbox-file "* Fix \\[urgent\\] bug")))
@@ -66,7 +78,10 @@
   "User captures a very long title."
   :setup (pearl-gtd-init-initialize)
   :files nil
-  :mock (((symbol-function 'read-string) (lambda (&rest _) "This is a very long title that exceeds normal length for testing purposes")))
+  :mock (((symbol-function 'read-string) (lambda (prompt &rest _)
+                                           (cond
+                                            ((string-match "Capture to inbox" prompt) "This is a very long title that exceeds normal length for testing purposes")
+                                            (t "")))))
   :body (pearl-gtd-capture)
   :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
              (should (pearl-gtd-validate-file-contains-p-bool inbox-file "* This is a very long title that exceeds normal length for testing purposes")))
@@ -76,7 +91,10 @@
   "User cancels capture when inbox already has content, inbox unchanged."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Existing task\n"))
-  :mock (((symbol-function 'read-string) (lambda (&rest _) "")))
+  :mock (((symbol-function 'read-string) (lambda (prompt &rest _)
+                                           (cond
+                                            ((string-match "Capture to inbox" prompt) "")
+                                            (t "")))))
   :body (pearl-gtd-capture)
   :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
              (let ((result1 (pearl-gtd-validate-file-contains-p inbox-file "* Existing task")))
@@ -91,9 +109,12 @@
   :files nil
   :mock (((symbol-function 'read-string)
           (let ((count 0))
-            (lambda (&rest _)
+            (lambda (prompt &rest _)
               (setq count (1+ count))
-              (if (= count 1) "First task" "Second task")))))
+              (cond
+               ((and (= count 1) (string-match "Capture to inbox" prompt)) "First task")
+               ((and (= count 2) (string-match "Capture to inbox" prompt)) "Second task")
+               (t ""))))))
   :body (progn
           (pearl-gtd-capture)
           (pearl-gtd-capture))
@@ -113,9 +134,12 @@
   :files nil
   :mock (((symbol-function 'read-string)
           (let ((count 0))
-            (lambda (&rest _)
+            (lambda (prompt &rest _)
               (setq count (1+ count))
-              (if (= count 1) "Buy milk" "Buy milk")))))
+              (cond
+               ((and (= count 1) (string-match "Capture to inbox" prompt)) "Buy milk")
+               ((and (= count 2) (string-match "Capture to inbox" prompt)) "Buy milk")
+               (t ""))))))
   :body (progn
           (pearl-gtd-capture)
           (pearl-gtd-capture))
@@ -132,7 +156,10 @@
   "User captures to non-empty inbox, new task appended after existing."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* First existing task\n"))
-  :mock (((symbol-function 'read-string) (lambda (&rest _) "New captured task")))
+  :mock (((symbol-function 'read-string) (lambda (prompt &rest _)
+                                           (cond
+                                            ((string-match "Capture to inbox" prompt) "New captured task")
+                                            (t "")))))
   :body (pearl-gtd-capture)
   :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
              (should (pearl-gtd-validate-file-contains-p-bool inbox-file "* First existing task"))
@@ -143,7 +170,10 @@
   "Capture preserves two existing tasks in inbox."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Task one\n* Task two\n"))
-  :mock (((symbol-function 'read-string) (lambda (&rest _) "Third task")))
+  :mock (((symbol-function 'read-string) (lambda (prompt &rest _)
+                                           (cond
+                                            ((string-match "Capture to inbox" prompt) "Third task")
+                                            (t "")))))
   :body (pearl-gtd-capture)
   :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
              (should (pearl-gtd-validate-file-contains-p-bool inbox-file "* Task one"))
@@ -157,11 +187,11 @@
   :files nil
   :mock (((symbol-function 'read-string)
           (let ((count 0))
-            (lambda (&rest _)
+            (lambda (prompt &rest _)
               (setq count (1+ count))
               (cond
-               ((= count 1) "Task [urgent] with brackets")
-               ((= count 2) "Task * with asterisk")
+               ((and (= count 1) (string-match "Capture to inbox" prompt)) "Task [urgent] with brackets")
+               ((and (= count 2) (string-match "Capture to inbox" prompt)) "Task * with asterisk")
                (t ""))))))
   :body (progn
           (pearl-gtd-capture)
@@ -175,7 +205,10 @@
   "User presses C-g during capture input, nothing is saved."
   :setup (pearl-gtd-init-initialize)
   :files nil
-  :mock (((symbol-function 'read-string) (lambda (&rest _) (signal 'quit nil))))
+  :mock (((symbol-function 'read-string) (lambda (prompt &rest _)
+                                           (cond
+                                            ((string-match "Capture to inbox" prompt) (signal 'quit nil))
+                                            (t "")))))
   :body (progn
          (condition-case err
              (pearl-gtd-capture)
@@ -189,7 +222,10 @@
   "Newline in capture input must be sanitized to prevent entry injection."
   :setup (pearl-gtd-init-initialize)
   :files nil
-  :mock (((symbol-function 'read-string) (lambda (&rest _) "Line1\n* Line2")))
+  :mock (((symbol-function 'read-string) (lambda (prompt &rest _)
+                                           (cond
+                                            ((string-match "Capture to inbox" prompt) "Line1\n* Line2")
+                                            (t "")))))
   :body (pearl-gtd-capture)
   :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
              (with-temp-buffer
@@ -220,8 +256,11 @@
   :setup (pearl-gtd-init-initialize)
   :files nil
   :mock (((symbol-function 'read-string)
-          (lambda (&rest _)
-            (concat "Very long task: " (make-string 1000 ?X)))))
+          (lambda (prompt &rest _)
+            (cond
+             ((string-match "Capture to inbox" prompt)
+              (concat "Very long task: " (make-string 1000 ?X)))
+             (t "")))))
   :body (pearl-gtd-capture)
   :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
              (should (file-exists-p inbox-file))

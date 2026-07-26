@@ -33,23 +33,21 @@
   "User completes natural planning with all fields filled, creating project with horizons and actions."
   :setup (pearl-gtd-init-initialize)
   :files nil
-  :mock (((symbol-function 'completing-read)
-          (lambda (prompt _collection &rest _)
-            (cond
-             ((string-match-p "Destination" prompt) "Next Action")
-             ((string-match-p "organize" prompt) "Next Action")
-             (t ""))))
-         ((symbol-function 'read-string)
+  :mock (((symbol-function 'read-string)
           (pearl-gtd-test-planning--make-read-string-mock
-           '("NewWebsite"               ; New project name (first read-string call)
+           '("NewWebsite"               ; New project name
              "Improve user experience"  ; Purpose (L6) - required
              "Keep it simple"           ; Principle (L6) - optional but filled
              "Industry leader"          ; Vision (L5) - optional but filled
              "Launch in Q2"             ; Goal (L4) - required
              "Product Development"      ; Area (L3) - required
-             "@design"                  ; Context for item 1
-             "@dev"                     ; Context for item 2
+             "@design"                  ; NEW: Default context for all next actions
              )))
+         ((symbol-function 'pearl-gtd-planning--read-brainstorm-destination)
+          (let ((calls 0))
+            (lambda (_headline)
+              (setq calls (1+ calls))
+              (if (= calls 1) ?n ?n))))  ; Both items -> Next Action
          ((symbol-function 'recursive-edit)
           (lambda ()
             (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
@@ -89,18 +87,15 @@
              (should (pearl-gtd-validate-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       ":L3_AREA: Product Development"))
-             ;; Verify Context tags (from inbox processing logic)
+             ;; Verify BOTH actions use default context :design: (no longer per-item)
              (should (pearl-gtd-validate-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       ":design:"))
-             (should (pearl-gtd-validate-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      ":dev:"))
              ;; Verify BRAINSTORM property is removed after organizing
              (should-not (car (pearl-gtd-validate-file-contains-p
                                (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                                ":BRAINSTORM:")))
-             ;; Verify inbox is clean (brainstorm items removed from inbox)
+             ;; Verify inbox is clean
              (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
                (when (file-exists-p inbox-file)
                  (should-not (car (pearl-gtd-validate-file-contains-p inbox-file "Redesign homepage")))
@@ -109,12 +104,9 @@
              (let ((summary-buffer (get-buffer "*Pearl-GTD Planning Summary*")))
                (should summary-buffer)
                (with-current-buffer summary-buffer
-                 ;; Verify project name in title
                  (should (string-match-p "NewWebsite" (buffer-string)))
-                 ;; Verify horizons displayed
                  (should (string-match-p "Purpose" (buffer-string)))
                  (should (string-match-p "Goal" (buffer-string)))
-                 ;; Verify actions listed
                  (should (string-match-p "Redesign homepage" (buffer-string))))))
   :teardown (progn
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
@@ -126,12 +118,7 @@
   "Principle and Vision can be empty, others are mandatory."
   :setup (pearl-gtd-init-initialize)
   :files nil
-  :mock (((symbol-function 'completing-read)
-          (lambda (prompt _collection &rest _)
-            (cond
-             ((string-match-p "organize" prompt) "Next Action")
-             (t "Next Action"))))
-         ((symbol-function 'read-string)
+  :mock (((symbol-function 'read-string)
           (pearl-gtd-test-planning--make-read-string-mock
            '("MinimalProject"  ; New project name
              "Just do it"      ; Purpose
@@ -139,20 +126,22 @@
              ""                ; Vision (empty - optional)
              "Ship it"         ; Goal
              "Engineering"     ; Area
-             ""                ; Context empty
+             ""                ; Default context (empty)
              )))
+         ((symbol-function 'pearl-gtd-planning--read-brainstorm-destination)
+          (lambda (_) ?n))  ; Single item -> Next Action
          ((symbol-function 'recursive-edit)
           (lambda ()
             (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
               (with-current-buffer buf
-                (insert "Fix bugs\n"))))))  ; Only one brainstorm item
+                (insert "Fix bugs\n"))))))
   :body (pearl-gtd-planning-start)
   :asserts (progn
              ;; Verify L6_PURPOSE exists
              (should (pearl-gtd-validate-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       ":L6_PURPOSE: Just do it"))
-             ;; Verify L6_PRINCIPLE does NOT exist (or is empty - implementation dependent)
+             ;; Verify L6_PRINCIPLE does NOT exist
              (let ((result (pearl-gtd-validate-file-contains-p
                             (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                             ":L6_PRINCIPLE:")))
@@ -178,20 +167,20 @@
   "User must organize all brainstorm items before proceeding, no skipping allowed."
   :setup (pearl-gtd-init-initialize)
   :files nil
-  :mock (((symbol-function 'completing-read)
-          (lambda (prompt _collection &rest _)
-            (cond
-             ;; Simulate organizing 3 items in sequence
-             ((string-match-p "Idea 1" prompt) "Reference")
-             ((string-match-p "Idea 2" prompt) "Someday")
-             ((string-match-p "Idea 3" prompt) "Next Action")
-             (t "Next Action"))))
-         ((symbol-function 'read-string)
+  :mock (((symbol-function 'read-string)
           (pearl-gtd-test-planning--make-read-string-mock
            '("ForceComplete"                ; New project name
              "Purpose" "" "" "Goal" "Area"  ; Horizons
-             "@office"                      ; Context for the Next Action
+             "@office"                      ; Default context
              )))
+         ((symbol-function 'pearl-gtd-planning--read-brainstorm-destination)
+          (let ((calls 0))
+            (lambda (headline)
+              (setq calls (1+ calls))
+              ;; First: Reference, Second: Someday, Third: Next Action
+              (cond ((= calls 1) ?r)
+                    ((= calls 2) ?s)
+                    (t ?n)))))
          ((symbol-function 'recursive-edit)
           (lambda ()
             (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
@@ -209,10 +198,13 @@
              (should (pearl-gtd-validate-file-contains-p
                       (expand-file-name "someday.org" pearl-gtd-init-base-directory)
                       "Idea 2"))
-             ;; Verify Idea 3 went to actions.org as TODO
+             ;; Verify Idea 3 went to actions.org as TODO with default context
              (should (pearl-gtd-validate-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "TODO Idea 3"))
+             (should (pearl-gtd-validate-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      ":office:"))
              ;; Verify no items remain in inbox
              (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
                (when (file-exists-p inbox-file)
@@ -228,19 +220,18 @@
   "If all brainstorm items go to Trash/Ref/Someday, user is forced to create one Next Action."
   :setup (pearl-gtd-init-initialize)
   :files nil
-  :mock (((symbol-function 'completing-read)
-          (lambda (prompt _collection &rest _)
-            (cond
-             ((string-match-p "Idea 1" prompt) "Trash")
-             ((string-match-p "Idea 2" prompt) "Reference")
-             ((string-match-p "organize" prompt) "Trash")
-             (t "Next Action"))))
-         ((symbol-function 'read-string)
+  :mock (((symbol-function 'read-string)
           (pearl-gtd-test-planning--make-read-string-mock
            '("ForceAction"                  ; New project name
              "Purpose" "" "" "Goal" "Area"  ; Horizons
+             ""                             ; Default context (empty)
              "Forced next action"           ; Mandatory action created at end
              )))
+         ((symbol-function 'pearl-gtd-planning--read-brainstorm-destination)
+          (let ((calls 0))
+            (lambda (_)
+              (setq calls (1+ calls))
+              (if (= calls 1) ?t ?r))))  ; First trash, then reference
          ((symbol-function 'recursive-edit)
           (lambda ()
             (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
@@ -279,10 +270,7 @@
   "Purpose, Goal, and Area cannot be empty; code loops until valid input."
   :setup (pearl-gtd-init-initialize)
   :files nil
-  :mock (((symbol-function 'completing-read)
-          (lambda (_prompt _collection &rest _)
-            "Next Action"))
-         ((symbol-function 'read-string)
+  :mock (((symbol-function 'read-string)
           ;; Simulate user trying to skip required fields, then providing them
           (let ((calls 0)
                 (inputs '("ValidateTest"  ; New project name
@@ -294,12 +282,14 @@
                           "Valid Goal"    ; Accept this
                           ""              ; Try empty Area (rejected/loop)
                           "Valid Area"    ; Accept this
-                          "@ctx"          ; Context for next action (during organizing)
+                          "@ctx"          ; Default context
                           )))
             (lambda (_prompt &optional _initial _history)
               (let ((next (nth calls inputs)))
                 (setq calls (1+ calls))
                 next))))
+         ((symbol-function 'pearl-gtd-planning--read-brainstorm-destination)
+          (lambda (_) ?n))
          ((symbol-function 'recursive-edit)
           (lambda ()
             (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
@@ -326,15 +316,14 @@
   "Trash destination removes item completely without creating file entry."
   :setup (pearl-gtd-init-initialize)
   :files nil
-  :mock (((symbol-function 'completing-read)
-          (lambda (prompt _collection &rest _)
-            (cond
-             ((string-match-p "Trash me" prompt) "Trash")
-             (t "Trash"))))
-         ((symbol-function 'read-string)
+  :mock (((symbol-function 'read-string)
           (pearl-gtd-test-planning--make-read-string-mock
            '("TrashTest"        ; New project name
-             "P" "" "" "G" "A")))
+             "P" "" "" "G" "A"  ; Horizons
+             ""                 ; Default context (empty)
+             )))
+         ((symbol-function 'pearl-gtd-planning--read-brainstorm-destination)
+          (lambda (_) ?t))  ; Trash
          ((symbol-function 'recursive-edit)
           (lambda ()
             (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
@@ -371,17 +360,14 @@
   "Context can be skipped for Next Action (empty string)."
   :setup (pearl-gtd-init-initialize)
   :files nil
-  :mock (((symbol-function 'completing-read)
-          (lambda (prompt _collection &rest _)
-            (cond
-             ((string-match-p "Organize" prompt) "Next Action")
-             (t "Next Action"))))
-         ((symbol-function 'read-string)
+  :mock (((symbol-function 'read-string)
           (pearl-gtd-test-planning--make-read-string-mock
            '("NoContext"        ; New project name
              "P" "" "" "G" "A"  ; Horizons
-             ""                 ; Context for brainstorm item (empty, Next Action needs context prompt)
+             ""                 ; Default context (empty)
              )))
+         ((symbol-function 'pearl-gtd-planning--read-brainstorm-destination)
+          (lambda (_) ?n))  ; Next Action
          ((symbol-function 'recursive-edit)
           (lambda ()
             (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
@@ -412,7 +398,6 @@
            (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
              (with-temp-file actions-file
                (insert "* TODO Existing task\n:PROPERTIES:\n:PROJECT: ExistingProject\n:END:\n"))
-             ;; Diagnostic: ensure write succeeded
              (unless (with-temp-buffer
                        (insert-file-contents actions-file)
                        (string-match-p "ExistingProject" (buffer-string)))
@@ -420,14 +405,15 @@
   :files nil
   :mock (((symbol-function 'read-string)
           (let ((inputs '("ExistingProject"
-                         "NewUniqueProject"
-                         "Purpose" "" "" "Goal" "Area" "@ctx"))
+                          "NewUniqueProject"
+                          "Purpose" "" "" "Goal" "Area" "@ctx"))
                 (index 0))
             (lambda (_prompt &optional _initial _history)
               (let ((val (nth index inputs)))
                 (setq index (1+ index))
                 val))))
-         ((symbol-function 'completing-read) (lambda (_prompt _collection &rest _) "Next Action"))
+         ((symbol-function 'pearl-gtd-planning--read-brainstorm-destination)
+          (lambda (_) ?n))
          ((symbol-function 'recursive-edit)
           (lambda ()
             (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
@@ -454,25 +440,23 @@
   "Natural planning with no brainstorm items should still create project."
   :setup (pearl-gtd-init-initialize)
   :files nil
-  :mock (((symbol-function 'completing-read)
-          (lambda (_prompt &rest _)
-            ;; For forced action creation at the end
-            "Next Action"))
-         ((symbol-function 'read-string)
+  :mock (((symbol-function 'read-string)
           (let ((inputs '("EmptyBrainstorm"  ; project name
                           "Test Purpose"     ; L6
                           ""                 ; L6 principle (optional)
                           ""                 ; L5 (optional)
                           "Test Goal"        ; L4
                           "Test Area"        ; L3
-                          "Forced Action"    ; forced next action
-                          ""                 ; context (optional)
+                          "@office"          ; Default context
+                          "Forced Action"    ; forced next action (no brainstorm items)
                          ))
                 (idx 0))
             (lambda (_prompt &optional _initial _history)
               (let ((val (nth idx inputs)))
                 (setq idx (1+ idx))
                 val))))
+         ((symbol-function 'pearl-gtd-planning--read-brainstorm-destination)
+          (lambda (_) (error "Should not be called - no brainstorm items")))
          ((symbol-function 'recursive-edit)
           (lambda ()
             ;; Simulate empty brainstorm - do nothing, just return
@@ -483,7 +467,8 @@
                              (expand-file-name "actions.org" pearl-gtd-init-base-directory))
                             (buffer-string))))
              (should (string-match-p ":L6_PURPOSE:\\s-*Test Purpose" content))
-             (should (string-match-p ":L4_GOAL:\\s-*Test Goal" content)))
+             (should (string-match-p ":L4_GOAL:\\s-*Test Goal" content))
+             (should (string-match-p "Forced Action" content)))
   :teardown (progn
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
               (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
@@ -492,17 +477,15 @@
   "All brainstorm items trashed should force creation of one action."
   :setup (pearl-gtd-init-initialize)
   :files nil
-  :mock (((symbol-function 'completing-read)
-          (lambda (prompt &rest _)
-            (cond
-             ((string-match "Trash item 1" prompt) "Trash")
-             ((string-match "Trash item 2" prompt) "Trash")
-             ((string-match "Organize" prompt) "Trash")
-             (t "Next Action"))))
-         ((symbol-function 'read-string)
+  :mock (((symbol-function 'read-string)
           (pearl-gtd-test-planning--make-read-string-mock
            ;; Added "Work" as L3_AREA value so "Forced Action" becomes the 7th value for action title
-           '("AllTrashed" "P" "" "G" "A" "Work" "Forced Action")))
+           '("AllTrashed" "P" "" "G" "A" "Work" "@ctx" "Forced Action")))
+         ((symbol-function 'pearl-gtd-planning--read-brainstorm-destination)
+          (let ((calls 0))
+            (lambda (_)
+              (setq calls (1+ calls))
+              ?t)))  ; Always trash
          ((symbol-function 'recursive-edit)
           (lambda ()
             (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))

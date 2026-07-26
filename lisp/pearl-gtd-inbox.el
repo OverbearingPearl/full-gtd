@@ -18,6 +18,8 @@
 (require 'cl-lib)
 (require 'org)
 (require 'org-id)
+(require 'pearl-gtd-core)
+(require 'pearl-gtd-review)
 
 (defface pearl-gtd-inbox--highlight
   '((t :inherit highlight))
@@ -47,6 +49,86 @@
   "Current prompt type.
 Possible values include \\='rename, \\='remarks, \\='context,
 \\='schedule, \\='deadline, \\='delegate, and \\='project.")
+
+(defvar pearl-gtd-inbox--last-context nil
+  "Last context used during current inbox processing session.")
+
+(defun pearl-gtd-inbox--read-destination-key (headline)
+  "Read single key for destination choice.
+Returns one of: ?a (Next Action), ?r (Reference), ?s (Someday), ?t (Trash),
+?x (Execute <2min), ?c (Clarify).
+Throws 'quit if user presses C-g."
+  (message "Process '%s': [a] Next Action | [r] Reference | [s] Someday | [t] Trash | [x] Execute (<2min) | [c] Clarify: "
+           (substring headline 0 (min 30 (length headline))))
+  (let ((key (read-key)))
+    (while (not (or (memq key '(?a ?A ?r ?R ?s ?S ?t ?T ?x ?X ?c ?C))
+                    (eq key 7)))  ; C-g is character 7
+      (message "Invalid key. Process '%s': [a] Next Action | [r] Reference | [s] Someday | [t] Trash | [x] Execute (<2min) | [c] Clarify: "
+               (substring headline 0 (min 30 (length headline))))
+      (setq key (read-key)))
+    ;; If C-g pressed, signal quit
+    (if (eq key 7)
+        (signal 'quit nil)
+      (downcase key))))
+
+(defun pearl-gtd-inbox--clarify-entry (headline)
+  "Clarify headline and remarks.
+Returns (NEW-HEADLINE . REMARKS). Either can be nil."
+  (let* ((new (read-string (format "Clarify '%s' [RET keep]: <Clear next action> (e.g., Buy organic milk from Whole Foods): "
+                                   headline)))
+         (new-headline (let ((trimmed (string-trim new)))
+                        (unless (string= trimmed "") trimmed)))
+         (remarks-text (read-string (format "Notes for '%s' [RET skip]: <Details or constraints> (e.g., Check brand: Organic Valley): "
+                                            (or new-headline headline)))))
+    (cons new-headline (unless (string= remarks-text "") remarks-text))))
+
+(defun pearl-gtd-inbox--collect-action-attrs (&optional staging-buffer)
+  "Collect action attributes with context inheritance.
+If STAGING-BUFFER is provided, ensure focus returns to it after each input.
+Returns alist: ((context . VAL) (schedule . VAL) (deadline . VAL)
+               (delegate . VAL) (project . VAL))"
+  (let* ((ctx (progn
+                (when staging-buffer (pop-to-buffer staging-buffer))
+                (pearl-gtd-inbox--read-context)))
+         (sched (progn
+                  (when staging-buffer (pop-to-buffer staging-buffer))
+                  (pearl-gtd-core-read-date 'schedule)))
+         (dead (progn
+                 (when staging-buffer (pop-to-buffer staging-buffer))
+                 (pearl-gtd-core-read-date 'deadline)))
+         (deleg (progn
+                  (when staging-buffer (pop-to-buffer staging-buffer))
+                  (pearl-gtd-inbox--read-delegate)))
+         (proj (progn
+                 (when staging-buffer (pop-to-buffer staging-buffer))
+                 (pearl-gtd-inbox--read-project))))
+    `((context . ,ctx) (schedule . ,sched) (deadline . ,dead)
+      (delegate . ,deleg) (project . ,proj))))
+
+(defun pearl-gtd-inbox--read-context ()
+  "Read context with completion from existing actions, allowing free input."
+  (let* ((existing (pearl-gtd-core-collect-contexts
+                    (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
+         (default (or pearl-gtd-inbox--last-context ""))
+         (prompt (if (string= default "")
+                     "Context [RET none, TAB complete]: <@location/tool> (e.g., @office, @home, @phone): "
+                   (format "Context [RET '%s', TAB complete]: <@location/tool> (e.g., @office, @home): " default)))
+         (input (completing-read prompt existing nil nil nil nil default)))
+    (unless (string= input "")
+      (setq pearl-gtd-inbox--last-context input))
+    input))
+
+(defun pearl-gtd-inbox--read-project ()
+  "Read project with completion from existing projects."
+  (let* ((existing (pearl-gtd-review--collect-all-projects))
+         (input (completing-read "Project [RET none, TAB complete]: <Project name> (e.g., Website-Redesign, Q1-Goals): " existing nil nil)))
+    input))
+
+(defun pearl-gtd-inbox--read-delegate ()
+  "Read delegate with completion from existing delegates."
+  (let* ((existing '())
+         (input (completing-read "Delegated to [RET none, TAB complete]: <Person name> (e.g., John Smith, Alice): " existing nil nil)))
+    input))
 
 (defvar-local pearl-gtd-inbox--current-highlight nil
   "Current highlight overlay in the staging buffer.")
@@ -255,7 +337,7 @@ DEADLINE is the deadline date string, or nil if not set.")
 
 (defun pearl-gtd-inbox--capture ()
   "Capture a new item to the inbox with a timestamp."
-  (let ((item (string-trim (read-string "Enter item to capture: "))))
+  (let ((item (string-trim (read-string "Capture to inbox: <Raw idea or task> (e.g., Buy milk, Call mom about dinner): "))))
     (unless (string-empty-p item)
       ;; Sanitize: remove control chars and normalize newlines
       (setq item (replace-regexp-in-string "[\x00-\x08\x0b-\x0c\x0e-\x1f\x7f]" "" item))
@@ -270,7 +352,7 @@ DEADLINE is the deadline date string, or nil if not set.")
 ;;;; State Machine Layer
 
 (defun pearl-gtd-inbox--fields-to-props (fields)
-  "Convert FIELDS alist to properties string."
+  "Convert FIELDS alist to properties string for org entry."
   (let ((parts '()))
     (dolist (f fields)
       (pcase f
@@ -278,6 +360,8 @@ DEADLINE is the deadline date string, or nil if not set.")
          (when ctx (push ctx parts)))
         (`(schedule . ,sched)
          (when sched (push (format ":SCHEDULED:%s:" sched) parts)))
+        (`(deadline . ,dead)
+         (when dead (push (format ":DEADLINE:%s:" dead) parts)))
         (`(delegate . ,deleg)
          (when deleg (push (format ":DELEGATED:%s:" deleg) parts)))
         (`(project . ,proj)
@@ -287,94 +371,64 @@ DEADLINE is the deadline date string, or nil if not set.")
 ;;;; Entry Point
 
 (defun pearl-gtd-inbox--process-entry (headline buffer entry-ref)
-  "Process entry using explicit state machine.
+  "Process entry with new streamlined flow (single-key destination + optional clarify).
 HEADLINE is the entry's headline text.
 BUFFER is the staging buffer.
 ENTRY-REF is a cons cell (BUFFER . ROW)."
-  (let ((original-headline headline)
-        (state `(clarify . ,headline))
-        (row (cdr entry-ref))
-        (context '()))
-    (while (not (eq (car-safe state) 'completed))
+  (let ((current-headline headline)
+        (current-remarks nil)
+        (dest nil))
+    ;; Loop until valid destination chosen (may clarify first)
+    (while (not dest)
       (pearl-gtd-inbox--highlight-entry entry-ref)
-      (setq state
-        (pcase state
-          (`(clarify . ,current-headline)
-           (let* ((rename (read-string (format "Rename '%s'? (RET to keep): " current-headline)))
-                  (new-name (let ((trimmed (string-trim rename))) (unless (string= trimmed "") trimmed)))
-                  (remark-text (read-string (format "Add remarks for '%s'? (RET to skip): "
-                                                   (or new-name current-headline))))
-                  (remarks (unless (string= remark-text "") remark-text)))
-             (setq context `(:headline ,(or new-name current-headline) :remarks ,remarks))
-             `(deciding ,(or new-name current-headline) ,remarks)))
-
-          (`(deciding ,h ,r)
-           (if (y-or-n-p (format "Is '%s' actionable? " h))
-               `(specify-actionable ,h ,r)
-             `(specify-non-actionable ,h ,r)))
-
-          (`(specify-actionable ,h ,r)
-           (if (y-or-n-p (format "Can '%s' be done in 2 minutes? " h))
-               (progn
-                 (pearl-gtd-inbox--mark-executed entry-ref)
-                 (push (list original-headline nil nil h r nil) pearl-gtd-inbox--pending-moves)
-                 `(completed (executed ,h)))
-             `(collect-fields ,h ,r nil)))
-
-          (`(collect-fields ,h ,r ,_fields)
-           (let* ((ctx (read-string (format "Context for '%s' (RET to skip): " h)))
-                  (sched (read-string (format "Schedule for '%s' (RET to skip): " h)))
-                  (dead (if (and sched (not (string= sched "")))
-                           (read-string (format "Deadline for '%s' (RET to use schedule): " h))
-                         (read-string (format "Deadline for '%s' (RET to skip): " h))))
-                  (deleg (read-string (format "Delegate '%s' to (RET to skip): " h)))
-                  (projs (read-string (format "Project name(s) for '%s' (comma separated, RET to skip): " h))))
-             (let ((collected-fields (list
-                                      (cons 'context (unless (string= ctx "") ctx))
-                                      (cons 'schedule (unless (string= sched "") sched))
-                                      (cons 'deadline (if (string= dead "")
-                                                         (unless (string= sched "") sched)
-                                                       dead))
-                                      (cons 'delegate (unless (string= deleg "") deleg))
-                                      (cons 'project (unless (string= projs "") projs)))))
-               `(move-to-actions ,h ,r ,collected-fields))))
-
-          (`(specify-non-actionable ,h ,r)
-           (let ((dest (completing-read (format "Assign '%s' to: " h)
-                                       '("reference" "someday" "trash") nil t)))
-             (pcase dest
-               ("reference" `(move-to "reference.org" ,h ,r))
-               ("someday" `(move-to "someday.org" ,h ,r))
-               ("trash" `(delete ,h ,r))
-               (_ (error "Unknown destination: %s" dest)))))
-
-          (`(execute ,h ,r)
-           (pearl-gtd-inbox--mark-executed entry-ref)
-           (push (list original-headline nil nil h r nil) pearl-gtd-inbox--pending-moves)
-           `(completed (executed ,h)))
-
-          (`(move-to ,file ,h ,r)
-           (push (list original-headline file nil h r nil) pearl-gtd-inbox--pending-moves)
-           `(completed (moved ,file ,h)))
-
-          (`(move-to-actions ,h ,r ,fields)
-           (let ((props (pearl-gtd-inbox--fields-to-props fields))
-                 (deadline (cdr (assoc 'deadline fields))))
-             (push (list original-headline "actions.org" props h r deadline) pearl-gtd-inbox--pending-moves))
-           `(completed (moved-to-actions ,h)))
-
-          (`(delete ,h ,r)
-           (pearl-gtd-inbox--mark-deleted entry-ref)
-           (push (list original-headline nil nil h r nil) pearl-gtd-inbox--pending-moves)
-           `(completed (deleted ,h)))
-
-          (_ (error "Unknown state: %S" state)))))
-    ;; Apply staged changes after state machine completes
-    (pearl-gtd-inbox--apply-staged-changes buffer row context)))
+      (let ((key (pearl-gtd-inbox--read-destination-key current-headline)))
+        (pcase key
+          (?c (let ((clarified (pearl-gtd-inbox--clarify-entry current-headline)))
+                (when (car clarified)
+                  (setq current-headline (car clarified))
+                  ;; Stage the headline change visually
+                  (pearl-gtd-inbox--stage-change entry-ref 1 current-headline))
+                (when (cdr clarified)
+                  (setq current-remarks (cdr clarified))
+                  ;; Stage remarks in column 2
+                  (pearl-gtd-inbox--stage-change entry-ref 2 current-remarks))))
+          (?a (setq dest 'action))
+          (?r (setq dest 'ref))
+          (?s (setq dest 'someday))
+          (?t (setq dest 'trash))
+          (?x (setq dest 'execute))
+          (_ (message "Invalid key") (sit-for 0.5)))))
+    ;; Execute destination
+    (pcase dest
+      ('execute
+       (pearl-gtd-inbox--mark-executed entry-ref)
+       (push (list headline nil nil current-headline current-remarks nil)
+             pearl-gtd-inbox--pending-moves))
+      ('trash
+       (pearl-gtd-inbox--mark-deleted entry-ref)
+       (push (list headline nil nil current-headline current-remarks nil)
+             pearl-gtd-inbox--pending-moves))
+      ('ref
+       (push (list headline "reference.org" nil current-headline current-remarks nil)
+             pearl-gtd-inbox--pending-moves))
+      ('someday
+       (push (list headline "someday.org" nil current-headline current-remarks nil)
+             pearl-gtd-inbox--pending-moves))
+      ('action
+       (let* ((attrs (pearl-gtd-inbox--collect-action-attrs buffer))
+              (deadline (cdr (assoc 'deadline attrs))))
+         (when buffer (pop-to-buffer buffer))
+         (push (list headline "actions.org"
+                     (pearl-gtd-inbox--fields-to-props attrs)
+                     current-headline current-remarks deadline)
+               pearl-gtd-inbox--pending-moves)))))
+  ;; Apply staged changes for this entry (visual updates)
+  (pearl-gtd-inbox--apply-staged-changes buffer (cdr entry-ref) nil))
 
 (defun pearl-gtd-inbox--process ()
   "Process the inbox according to GTD clarify and organize steps.
 Use user interaction via staging buffer."
+  (setq pearl-gtd-inbox--last-context nil)  ;; ADD THIS LINE
   (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
     (setq pearl-gtd-inbox--pending-moves '())
     (when (and pearl-gtd-inbox-stage-buffer-name (get-buffer pearl-gtd-inbox-stage-buffer-name))

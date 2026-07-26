@@ -112,13 +112,19 @@ LEVEL should be a symbol: \\='area, \\='goal, \\='vision, \\='purpose, or \\='pr
              (current-value (if project
                                 (pearl-gtd-horizons--get-project-horizon project property)
                               (pearl-gtd-review--get-property-by-id id file property)))
-             (new-value (read-string (format "Horizon %s (empty to remove): "
+             (new-value (read-string (format "Horizon %s (RET=remove, e.g., %s): "
                                              (cond ((eq level 'area)    "L3 Area")
                                                    ((eq level 'goal)    "L4 Goal")
                                                    ((eq level 'vision)  "L5 Vision")
                                                    ((eq level 'purpose) "L6 Purpose")
                                                    ((eq level 'principle) "L6 Principle")
-                                                   (t (symbol-name level))))
+                                                   (t (symbol-name level)))
+                                             (cond ((eq level 'area)    "Work")
+                                                   ((eq level 'goal)    "Launch in Q2")
+                                                   ((eq level 'vision)  "Industry leader")
+                                                   ((eq level 'purpose) "Improve user experience")
+                                                   ((eq level 'principle) "Keep it simple")
+                                                   (t "value")))
                                      (or current-value ""))))
         (if project
             (progn
