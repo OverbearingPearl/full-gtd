@@ -7,7 +7,6 @@
 ;; Version: 0.1.0
 ;; Package-Requires: ((emacs "27.1") (org "9.3"))
 ;; Keywords: outlines, tools, convenience, org, todo, gtd, calendar
-;; License: MIT
 ;; SPDX-License-Identifier: MIT
 
 ;;; Commentary:
