@@ -205,10 +205,10 @@ Signals error if entry not found (internal state violation)."
 
 (defun pearl-gtd-core-read-date (prompt-type)
   "Hybrid date input: letter=quick, number=free-form, RET=skip.
-PROMPT-TYPE is 'schedule or 'deadline for display.
+PROMPT-TYPE is \\='schedule or \\='deadline for display.
 Quick keys: t (today), T (tomorrow), w (week), h (hour, schedule only).
 Returns date string or nil if skipped.
-Throws 'quit if user presses C-g."
+Signals \\='quit if user presses \\`C-g\\'."
   (catch 'done
     (let (result)
       (while (not result)

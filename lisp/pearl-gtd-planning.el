@@ -48,9 +48,10 @@
   "Default context for next actions during current planning session.")
 
 (defun pearl-gtd-planning--read-brainstorm-destination (headline)
-  "Read single key for brainstorm item destination.
-Returns one of: ?n (next), ?r (reference), ?s (someday), ?t (trash), ?c (clarify).
-Throws 'quit if user presses C-g."
+  "Read single key for brainstorm item destination for HEADLINE.
+Returns one of: ?n (next), ?r (reference), ?s (someday), ?t (trash),
+?c (clarify).
+Signals \\='quit if user presses \\`C-g\\'."
   (message "Organize '%s': [n]ext [r]ef [s]omeday [t]rash [c]larify: " headline)
   (let ((key (read-key)))
     (while (not (or (memq key '(?n ?N ?r ?R ?s ?S ?t ?T ?c ?C))

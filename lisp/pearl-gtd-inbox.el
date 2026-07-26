@@ -54,10 +54,10 @@ Possible values include \\='rename, \\='remarks, \\='context,
   "Last context used during current inbox processing session.")
 
 (defun pearl-gtd-inbox--read-destination-key (headline)
-  "Read single key for destination choice.
+  "Read single key for destination choice for HEADLINE.
 Returns one of: ?a (Next Action), ?r (Reference), ?s (Someday), ?t (Trash),
 ?x (Execute <2min), ?c (Clarify).
-Throws 'quit if user presses C-g."
+Signals \\='quit if user presses \\`C-g\\'."
   (message "Process '%s': [a] Next Action | [r] Reference | [s] Someday | [t] Trash | [x] Execute (<2min) | [c] Clarify: "
            (substring headline 0 (min 30 (length headline))))
   (let ((key (read-key)))
@@ -72,8 +72,8 @@ Throws 'quit if user presses C-g."
       (downcase key))))
 
 (defun pearl-gtd-inbox--clarify-entry (headline)
-  "Clarify headline and remarks.
-Returns (NEW-HEADLINE . REMARKS). Either can be nil."
+  "Clarify HEADLINE and remarks.
+Returns (NEW-HEADLINE . REMARKS).  Either can be nil."
   (let* ((new (read-string (format "Clarify '%s' [RET keep]: <Clear next action> (e.g., Buy organic milk from Whole Foods): "
                                    headline)))
          (new-headline (let ((trimmed (string-trim new)))
@@ -381,9 +381,10 @@ DEADLINE is the deadline date string, or nil if not set.")
 ;;;; Entry Point
 
 (defun pearl-gtd-inbox--process-entry (headline buffer entry-ref original-tags &optional default-context default-project)
-  "Process entry with new streamlined flow.
-Optional DEFAULT-CONTEXT and DEFAULT-PROJECT are passed to action attribute collection.
-ORIGINAL-TAGS is the original tags string from the staging buffer."
+  "Process HEADLINE entry with new streamlined flow.
+Optional DEFAULT-CONTEXT and DEFAULT-PROJECT are passed to action
+attribute collection.  ORIGINAL-TAGS is the original tags string from
+the staging buffer."
   (let ((current-headline headline)
         (current-remarks nil)
         (dest nil))
@@ -452,8 +453,9 @@ ORIGINAL-TAGS is the original tags string from the staging buffer."
 
 (defun pearl-gtd-inbox--process (&optional brainstorm default-context default-project)
   "Process the inbox according to GTD clarify and organize steps.
-If BRAINSTORM is non-nil, only process entries with BRAINSTORM property set to \"t\".
-DEFAULT-CONTEXT and DEFAULT-PROJECT are used when BRAINSTORM is non-nil."
+If BRAINSTORM is non-nil, only process entries with BRAINSTORM property
+set to \"t\".  DEFAULT-CONTEXT and DEFAULT-PROJECT are used when
+BRAINSTORM is non-nil."
   (setq pearl-gtd-inbox--last-context nil)
   (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
     (setq pearl-gtd-inbox--pending-moves '())

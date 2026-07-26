@@ -470,7 +470,7 @@
 (declare-function pearl-gtd-inbox--read-context "pearl-gtd-inbox")
 
 (ert-deftest pearl-gtd-test-inbox-context-completion-list-populated ()
-  "completing-read receives existing contexts from actions.org."
+  "Test that `completing-read' receives existing contexts from actions.org."
   (let ((pearl-gtd-inbox--last-context nil))
     (cl-letf (((symbol-function 'pearl-gtd-core-collect-contexts)
                (lambda (file)
@@ -542,7 +542,7 @@
       (should (string= result "2026-08-15")))))
 
 (ert-deftest pearl-gtd-test-inbox-collect-attrs-allows-skip-dates ()
-  "Verify pearl-gtd-core-read-date returning nil results in nil schedule/deadline."
+  "Verify `pearl-gtd-core-read-date' returning nil results in nil schedule/deadline."
   (cl-letf (((symbol-function 'pearl-gtd-core-read-date)
              (lambda (&rest _) nil))  ; Mock: user pressed RET to skip
             ((symbol-function 'pearl-gtd-inbox--read-context)

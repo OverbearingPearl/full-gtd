@@ -3,6 +3,10 @@
 ;; Copyright (C) 2026 OverbearingPearl
 ;; Author: OverbearingPearl <OverbearingPearl@outlook.com>
 
+;;; Commentary:
+
+;; Tests for the clarify phase of inbox processing.
+
 ;;; Code:
 
 (require 'ert)

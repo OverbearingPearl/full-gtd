@@ -17,7 +17,8 @@
 ;; Organize, Reflect, and Engage.
 ;;
 ;; Key features:
-;; - Full GTD workflow with single-key inbox processing, optional clarify, and hybrid date input (t/T/w/h shortcuts or free-form)
+;; - Full GTD workflow with single-key inbox processing, optional clarify,
+;;   and hybrid date input (t/T/w/h shortcuts or free-form)
 ;; - Natural Planning Model for project planning with forced completion
 ;; - Six Horizons of Focus (L3-L6) with hierarchy constraints
 ;; - Daily and weekly review cycles with horizon columns
