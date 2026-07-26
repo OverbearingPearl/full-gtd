@@ -221,7 +221,7 @@ Signals \\='quit if user presses \\`C-g\\'."
            ((eq key ?T) (setq result (format-time-string "%F" (time-add (current-time) (* 24 3600)))))
            ((eq key ?w) (setq result (format-time-string "%F" (time-add (current-time) (* 7 24 3600)))))
            ((and (eq prompt-type 'schedule) (eq key ?h))
-            (setq result (format-time-string "%F %H:%M" (time-add (current-time) 3600))))
+            (setq result (format-time-string "%F %R" (time-add (current-time) 3600))))
            ((eq key ?\r) (throw 'done nil))
            ((and (>= key ?0) (<= key ?9))
             (condition-case nil

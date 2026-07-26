@@ -608,7 +608,8 @@ DEADLINE is the deadline date string (nil if not set)."
             (save-buffer)))))))
 
 (defun pearl-gtd-inbox--apply-staged-changes (_buffer _row _context)
-  "Apply staged changes for entry.  No-op in current implementation."
+  "Apply staged changes for entry in BUFFER.
+No-op in current implementation."
   nil)
 
 (provide 'pearl-gtd-inbox)
