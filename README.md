@@ -132,9 +132,7 @@ This package is for you if you've read the book and want your tool to match the 
 
 ### 1. Capture & Inbox Processing
 One‑key capture (`pearl-gtd-capture`) with automatic timestamp and unique ID. 
-The inbox processing buffer (`pearl-gtd-process-inbox`) guides you through the 
-GTD clarify‑and‑organize workflow with a staging table, visual highlighting, 
-and immediate property application.
+Inbox processing (`pearl-gtd-process-inbox`) presents a **staging table** with visual highlighting, using **single‑key destination selection** (`a`ction/`r`ef/`s`omeday/`t`rash/e`x`ecute/`c`larify) with an **optional clarify step** (rename + notes) and **hybrid date input** (`a`/`t`/`w` shortcuts or free‑form). Contexts complete from existing values with **inheritance across the session**.
 
 ### 2. Natural Planning Model
 `M‑x pearl‑gtd‑planning‑start` enforces David Allen’s five‑step project thinking:
@@ -143,7 +141,7 @@ and immediate property application.
 2. **Principle** (L6) – What standards must we keep?
 3. **Vision** (L5) – What does success look like?
 4. **Brainstorming** – Dump all ideas into a temporary buffer
-5. **Organizing** – Force‑complete every brainstorm item (Next Action, Reference, Someday, or Trash)
+5. **Organizing** – Force‑complete every brainstorm item via **staging buffer** with visual highlighting and **single‑key selection** (`n`ext/`r`ef/`s`omeday/`t`rash/`c`larify). The optional **clarify** step (`c`) allows renaming and adding remarks before final classification. A **session‑wide default context** is set once and auto‑applied to all Next Actions; if omitted, context is prompted per‑item using the same completion flow as inbox processing.
 6. **Next Actions** – At least one physical next action is required
 
 The workflow cannot be skipped; it ensures every project has a clear outcome and at least one concrete next step.
@@ -172,6 +170,7 @@ Context‑filtered action views (`pearl‑gtd‑do‑view‑by‑context`), dele
 - **Property system** – All GTD metadata (context, delegated, scheduled, deadline, project, horizons) are standard Org properties.
 - **Table‑driven UI** – Staging, review, and work views are built on Org tables with text‑property navigation.
 - **Input sanitization** – Newlines, control characters, and pipe symbols are escaped to maintain Org syntax integrity.
+- **Hybrid date input** – Schedule and deadline dates accept `t` (today), `T` (tomorrow), `w` (next week), `h` (next hour, schedule only), or free‑form `YYYY-MM-DD`.
 
 ## Design Philosophy
 

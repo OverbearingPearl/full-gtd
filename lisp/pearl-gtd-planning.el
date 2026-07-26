@@ -10,6 +10,19 @@
 
 ;; This file implements the GTD Natural Planning Model.
 ;; Provides a guided workflow for project planning with forced completion.
+;;
+;; **Theoretical Boundaries**
+;; - Purpose (L6), Vision (L5) and Goal (L4) are mandatory per Natural Planning Model:
+;;   * Purpose answers "Why does this project exist?" (Allen: without sufficient
+;;     purpose, the project should not exist).
+;;   * Vision defines the 3‑5‑year strategic direction (Allen: essential for
+;;     alignment and long-term clarity).
+;;   * Goal defines the concrete outcome vision (Allen: essential for effective
+;;     project planning).
+;; - Principle (L6) and Area (L3) are optional per Horizons of Focus design:
+;;   * Principles are only required when value conflicts or constraints exist.
+;;   * Area is a system‑implementation convenience for Reviews and Horizons views,
+;;     though not strictly required by GTD for every individual project.
 
 ;;; Code:
 
@@ -19,8 +32,34 @@
 (require 'pearl-gtd-core)
 (require 'pearl-gtd-horizons)
 
+(declare-function pearl-gtd-core-read-date "pearl-gtd-core")
+(declare-function pearl-gtd-inbox--read-context "pearl-gtd-inbox")
+(declare-function pearl-gtd-inbox--read-delegate "pearl-gtd-inbox")
+(declare-function pearl-gtd-inbox--highlight-entry "pearl-gtd-inbox")
+(declare-function pearl-gtd-inbox--map-entries "pearl-gtd-inbox")
+(declare-function pearl-gtd-inbox--clarify-entry "pearl-gtd-inbox")
+(declare-function pearl-gtd-inbox--stage-change "pearl-gtd-inbox")
+
 (defvar pearl-gtd-planning--current-project nil
   "Current project name during planning session.")
+
+(defvar pearl-gtd-planning--default-context nil
+  "Default context for next actions during current planning session.")
+
+(defun pearl-gtd-planning--read-brainstorm-destination (headline)
+  "Read single key for brainstorm item destination for HEADLINE.
+Returns one of: ?n (next), ?r (reference), ?s (someday), ?t (trash),
+?c (clarify).
+Signals \\='quit if user presses \\`C-g\\'."
+  (message "Organize '%s': [n]ext [r]ef [s]omeday [t]rash [c]larify: " headline)
+  (let ((key (read-key)))
+    (while (not (or (memq key '(?n ?N ?r ?R ?s ?S ?t ?T ?c ?C))
+                    (eq key 7)))  ; C-g is character 7
+      (message "Invalid key. Organize '%s': [n]ext [r]ef [s]omeday [t]rash [c]larify: " headline)
+      (setq key (read-key)))
+    (if (eq key 7)
+        (signal 'quit nil)
+      (downcase key))))
 
 (defun pearl-gtd-planning--project-exists-p (proj-name)
   "Check if PROJ-NAME already exists in actions.org.
@@ -40,13 +79,37 @@ Handles multi-project tags (comma-separated)."
                   (throw 'found t)))))
           nil)))))
 
+(defun pearl-gtd-planning--collect-brainstorm-projects ()
+  "Collect unique project names from inbox.org entries with BRAINSTORM property.
+Returns list of unique project names from entries where BRAINSTORM is \"t\"."
+  (let ((inbox-path (expand-file-name "inbox.org" pearl-gtd-init-base-directory))
+        (projects '()))
+    (when (file-exists-p inbox-path)
+      (with-temp-buffer
+        (insert-file-contents inbox-path)
+        (org-mode)
+        (org-map-entries
+         (lambda ()
+           (when (string= (org-entry-get nil "BRAINSTORM") "t")
+             (let ((proj (org-entry-get nil "PROJECT")))
+               (when proj
+                 ;; Handle multi-project tags (comma-separated)
+                 (dolist (p (split-string proj "," t))
+                   (let ((trimmed (string-trim p)))
+                     (when (not (string= trimmed ""))
+                       (cl-pushnew trimmed projects :test #'string=))))))))
+         nil nil)))
+    (nreverse projects)))
+
 (defun pearl-gtd-planning--select-project ()
-  "Prompt user to create new project name.
+  "Prompt user to create new project name with completion from brainstorm projects.
 Return project name string after validation (non-empty and not existing)."
-  (let ((project-name ""))
+  (let ((project-name "")
+        (brainstorm-projects (pearl-gtd-planning--collect-brainstorm-projects)))
     (while (or (string= project-name "")
                (pearl-gtd-planning--project-exists-p project-name))
-      (setq project-name (read-string "New project name: "))
+      (setq project-name (completing-read "Project name: <Unique identifier> (e.g., Website-Redesign, Q1-Marketing) [TAB for brainstorm projects]: "
+                                          brainstorm-projects nil nil))
       (cond
        ((string= project-name "")
         (message "Project name cannot be empty, please re-enter.")
@@ -57,25 +120,65 @@ Return project name string after validation (non-empty and not existing)."
         (setq project-name ""))))
     project-name))
 
-(defun pearl-gtd-planning--ask-horizon (level description &optional optional)
+(defun pearl-gtd-planning--ask-horizon (level description &optional optional example-level)
   "Prompt for horizon value at LEVEL with DESCRIPTION.
 LEVEL is a number (3-7).  DESCRIPTION is a string describing the horizon.
 If OPTIONAL is non-nil, empty input is allowed.
-Return the input string (may be empty)."
-  (let ((prompt (format "%s (L%d)%s: " description level
-                        (if optional " (optional)" ""))))
-    (read-string prompt)))
+EXAMPLE-LEVEL is the level to use for examples (defaults to LEVEL).
+Return the input string (guaranteed non-empty when OPTIONAL is nil)."
+  (let* ((examples '((3 . "Career, Health, Family, Personal Development")
+                     (4 . "Launch website by March, Complete certification Q2")
+                     (5 . "Become industry leader in 3 years, Build sustainable business")
+                     (6 . "Help professionals organize work, Create positive impact")
+                     (7 . "Quality over speed, Family first, Continuous learning")))
+         (example-idx (or example-level level))
+         (example (or (cdr (assoc example-idx examples)) "value"))
+         (required-str (if optional "optional" "required"))
+         (prompt (format "%s (L%d, %s): <Description> [RET %s] (e.g., %s): "
+                         description level required-str
+                         (if optional "skip" "must fill")
+                         example)))
+    (let ((input (read-string prompt)))
+      (while (and (not optional) (string= input ""))
+        (message "This field is required, please enter a value.")
+        (sit-for 1)
+        (setq input (read-string prompt)))
+      input)))
+
+(defun pearl-gtd-planning--collect-brainstorm-items (project)
+  "Collect brainstorm item headlines for PROJECT from inbox.org.
+Returns list of headline strings."
+  (let ((inbox-path (expand-file-name "inbox.org" pearl-gtd-init-base-directory))
+        (items '()))
+    (when (file-exists-p inbox-path)
+      (with-temp-buffer
+        (insert-file-contents inbox-path)
+        (org-mode)
+        (org-map-entries
+         (lambda ()
+           (when (and (string= (org-entry-get nil "BRAINSTORM") "t")
+                      (let ((proj (org-entry-get nil "PROJECT")))
+                        (and proj (string= proj project))))
+             (push (org-get-heading t t) items)))
+         nil nil)))
+    (nreverse items)))
 
 (defun pearl-gtd-planning--ask-brainstorm (project)
   "Collect brainstorm items for PROJECT via temp buffer.
+If PROJECT already has brainstorm items in inbox, they are pre-populated.
 Return list of written headline strings.
 Signal error if user aborts."
-  (let ((buf (get-buffer-create "*Pearl-GTD Brainstorm*")))
+  (let ((buf (get-buffer-create "*Pearl-GTD Brainstorm*"))
+        (existing-items (pearl-gtd-planning--collect-brainstorm-items project)))
     (with-current-buffer buf
       (erase-buffer)
       (text-mode)
+      ;; Pre-populate with existing items if any
+      (when existing-items
+        (insert (string-join existing-items "\n"))
+        (unless (bolp) (insert "\n")))
       (setq-local header-line-format
-                  "One item per line | C-c C-c to finish | C-c C-k to abort")
+                  "One item per line (e.g., Redesign homepage) | C-c C-c finish | C-c C-k abort")
       (local-set-key (kbd "C-c C-c") #'exit-recursive-edit)
       (local-set-key (kbd "C-c C-k")
                      (lambda ()
@@ -110,126 +213,28 @@ Signal error if user aborts."
       (kill-buffer buf))))
 
 (defun pearl-gtd-planning--organize-brainstorm-items (project)
-  "Organize all brainstorm items from inbox for PROJECT.
+  "Organize all brainstorm items for PROJECT using inbox processing.
 Force completion of all items.  Return t if at least one next
 action created."
-  (let ((inbox-path (expand-file-name "inbox.org" pearl-gtd-init-base-directory))
-        (has-next-action nil)
-        (items-to-process '()))
-    ;; Collect brainstorm items for this project
-    (when (file-exists-p inbox-path)
+  (pearl-gtd-inbox--process t pearl-gtd-planning--default-context project)
+  ;; Verify at least one next action exists for this project
+  (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+        (has-next-action nil))
+    (when (file-exists-p file-path)
       (with-temp-buffer
-        (insert-file-contents inbox-path)
+        (insert-file-contents file-path)
         (org-mode)
         (org-map-entries
          (lambda ()
-           (let ((proj (org-entry-get nil "PROJECT"))
-                 (brainstorm (org-entry-get nil "BRAINSTORM"))
-                 (headline (org-get-heading t t))
-                 (id (org-entry-get nil "ID")))
-             (when (and proj (string= proj project)
-                        brainstorm (string= brainstorm "t")
-                        id)
-               (push (list headline id) items-to-process))))
-         nil nil))
-      (setq items-to-process (nreverse items-to-process)))
-
-    ;; Process each item - force completion
-    (dolist (item-info items-to-process)
-      (let* ((headline (nth 0 item-info))
-             (id (nth 1 item-info))
-             (result (pearl-gtd-planning--process-brainstorm-item headline id project)))
-        (when (eq (car result) 'next-action)
-          (setq has-next-action t))))
-
+           (when (and (pearl-gtd-core-entry-todo-p)
+                      (let ((proj (org-entry-get nil "PROJECT")))
+                        (and proj (string= proj project))))
+             (setq has-next-action t)))
+         nil nil)))
     has-next-action))
 
-(defun pearl-gtd-planning--process-brainstorm-item (headline id project)
-  "Process single brainstorm item with forced completion.
-HEADLINE is the item title.  ID is the org entry id.
-PROJECT is the project name.
-Return (DESTINATION . CONTEXT) where DESTINATION is one of:
-\\='next-action, \\='reference, \\='someday, \\='trash."
-  (let ((dest nil)
-        (context "")
-        (valid-destinations '("Next Action" "Reference" "Someday" "Trash")))
-    ;; Force valid selection
-    (while (not dest)
-      (condition-case nil
-          (let ((choice (completing-read (format "Organize '%s' to: " headline)
-                                        valid-destinations nil t)))
-            (setq dest (downcase choice))
-            (when (string= dest "next action")
-              (setq context (read-string (format "Context for '%s' (empty to skip): " headline)))))
-        (quit (message "Must complete organization! Please choose destination.")
-              (sit-for 1))))
 
-    ;; Execute the move immediately
-    (pearl-gtd-planning--execute-brainstorm-move headline id project dest context)
 
-    (cons (intern (replace-regexp-in-string " " "-" dest)) context)))
-
-(defun pearl-gtd-planning--execute-brainstorm-move (_headline id _project dest context)
-  "Execute move for brainstorm item from inbox to DEST.
-HEADLINE is the item title.  ID is the org entry id.
-PROJECT is the project name.  DEST is the destination type.
-CONTEXT is the context tag.
-Internal errors crash (no catch-all)."
-  (let ((inbox-path (expand-file-name "inbox.org" pearl-gtd-init-base-directory))
-        (target-file nil))
-    (cond
-     ((string= dest "next action")
-      (setq target-file "actions.org"))
-     ((string= dest "reference")
-      (setq target-file "reference.org"))
-     ((string= dest "someday")
-      (setq target-file "someday.org"))
-     ((string= dest "trash")
-      (setq target-file nil)))
-
-    ;; Trust boundary: inbox must exist (internal state, crash if violated)
-    (cl-assert (file-exists-p inbox-path) t "Internal: inbox must exist")
-
-    ;; Process in inbox buffer
-    (let ((inbox-buffer (find-file-noselect inbox-path)))
-      (with-current-buffer inbox-buffer
-        (org-mode)
-        (widen)
-        (goto-char (point-min))
-        ;; Trust boundary: entry must exist (internal state, crash if violated)
-        (cl-assert (re-search-forward (concat ":ID:[ \t]+" (regexp-quote id)) nil t)
-                   t "Internal: brainstorm entry must exist in inbox")
-        (org-back-to-heading)
-        ;; First make modifications (point is at heading)
-        ;; Remove brainstorm marker, no longer needed after organization
-        (org-delete-property "BRAINSTORM")
-
-        (when (string= dest "next action")
-          (org-todo "TODO")
-          (when (and context (not (string= context "")))
-            (if (string-match "^@" context)
-                (org-set-tags (list (substring context 1)))
-              (org-set-tags (list context)))))
-
-        ;; After modifications, get subtree content
-        (let ((subtree-content (buffer-substring (point) (org-end-of-subtree))))
-          ;; Trust boundary: content must exist (internal state, crash if violated)
-          (cl-assert (not (string= subtree-content ""))
-                     t "Internal: subtree content must not be empty")
-          ;; Delete from inbox
-          (org-mark-subtree)
-          (kill-region (region-beginning) (region-end))
-          (save-buffer)
-          ;; Insert to target if not trash
-          (when target-file
-            (let ((target-path (expand-file-name target-file pearl-gtd-init-base-directory)))
-              (with-current-buffer (find-file-noselect target-path)
-                (org-mode)
-                (goto-char (point-max))
-                (unless (bolp) (insert "\n"))
-                (insert subtree-content)
-                (unless (bolp) (insert "\n"))
-                (save-buffer)))))))))
 
 (defun pearl-gtd-planning--create-action (headline project context horizons)
   "Create a new action in actions.org.
@@ -360,15 +365,20 @@ HORIZONS is an alist of horizon properties."
 
   ;; 1. Define horizons
   (let* ((purpose (pearl-gtd-planning--ask-horizon 6 "Purpose" nil))
-         (principle (pearl-gtd-planning--ask-horizon 6 "Principle" t))
-         (vision (pearl-gtd-planning--ask-horizon 5 "Vision" t))
+         (principle (pearl-gtd-planning--ask-horizon 6 "Principle" t 7))
+         (vision (pearl-gtd-planning--ask-horizon 5 "Vision" nil))
          (goal (pearl-gtd-planning--ask-horizon 4 "Goal" nil))
-         (area (pearl-gtd-planning--ask-horizon 3 "Area" nil))
+         (area (pearl-gtd-planning--ask-horizon 3 "Area" t))
+         (default-context (read-string
+                          (format "Default context for '%s' [RET none]: <@location/tool> (e.g., @phone, @office): "
+                                  pearl-gtd-planning--current-project)))
          (horizons `(("L6_PURPOSE" . ,purpose)
                      ("L6_PRINCIPLE" . ,principle)
                      ("L5_VISION" . ,vision)
                      ("L4_GOAL" . ,goal)
                      ("L3_AREA" . ,area))))
+    ;; Store default context for organize phase
+    (setq pearl-gtd-planning--default-context default-context)
 
     ;; 2. Brainstorm - write to inbox
     (pearl-gtd-planning--ask-brainstorm pearl-gtd-planning--current-project)
@@ -380,9 +390,9 @@ HORIZONS is an alist of horizon properties."
       (unless has-next-action
         (let ((forced-action ""))
           (while (string= forced-action "")
-            (setq forced-action (read-string "Must create at least one next action: ")))
-          (let ((forced-context (read-string "Context (empty to skip): ")))
-            (pearl-gtd-planning--create-action forced-action pearl-gtd-planning--current-project forced-context horizons))))
+            (setq forced-action (read-string "Required next action: <Specific physical action> (e.g., Call designer for quote): ")))
+          ;; Use default-context directly, no need to ask again
+          (pearl-gtd-planning--create-action forced-action pearl-gtd-planning--current-project default-context horizons)))
 
       ;; 5. Apply horizons to all project actions
       (pearl-gtd-planning--apply-horizons-to-project pearl-gtd-planning--current-project horizons)

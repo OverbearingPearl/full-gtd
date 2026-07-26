@@ -23,25 +23,20 @@
   :mock (((symbol-function 'read-string)
           (lambda (prompt &rest _)
             (cond
-             ((string-match "Enter item" prompt) "Buy birthday gift")
-             ((string-match "Rename" prompt) "Buy gift for mom")
-             ((string-match "Add remarks" prompt) "Check Amazon first")
-             ((string-match "Context" prompt) "@errands")
-             ((string-match "Schedule" prompt) "")
-             ((string-match "Delegate" prompt) "")
-             ((string-match "Project" prompt) "")
+             ((string-match "Capture to inbox" prompt) "Buy birthday gift")
              (t ""))))
-         ((symbol-function 'y-or-n-p)
-          (lambda (prompt &rest _)
-            (cond
-             ((string-match "2 minutes" prompt) nil)
-             ((string-match "actionable" prompt) t)
-             (t nil))))
-         ((symbol-function 'completing-read)
-          (lambda (prompt _collection &rest _)
-            (cond
-             ((string-match "Assign" prompt) "reference")
-             (t "")))))
+         ((symbol-function 'pearl-gtd-inbox--read-destination-key)
+          (let ((calls 0))
+            (lambda (_headline)
+              (setq calls (1+ calls))
+              ;; First item: clarify then action
+              (if (= calls 1) ?c ?a))))
+         ((symbol-function 'pearl-gtd-inbox--clarify-entry)
+          (lambda (_headline) (cons "Buy gift for mom" "Check Amazon first")))
+         ((symbol-function 'pearl-gtd-inbox--collect-action-attrs)
+          (lambda (&optional _staging-buffer _default-context _default-project)
+            '((context . "@errands") (schedule . "") (deadline . "")
+              (delegate . "") (project . "")))))
   :body (progn
           (pearl-gtd-capture)
           (pearl-gtd-process-inbox))
@@ -66,13 +61,13 @@
   "User interrupts processing midway."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Task to interrupt\n"))
-  :mock (((symbol-function 'read-string) (lambda (&rest _) (signal 'quit nil)))
-         ((symbol-function 'y-or-n-p) (lambda (&rest _) t)))
+  :mock (((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) (signal 'quit nil)))
+         ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil))))
   :body (progn
          (condition-case err
              (pearl-gtd-process-inbox)
            (quit (setq pearl-gtd-test-caught-error err))))
-:asserts (progn
+  :asserts (progn
            (should (pearl-gtd-test-file-contains-p
                     (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
                     "* Task to interrupt"))
@@ -83,26 +78,16 @@
   "User processes entries with mixed destinations."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Action task\n* Reference task\n"))
-  :mock (((symbol-function 'y-or-n-p)
-        (lambda (prompt &rest _)
-          (cond
-           ((string-match "Action task.*actionable" prompt) t)
-           ((string-match "Action task.*2 minutes" prompt) nil)
-           ((string-match "Reference task.*actionable" prompt) nil)
-           (t t))))
-       ((symbol-function 'read-string)
-        (lambda (prompt &rest _)
-          (cond
-           ((string-match "Rename" prompt) "")
-           ((string-match "Add remarks" prompt) "")
-           ((string-match "Context.*Action task" prompt) "@office")
-           ((string-match "Assign.*Reference" prompt) "reference")
-           (t ""))))
-       ((symbol-function 'completing-read)
-        (lambda (prompt _collection &rest _)
-          (cond
-           ((string-match "Assign" prompt) "reference")
-           (t "")))))
+  :mock (((symbol-function 'pearl-gtd-inbox--read-destination-key)
+          (let ((calls 0))
+            (lambda (_headline)
+              (setq calls (1+ calls))
+              (if (= calls 1) ?a ?r))))  ; First action, then reference
+         ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil)))
+         ((symbol-function 'pearl-gtd-inbox--collect-action-attrs)
+          (lambda (&optional _staging-buffer _default-context _default-project)
+            '((context . "@office") (schedule . "") (deadline . "")
+              (delegate . "") (project . "")))))
   :body (pearl-gtd-process-inbox)
   :asserts (progn
              (should (pearl-gtd-test-file-contains-p
@@ -113,7 +98,6 @@
                       "* Reference task")))
   :teardown nil)
 
-
 (pearl-gtd-test-define-story pearl-gtd-workflows-user-captures-and-processes-two-items-test
   "User captures two items then processes both."
   :setup (pearl-gtd-init-initialize)
@@ -123,18 +107,11 @@
             (lambda (prompt &rest _)
               (setq count (1+ count))
               (cond
-               ((and (= count 1) (string-match "Enter item" prompt)) "First capture")
-               ((and (= count 2) (string-match "Enter item" prompt)) "Second capture")
-               ((string-match "Rename" prompt) "")
-               ((string-match "Add remarks" prompt) "")
-               ((string-match "Assign" prompt) "reference")
+               ((and (= count 1) (string-match "Capture to inbox" prompt)) "First capture")
+               ((and (= count 2) (string-match "Capture to inbox" prompt)) "Second capture")
                (t "")))))
-         ((symbol-function 'y-or-n-p) (lambda (&rest _) nil))
-         ((symbol-function 'completing-read)
-          (lambda (prompt _collection &rest _)
-            (cond
-             ((string-match "Assign" prompt) "reference")
-             (t "")))))
+         ((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) ?r))
+         ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil))))
   :body (progn
           (pearl-gtd-capture)
           (pearl-gtd-capture)
@@ -156,25 +133,14 @@
   :mock (((symbol-function 'read-string)
           (lambda (prompt &rest _)
             (cond
-             ((string-match "Enter item" prompt) "Test task")
-             ((string-match "Rename" prompt) "")
-             ((string-match "Add remarks" prompt) "")
-             ((string-match "Context" prompt) "@office")
-             ((string-match "Schedule" prompt) "")
-             ((string-match "Delegate" prompt) "")
-             ((string-match "Project" prompt) "")
+             ((string-match "Capture to inbox" prompt) "Test task")
              (t ""))))
-         ((symbol-function 'y-or-n-p)
-          (lambda (prompt &rest _)
-            (cond
-             ((string-match "2 minutes" prompt) nil)
-             ((string-match "actionable" prompt) t)
-             (t nil))))
-         ((symbol-function 'completing-read)
-          (lambda (prompt _collection &rest _)
-            (cond
-             ((string-match "Assign" prompt) "actions")
-             (t "")))))
+         ((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) ?a))
+         ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil)))
+         ((symbol-function 'pearl-gtd-inbox--collect-action-attrs)
+          (lambda (&optional _staging-buffer _default-context _default-project)
+            '((context . "@office") (schedule . "") (deadline . "")
+              (delegate . "") (project . "")))))
   :body (progn
           (pearl-gtd-capture)
           (pearl-gtd-process-inbox))
@@ -194,11 +160,11 @@
 (pearl-gtd-test-define-story pearl-gtd-workflows-user-sees-duplicate-titles-get-different-ids-test
   "Same title in different files gets different IDs."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* TODO Buy milk\n:PROPERTIES:\n:ID: existing-id-1\n:END:\n"))
+  :files (("actions.org" "* TODO Existing task\n:PROPERTIES:\n:ID: existing-id-1\n:END:\n"))
   :mock (((symbol-function 'read-string)
           (lambda (prompt &rest _)
             (cond
-             ((string-match "Enter item" prompt) "Buy milk")
+             ((string-match "Capture to inbox" prompt) "Buy milk")
              (t "")))))
   :body (pearl-gtd-capture)
   :asserts (progn
@@ -224,26 +190,15 @@
             (lambda (prompt &rest _)
               (setq count (1+ count))
               (cond
-               ((and (= count 1) (string-match "Enter item" prompt)) "Task")
-               ((and (= count 2) (string-match "Enter item" prompt)) "Task")
-               ((string-match "Rename" prompt) "")
-               ((string-match "Add remarks" prompt) "")
-               ((string-match "Context" prompt) "@office")
-               ((string-match "Schedule" prompt) "")
-               ((string-match "Delegate" prompt) "")
-               ((string-match "Project" prompt) "")
+               ((and (= count 1) (string-match "Capture to inbox" prompt)) "Task")
+               ((and (= count 2) (string-match "Capture to inbox" prompt)) "Task")
                (t "")))))
-         ((symbol-function 'y-or-n-p)
-          (lambda (prompt &rest _)
-            (cond
-             ((string-match "2 minutes" prompt) nil)
-             ((string-match "actionable" prompt) t)
-             (t nil))))
-         ((symbol-function 'completing-read)
-          (lambda (prompt _collection &rest _)
-            (cond
-             ((string-match "Assign" prompt) "actions")
-             (t "")))))
+         ((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) ?a))
+         ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil)))
+         ((symbol-function 'pearl-gtd-inbox--collect-action-attrs)
+          (lambda (&optional _staging-buffer _default-context _default-project)
+            '((context . "@office") (schedule . "") (deadline . "")
+              (delegate . "") (project . "")))))
   :body (progn
           (pearl-gtd-capture)
           (pearl-gtd-capture)
@@ -287,9 +242,8 @@
                                (mapconcat (lambda (i)
                                            (format "* Task %d\n:PROPERTIES:\n:ID: perf-%d\n:END:\n" i i))
                                          (number-sequence 2 100) ""))))
-  :mock (((symbol-function 'y-or-n-p) (lambda (&rest _) nil))
-         ((symbol-function 'read-string) (lambda (&rest _) ""))
-         ((symbol-function 'completing-read) (lambda (&rest _) "trash")))
+  :mock (((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) ?t))
+         ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil))))
   :body (let ((start (float-time)))
           (pearl-gtd-process-inbox)
           (should (< (- (float-time) start) 10.0)))

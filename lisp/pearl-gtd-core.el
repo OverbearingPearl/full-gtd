@@ -202,6 +202,41 @@ Signals error if entry not found (internal state violation)."
        (org-back-to-heading)
        ,@body)))
 
+(defun pearl-gtd-core-read-date (prompt-type)
+  "Hybrid date input: letter=quick, number=free-form, RET=skip.
+PROMPT-TYPE is \\='schedule or \\='deadline for display.
+Quick keys: t (today), T (tomorrow), w (week), h (hour, schedule only).
+Returns date string or nil if skipped.
+Signals \\='quit if user presses \\`C-g\\'."
+  (catch 'done
+    (let (result)
+      (while (not result)
+        (if (eq prompt-type 'schedule)
+            (message "[Schedule] Quick: [t]oday, [T]omorrow, [w]eek, [h]our | Custom: <YYYY-MM-DD> or <YYYY-MM-DD HH:MM> | [RET] Skip: ")
+          (message "[Deadline] Quick: [t]oday, [T]omorrow, [w]eek | Custom: <YYYY-MM-DD> | [RET] Skip: "))
+        (let ((key (read-key)))
+          (cond
+           ((eq key ?t) (setq result (format-time-string "%F")))
+           ((eq key ?T) (setq result (format-time-string "%F" (time-add (current-time) (* 24 3600)))))
+           ((eq key ?w) (setq result (format-time-string "%F" (time-add (current-time) (* 7 24 3600)))))
+           ((and (eq prompt-type 'schedule) (eq key ?h))
+            (setq result (format-time-string "%F %R" (time-add (current-time) 3600))))
+           ((eq key ?\r) (throw 'done nil))
+           ((and (>= key ?0) (<= key ?9))
+            (condition-case nil
+                (let ((full (minibuffer-with-setup-hook
+                                (lambda () (select-window (minibuffer-window)))
+                              (read-string (format "%s (e.g., 2023-12-25 or 2023-12-25 14:30): " prompt-type)
+                                           (string key) nil nil))))
+                  (if (string-match-p "^[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\(?: [0-2][0-9]:[0-5][0-9]\\)?$" full)
+                      (setq result full)
+                    (message "Invalid date, retry") (sit-for 0.5)))
+              (quit (signal 'quit nil))))
+           ((eq key 7)
+            (signal 'quit nil))
+           (t (message "Invalid key") (sit-for 0.5)))))
+      result)))
+
 (provide 'pearl-gtd-core)
 
 ;;; pearl-gtd-core.el ends here
