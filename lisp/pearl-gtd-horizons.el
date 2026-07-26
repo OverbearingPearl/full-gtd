@@ -346,7 +346,9 @@ and L3 to a list of projects and no-project actions."
                   (todo-state (nth 2 action)))
               (when head
                 (insert (make-string (+ 2 depth) ?*) " "
-                        (if (string= todo-state "TODO") "TODO " "DONE ")
+                        (if (and todo-state (member todo-state org-not-done-keywords))
+                            (concat todo-state " ")
+                          (if todo-state (concat todo-state " ") ""))
                         head "\n")
                 ;; Add text properties for jumping
                 (save-excursion
@@ -361,7 +363,9 @@ and L3 to a list of projects and no-project actions."
               (todo-state (nth 2 action)))
           (when head
             (insert (make-string (1+ depth) ?*) " "
-                    (if (string= todo-state "TODO") "TODO " "DONE ")
+                    (if (and todo-state (member todo-state org-not-done-keywords))
+                        (concat todo-state " ")
+                      (if todo-state (concat todo-state " ") ""))
                     head "\n")
             (save-excursion
               (forward-line -1)
