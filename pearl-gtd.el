@@ -120,7 +120,7 @@ Create the base directory and necessary files."
   ;; Load test files automatically from the lisp directory
   (let ((test-dir (expand-file-name "lisp" pearl-gtd-directory)))
     ;; First load the test infrastructure
-    (let ((test-file (expand-file-name "pearl-gtd-validate.el" test-dir)))
+    (let ((test-file (expand-file-name "pearl-gtd-test.el" test-dir)))
       (when (file-exists-p test-file)
         (load-file test-file)))
     (dolist (file (directory-files test-dir nil "pearl-gtd-test-.*\\.el$"))

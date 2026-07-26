@@ -15,9 +15,9 @@
 
 (require 'ert)
 (require 'pearl-gtd)
-(require 'pearl-gtd-validate)
+(require 'pearl-gtd-test)
 
-(pearl-gtd-validate-define-story pearl-gtd-test-do-user-views-next-actions-by-context
+(pearl-gtd-test-define-story pearl-gtd-test-do-user-views-next-actions-by-context
   "User views all next actions filtered by @office context."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task 1 :office:\n:PROPERTIES:\n:ID: task-1-id\n:END:\n* TODO Task 2 :home:\n:PROPERTIES:\n:ID: task-2-id\n:END:\n* TODO Task 3 :office:\n:PROPERTIES:\n:ID: task-3-id\n:END:\n"))
@@ -37,7 +37,7 @@
                (should (search-forward "@office" nil t))))
   :teardown (kill-buffer "*Pearl-GTD: @office*"))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-do-user-marks-task-complete
+(pearl-gtd-test-define-story pearl-gtd-test-do-user-marks-task-complete
   "User marks a task as completed."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Complete this task\n:PROPERTIES:\n:ID: complete-task-id\n:END:\n"))
@@ -50,15 +50,15 @@
            (beginning-of-line)
            (pearl-gtd-do--complete-task-at-point)))
   :asserts (progn
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "* DONE Complete this task"))
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "CLOSED:")))
   :teardown (kill-buffer "*Pearl-GTD: All Actions*"))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-do-user-views-all-next-actions
+(pearl-gtd-test-define-story pearl-gtd-test-do-user-views-all-next-actions
   "User views all next actions regardless of context."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task A :office:\n:PROPERTIES:\n:ID: task-a-id\n:END:\n* TODO Task B :home:\n:PROPERTIES:\n:ID: task-b-id\n:END:\n* TODO Task C :errands:\n:PROPERTIES:\n:ID: task-c-id\n:END:\n"))
@@ -76,7 +76,7 @@
                (should (search-forward "@errands" nil t))))
   :teardown (kill-buffer "*Pearl-GTD: All Actions*"))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-do-user-views-delegated-tasks
+(pearl-gtd-test-define-story pearl-gtd-test-do-user-views-delegated-tasks
   "User views all delegated tasks."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task X :office:\n:PROPERTIES:\n:DELEGATED: John\n:ID: task-x-id\n:END:\n"))
@@ -91,7 +91,7 @@
                (should (search-forward "@office" nil t))))
   :teardown (kill-buffer "*Pearl-GTD: Delegated*"))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-do-user-views-delegated-excludes-done
+(pearl-gtd-test-define-story pearl-gtd-test-do-user-views-delegated-excludes-done
   "Delegated view excludes tasks without TODO state."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Active task\n:PROPERTIES:\n:DELEGATED: John\n:ID: active-task-id\n:END:\n* DONE Completed task\n:PROPERTIES:\n:DELEGATED: Jane\n:ID: completed-task-id\n:END:\n* No state task\n:PROPERTIES:\n:DELEGATED: Bob\n:ID: no-state-task-id\n:END:\n"))
@@ -104,7 +104,7 @@
                (should-not (search-forward "No state task" nil t))))
   :teardown (kill-buffer "*Pearl-GTD: Delegated*"))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-do-user-views-scheduled-for-today
+(pearl-gtd-test-define-story pearl-gtd-test-do-user-views-scheduled-for-today
   "User views actions scheduled for today."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" (format "* TODO Task today\nSCHEDULED: <%s>\n:PROPERTIES:\n:ID: today-task-id\n:END:\n" (format-time-string "%F %a"))))
@@ -116,7 +116,7 @@
                (should (search-forward "Task today" nil t))))
   :teardown (kill-buffer "*Pearl-GTD: Today*"))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-do-user-completes-task-in-view-updates-original
+(pearl-gtd-test-define-story pearl-gtd-test-do-user-completes-task-in-view-updates-original
   "User completes task in view buffer, original file is updated."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task to complete :office:\n:PROPERTIES:\n:ID: test-id-2\n:END:\n"))
@@ -131,22 +131,22 @@
   :asserts (progn
              (let* ((file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
                     (pattern1 "* DONE Task to complete")
-                    (result1 (pearl-gtd-validate-file-contains-p file pattern1))
+                    (result1 (pearl-gtd-test-file-contains-p file pattern1))
                     (found1 (car result1)))
                (should found1))
              (let* ((file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
                     (pattern2 ":ID:")
-                    (result2 (pearl-gtd-validate-file-contains-p file pattern2))
+                    (result2 (pearl-gtd-test-file-contains-p file pattern2))
                     (found2 (car result2)))
                (should found2))
              (let* ((file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
                     (pattern3 "* TODO Task to complete")
-                    (result3 (pearl-gtd-validate-file-contains-p file pattern3))
+                    (result3 (pearl-gtd-test-file-contains-p file pattern3))
                     (found3 (car result3)))
                (should-not found3)))
   :teardown (kill-buffer "*Pearl-GTD: All Actions*"))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-do-user-views-project-in-actions-table
+(pearl-gtd-test-define-story pearl-gtd-test-do-user-views-project-in-actions-table
   "User views actions and sees associated project."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task with project\n:PROPERTIES:\n:PROJECT: Website Redesign\n:END:\n"))
@@ -158,7 +158,7 @@
                (should (search-forward "Website Redesign" nil t))))
   :teardown (kill-buffer "*Pearl-GTD: All Actions*"))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-do-user-views-created-timestamp-in-actions-table
+(pearl-gtd-test-define-story pearl-gtd-test-do-user-views-created-timestamp-in-actions-table
   "User views actions and sees created timestamp."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task with timestamp\n:PROPERTIES:\n:CREATED: 2026-01-15 10:30:00\n:END:\n"))
@@ -170,7 +170,7 @@
                (should (search-forward "2026-01-15" nil t))))
   :teardown (kill-buffer "*Pearl-GTD: All Actions*"))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-do-user-views-project-and-created-in-delegated-view
+(pearl-gtd-test-define-story pearl-gtd-test-do-user-views-project-and-created-in-delegated-view
   "User views delegated tasks with project and created columns."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Delegated task\n:PROPERTIES:\n:DELEGATED: Bob\n:PROJECT: Marketing Campaign\n:CREATED: 2026-01-10\n:END:\n"))
@@ -183,7 +183,7 @@
                (should (search-forward "2026-01-10" nil t))))
   :teardown (kill-buffer "*Pearl-GTD: Delegated*"))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-do-user-views-project-and-created-in-today-view
+(pearl-gtd-test-define-story pearl-gtd-test-do-user-views-project-and-created-in-today-view
   "User views today's tasks with project and created columns."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" (format "* TODO Today task\nSCHEDULED: <%s>\n:PROPERTIES:\n:PROJECT: Current Sprint\n:CREATED: 2026-01-20\n:END:\n"
@@ -197,7 +197,7 @@
                (should (search-forward "2026-01-20" nil t))))
   :teardown (kill-buffer "*Pearl-GTD: Today*"))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-do-user-jumps-to-task-from-view
+(pearl-gtd-test-define-story pearl-gtd-test-do-user-jumps-to-task-from-view
   "User presses RET in view buffer to jump to task in actions.org."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Jump target task\n:PROPERTIES:\n:ID: jump-test-id\n:END:\n"))
@@ -221,7 +221,7 @@
                     (buf (get-file-buffer actions-file-teardown)))
                (when buf (kill-buffer buf)))))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-do-user-jumps-to-first-duplicate-task
+(pearl-gtd-test-define-story pearl-gtd-test-do-user-jumps-to-first-duplicate-task
   "User jumps to task when duplicate titles exist in actions.org."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Duplicate task\n:PROPERTIES:\n:ID: first-id\n:END:\n* TODO Another task\n:PROPERTIES:\n:ID: second-id\n:END:\n* TODO Duplicate task\n:PROPERTIES:\n:ID: third-id\n:END:\n"))
@@ -248,7 +248,7 @@
                      (buf (get-file-buffer actions-file)))
                (when buf (kill-buffer buf)))))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-do-refresh-after-external-change
+(pearl-gtd-test-define-story pearl-gtd-test-do-refresh-after-external-change
   "User refreshes view after external file changes."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Original\n:PROPERTIES:\n:ID: refresh-1\n:END:\n"))
@@ -263,9 +263,9 @@
              (goto-char (point-min))
              (should (search-forward "Modified" nil t))
              (should-not (search-forward "Original" nil t)))
-  :teardown (pearl-gtd-validate-cleanup-buffers '("*Pearl-GTD: All Actions*")))
+  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD: All Actions*")))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-do-view-empty-actions-file
+(pearl-gtd-test-define-story pearl-gtd-test-do-view-empty-actions-file
   "User views empty actions file without errors."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" ""))
@@ -278,11 +278,11 @@
              (should (get-buffer "*Pearl-GTD: All Actions*"))
              (should (get-buffer "*Pearl-GTD Weekly Review*"))
              (should (get-buffer "*Pearl-GTD Daily Review*")))
-  :teardown (pearl-gtd-validate-cleanup-buffers '("*Pearl-GTD: All Actions*"
+  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD: All Actions*"
                                               "*Pearl-GTD Weekly Review*"
                                               "*Pearl-GTD Daily Review*")))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-do-view-file-deleted-while-open
+(pearl-gtd-test-define-story pearl-gtd-test-do-view-file-deleted-while-open
   "User handles gracefully when file is deleted while viewing."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: del-1\n:END:\n"))
@@ -295,9 +295,9 @@
                 (pearl-gtd-do--refresh-view)
               (error nil))))
   :asserts (should (buffer-live-p (get-buffer "*Pearl-GTD: All Actions*")))
-  :teardown (pearl-gtd-validate-cleanup-buffers '("*Pearl-GTD: All Actions*")))
+  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD: All Actions*")))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-do-view-entry-deleted-while-navigating
+(pearl-gtd-test-define-story pearl-gtd-test-do-view-entry-deleted-while-navigating
   "User handles gracefully when entry is deleted while navigating."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task 1\n:PROPERTIES:\n:ID: nav-1\n:END:\n* TODO Task 2\n:PROPERTIES:\n:ID: nav-2\n:END:\n"))
@@ -318,7 +318,7 @@
               (error nil))))
   :asserts t
   :teardown (progn
-              (pearl-gtd-validate-cleanup-buffers '("*Pearl-GTD: All Actions*"))
+              (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD: All Actions*"))
               (let ((buf (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory))))
                 (when buf (kill-buffer buf)))))
 

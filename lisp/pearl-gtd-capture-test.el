@@ -15,9 +15,9 @@
 
 (require 'ert)
 (require 'pearl-gtd)
-(require 'pearl-gtd-validate)
+(require 'pearl-gtd-test)
 
-(pearl-gtd-validate-define-story pearl-gtd-test-capture-user-captures-simple-idea-to-inbox
+(pearl-gtd-test-define-story pearl-gtd-test-capture-user-captures-simple-idea-to-inbox
   "User runs M-x pearl-gtd-capture and inputs 'Buy milk'."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -28,11 +28,11 @@
   :body (pearl-gtd-capture)
   :asserts (progn
              (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
-               (should (pearl-gtd-validate-file-contains-p-bool inbox-file "* Buy milk"))
-               (should (pearl-gtd-validate-file-contains-p-bool inbox-file ":ID:"))))
+               (should (pearl-gtd-test-file-contains-p-bool inbox-file "* Buy milk"))
+               (should (pearl-gtd-test-file-contains-p-bool inbox-file ":ID:"))))
   :teardown nil)
 
-(pearl-gtd-validate-define-story pearl-gtd-test-capture-user-captures-idea-with-timestamp
+(pearl-gtd-test-define-story pearl-gtd-test-capture-user-captures-idea-with-timestamp
   "Captured items automatically get CREATED timestamp."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -43,11 +43,11 @@
   :body (pearl-gtd-capture)
   :asserts (progn
              (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
-               (should (pearl-gtd-validate-file-contains-p-bool inbox-file ":CREATED:"))
-               (should (pearl-gtd-validate-file-contains-p-bool inbox-file ":ID:"))))
+               (should (pearl-gtd-test-file-contains-p-bool inbox-file ":CREATED:"))
+               (should (pearl-gtd-test-file-contains-p-bool inbox-file ":ID:"))))
   :teardown nil)
 
-(pearl-gtd-validate-define-story pearl-gtd-test-capture-user-captures-empty-string-creates-nothing
+(pearl-gtd-test-define-story pearl-gtd-test-capture-user-captures-empty-string-creates-nothing
   "User attempts to capture an empty string."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -57,11 +57,11 @@
                                             (t "")))))
   :body (pearl-gtd-capture)
   :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
-             (let ((result (pearl-gtd-validate-file-contains-p inbox-file "* ")))
+             (let ((result (pearl-gtd-test-file-contains-p inbox-file "* ")))
                (should-not (car result))))
   :teardown nil)
 
-(pearl-gtd-validate-define-story pearl-gtd-test-capture-user-captures-special-chars
+(pearl-gtd-test-define-story pearl-gtd-test-capture-user-captures-special-chars
   "User captures task with special characters."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -71,10 +71,10 @@
                                             (t "")))))
   :body (pearl-gtd-capture)
   :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
-             (should (pearl-gtd-validate-file-contains-p-bool inbox-file "* Fix \\[urgent\\] bug")))
+             (should (pearl-gtd-test-file-contains-p-bool inbox-file "* Fix \\[urgent\\] bug")))
   :teardown nil)
 
-(pearl-gtd-validate-define-story pearl-gtd-test-capture-user-captures-very-long-title
+(pearl-gtd-test-define-story pearl-gtd-test-capture-user-captures-very-long-title
   "User captures a very long title."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -84,10 +84,10 @@
                                             (t "")))))
   :body (pearl-gtd-capture)
   :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
-             (should (pearl-gtd-validate-file-contains-p-bool inbox-file "* This is a very long title that exceeds normal length for testing purposes")))
+             (should (pearl-gtd-test-file-contains-p-bool inbox-file "* This is a very long title that exceeds normal length for testing purposes")))
   :teardown nil)
 
-(pearl-gtd-validate-define-story pearl-gtd-test-capture-user-cancels-capture-when-inbox-has-content
+(pearl-gtd-test-define-story pearl-gtd-test-capture-user-cancels-capture-when-inbox-has-content
   "User cancels capture when inbox already has content, inbox unchanged."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Existing task\n"))
@@ -97,13 +97,13 @@
                                             (t "")))))
   :body (pearl-gtd-capture)
   :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
-             (let ((result1 (pearl-gtd-validate-file-contains-p inbox-file "* Existing task")))
+             (let ((result1 (pearl-gtd-test-file-contains-p inbox-file "* Existing task")))
                (should (car result1)))
-             (let ((result2 (pearl-gtd-validate-file-contains-p inbox-file "* Existing task\n* ")))
+             (let ((result2 (pearl-gtd-test-file-contains-p inbox-file "* Existing task\n* ")))
                (should-not (car result2))))
   :teardown nil)
 
-(pearl-gtd-validate-define-story pearl-gtd-test-capture-user-captures-two-items-sequentially
+(pearl-gtd-test-define-story pearl-gtd-test-capture-user-captures-two-items-sequentially
   "User captures two items in sequence, both appear in inbox."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -119,8 +119,8 @@
           (pearl-gtd-capture)
           (pearl-gtd-capture))
   :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
-             (should (pearl-gtd-validate-file-contains-p-bool inbox-file "* First task"))
-             (should (pearl-gtd-validate-file-contains-p-bool inbox-file "* Second task"))
+             (should (pearl-gtd-test-file-contains-p-bool inbox-file "* First task"))
+             (should (pearl-gtd-test-file-contains-p-bool inbox-file "* Second task"))
              (with-temp-buffer
                (insert-file-contents inbox-file)
                (goto-char (point-min))
@@ -128,7 +128,7 @@
                (should (search-forward ":ID:" nil t))))
   :teardown nil)
 
-(pearl-gtd-validate-define-story pearl-gtd-test-capture-user-captures-duplicate-titles
+(pearl-gtd-test-define-story pearl-gtd-test-capture-user-captures-duplicate-titles
   "User captures two items with same title, both get unique IDs."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -144,7 +144,7 @@
           (pearl-gtd-capture)
           (pearl-gtd-capture))
   :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
-             (should (pearl-gtd-validate-file-contains-p-bool inbox-file "* Buy milk"))
+             (should (pearl-gtd-test-file-contains-p-bool inbox-file "* Buy milk"))
              (with-temp-buffer
                (insert-file-contents inbox-file)
                (goto-char (point-min))
@@ -152,7 +152,7 @@
                (should (search-forward ":ID:" nil t))))
   :teardown nil)
 
-(pearl-gtd-validate-define-story pearl-gtd-test-capture-user-appends-to-existing-inbox
+(pearl-gtd-test-define-story pearl-gtd-test-capture-user-appends-to-existing-inbox
   "User captures to non-empty inbox, new task appended after existing."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* First existing task\n"))
@@ -162,11 +162,11 @@
                                             (t "")))))
   :body (pearl-gtd-capture)
   :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
-             (should (pearl-gtd-validate-file-contains-p-bool inbox-file "* First existing task"))
-             (should (pearl-gtd-validate-file-contains-p-bool inbox-file "* New captured task")))
+             (should (pearl-gtd-test-file-contains-p-bool inbox-file "* First existing task"))
+             (should (pearl-gtd-test-file-contains-p-bool inbox-file "* New captured task")))
   :teardown nil)
 
-(pearl-gtd-validate-define-story pearl-gtd-test-capture-user-preserves-two-existing-tasks
+(pearl-gtd-test-define-story pearl-gtd-test-capture-user-preserves-two-existing-tasks
   "Capture preserves two existing tasks in inbox."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Task one\n* Task two\n"))
@@ -176,12 +176,12 @@
                                             (t "")))))
   :body (pearl-gtd-capture)
   :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
-             (should (pearl-gtd-validate-file-contains-p-bool inbox-file "* Task one"))
-             (should (pearl-gtd-validate-file-contains-p-bool inbox-file "* Task two"))
-             (should (pearl-gtd-validate-file-contains-p-bool inbox-file "* Third task")))
+             (should (pearl-gtd-test-file-contains-p-bool inbox-file "* Task one"))
+             (should (pearl-gtd-test-file-contains-p-bool inbox-file "* Task two"))
+             (should (pearl-gtd-test-file-contains-p-bool inbox-file "* Third task")))
   :teardown nil)
 
-(pearl-gtd-validate-define-story pearl-gtd-test-capture-user-captures-mixed-special-chars-in-batch
+(pearl-gtd-test-define-story pearl-gtd-test-capture-user-captures-mixed-special-chars-in-batch
   "User captures two items with special characters."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -197,11 +197,11 @@
           (pearl-gtd-capture)
           (pearl-gtd-capture))
   :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
-             (should (pearl-gtd-validate-file-contains-p-bool inbox-file "* Task \\[urgent\\] with brackets"))
-             (should (pearl-gtd-validate-file-contains-p-bool inbox-file "* Task \\* with asterisk")))
+             (should (pearl-gtd-test-file-contains-p-bool inbox-file "* Task \\[urgent\\] with brackets"))
+             (should (pearl-gtd-test-file-contains-p-bool inbox-file "* Task \\* with asterisk")))
   :teardown nil)
 
-(pearl-gtd-validate-define-story pearl-gtd-test-capture-user-quits-during-input
+(pearl-gtd-test-define-story pearl-gtd-test-capture-user-quits-during-input
   "User presses C-g during capture input, nothing is saved."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -212,13 +212,13 @@
   :body (progn
          (condition-case err
              (pearl-gtd-capture)
-           (quit (setq pearl-gtd-validate-caught-error err))))
+           (quit (setq pearl-gtd-test-caught-error err))))
 :asserts (progn
-           (should (pearl-gtd-validate-inbox-empty-p pearl-gtd-init-base-directory))
-           (should (eq (car pearl-gtd-validate-caught-error) 'quit)))
+           (should (pearl-gtd-test-inbox-empty-p pearl-gtd-init-base-directory))
+           (should (eq (car pearl-gtd-test-caught-error) 'quit)))
   :teardown nil)
 
-(pearl-gtd-validate-define-story pearl-gtd-test-capture-sanitizes-newline-in-input
+(pearl-gtd-test-define-story pearl-gtd-test-capture-sanitizes-newline-in-input
   "Newline in capture input must be sanitized to prevent entry injection."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -238,7 +238,7 @@
                (should (search-forward "Line1" nil t))))
   :teardown nil)
 
-(pearl-gtd-validate-define-story pearl-gtd-test-capture-strips-control-characters
+(pearl-gtd-test-define-story pearl-gtd-test-capture-strips-control-characters
   "Control characters in input must be stripped or escaped."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -251,7 +251,7 @@
                (should-not (search-forward "\x01" nil t))))
   :teardown nil)
 
-(pearl-gtd-validate-define-story pearl-gtd-test-capture-user-captures-very-long-headline
+(pearl-gtd-test-define-story pearl-gtd-test-capture-user-captures-very-long-headline
   "Headlines with 1000+ characters must be handled."
   :setup (pearl-gtd-init-initialize)
   :files nil

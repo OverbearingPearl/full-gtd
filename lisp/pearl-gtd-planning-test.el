@@ -17,7 +17,7 @@
 
 (require 'ert)
 (require 'pearl-gtd)
-(require 'pearl-gtd-validate)
+(require 'pearl-gtd-test)
 
 ;; Helper to simulate sequential inputs for read-string
 (defun pearl-gtd-test-planning--make-read-string-mock (inputs)
@@ -38,7 +38,7 @@
             (funcall next prompt)
           next)))))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-planning-user-completes-full-workflow
+(pearl-gtd-test-define-story pearl-gtd-test-planning-user-completes-full-workflow
   "User completes natural planning with all fields filled, creating project with horizons and actions."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -70,49 +70,49 @@
   :body (pearl-gtd-planning-start)
   :asserts (progn
              ;; Verify project actions created in actions.org
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "Redesign homepage"))
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "Optimize mobile view"))
              ;; Verify TODO state
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "TODO Redesign homepage"))
              ;; Verify Project property
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       ":PROJECT: NewWebsite"))
              ;; Verify Horizon properties applied (L3-L6)
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       ":L6_PURPOSE: Improve user experience"))
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       ":L6_PRINCIPLE: Keep it simple"))
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       ":L5_VISION: Industry leader"))
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       ":L4_GOAL: Launch in Q2"))
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       ":L3_AREA: Product Development"))
              ;; Verify BOTH actions use default context :design: (no longer per-item)
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       ":design:"))
              ;; Verify BRAINSTORM property is removed after organizing
-             (should-not (car (pearl-gtd-validate-file-contains-p
+             (should-not (car (pearl-gtd-test-file-contains-p
                                (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                                ":BRAINSTORM:")))
              ;; Verify inbox is clean
              (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
                (when (file-exists-p inbox-file)
-                 (should-not (car (pearl-gtd-validate-file-contains-p inbox-file "Redesign homepage")))
-                 (should-not (car (pearl-gtd-validate-file-contains-p inbox-file "Optimize mobile view")))))
+                 (should-not (car (pearl-gtd-test-file-contains-p inbox-file "Redesign homepage")))
+                 (should-not (car (pearl-gtd-test-file-contains-p inbox-file "Optimize mobile view")))))
              ;; Verify summary buffer exists
              (let ((summary-buffer (get-buffer "*Pearl-GTD Planning Summary*")))
                (should summary-buffer)
@@ -127,7 +127,7 @@
               (when (get-buffer "*Pearl-GTD Planning Summary*")
                 (kill-buffer "*Pearl-GTD Planning Summary*"))))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-planning-user-skips-optional-fields
+(pearl-gtd-test-define-story pearl-gtd-test-planning-user-skips-optional-fields
   "Principle and Area can be empty, others are mandatory."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -156,25 +156,25 @@
   :body (pearl-gtd-planning-start)
   :asserts (progn
              ;; Verify L6_PURPOSE exists
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       ":L6_PURPOSE: Just do it"))
              ;; Verify L6_PRINCIPLE does NOT exist
-             (let ((result (pearl-gtd-validate-file-contains-p
+             (let ((result (pearl-gtd-test-file-contains-p
                             (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                             ":L6_PRINCIPLE:")))
                (should-not (car result)))
              ;; Verify L3_AREA does NOT exist
-             (let ((result (pearl-gtd-validate-file-contains-p
+             (let ((result (pearl-gtd-test-file-contains-p
                             (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                             ":L3_AREA:")))
                (should-not (car result)))
              ;; Verify L5_VISION exists
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       ":L5_VISION: A vision"))
              ;; But Goal must exist
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       ":L4_GOAL: Ship it")))
   :teardown (progn
@@ -184,7 +184,7 @@
               (when (get-buffer "*Pearl-GTD Brainstorm Organize*")
                 (kill-buffer "*Pearl-GTD Brainstorm Organize*"))))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-planning-user-forced-to-organize-all-items
+(pearl-gtd-test-define-story pearl-gtd-test-planning-user-forced-to-organize-all-items
   "User must organize all brainstorm items before proceeding, no skipping allowed."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -216,32 +216,32 @@
   :body (pearl-gtd-planning-start)
   :asserts (progn
              ;; Verify Idea 1 went to reference.org
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "reference.org" pearl-gtd-init-base-directory)
                       "Idea 1"))
              ;; Verify Idea 2 went to someday.org
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "someday.org" pearl-gtd-init-base-directory)
                       "Idea 2"))
              ;; Verify Idea 3 went to actions.org as TODO with default context
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "TODO Idea 3"))
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       ":office:"))
              ;; Verify no items remain in inbox
              (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
                (when (file-exists-p inbox-file)
-                 (should-not (car (pearl-gtd-validate-file-contains-p inbox-file "Idea 1")))
-                 (should-not (car (pearl-gtd-validate-file-contains-p inbox-file "Idea 2")))
-                 (should-not (car (pearl-gtd-validate-file-contains-p inbox-file "Idea 3"))))))
+                 (should-not (car (pearl-gtd-test-file-contains-p inbox-file "Idea 1")))
+                 (should-not (car (pearl-gtd-test-file-contains-p inbox-file "Idea 2")))
+                 (should-not (car (pearl-gtd-test-file-contains-p inbox-file "Idea 3"))))))
   :teardown (progn
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
               (when (get-buffer "*Pearl-GTD Planning Summary*")
                 (kill-buffer "*Pearl-GTD Planning Summary*"))))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-planning-user-forced-to-create-next-action
+(pearl-gtd-test-define-story pearl-gtd-test-planning-user-forced-to-create-next-action
   "If all brainstorm items go to Trash/Ref/Someday, user is forced to create one Next Action."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -268,23 +268,23 @@
   :body (pearl-gtd-planning-start)
   :asserts (progn
              ;; Verify the forced action exists
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "Forced next action"))
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "TODO Forced next action"))
              ;; Verify discarded ideas are NOT in actions.org
-             (let ((result1 (pearl-gtd-validate-file-contains-p
+             (let ((result1 (pearl-gtd-test-file-contains-p
                              (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                              "Bad idea 1"))
-                   (result2 (pearl-gtd-validate-file-contains-p
+                   (result2 (pearl-gtd-test-file-contains-p
                              (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                              "Bad idea 2")))
                (should-not (car result1))
                (should-not (car result2)))
              ;; But they should be handled (one in reference, one deleted)
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "reference.org" pearl-gtd-init-base-directory)
                       "Bad idea 2")))
   :teardown (progn
@@ -293,13 +293,13 @@
                 (kill-buffer "*Pearl-GTD Planning Summary*"))))
 
 
-(pearl-gtd-validate-define-story pearl-gtd-test-planning-user-provides-required-fields
+(pearl-gtd-test-define-story pearl-gtd-test-planning-user-provides-required-fields
   "Purpose, Vision, and Goal cannot be empty; code loops until valid input."
   :setup (pearl-gtd-init-initialize)
   :files nil
   :mock (((symbol-function 'completing-read)
           (lambda (_prompt &optional _collection _predicate _require-match _initial-input _hist _def _inherit-input-method)
-            "ValidateTest"))             ; New project name
+            "TestTest"))             ; New project name
          ((symbol-function 'read-string)
           ;; Simulate user trying to skip required fields, then providing them
           (let ((calls 0)
@@ -329,17 +329,17 @@
   :body (pearl-gtd-planning-start)
   :asserts (progn
              ;; Verify the valid values were eventually accepted and written
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       ":L6_PURPOSE: Valid Purpose"))
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       ":L5_VISION: Valid Vision"))
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       ":L4_GOAL: Valid Goal"))
              ;; Verify L3_AREA does NOT exist
-             (let ((result (pearl-gtd-validate-file-contains-p
+             (let ((result (pearl-gtd-test-file-contains-p
                             (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                             ":L3_AREA:")))
                (should-not (car result))))
@@ -348,7 +348,7 @@
               (when (get-buffer "*Pearl-GTD Planning Summary*")
                 (kill-buffer "*Pearl-GTD Planning Summary*"))))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-planning-user-trashes-item-removes-completely
+(pearl-gtd-test-define-story pearl-gtd-test-planning-user-trashes-item-removes-completely
   "Trash destination removes item completely without creating file entry."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -370,22 +370,22 @@
   :body (pearl-gtd-planning-start)
   :asserts (progn
              ;; Verify NOT in actions.org
-             (let ((result (pearl-gtd-validate-file-contains-p
+             (let ((result (pearl-gtd-test-file-contains-p
                             (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                             "Trash me")))
                (should-not (car result)))
              ;; Verify NOT in reference.org
-             (let ((result (pearl-gtd-validate-file-contains-p
+             (let ((result (pearl-gtd-test-file-contains-p
                             (expand-file-name "reference.org" pearl-gtd-init-base-directory)
                             "Trash me")))
                (should-not (car result)))
              ;; Verify NOT in someday.org
-             (let ((result (pearl-gtd-validate-file-contains-p
+             (let ((result (pearl-gtd-test-file-contains-p
                             (expand-file-name "someday.org" pearl-gtd-init-base-directory)
                             "Trash me")))
                (should-not (car result)))
              ;; But forced next action should exist (since trashed item doesn't count)
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "TODO")))
   :teardown (progn
@@ -394,7 +394,7 @@
                 (kill-buffer "*Pearl-GTD Planning Summary*"))))
 
 
-(pearl-gtd-validate-define-story pearl-gtd-test-planning-user-skips-context-for-action
+(pearl-gtd-test-define-story pearl-gtd-test-planning-user-skips-context-for-action
   "Context can be skipped for Next Action (empty string)."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -418,7 +418,7 @@
                 (insert "Action without context\n"))))))
   :body (pearl-gtd-planning-start)
   :asserts (progn
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "Action without context"))
              ;; Should not have empty context tag or malformed tags
@@ -436,7 +436,7 @@
               (when (get-buffer "*Pearl-GTD Brainstorm Organize*")
                 (kill-buffer "*Pearl-GTD Brainstorm Organize*"))))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-planning-user-rejected-for-duplicate-project
+(pearl-gtd-test-define-story pearl-gtd-test-planning-user-rejected-for-duplicate-project
   "Planning must reject existing project names and force new name."
   :setup (progn
            (pearl-gtd-init-initialize)
@@ -471,7 +471,7 @@
   :body (pearl-gtd-planning-start)
   :asserts (progn
              ;; Verify new project was created
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       ":PROJECT: NewUniqueProject"))
              ;; Verify ExistingProject still exists
@@ -485,7 +485,7 @@
               (when (get-buffer "*Pearl-GTD Planning Summary*")
                 (kill-buffer "*Pearl-GTD Planning Summary*"))))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-planning-user-creates-project-without-brainstorm
+(pearl-gtd-test-define-story pearl-gtd-test-planning-user-creates-project-without-brainstorm
   "Natural planning with no brainstorm items should still create project."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -526,7 +526,7 @@
               (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))
               (when (get-buffer "*Pearl-GTD: Inbox*") (kill-buffer "*Pearl-GTD: Inbox*"))))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-planning-user-trashes-all-items-forces-action
+(pearl-gtd-test-define-story pearl-gtd-test-planning-user-trashes-all-items-forces-action
   "All brainstorm items trashed should force creation of one action."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -549,20 +549,20 @@
                 (insert "Trash item 2\n"))))))
   :body (pearl-gtd-planning-start)
   :asserts (progn
-             (should-not (pearl-gtd-validate-file-contains-p-bool
+             (should-not (pearl-gtd-test-file-contains-p-bool
                           (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                           "Trash item 1"))
-             (should-not (pearl-gtd-validate-file-contains-p-bool
+             (should-not (pearl-gtd-test-file-contains-p-bool
                           (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                           "Trash item 2"))
-             (should (pearl-gtd-validate-file-contains-p-bool
+             (should (pearl-gtd-test-file-contains-p-bool
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "Forced Action")))
   :teardown (progn
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
               (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-planning-user-quits-during-organize
+(pearl-gtd-test-define-story pearl-gtd-test-planning-user-quits-during-organize
   "User quits (C-g) during organize phase, staging buffer should be cleaned."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -581,13 +581,13 @@
                 (insert "Idea to organize\n"))))))
   :body (condition-case nil
             (pearl-gtd-planning-start)
-          (quit (setq pearl-gtd-validate-caught-error 'quit)))
+          (quit (setq pearl-gtd-test-caught-error 'quit)))
   :asserts (progn
-             (should (eq pearl-gtd-validate-caught-error 'quit))
+             (should (eq pearl-gtd-test-caught-error 'quit))
              ;; Verify staging buffer is killed
              (should-not (get-buffer "*Pearl-GTD Brainstorm Organize*"))
              ;; Verify brainstorm item remains in inbox (not partially processed)
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
                       "Idea to organize")))
   :teardown (progn
@@ -595,7 +595,7 @@
               (when (get-buffer "*Pearl-GTD Brainstorm*") (kill-buffer "*Pearl-GTD Brainstorm*"))
               (when (get-buffer "*Pearl-GTD Brainstorm Organize*") (kill-buffer "*Pearl-GTD Brainstorm Organize*"))))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-planning-user-clarifies-brainstorm-item
+(pearl-gtd-test-define-story pearl-gtd-test-planning-user-clarifies-brainstorm-item
   "User clarifies a brainstorm item before organizing to next action."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -623,13 +623,13 @@
                 (insert "Raw idea\n"))))))
   :body (pearl-gtd-planning-start)
   :asserts (progn
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "* TODO Clarified idea"))
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "Important notes"))
-             (should-not (pearl-gtd-validate-file-contains-p-bool
+             (should-not (pearl-gtd-test-file-contains-p-bool
                           (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                           "Raw idea")))
   :teardown (progn
@@ -638,7 +638,7 @@
               (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))
               (when (get-buffer "*Pearl-GTD Brainstorm Organize*") (kill-buffer "*Pearl-GTD Brainstorm Organize*"))))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-planning-isolates-other-project-brainstorms
+(pearl-gtd-test-define-story pearl-gtd-test-planning-isolates-other-project-brainstorms
   "Brainstorm items from other projects remain untouched during organize."
   :setup (progn
            (pearl-gtd-init-initialize)
@@ -665,15 +665,15 @@
   :body (pearl-gtd-planning-start)
   :asserts (progn
              ;; Verify new project's item was processed (moved to actions)
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "New project idea"))
              ;; Verify old project's item remains in inbox
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
                       "Old brainstorm idea"))
              ;; Verify old project's item still has BRAINSTORM property
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
                       ":BRAINSTORM: t")))
   :teardown (progn
@@ -681,7 +681,7 @@
               (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))
               (when (get-buffer "*Pearl-GTD Brainstorm Organize*") (kill-buffer "*Pearl-GTD Brainstorm Organize*"))))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-planning-collects-brainstorm-projects-from-inbox
+(pearl-gtd-test-define-story pearl-gtd-test-planning-collects-brainstorm-projects-from-inbox
   "Collects unique project names from inbox entries with BRAINSTORM property."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Brainstorm item 1\n:PROPERTIES:\n:ID: bs-1\n:BRAINSTORM: t\n:PROJECT: AlphaProject\n:END:\n* Brainstorm item 2\n:PROPERTIES:\n:ID: bs-2\n:BRAINSTORM: t\n:PROJECT: BetaProject\n:END:\n* Not brainstorm\n:PROPERTIES:\n:ID: bs-3\n:PROJECT: GammaProject\n:END:\n"))
@@ -693,7 +693,7 @@
   :asserts t
   :teardown nil)
 
-(pearl-gtd-validate-define-story pearl-gtd-test-planning-brainstorm-projects-deduplicated
+(pearl-gtd-test-define-story pearl-gtd-test-planning-brainstorm-projects-deduplicated
   "Brainstorm projects with same name are deduplicated in completion list."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Item 1\n:PROPERTIES:\n:ID: bs-1\n:BRAINSTORM: t\n:PROJECT: SharedProject\n:END:\n* Item 2\n:PROPERTIES:\n:ID: bs-2\n:BRAINSTORM: t\n:PROJECT: SharedProject\n:END:\n* Item 3\n:PROPERTIES:\n:ID: bs-3\n:BRAINSTORM: t\n:PROJECT: MultiA,MultiB\n:END:\n"))
@@ -706,7 +706,7 @@
   :asserts t
   :teardown nil)
 
-(pearl-gtd-validate-define-story pearl-gtd-test-planning-user-selects-brainstorm-project-from-completion
+(pearl-gtd-test-define-story pearl-gtd-test-planning-user-selects-brainstorm-project-from-completion
   "User selects an existing brainstorm project from completion list, existing items pre-populated."
   :setup (progn
            (pearl-gtd-init-initialize)
@@ -747,17 +747,17 @@
   :body (pearl-gtd-planning-start)
   :asserts (progn
              ;; Verify all items (existing + new) were processed to actions
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "Existing idea 1"))
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "Existing idea 2"))
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "New project idea"))
              ;; Verify project association
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       ":PROJECT: ExistingBrainstormProject")))
   :teardown (progn
@@ -766,7 +766,7 @@
               (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))
               (when (get-buffer "*Pearl-GTD: Inbox*") (kill-buffer "*Pearl-GTD: Inbox*"))))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-planning-new-project-no-preload
+(pearl-gtd-test-define-story pearl-gtd-test-planning-new-project-no-preload
   "New project without existing brainstorm items starts with empty buffer."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -790,7 +790,7 @@
                 (insert "Fresh idea\n"))))))
   :body (pearl-gtd-planning-start)
   :asserts (progn
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "Fresh idea")))
   :teardown (progn
@@ -798,7 +798,7 @@
               (when (get-buffer "*Pearl-GTD Brainstorm*") (kill-buffer "*Pearl-GTD Brainstorm*"))
               (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-planning-empty-inbox-no-brainstorm-projects
+(pearl-gtd-test-define-story pearl-gtd-test-planning-empty-inbox-no-brainstorm-projects
   "Empty inbox returns empty list of brainstorm projects."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" ""))
