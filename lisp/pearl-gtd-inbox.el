@@ -463,14 +463,17 @@ DEFAULT-CONTEXT and DEFAULT-PROJECT are used when BRAINSTORM is non-nil."
         (let* ((attrs (file-attributes inbox-file))
                (file-size (file-attribute-size attrs)))
           (if (> file-size 0)
-              (let ((staging-buffer (pearl-gtd-inbox--create-staging-buffer
-                                     inbox-file
-                                     " *inbox-processing*"
-                                     (when brainstorm
-                                       (lambda ()
-                                         (and (string= (org-entry-get nil "BRAINSTORM") "t")
-                                              (or (null default-project)
-                                                  (string= (org-entry-get nil "PROJECT") default-project))))))))
+              (let* ((buffer-name (if brainstorm
+                                      (format " *brainstorm-organize: %s*" (or default-project "unknown"))
+                                    " *inbox-processing*"))
+                     (staging-buffer (pearl-gtd-inbox--create-staging-buffer
+                                      inbox-file
+                                      buffer-name
+                                      (when brainstorm
+                                        (lambda ()
+                                          (and (string= (org-entry-get nil "BRAINSTORM") "t")
+                                               (or (null default-project)
+                                                   (string= (org-entry-get nil "PROJECT") default-project))))))))
                 (setq pearl-gtd-inbox-stage-buffer-name (buffer-name staging-buffer))
                 (pop-to-buffer staging-buffer)
                 (condition-case _err
