@@ -46,8 +46,9 @@
   :mock (((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) ?a))
          ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil)))
          ((symbol-function 'pearl-gtd-inbox--collect-action-attrs)
-          (lambda (&optional _) '((context . "@office") (schedule . "") (deadline . "")
-                       (delegate . "") (project . "")))))
+          (lambda (&optional _staging-buffer _default-context _default-project)
+            '((context . "@office") (schedule . "") (deadline . "")
+              (delegate . "") (project . "")))))
   :body (pearl-gtd-process-inbox)
   :asserts (progn
            (should (pearl-gtd-validate-file-contains-p
@@ -66,8 +67,9 @@
          ((symbol-function 'pearl-gtd-inbox--clarify-entry)
           (lambda (_headline) (cons "Prepare quarterly report" nil)))
          ((symbol-function 'pearl-gtd-inbox--collect-action-attrs)
-          (lambda (&optional _) '((context . "@office") (schedule . "2026-04-15") (deadline . "")
-                       (delegate . "") (project . "")))))
+          (lambda (&optional _staging-buffer _default-context _default-project)
+            '((context . "@office") (schedule . "2026-04-15") (deadline . "")
+              (delegate . "") (project . "")))))
   :body (pearl-gtd-process-inbox)
   :asserts (progn
            (should (pearl-gtd-validate-file-contains-p
@@ -167,8 +169,9 @@
   :mock (((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) ?a))
          ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil)))
          ((symbol-function 'pearl-gtd-inbox--collect-action-attrs)
-          (lambda (&optional _) '((context . "") (schedule . "") (deadline . "")
-                       (delegate . "") (project . "Alpha,Beta")))))
+          (lambda (&optional _staging-buffer _default-context _default-project)
+            '((context . "") (schedule . "") (deadline . "")
+              (delegate . "") (project . "Alpha,Beta")))))
   :body (pearl-gtd-process-inbox)
   :asserts (progn
            (should (pearl-gtd-validate-file-contains-p
@@ -193,8 +196,9 @@
   :mock (((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) ?a))
          ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil)))
          ((symbol-function 'pearl-gtd-inbox--collect-action-attrs)
-          (lambda (&optional _) '((context . "") (schedule . "2026-04-15") (deadline . "2026-04-15")
-                       (delegate . "") (project . "")))))
+          (lambda (&optional _staging-buffer _default-context _default-project)
+            '((context . "") (schedule . "2026-04-15") (deadline . "2026-04-15")
+              (delegate . "") (project . "")))))
   :body (pearl-gtd-process-inbox)
   :asserts (progn
              (should (pearl-gtd-validate-file-contains-p
@@ -213,8 +217,9 @@
   :mock (((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) ?a))
          ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil)))
          ((symbol-function 'pearl-gtd-inbox--collect-action-attrs)
-          (lambda (&optional _) '((context . "") (schedule . "2026-04-15") (deadline . "2026-04-20")
-                       (delegate . "") (project . "")))))
+          (lambda (&optional _staging-buffer _default-context _default-project)
+            '((context . "") (schedule . "2026-04-15") (deadline . "2026-04-20")
+              (delegate . "") (project . "")))))
   :body (pearl-gtd-process-inbox)
   :asserts (progn
              (should (pearl-gtd-validate-file-contains-p
@@ -233,8 +238,9 @@
   :mock (((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) ?a))
          ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil)))
          ((symbol-function 'pearl-gtd-inbox--collect-action-attrs)
-          (lambda (&optional _) '((context . "") (schedule . "") (deadline . "2026-04-25")
-                       (delegate . "") (project . "")))))
+          (lambda (&optional _staging-buffer _default-context _default-project)
+            '((context . "") (schedule . "") (deadline . "2026-04-25")
+              (delegate . "") (project . "")))))
   :body (pearl-gtd-process-inbox)
   :asserts (progn
              (should (pearl-gtd-validate-file-lacks-p
@@ -253,8 +259,9 @@
   :mock (((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) ?a))
          ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil)))
          ((symbol-function 'pearl-gtd-inbox--collect-action-attrs)
-          (lambda (&optional _) '((context . "") (schedule . nil) (deadline . nil)
-                       (delegate . "") (project . "")))))
+          (lambda (&optional _staging-buffer _default-context _default-project)
+            '((context . "") (schedule . nil) (deadline . nil)
+              (delegate . "") (project . "")))))
   :body (pearl-gtd-process-inbox)
   :asserts (progn
              (should (pearl-gtd-validate-file-lacks-p
@@ -290,8 +297,9 @@
   :mock (((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) ?a))
          ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil)))
          ((symbol-function 'pearl-gtd-inbox--collect-action-attrs)
-          (lambda (&optional _) '((context . "") (schedule . "2026-06-01") (deadline . "")
-                       (delegate . "") (project . "")))))
+          (lambda (&optional _staging-buffer _default-context _default-project)
+            '((context . "") (schedule . "2026-06-01") (deadline . "")
+              (delegate . "") (project . "")))))
   :body (pearl-gtd-process-inbox)
   :asserts (progn
              (should (pearl-gtd-validate-file-contains-p
@@ -309,8 +317,9 @@
   :mock (((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) ?a))
          ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil)))
          ((symbol-function 'pearl-gtd-inbox--collect-action-attrs)
-          (lambda (&optional _) '((context . "") (schedule . "2024-02-29") (deadline . "")
-                       (delegate . "") (project . "")))))
+          (lambda (&optional _staging-buffer _default-context _default-project)
+            '((context . "") (schedule . "2024-02-29") (deadline . "")
+              (delegate . "") (project . "")))))
   :body (pearl-gtd-process-inbox)
   :asserts (pearl-gtd-validate-file-contains-p
             (expand-file-name "actions.org" pearl-gtd-init-base-directory)
@@ -324,8 +333,9 @@
   :mock (((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) ?a))
          ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil)))
          ((symbol-function 'pearl-gtd-inbox--collect-action-attrs)
-          (lambda (&optional _) '((context . "") (schedule . "9999-12-31") (deadline . "")
-                       (delegate . "") (project . "")))))
+          (lambda (&optional _staging-buffer _default-context _default-project)
+            '((context . "") (schedule . "9999-12-31") (deadline . "")
+              (delegate . "") (project . "")))))
   :body (pearl-gtd-process-inbox)
   :asserts (pearl-gtd-validate-file-contains-p
             (expand-file-name "actions.org" pearl-gtd-init-base-directory)
@@ -356,8 +366,9 @@
   :mock (((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) ?a))
          ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil)))
          ((symbol-function 'pearl-gtd-inbox--collect-action-attrs)
-          (lambda (&optional _) '((context . "") (schedule . "") (deadline . "")
-                       (delegate . "") (project . "Company, Inc.")))))
+          (lambda (&optional _staging-buffer _default-context _default-project)
+            '((context . "") (schedule . "") (deadline . "")
+              (delegate . "") (project . "Company, Inc.")))))
   :body (pearl-gtd-process-inbox)
   :asserts (progn
              (should (pearl-gtd-validate-file-contains-p
@@ -377,8 +388,9 @@
   :mock (((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) ?a))
          ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil)))
          ((symbol-function 'pearl-gtd-inbox--collect-action-attrs)
-          (lambda (&optional _) '((context . "") (schedule . "") (deadline . "")
-                       (delegate . "") (project . "   ")))))  ; Whitespace only
+          (lambda (&optional _staging-buffer _default-context _default-project)
+            '((context . "") (schedule . "") (deadline . "")
+              (delegate . "") (project . "   ")))))  ; Whitespace only
   :body (pearl-gtd-process-inbox)
   :asserts (let ((content (with-temp-buffer
                             (insert-file-contents
@@ -395,11 +407,12 @@
   :mock (((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) ?a))
          ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil)))
          ((symbol-function 'pearl-gtd-inbox--collect-action-attrs)
-          (lambda (&optional _) `((context . "")
-                       (schedule . "")
-                       (deadline . "")
-                       (delegate . "")
-                       (project . ,(make-string 500 ?A))))))
+          (lambda (&optional _staging-buffer _default-context _default-project)
+            `((context . "")
+              (schedule . "")
+              (deadline . "")
+              (delegate . "")
+              (project . ,(make-string 500 ?A))))))
   :body (pearl-gtd-process-inbox)
   :asserts (progn
              (should (pearl-gtd-validate-file-contains-p
@@ -421,7 +434,8 @@
          ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil)))
          ;; Simulate user pressing C-g during date collection
          ((symbol-function 'pearl-gtd-inbox--collect-action-attrs)
-          (lambda (&optional _) (signal 'quit nil))))
+          (lambda (&optional _staging-buffer _default-context _default-project)
+            (signal 'quit nil))))
   :body (condition-case nil
             (pearl-gtd-process-inbox)
           (quit (setq pearl-gtd-validate-caught-error 'quit)))

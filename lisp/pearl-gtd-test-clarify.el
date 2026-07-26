@@ -59,8 +59,9 @@
          ((symbol-function 'pearl-gtd-inbox--clarify-entry)
           (lambda (_headline) (cons "Clear action" "Important notes")))
          ((symbol-function 'pearl-gtd-inbox--collect-action-attrs)
-          (lambda (&optional _) '((context . "@office") (schedule . "") (deadline . "")
-                       (delegate . "") (project . "")))))
+          (lambda (&optional _staging-buffer _default-context _default-project)
+            '((context . "@office") (schedule . "") (deadline . "")
+              (delegate . "") (project . "")))))
   :body (pearl-gtd-process-inbox)
   :asserts (progn
              (should (pearl-gtd-validate-file-contains-p

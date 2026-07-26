@@ -43,11 +43,13 @@
              "Product Development"      ; Area (L3) - required
              "@design"                  ; NEW: Default context for all next actions
              )))
-         ((symbol-function 'pearl-gtd-planning--read-brainstorm-destination)
+         ((symbol-function 'pearl-gtd-inbox--read-destination-key)
           (let ((calls 0))
             (lambda (_headline)
               (setq calls (1+ calls))
-              (if (= calls 1) ?n ?n))))  ; Both items -> Next Action
+              (if (= calls 1) ?a ?a))))  ; Both items -> Action
+         ((symbol-function 'pearl-gtd-core-read-date) (lambda (&rest _) ""))
+         ((symbol-function 'pearl-gtd-inbox--read-delegate) (lambda () ""))
          ((symbol-function 'recursive-edit)
           (lambda ()
             (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
@@ -128,8 +130,11 @@
              "Engineering"     ; Area
              ""                ; Default context (empty)
              )))
-         ((symbol-function 'pearl-gtd-planning--read-brainstorm-destination)
-          (lambda (_) ?n))  ; Single item -> Next Action
+         ((symbol-function 'pearl-gtd-inbox--read-destination-key)
+          (lambda (_) ?a))  ; Single item -> Action
+         ((symbol-function 'pearl-gtd-core-read-date) (lambda (&rest _) ""))
+         ((symbol-function 'pearl-gtd-inbox--read-delegate) (lambda () ""))
+         ((symbol-function 'pearl-gtd-inbox--read-context) (lambda () ""))
          ((symbol-function 'recursive-edit)
           (lambda ()
             (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
@@ -161,7 +166,9 @@
   :teardown (progn
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
               (when (get-buffer "*Pearl-GTD Planning Summary*")
-                (kill-buffer "*Pearl-GTD Planning Summary*"))))
+                (kill-buffer "*Pearl-GTD Planning Summary*"))
+              (when (get-buffer "*Pearl-GTD Brainstorm Organize*")
+                (kill-buffer "*Pearl-GTD Brainstorm Organize*"))))
 
 (pearl-gtd-validate-define-story pearl-gtd-test-planning-user-forced-to-organize-all-items
   "User must organize all brainstorm items before proceeding, no skipping allowed."
@@ -173,14 +180,16 @@
              "Purpose" "" "" "Goal" "Area"  ; Horizons
              "@office"                      ; Default context
              )))
-         ((symbol-function 'pearl-gtd-planning--read-brainstorm-destination)
+         ((symbol-function 'pearl-gtd-inbox--read-destination-key)
           (let ((calls 0))
-            (lambda (headline)
+            (lambda (_headline)
               (setq calls (1+ calls))
-              ;; First: Reference, Second: Someday, Third: Next Action
+              ;; First: Reference, Second: Someday, Third: Action
               (cond ((= calls 1) ?r)
                     ((= calls 2) ?s)
-                    (t ?n)))))
+                    (t ?a)))))
+         ((symbol-function 'pearl-gtd-core-read-date) (lambda (&rest _) ""))
+         ((symbol-function 'pearl-gtd-inbox--read-delegate) (lambda () ""))
          ((symbol-function 'recursive-edit)
           (lambda ()
             (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
@@ -227,9 +236,9 @@
              ""                             ; Default context (empty)
              "Forced next action"           ; Mandatory action created at end
              )))
-         ((symbol-function 'pearl-gtd-planning--read-brainstorm-destination)
+         ((symbol-function 'pearl-gtd-inbox--read-destination-key)
           (let ((calls 0))
-            (lambda (_)
+            (lambda (_headline)
               (setq calls (1+ calls))
               (if (= calls 1) ?t ?r))))  ; First trash, then reference
          ((symbol-function 'recursive-edit)
@@ -288,8 +297,10 @@
               (let ((next (nth calls inputs)))
                 (setq calls (1+ calls))
                 next))))
-         ((symbol-function 'pearl-gtd-planning--read-brainstorm-destination)
-          (lambda (_) ?n))
+         ((symbol-function 'pearl-gtd-inbox--read-destination-key)
+          (lambda (_) ?a))
+         ((symbol-function 'pearl-gtd-core-read-date) (lambda (&rest _) ""))
+         ((symbol-function 'pearl-gtd-inbox--read-delegate) (lambda () ""))
          ((symbol-function 'recursive-edit)
           (lambda ()
             (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
@@ -322,7 +333,7 @@
              "P" "" "" "G" "A"  ; Horizons
              ""                 ; Default context (empty)
              )))
-         ((symbol-function 'pearl-gtd-planning--read-brainstorm-destination)
+         ((symbol-function 'pearl-gtd-inbox--read-destination-key)
           (lambda (_) ?t))  ; Trash
          ((symbol-function 'recursive-edit)
           (lambda ()
@@ -366,8 +377,11 @@
              "P" "" "" "G" "A"  ; Horizons
              ""                 ; Default context (empty)
              )))
-         ((symbol-function 'pearl-gtd-planning--read-brainstorm-destination)
-          (lambda (_) ?n))  ; Next Action
+         ((symbol-function 'pearl-gtd-inbox--read-destination-key)
+          (lambda (_) ?a))  ; Action
+         ((symbol-function 'pearl-gtd-core-read-date) (lambda (&rest _) ""))
+         ((symbol-function 'pearl-gtd-inbox--read-delegate) (lambda () ""))
+         ((symbol-function 'pearl-gtd-inbox--read-context) (lambda () ""))
          ((symbol-function 'recursive-edit)
           (lambda ()
             (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
@@ -389,7 +403,9 @@
   :teardown (progn
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
               (when (get-buffer "*Pearl-GTD Planning Summary*")
-                (kill-buffer "*Pearl-GTD Planning Summary*"))))
+                (kill-buffer "*Pearl-GTD Planning Summary*"))
+              (when (get-buffer "*Pearl-GTD Brainstorm Organize*")
+                (kill-buffer "*Pearl-GTD Brainstorm Organize*"))))
 
 (pearl-gtd-validate-define-story pearl-gtd-test-planning-user-rejected-for-duplicate-project
   "Planning must reject existing project names and force new name."
@@ -412,8 +428,10 @@
               (let ((val (nth index inputs)))
                 (setq index (1+ index))
                 val))))
-         ((symbol-function 'pearl-gtd-planning--read-brainstorm-destination)
-          (lambda (_) ?n))
+         ((symbol-function 'pearl-gtd-inbox--read-destination-key)
+          (lambda (_) ?a))
+         ((symbol-function 'pearl-gtd-core-read-date) (lambda (&rest _) ""))
+         ((symbol-function 'pearl-gtd-inbox--read-delegate) (lambda () ""))
          ((symbol-function 'recursive-edit)
           (lambda ()
             (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
@@ -449,13 +467,13 @@
                           "Test Area"        ; L3
                           "@office"          ; Default context
                           "Forced Action"    ; forced next action (no brainstorm items)
-                         ))
+                          ))
                 (idx 0))
             (lambda (_prompt &optional _initial _history)
               (let ((val (nth idx inputs)))
                 (setq idx (1+ idx))
                 val))))
-         ((symbol-function 'pearl-gtd-planning--read-brainstorm-destination)
+         ((symbol-function 'pearl-gtd-inbox--read-destination-key)
           (lambda (_) (error "Should not be called - no brainstorm items")))
          ((symbol-function 'recursive-edit)
           (lambda ()
@@ -481,9 +499,9 @@
           (pearl-gtd-test-planning--make-read-string-mock
            ;; Added "Work" as L3_AREA value so "Forced Action" becomes the 7th value for action title
            '("AllTrashed" "P" "" "G" "A" "Work" "@ctx" "Forced Action")))
-         ((symbol-function 'pearl-gtd-planning--read-brainstorm-destination)
+         ((symbol-function 'pearl-gtd-inbox--read-destination-key)
           (let ((calls 0))
-            (lambda (_)
+            (lambda (_headline)
               (setq calls (1+ calls))
               ?t)))  ; Always trash
          ((symbol-function 'recursive-edit)
@@ -506,6 +524,116 @@
   :teardown (progn
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
               (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
+
+(pearl-gtd-validate-define-story pearl-gtd-test-planning-user-quits-during-organize
+  "User quits (C-g) during organize phase, staging buffer should be cleaned."
+  :setup (pearl-gtd-init-initialize)
+  :files nil
+  :mock (((symbol-function 'read-string)
+          (pearl-gtd-test-planning--make-read-string-mock
+           '("QuitTest" "P" "" "" "G" "A" "@office")))
+         ((symbol-function 'pearl-gtd-inbox--read-destination-key)
+          (lambda (_) (signal 'quit nil)))  ; User quits immediately
+         ((symbol-function 'recursive-edit)
+          (lambda ()
+            (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
+              (with-current-buffer buf
+                (insert "Idea to organize\n"))))))
+  :body (condition-case nil
+            (pearl-gtd-planning-start)
+          (quit (setq pearl-gtd-validate-caught-error 'quit)))
+  :asserts (progn
+             (should (eq pearl-gtd-validate-caught-error 'quit))
+             ;; Verify staging buffer is killed
+             (should-not (get-buffer "*Pearl-GTD Brainstorm Organize*"))
+             ;; Verify brainstorm item remains in inbox (not partially processed)
+             (should (pearl-gtd-validate-file-contains-p
+                      (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
+                      "Idea to organize")))
+  :teardown (progn
+              (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
+              (when (get-buffer "*Pearl-GTD Brainstorm*") (kill-buffer "*Pearl-GTD Brainstorm*"))
+              (when (get-buffer "*Pearl-GTD Brainstorm Organize*") (kill-buffer "*Pearl-GTD Brainstorm Organize*"))))
+
+(pearl-gtd-validate-define-story pearl-gtd-test-planning-user-clarifies-brainstorm-item
+  "User clarifies a brainstorm item before organizing to next action."
+  :setup (pearl-gtd-init-initialize)
+  :files nil
+  :mock (((symbol-function 'read-string)
+          (pearl-gtd-test-planning--make-read-string-mock
+           '("ClarifyTest" "Purpose" "" "" "Goal" "Area" "@office")))
+         ((symbol-function 'pearl-gtd-inbox--read-destination-key)
+          (let ((calls 0))
+            (lambda (_headline)
+              (setq calls (1+ calls))
+              (if (= calls 1) ?c ?a))))  ; First clarify, then action
+         ((symbol-function 'pearl-gtd-core-read-date) (lambda (&rest _) ""))
+         ((symbol-function 'pearl-gtd-inbox--read-delegate) (lambda () ""))
+         ((symbol-function 'pearl-gtd-inbox--clarify-entry)
+          (lambda (_headline) (cons "Clarified idea" "Important notes")))
+         ((symbol-function 'pearl-gtd-inbox--read-context)
+          (lambda () "@office"))
+         ((symbol-function 'recursive-edit)
+          (lambda ()
+            (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
+              (with-current-buffer buf
+                (insert "Raw idea\n"))))))
+  :body (pearl-gtd-planning-start)
+  :asserts (progn
+             (should (pearl-gtd-validate-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      "* TODO Clarified idea"))
+             (should (pearl-gtd-validate-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      "Important notes"))
+             (should-not (pearl-gtd-validate-file-contains-p-bool
+                          (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                          "Raw idea")))
+  :teardown (progn
+              (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
+              (when (get-buffer "*Pearl-GTD Brainstorm*") (kill-buffer "*Pearl-GTD Brainstorm*"))
+              (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))
+              (when (get-buffer "*Pearl-GTD Brainstorm Organize*") (kill-buffer "*Pearl-GTD Brainstorm Organize*"))))
+
+(pearl-gtd-validate-define-story pearl-gtd-test-planning-isolates-other-project-brainstorms
+  "Brainstorm items from other projects remain untouched during organize."
+  :setup (progn
+           (pearl-gtd-init-initialize)
+           ;; Pre-seed inbox with old project's brainstorm item
+           (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+             (with-temp-file inbox-file
+               (insert "* Old brainstorm idea\n:PROPERTIES:\n:PROJECT: OldProject\n:BRAINSTORM: t\n:END:\n"))))
+  :files nil
+  :mock (((symbol-function 'read-string)
+          (pearl-gtd-test-planning--make-read-string-mock
+           '("NewProject" "Purpose" "" "" "Goal" "Area" "@ctx" "Forced action")))
+         ((symbol-function 'pearl-gtd-inbox--read-destination-key)
+          (lambda (_) ?a))
+         ((symbol-function 'pearl-gtd-core-read-date) (lambda (&rest _) ""))
+         ((symbol-function 'pearl-gtd-inbox--read-delegate) (lambda () ""))
+         ((symbol-function 'recursive-edit)
+          (lambda ()
+            (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
+              (with-current-buffer buf
+                (insert "New project idea\n"))))))
+  :body (pearl-gtd-planning-start)
+  :asserts (progn
+             ;; Verify new project's item was processed (moved to actions)
+             (should (pearl-gtd-validate-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      "New project idea"))
+             ;; Verify old project's item remains in inbox
+             (should (pearl-gtd-validate-file-contains-p
+                      (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
+                      "Old brainstorm idea"))
+             ;; Verify old project's item still has BRAINSTORM property
+             (should (pearl-gtd-validate-file-contains-p
+                      (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
+                      ":BRAINSTORM: t")))
+  :teardown (progn
+              (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
+              (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))
+              (when (get-buffer "*Pearl-GTD Brainstorm Organize*") (kill-buffer "*Pearl-GTD Brainstorm Organize*"))))
 
 (provide 'pearl-gtd-test-planning)
 

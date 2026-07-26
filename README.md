@@ -141,7 +141,7 @@ Inbox processing (`pearl-gtd-process-inbox`) presents a **staging table** with v
 2. **Principle** (L6) – What standards must we keep?
 3. **Vision** (L5) – What does success look like?
 4. **Brainstorming** – Dump all ideas into a temporary buffer
-5. **Organizing** – Force‑complete every brainstorm item via **single‑key selection** (`n`ext/`r`ef/`s`omeday/`t`rash). A **session‑wide default context** is set once and auto‑applied to all Next Actions; no per‑item context prompts.
+5. **Organizing** – Force‑complete every brainstorm item via **staging buffer** with visual highlighting and **single‑key selection** (`n`ext/`r`ef/`s`omeday/`t`rash/`c`larify). The optional **clarify** step (`c`) allows renaming and adding remarks before final classification. A **session‑wide default context** is set once and auto‑applied to all Next Actions; if omitted, context is prompted per‑item using the same completion flow as inbox processing.
 6. **Next Actions** – At least one physical next action is required
 
 The workflow cannot be skipped; it ensures every project has a clear outcome and at least one concrete next step.

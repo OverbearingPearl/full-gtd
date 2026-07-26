@@ -35,8 +35,9 @@
          ((symbol-function 'pearl-gtd-inbox--clarify-entry)
           (lambda (_headline) (cons "Buy gift for mom" "Check Amazon first")))
          ((symbol-function 'pearl-gtd-inbox--collect-action-attrs)
-          (lambda (&optional _) '((context . "@errands") (schedule . "") (deadline . "")
-                       (delegate . "") (project . "")))))
+          (lambda (&optional _staging-buffer _default-context _default-project)
+            '((context . "@errands") (schedule . "") (deadline . "")
+              (delegate . "") (project . "")))))
   :body (progn
           (pearl-gtd-capture)
           (pearl-gtd-process-inbox))
@@ -85,8 +86,9 @@
               (if (= calls 1) ?a ?r))))  ; First action, then reference
          ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil)))
          ((symbol-function 'pearl-gtd-inbox--collect-action-attrs)
-          (lambda (&optional _) '((context . "@office") (schedule . "") (deadline . "")
-                       (delegate . "") (project . "")))))
+          (lambda (&optional _staging-buffer _default-context _default-project)
+            '((context . "@office") (schedule . "") (deadline . "")
+              (delegate . "") (project . "")))))
   :body (pearl-gtd-process-inbox)
   :asserts (progn
              (should (pearl-gtd-validate-file-contains-p
@@ -137,8 +139,9 @@
          ((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) ?a))
          ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil)))
          ((symbol-function 'pearl-gtd-inbox--collect-action-attrs)
-          (lambda (&optional _) '((context . "@office") (schedule . "") (deadline . "")
-                       (delegate . "") (project . "")))))
+          (lambda (&optional _staging-buffer _default-context _default-project)
+            '((context . "@office") (schedule . "") (deadline . "")
+              (delegate . "") (project . "")))))
   :body (progn
           (pearl-gtd-capture)
           (pearl-gtd-process-inbox))
@@ -194,8 +197,9 @@
          ((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) ?a))
          ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil)))
          ((symbol-function 'pearl-gtd-inbox--collect-action-attrs)
-          (lambda (&optional _) '((context . "@office") (schedule . "") (deadline . "")
-                       (delegate . "") (project . "")))))
+          (lambda (&optional _staging-buffer _default-context _default-project)
+            '((context . "@office") (schedule . "") (deadline . "")
+              (delegate . "") (project . "")))))
   :body (progn
           (pearl-gtd-capture)
           (pearl-gtd-capture)
