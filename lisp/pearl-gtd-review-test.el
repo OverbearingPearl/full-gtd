@@ -15,9 +15,9 @@
 
 (require 'ert)
 (require 'pearl-gtd)
-(require 'pearl-gtd-validate)
+(require 'pearl-gtd-test)
 
-(pearl-gtd-validate-define-story pearl-gtd-test-review-user-views-daily-sections
+(pearl-gtd-test-define-story pearl-gtd-review-user-views-daily-sections-test
   "Daily review shows Today, Next Actions, and Inbox in separate tables."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* New idea\n:PROPERTIES:\n:ID: d-1\n:CREATED: 2026-01-15\n:END:\n")
@@ -93,7 +93,7 @@
                (should (search-forward "Completed today task" nil t))))
   :teardown (kill-buffer "*Pearl-GTD Daily Review*"))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-review-user-views-weekly-sections
+(pearl-gtd-test-define-story pearl-gtd-review-user-views-weekly-sections-test
   "Weekly review aggregates all lists and action sub-views into separate tables."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Unprocessed\n:PROPERTIES:\n:ID: w-1\n:END:\n")
@@ -150,7 +150,7 @@
                  (should (equal positions (sort (copy-sequence positions) #'<))))))
   :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-review-user-edits-context-with-default
+(pearl-gtd-test-define-story pearl-gtd-review-user-edits-context-with-default-test
   "Press 'c' to edit context with current value as default."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" (concat "* TODO Task with context\nSCHEDULED: <" (format-time-string "%F %a") ">\n:PROPERTIES:\n:ID: edit-ctx-1\n:CONTEXT: home\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n")))
@@ -167,12 +167,12 @@
             (beginning-of-line)
             (pearl-gtd-review--edit-context-at-point)))
   :asserts (progn
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       ":CONTEXT:\\s-*office")))
   :teardown (kill-buffer "*Pearl-GTD Daily Review*"))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-review-user-removes-context-by-empty-input
+(pearl-gtd-test-define-story pearl-gtd-review-user-removes-context-by-empty-input-test
   "Press 'c' and delete all to remove context property."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" (concat "* TODO Task to clear\nSCHEDULED: <" (format-time-string "%F %a") ">\n:PROPERTIES:\n:ID: edit-ctx-2\n:CONTEXT: home\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n")))
@@ -188,13 +188,13 @@
             (search-forward "Task to clear")
             (beginning-of-line)
             (pearl-gtd-review--edit-context-at-point)))
-  :asserts (let ((result (pearl-gtd-validate-file-contains-p
+  :asserts (let ((result (pearl-gtd-test-file-contains-p
                           (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                           ":CONTEXT:")))
              (should-not (car result)))
   :teardown (kill-buffer "*Pearl-GTD Daily Review*"))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-review-user-edits-delegated-with-default
+(pearl-gtd-test-define-story pearl-gtd-review-user-edits-delegated-with-default-test
   "Press 'd' to edit delegated with current value shown."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Delegated task\n:PROPERTIES:\n:ID: edit-del-1\n:DELEGATED: John\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n"))
@@ -211,16 +211,16 @@
             (beginning-of-line)
             (pearl-gtd-review--edit-delegated-at-point)))
   :asserts (progn
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       ":DELEGATED: Bob"))
-             (let ((result (pearl-gtd-validate-file-contains-p
+             (let ((result (pearl-gtd-test-file-contains-p
                             (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                             ":DELEGATED: John")))
                (should-not (car result))))
   :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-review-user-edits-schedule-with-default
+(pearl-gtd-test-define-story pearl-gtd-review-user-edits-schedule-with-default-test
   "Press 't' to edit scheduled date with current value as default."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" (concat "* TODO Scheduled task\nSCHEDULED: <" (format-time-string "%F %a") ">\n:PROPERTIES:\n:ID: edit-sch-1\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n")))
@@ -237,16 +237,16 @@
             (beginning-of-line)
             (pearl-gtd-review--edit-scheduled-at-point)))
   :asserts (progn
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "SCHEDULED: <2026-05-15"))
-             (let ((result (pearl-gtd-validate-file-contains-p
+             (let ((result (pearl-gtd-test-file-contains-p
                             (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                             "SCHEDULED: <2026-01-01")))
                (should-not (car result))))
   :teardown (kill-buffer "*Pearl-GTD Daily Review*"))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-review-user-jumps-to-task-from-table
+(pearl-gtd-test-define-story pearl-gtd-review-user-jumps-to-task-from-table-test
   "Press RET to jump to task in source file."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Jump target\n:PROPERTIES:\n:ID: jump-1\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n"))
@@ -268,7 +268,7 @@
              (let ((buf (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory))))
                (when buf (kill-buffer buf)))))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-review-user-sets-deadline-with-keybinding
+(pearl-gtd-test-define-story pearl-gtd-review-user-sets-deadline-with-keybinding-test
   "Press 's' in review buffer to set deadline for task at point."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task for deadline\n:PROPERTIES:\n:ID: dl-1\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n"))
@@ -287,15 +287,15 @@
             (beginning-of-line)
             (pearl-gtd-review--set-deadline-at-point)))
   :asserts (progn
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "DEADLINE: <2026-05-20"))
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       ":REMINDER_DAYS: 2")))
   :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-review-user-edits-task-in-review-window
+(pearl-gtd-test-define-story pearl-gtd-review-user-edits-task-in-review-window-test
   "User edits a task directly from review buffer."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Old task name\n:PROPERTIES:\n:ID: edit-old-1\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n"))
@@ -309,16 +309,16 @@
             (beginning-of-line)
             (pearl-gtd-review--rename-task-at-point)))
   :asserts (progn
-             (should (pearl-gtd-validate-file-contains-p
+             (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       "* TODO Updated task name"))
-             (let ((result (pearl-gtd-validate-file-contains-p
+             (let ((result (pearl-gtd-test-file-contains-p
                             (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                             "* TODO Old task name")))
                (should-not (car result))))
   :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-review-user-jumps-across-sections
+(pearl-gtd-test-define-story pearl-gtd-review-user-jumps-across-sections-test
   "RET jump works correctly from tasks in different sections and source files."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Today task\nSCHEDULED: <2026-01-15 Thu>\n:PROPERTIES:\n:ID: jump-sec-1\n:END:\n* TODO Next task\n:PROPERTIES:\n:ID: jump-sec-2\n:END:\n")
@@ -341,7 +341,7 @@
               (let ((buf (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory))))
                 (when buf (kill-buffer buf)))))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-review-user-views-project-stats
+(pearl-gtd-test-define-story pearl-gtd-review-user-views-project-stats-test
   "Project row displays total, todo, done counts and next deadline."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task 1\n:PROPERTIES:\n:ID: p1-1\n:PROJECT: Website\n:END:\n* DONE Task 2\n:PROPERTIES:\n:ID: p1-2\n:PROJECT: Website\n:END:\n* TODO Task 3\nDEADLINE: <2026-05-20>\n:PROPERTIES:\n:ID: p1-3\n:PROJECT: Website\n:END:\n"))
@@ -357,7 +357,7 @@
                (should (search-forward-regexp "|\\s-*Website\\s-*|\\s-*3\\s-*|\\s-*2\\s-*|\\s-*1\\s-*|\\s-*<2026-05-20[^>]*>\\s-*|" (line-end-position) t))))
   :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-review-user-jumps-to-project-tasks
+(pearl-gtd-test-define-story pearl-gtd-review-user-jumps-to-project-tasks-test
   "Press RET on project row opens project task sub-view."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task A\n:PROPERTIES:\n:ID: proj-a-1\n:PROJECT: Alpha\n:END:\n* TODO Task B\n:PROPERTIES:\n:ID: proj-a-2\n:PROJECT: Alpha\n:END:\n"))
@@ -395,7 +395,7 @@
               (when (get-buffer "*Pearl-GTD Project: Alpha*")
                 (kill-buffer "*Pearl-GTD Project: Alpha*"))))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-review-user-returns-from-project-view
+(pearl-gtd-test-define-story pearl-gtd-review-user-returns-from-project-view-test
   "Press q in project sub-view returns to weekly review."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: ret-1\n:PROJECT: Beta\n:END:\n"))
@@ -416,7 +416,7 @@
   :teardown (when (get-buffer "*Pearl-GTD Weekly Review*")
               (kill-buffer "*Pearl-GTD Weekly Review*")))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-review-user-identifies-stuck-project
+(pearl-gtd-test-define-story pearl-gtd-review-user-identifies-stuck-project-test
   "Stuck project shows zero todo count."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* DONE Completed task\n:PROPERTIES:\n:ID: stuck-1\n:PROJECT: StuckProj\n:END:\n* Scheduled but no todo\nSCHEDULED: <2026-04-10 Fri>\n:PROPERTIES:\n:ID: stuck-2\n:PROJECT: StuckProj\n:END:\n"))
@@ -432,7 +432,7 @@
                (should (search-forward-regexp "|\\s-*StuckProj\\s-*|\\s-*2\\s-*|\\s-*0\\s-*|\\s-*1\\s-*|" (line-end-position) t))))
   :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-review-project-exact-match-not-substring
+(pearl-gtd-test-define-story pearl-gtd-review-project-exact-match-not-substring-test
   "Project names that are substrings of each other are matched exactly."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* DONE P1 task\n:PROPERTIES:\n:ID: exact-1\n:PROJECT: P1\n:END:\n* TODO P10 task\n:PROPERTIES:\n:ID: exact-2\n:PROJECT: P10\n:END:\n"))
@@ -472,9 +472,9 @@
                (search-forward "P10")
                (beginning-of-line)
                (should (search-forward-regexp "|\\s-*P10\\s-*|\\s-*1\\s-*|\\s-*1\\s-*|\\s-*0\\s-*|" (line-end-position) t))))
-  :teardown (pearl-gtd-validate-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
+  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-review-weekly-no-project-table-no-project-column
+(pearl-gtd-test-define-story pearl-gtd-review-weekly-no-project-table-no-project-column-test
   "No Project table should not have Project column and should be after Project sections."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO No project task 1\n:PROPERTIES:\n:ID: np-1\n:CREATED: 2026-01-15\n:END:\n* TODO No project task 2\nSCHEDULED: <2026-01-20 Fri>\n:PROPERTIES:\n:ID: np-2\n:CONTEXT: home\n:CREATED: 2026-01-16\n:END:\n* TODO Project task\n:PROPERTIES:\n:ID: p-1\n:PROJECT: TestProject\n:CREATED: 2026-01-17\n:END:\n"))
@@ -523,7 +523,7 @@
                  (forward-line 1))))
   :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
 
-(pearl-gtd-validate-define-story pearl-gtd-test-review-user-renames-task-and-view-updates
+(pearl-gtd-test-define-story pearl-gtd-review-user-renames-task-and-view-updates-test
   "Renaming task in review buffer should refresh display."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Old name\n:PROPERTIES:\n:ID: rename-view-1\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n"))
@@ -539,7 +539,7 @@
              (goto-char (point-min))
              (should (search-forward "New name" nil t))
              (should-not (search-forward "Old name" nil t)))
-  :teardown (pearl-gtd-validate-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
+  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
 
 (provide 'pearl-gtd-test-review)
 
