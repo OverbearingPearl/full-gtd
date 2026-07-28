@@ -61,10 +61,11 @@ CONTEXTS is a list of normalized context strings (without @ prefix)."
 (defun pearl-gtd-core-filter-entries (file-path predicates)
   "Filter entries in FILE-PATH using PREDICATES.
 PREDICATES is a list of predicate functions to apply.
-Each predicate is called with no arguments in the context of the
-entry. Return list of entries that pass all predicates.
-Entries are lists: (HEADLINE TAGS-STRING TODO-STATE SCHEDULED DELEGATED
-PROJECT CREATED ID FILE DEADLINE CONTEXT L3_AREA L4_GOAL L5_VISION L6_PURPOSE).
+Each predicate is called with no arguments in the context of the entry.
+Return list of entries that pass all predicates.
+Entries are lists:
+(HEADLINE TAGS-STRING TODO-STATE SCHEDULED DELEGATED PROJECT CREATED
+  ID FILE DEADLINE CONTEXT L3_AREA L4_GOAL L5_VISION L6_PURPOSE).
 Nil values indicate unset properties."
   (let ((entries '())
         (file-name (file-name-nondirectory file-path)))
@@ -257,7 +258,8 @@ Example: (\"Project A\" \"Project B\") -> \"Project A; Project B\""
 (defun pearl-gtd-core--normalize-project-input (input)
   "Normalize project input: convert commas and Chinese semicolons to English semicolons.
 Trim whitespace. Returns nil if empty.
-Example: \"Project A，Project B；Project C\" -> \"Project A; Project B; Project C\""
+Example: \"Project A，Project B；Project C\" ->
+     \"Project A; Project B; Project C\""
   (when input
     (let* ((trimmed (string-trim input))
            (normalized (replace-regexp-in-string "[,\uFF0C；] *" "; " trimmed)))
