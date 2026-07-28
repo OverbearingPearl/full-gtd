@@ -19,6 +19,7 @@
 (require 'pearl-gtd-init)
 (require 'pearl-gtd-core)
 (require 'pearl-gtd-review)
+(require 'pearl-gtd-domain)
 
 (declare-function pearl-gtd-horizons-view "pearl-gtd")
 
@@ -71,27 +72,15 @@ PROPERTY should be one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE."
 
 (defun pearl-gtd-horizons--check-hierarchy-constraint (project level)
   "Check hierarchy constraint for setting LEVEL horizon for PROJECT.
-LEVEL should be a symbol:
-  \\='area, \\='goal, \\='vision, \\='purpose, or \\='principle.
-L5 (vision) requires L4 (goal), L6 (purpose) requires L5 (vision),
-L6 (principle) requires L6 (purpose).
-Returns non-nil if constraint is satisfied, nil otherwise."
-  (cond
-   ((eq level 'area) t)    ; L3_AREA: no constraint
-   ((eq level 'goal) t)    ; L4_GOAL: no constraint
-   ((eq level 'vision)     ; L5_VISION: needs L4_GOAL
-    (let ((l4 (pearl-gtd-horizons--get-project-horizon project "L4_GOAL")))
-      (and l4 (not (string= l4 "")))))
-   ((eq level 'purpose)    ; L6_PURPOSE: needs L5_VISION
-    (let ((l5 (pearl-gtd-horizons--get-project-horizon project "L5_VISION")))
-      (and l5 (not (string= l5 "")))))
-   ((eq level 'principle)  ; L6_PRINCIPLE: needs L6_PURPOSE
-    (let ((l6 (pearl-gtd-horizons--get-project-horizon project "L6_PURPOSE")))
-      ;; Support multiple purposes: check if any non-empty value exists
-      (and l6
-           (cl-some (lambda (v) (not (string= v "")))
-                    (pearl-gtd-core--split-values l6)))))
-   (t t)))
+PROJECT is project name string (external input, must be string).
+LEVEL is symbol: 'area, 'goal, 'vision, 'purpose, or 'principle."
+  (cl-assert (stringp project) t "Internal: project must be string")
+  (let ((existing-horizons
+         (list (cons 'L3_AREA (pearl-gtd-horizons--get-project-horizon project "L3_AREA"))
+               (cons 'L4_GOAL (pearl-gtd-horizons--get-project-horizon project "L4_GOAL"))
+               (cons 'L5_VISION (pearl-gtd-horizons--get-project-horizon project "L5_VISION"))
+               (cons 'L6_PURPOSE (pearl-gtd-horizons--get-project-horizon project "L6_PURPOSE")))))
+    (pearl-gtd-domain--check-hierarchy-constraint existing-horizons level)))
 
 (defun pearl-gtd-horizons--edit-horizon-at-point (level &optional project)
   "Edit horizon LEVEL for entry at point or for PROJECT if provided.

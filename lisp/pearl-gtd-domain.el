@@ -1,0 +1,81 @@
+;;; pearl-gtd-domain.el --- Domain layer: pure functions for GTD business rules  -*- lexical-binding: t; -*-
+
+;; Copyright (C) 2026 OverbearingPearl
+;; Author: OverbearingPearl <OverbearingPearl@outlook.com>
+;; SPDX-License-Identifier: MIT
+
+;;; Commentary:
+
+;; Pure computational layer for GTD business logic.
+;; No side effects, no IO, no user interaction.
+;; Functions must be deterministic and referentially transparent.
+
+;;; Code:
+
+(require 'cl-lib)
+
+;;;; Data normalization (migrated from pearl-gtd-core)
+
+(defun pearl-gtd-domain--split-values (value-string)
+  "Split VALUE-STRING using semicolon separator.
+Supports both English (;) and Chinese (；) semicolons.
+Trim whitespace from each value. Filter empty values.
+Returns list of strings or nil."
+  (when value-string
+    (let ((normalized (replace-regexp-in-string "；" ";" value-string)))
+      (seq-filter (lambda (s) (not (string-empty-p s)))
+                  (mapcar #'string-trim
+                          (split-string normalized ";"))))))
+
+(defun pearl-gtd-domain--join-values (values)
+  "Join VALUES list using English semicolon separator.
+VALUES must be a list of strings.
+Returns string."
+  (cl-assert (listp values) t "Internal: join-values requires list")
+  (mapconcat #'identity values "; "))
+
+(defun pearl-gtd-domain--normalize-project-input (input)
+  "Normalize project input: convert Chinese semicolons to English.
+Trim whitespace from each value. Returns nil if empty.
+INPUT must be string or nil."
+  (when input
+    (cl-assert (stringp input) t "Internal: normalize-project-input requires string")
+    (let ((trimmed (string-trim input)))
+      (if (string-empty-p trimmed)
+          nil
+        (let ((values (pearl-gtd-domain--split-values trimmed)))
+          (if values
+              (pearl-gtd-domain--join-values values)
+            nil))))))
+
+;;;; Horizon validation (migrated from pearl-gtd-horizons)
+
+(defun pearl-gtd-domain--check-hierarchy-constraint (existing-horizons level)
+  "Check hierarchy constraint for setting LEVEL horizon.
+EXISTING-HORIZONS is an alist of ((L3_AREA . val) (L4_GOAL . val) ...).
+LEVEL must be a symbol: 'area, 'goal, 'vision, 'purpose, or 'principle.
+Returns (VALID-P . ERROR-MSG)."
+  (cl-assert (memq level '(area goal vision purpose principle))
+             t "Internal: invalid horizon level %s" level)
+  (let ((l4 (cdr (assoc 'L4_GOAL existing-horizons)))
+        (l5 (cdr (assoc 'L5_VISION existing-horizons)))
+        (l6-purpose (cdr (assoc 'L6_PURPOSE existing-horizons))))
+    (pcase level
+      ('area (cons t nil))
+      ('goal (cons t nil))
+      ('vision (if (and l4 (not (string= l4 "")))
+                   (cons t nil)
+                 (cons nil "L4 Goal must be set first")))
+      ('purpose (if (and l5 (not (string= l5 "")))
+                    (cons t nil)
+                  (cons nil "L5 Vision must be set first")))
+      ('principle (if (and l6-purpose
+                           (cl-some (lambda (v) (not (string= v "")))
+                                    (pearl-gtd-domain--split-values l6-purpose)))
+                      (cons t nil)
+                    (cons nil "L6 Purpose must be set first")))
+      (_ (cons nil (format "Unknown horizon level: %s" level))))))
+
+(provide 'pearl-gtd-domain)
+
+;;; pearl-gtd-domain.el ends here

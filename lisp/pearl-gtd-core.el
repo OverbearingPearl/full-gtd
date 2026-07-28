@@ -15,6 +15,7 @@
 
 (require 'org)
 (require 'pearl-gtd-init)
+(require 'pearl-gtd-domain)
 
 ;;;; Predicates
 
@@ -243,33 +244,25 @@ Signals \\='quit if user presses \\`C-g\\'."
 Supports both English (;) and Chinese (；) semicolons.
 Trim whitespace from each value. Filter empty values.
 Example: \"Project A; Project B；Project C\"
-  -> (\"Project A\" \"Project B\" \"Project C\")"
-  (when value-string
-    (let ((normalized (replace-regexp-in-string "；" ";" value-string)))
-      (seq-filter (lambda (s) (not (string-empty-p s)))
-                  (mapcar #'string-trim
-                          (split-string normalized ";"))))))
+  -> (\"Project A\" \"Project B\" \"Project C\")
+Delegate to domain layer for pure computation."
+  (pearl-gtd-domain--split-values value-string))
 
 (defun pearl-gtd-core--join-values (values)
   "Join VALUES list using English semicolon separator.
 Always uses English semicolon for storage consistency.
-Example: (\"Project A\" \"Project B\") -> \"Project A; Project B\""
-  (mapconcat #'identity values "; "))
+Example: (\"Project A\" \"Project B\") -> \"Project A; Project B\"
+Delegate to domain layer for pure computation."
+  (pearl-gtd-domain--join-values values))
 
 (defun pearl-gtd-core--normalize-project-input (input)
   "Normalize project input: convert Chinese semicolons to English.
 Trim whitespace from each value. Returns nil if empty.
 INPUT is the input string to normalize.
 Example: \"Project A；Project B；Project C\"
-  -> \"Project A; Project B; Project C\""
-  (when input
-    (let ((trimmed (string-trim input)))
-      (if (string-empty-p trimmed)
-          nil
-        (let ((values (pearl-gtd-core--split-values trimmed)))
-          (if values
-              (pearl-gtd-core--join-values values)
-            nil))))))
+  -> \"Project A; Project B; Project C\"
+Delegate to domain layer for pure computation."
+  (pearl-gtd-domain--normalize-project-input input))
 
 (provide 'pearl-gtd-core)
 
