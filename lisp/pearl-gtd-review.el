@@ -237,7 +237,7 @@ The number of fields determines the table format:
 - 7 fields: Status, Scheduled, Deadline, Context, Delegated, Project (standard)
 - 6 fields: Status, Scheduled, Deadline, Context, Delegated, L3 (No Project)
 - 8 fields: Total, Todo, Done, Next Deadline, L3, L4, L5, L6 (Project rows)"
-  (let* ((headline-escaped (replace-regexp-in-string "|" "\\\\vert{}" head)))
+  (let* ((headline-escaped (pearl-gtd-core--escape-table-field head)))
     ;; Insert headline with properties
     (insert "| ")
     (let ((start (point)))

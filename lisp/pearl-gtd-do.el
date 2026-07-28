@@ -95,7 +95,7 @@ Returns (HEADER . ROWS) where ROWS is list of
       (let* ((raw-headline (nth 0 entry))
              (id (nth 7 entry))
              (file (nth 8 entry))
-             (escaped-headline (replace-regexp-in-string "|" "\\\\vert{}" raw-headline)))
+             (escaped-headline (pearl-gtd-core--escape-table-field raw-headline)))
         (push (list escaped-headline (nth 1 entry) (nth 2 entry) (nth 3 entry)
                    (nth 4 entry) (nth 5 entry) (nth 6 entry) id file)
               rows)))

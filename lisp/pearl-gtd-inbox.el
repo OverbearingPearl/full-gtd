@@ -41,11 +41,6 @@
 (defvar pearl-gtd-inbox--staging-changes nil
   "A list to store staged changes, e.g., ((row col new-value) ...).")
 
-(defvar pearl-gtd-inbox--current-prompt-type nil
-  "Current prompt type.
-Possible values include \\='rename, \\='remarks, \\='context,
-\\='schedule, \\='deadline, \\='delegate, and \\='project.")
-
 (defvar pearl-gtd-inbox--last-context nil
   "Last context used during current inbox processing session.")
 
@@ -295,12 +290,6 @@ NEW-VALUE is the string to insert."
     (with-current-buffer buffer
       (pearl-gtd-inbox--stage-change-impl row col new-value))))
 
-(defun pearl-gtd-inbox--clear-changes (buffer)
-  "Clear changes in BUFFER.
-BUFFER is the staging buffer to clear."
-  (with-current-buffer buffer
-    (setq pearl-gtd-inbox--staging-changes nil)))
-
 (defun pearl-gtd-inbox--reapply-marks (buffer)
   "Reapply marks to BUFFER after table alignment.
 BUFFER is the staging buffer to update."
@@ -378,6 +367,33 @@ DEADLINE is the deadline date string, or nil if not set.")
         (`(project . ,proj)
          (when proj (push (format ":PROJECT:%s:" (string-trim proj)) parts)))))
     (mapconcat #'identity (nreverse parts) "\n")))
+
+(defun pearl-gtd-inbox--parse-properties-string (properties-string)
+  "Parse PROPERTIES-STRING and apply to current entry.
+PROPERTIES-STRING contains tags and properties in special format."
+  (let ((components (split-string properties-string "\n" t)))
+    (dolist (comp components)
+      (cond
+       ((string-match "^:SCHEDULED:\\(.+\\):$" comp)
+        (let ((date-str (match-string 1 comp)))
+          (org-schedule nil date-str)))
+       ((string-match "^:PROJECT:\\(.+\\):$" comp)
+        (let ((projects (match-string 1 comp)))
+          (let ((normalized-projects (pearl-gtd-core--normalize-project-input projects)))
+            (when normalized-projects
+              (org-set-property "PROJECT" normalized-projects)))))
+       ((string-match "^:\\([^:]+\\):\\(.+\\):$" comp)
+        (let ((prop-name (match-string 1 comp))
+              (prop-value (match-string 2 comp)))
+          (org-set-property prop-name prop-value)))
+       ((string-match "^@\\(.+\\)$" (string-trim comp))
+        (let ((tag (match-string 1 (string-trim comp))))
+          (when tag
+            (org-set-tags (list tag)))))
+       ((not (string-match "^:" (string-trim comp)))
+        (let ((trimmed (string-trim comp)))
+          (unless (string-empty-p trimmed)
+            (org-set-tags (list trimmed)))))))))
 
 ;;;; Entry Point
 
@@ -491,7 +507,6 @@ BRAINSTORM is non-nil."
                       (when pearl-gtd-inbox--current-highlight
                         (delete-overlay pearl-gtd-inbox--current-highlight)
                         (setq pearl-gtd-inbox--current-highlight nil))
-                      (pearl-gtd-inbox--clear-changes staging-buffer)
                       (setq pearl-gtd-inbox--pending-moves (nreverse pearl-gtd-inbox--pending-moves))
                       (dolist (move pearl-gtd-inbox--pending-moves)
                         (pearl-gtd-inbox--do-move (nth 0 move) (nth 1 move) (nth 2 move)
@@ -544,31 +559,7 @@ DEADLINE is the deadline date string (nil if not set)."
         (goto-char (point-min))
         (when (re-search-forward (concat "^\\*+[ \t]+" (regexp-quote headline) "\\($\\| \\)") nil t)
           (beginning-of-line)
-          (let ((components (split-string properties-string "\n" t)))
-            (dolist (comp components)
-              (cond
-               ((string-match "^:SCHEDULED:\\(.+\\):$" comp)
-                (let ((date-str (match-string 1 comp)))
-                  (org-schedule nil date-str)))
-               ((string-match "^:PROJECT:\\(.+\\):$" comp)
-                (let ((projects (match-string 1 comp)))
-                  ;; Support semicolon separators (both English and Chinese)
-                  ;; Store as semicolon-separated for consistency
-                  (let ((normalized-projects (pearl-gtd-core--normalize-project-input projects)))
-                    (when normalized-projects
-                      (org-set-property "PROJECT" normalized-projects)))))
-               ((string-match "^:\\([^:]+\\):\\(.+\\):$" comp)
-                (let ((prop-name (match-string 1 comp))
-                      (prop-value (match-string 2 comp)))
-                  (org-set-property prop-name prop-value)))
-               ((string-match "^@\\(.+\\)$" (string-trim comp))
-                (let ((tag (match-string 1 (string-trim comp))))
-                  (when tag
-                    (org-set-tags (list tag)))))
-               ((not (string-match "^:" (string-trim comp)))
-                (let ((trimmed (string-trim comp)))
-                  (unless (string-empty-p trimmed)
-                    (org-set-tags (list trimmed))))))))
+          (pearl-gtd-inbox--parse-properties-string properties-string)
           (save-buffer))))
     (when (and deadline (not (string= deadline "")))
       (with-current-buffer (find-file-noselect inbox-path)

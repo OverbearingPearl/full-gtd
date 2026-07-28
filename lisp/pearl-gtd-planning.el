@@ -37,21 +37,6 @@
 (defvar pearl-gtd-planning--default-context nil
   "Default context for next actions during current planning session.")
 
-(defun pearl-gtd-planning--read-brainstorm-destination (headline)
-  "Read single key for brainstorm item destination for HEADLINE.
-Returns one of: ?n (next), ?r (reference), ?s (someday), ?t (trash),
-?c (clarify).
-Signals \\='quit if user presses \\`C-g\\'."
-  (message "Organize '%s': [n]ext [r]ef [s]omeday [t]rash [c]larify: " headline)
-  (let ((key (read-key)))
-    (while (not (or (memq key '(?n ?N ?r ?R ?s ?S ?t ?T ?c ?C))
-                    (eq key 7)))  ; C-g is character 7
-      (message "Invalid key. Organize '%s': [n]ext [r]ef [s]omeday [t]rash [c]larify: " headline)
-      (setq key (read-key)))
-    (if (eq key 7)
-        (signal 'quit nil)
-      (downcase key))))
-
 (defun pearl-gtd-planning--project-exists-p (proj-name)
   "Check if PROJ-NAME already exists in actions.org.
 This also handles multi-project values separated by semicolons
@@ -379,7 +364,6 @@ HORIZONS is an alist of horizon properties."
   "Start Natural Planning Model workflow.
 Coordinator pattern: delegates all business logic to domain layer,
 all state operations to state layer."
-  (interactive)
   (let* (;; Step 1: Collect inputs (interaction layer)
          (proj-name (pearl-gtd-planning--select-project))
          (purpose (pearl-gtd-planning--ask-horizon 6 "Purpose" nil))

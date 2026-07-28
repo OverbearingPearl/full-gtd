@@ -254,6 +254,10 @@ Example: \"Project A；Project B；Project C\"
 Delegate to domain layer for pure computation."
   (pearl-gtd-domain--normalize-project-input input))
 
+(defun pearl-gtd-core--escape-table-field (field)
+  "Escape pipe characters in FIELD for org-table display."
+  (replace-regexp-in-string "|" "\\\\vert{}" field))
+
 (provide 'pearl-gtd-core)
 
 ;;; pearl-gtd-core.el ends here

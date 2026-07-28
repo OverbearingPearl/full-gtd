@@ -164,7 +164,7 @@ Supports multiple values separated by semicolon."
   (pearl-gtd-horizons--edit-horizon-at-point 'vision project))
 
 (defun pearl-gtd-horizons--edit-purpose-at-point (&optional project)
-  "Edit L6 Purpose and Principle horizons for entry at point or for PROJECT if provided.
+  "Edit L6 Purpose and Principle horizons for entry at point or for PROJECT.
 Prompts for Purpose first, then immediately prompts for Principle."
   (interactive)
   (pearl-gtd-horizons--edit-horizon-at-point 'purpose project)
