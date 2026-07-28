@@ -6,9 +6,10 @@
 
 ;;; Commentary:
 
-;; Pure computational layer for GTD business logic.
+;; Pure computational layer (Domain layer) for GTD business logic.
 ;; No side effects, no IO, no user interaction.
-;; Functions must be deterministic and referentially transparent.
+;; All functions are deterministic and referentially transparent.
+;; Trust boundary: internal state assumptions use cl-assert.
 
 ;;; Code:
 

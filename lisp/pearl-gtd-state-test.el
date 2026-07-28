@@ -91,7 +91,8 @@
                         (expand-file-name "actions.org" pearl-gtd-init-base-directory))
           (should-error
            (pearl-gtd-state--with-entry-at-id "missing-id" "actions.org"
-             (ignore))))
+             (ignore))
+           :type 'error))
       (delete-directory pearl-gtd-init-base-directory t))))
 
 (provide 'pearl-gtd-state-test)

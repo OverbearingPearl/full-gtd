@@ -6,9 +6,10 @@
 
 ;;; Commentary:
 
-;; Thin state layer: file operations with transactional safety.
+;; Thin state layer: transactional file operations.
 ;; All side effects on GTD data files go through this layer.
-;; Trust boundary: external (filesystem) -> capture and return status.
+;; Trust boundary: external (filesystem) errors are captured and rolled back;
+;; internal state violations use cl-assert and crash immediately.
 
 ;;; Code:
 

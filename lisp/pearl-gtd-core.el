@@ -8,8 +8,10 @@
 
 ;;; Commentary:
 
-;; This file provides core infrastructure for Pearl-GTD, including
-;; predicates, filters, and data collection utilities used by other modules.
+;; Core infrastructure and thin delegation layer.
+;; Predicates, filters, and data collection utilities.
+;; File operation macros delegate to pearl-gtd-state.
+;; Data normalization functions delegate to pearl-gtd-domain.
 
 ;;; Code:
 

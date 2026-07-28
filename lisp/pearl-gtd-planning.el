@@ -8,21 +8,11 @@
 
 ;;; Commentary:
 
-;; This file implements the GTD Natural Planning Model.
-;; Provides a guided workflow for project planning with forced completion.
-;;
-;; **Theoretical Boundaries**
-;; - Purpose (L6), Vision (L5) and Goal (L4) are mandatory per Natural Planning Model:
-;;   * Purpose answers "Why does this project exist?" (Allen: without sufficient
-;;     purpose, the project should not exist).
-;;   * Vision defines the 3‑5‑year strategic direction (Allen: essential for
-;;     alignment and long-term clarity).
-;;   * Goal defines the concrete outcome vision (Allen: essential for effective
-;;     project planning).
-;; - Principle (L6) and Area (L3) are optional per Horizons of Focus design:
-;;   * Principles are only required when value conflicts or constraints exist.
-;;   * Area is a system‑implementation convenience for Reviews and Horizons views,
-;;     though not strictly required by GTD for every individual project.
+;; Natural Planning Model workflow.
+;; Coordinator pattern: this module orchestrates user interaction,
+;; delegates business rule validation to pearl-gtd-domain,
+;; and delegates all file operations to pearl-gtd-state.
+;; Transaction boundary: entire planning workflow is atomic.
 
 ;;; Code:
 
@@ -390,8 +380,7 @@ HORIZONS is an alist of horizon properties."
 Coordinator pattern: delegates all business logic to domain layer,
 all state operations to state layer."
   (interactive)
-  (let* ((wf-ctx (make-hash-table :test 'equal))
-         ;; Step 1: Collect inputs (interaction layer)
+  (let* (;; Step 1: Collect inputs (interaction layer)
          (project-name (pearl-gtd-planning--select-project))
          (purpose (pearl-gtd-planning--ask-horizon 6 "Purpose" nil))
          (principle (pearl-gtd-planning--ask-horizon 6 "Principle" t))

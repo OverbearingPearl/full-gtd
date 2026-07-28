@@ -44,6 +44,7 @@
     (add-to-list 'load-path (expand-file-name "lisp" pearl-gtd-directory))))
 
 (require 'pearl-gtd-init)
+(require 'pearl-gtd-state)
 (require 'pearl-gtd-inbox)
 (require 'pearl-gtd-core)
 (require 'pearl-gtd-review)

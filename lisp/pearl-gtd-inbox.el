@@ -35,9 +35,6 @@
   "Face for executed (2-minute rule) entries."
   :group 'pearl-gtd)
 
-(defvar pearl-gtd-inbox--current-test-name nil
-  "Current running test name for debugging.")
-
 (defvar pearl-gtd-inbox--staging-original-file nil
   "The original Org file path for the staging buffer.")
 
@@ -454,8 +451,7 @@ the staging buffer."
          (push (list headline "actions.org"
                      (pearl-gtd-inbox--fields-to-props attrs)
                      current-headline current-remarks deadline)
-               pearl-gtd-inbox--pending-moves))))
-    (pearl-gtd-inbox--apply-staged-changes buffer (cdr entry-ref) nil)))
+               pearl-gtd-inbox--pending-moves))))))
 
 (defun pearl-gtd-inbox--process (&optional brainstorm default-context default-project)
   "Process the inbox according to GTD clarify and organize steps.
@@ -617,11 +613,6 @@ DEADLINE is the deadline date string (nil if not set)."
             (insert subtree-content)
             (unless (bolp) (insert "\n"))
             (save-buffer)))))))
-
-(defun pearl-gtd-inbox--apply-staged-changes (_buffer _row _context)
-  "Apply staged changes for entry in BUFFER.
-No-op in current implementation."
-  nil)
 
 (provide 'pearl-gtd-inbox)
 
