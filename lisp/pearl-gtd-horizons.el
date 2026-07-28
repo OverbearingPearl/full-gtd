@@ -9,7 +9,8 @@
 ;;; Commentary:
 
 ;; This file handles the Horizon system for GTD (L3 Area through L6 Purpose/Principles).
-;; L6 contains both Purpose and Principle; Principle requires Purpose to be set first.
+;; L6 contains both Purpose and Principle (edited together via key `6` in review mode);
+;; Principle requires Purpose to be set first.
 ;; Provides horizon editing and hierarchical views.
 
 ;;; Code:
@@ -163,13 +164,16 @@ Supports multiple values separated by semicolon."
   (pearl-gtd-horizons--edit-horizon-at-point 'vision project))
 
 (defun pearl-gtd-horizons--edit-purpose-at-point (&optional project)
-  "Edit L6 Purpose horizon for entry at point or for PROJECT if provided."
+  "Edit L6 Purpose and Principle horizons for entry at point or for PROJECT if provided.
+Prompts for Purpose first, then immediately prompts for Principle."
   (interactive)
-  (pearl-gtd-horizons--edit-horizon-at-point 'purpose project))
+  (pearl-gtd-horizons--edit-horizon-at-point 'purpose project)
+  ;; After setting purpose, immediately prompt for principle (same horizon level)
+  (pearl-gtd-horizons--edit-horizon-at-point 'principle project))
 
 (defun pearl-gtd-horizons--edit-principle-at-point (&optional project)
   "Edit L6 Principle horizon for entry at point or for PROJECT if provided."
-  (interactive)
+  ;; Internal use only - called by edit-purpose-at-point
   (pearl-gtd-horizons--edit-horizon-at-point 'principle project))
 
 (defun pearl-gtd-horizons--collect-horizon-hierarchy ()
@@ -395,7 +399,6 @@ Supports multiple values per horizon level (split by semicolon)."
     (define-key map (kbd "4") #'pearl-gtd-horizons--edit-goal-at-point)
     (define-key map (kbd "5") #'pearl-gtd-horizons--edit-vision-at-point)
     (define-key map (kbd "6") #'pearl-gtd-horizons--edit-purpose-at-point)
-    (define-key map (kbd "7") #'pearl-gtd-horizons--edit-principle-at-point)
     map))
 
 (provide 'pearl-gtd-horizons)

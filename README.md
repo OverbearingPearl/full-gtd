@@ -160,7 +160,7 @@ Horizons are inherited from projects to their actions. The horizon view (`pearl�
 - **Daily Review** (`pearl‑gtd‑review‑daily`) – Today’s scheduled tasks, completed today, next actions, and inbox.
 - **Weekly Review** (`pearl‑gtd‑review‑weekly`) – Comprehensive 10‑section review: inbox, overdue, upcoming deadlines, completed, delegated, next actions, stuck/active projects, no‑project actions, and someday/maybe.
 
-Both reviews use a unified table interface with keyboard shortcuts for navigation, editing properties, marking tasks complete, and jumping to source entries. Shortcuts: `c` (context), `d` (delegated), `t` (scheduled), `s` (deadline), `r` (rename), `P` (project), `C` (complete), and `3`-`7` (horizons L3-L6).
+Both reviews use a unified table interface with keyboard shortcuts for navigation, editing properties, marking tasks complete, and jumping to source entries. Shortcuts: `c` (context), `d` (delegated), `t` (scheduled), `s` (deadline), `r` (rename), `P` (project), `C` (complete), and `3`-`6` (horizons L3-L6, where `6` edits both Purpose and Principle sequentially).
 
 ### 5. Do/Work Phase
 Context‑filtered action views (`pearl‑gtd‑do‑view‑by‑context`), delegated tasks, today’s scheduled actions, and a global “All Actions” table. Each view is a read‑only Org table with live navigation (`n`/`p`/`j`/`k`), completion (`C`), renaming (`r`), and jump‑to‑source (`RET`).
@@ -180,7 +180,7 @@ Most GTD software becomes a todo‑list app with extra steps. Pearl‑GTD stays 
 
 - **Capture must be frictionless** – One key, no categorization, no thinking.
 - **The Natural Planning Model is not optional** – It’s how projects actually get done.
-- **Horizons are not tags** – They are a hierarchy. L4 goals must connect to L2 projects. If a goal has no projects, it’s a fantasy. Horizons can be edited directly in review views using `3`-`7` keys.
+- **Horizons are not tags** – They are a hierarchy. L4 goals must connect to L2 projects. If a goal has no projects, it’s a fantasy. Horizons can be edited directly in review views using `3`-`6` keys (L6 Purpose and Principle are edited together via key `6`).
 - **Review is the engine** – Without weekly review, GTD decays into a mess of stale lists. The tool enforces the habit.
 
 Emacs is the right host because GTD is fundamentally **text and structure**. Org‑mode gives us outlines, tags, links, and agenda views. Pearl‑GTD adds the **workflow layer** on top.

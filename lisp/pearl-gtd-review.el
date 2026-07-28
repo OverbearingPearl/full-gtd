@@ -46,7 +46,6 @@
     (define-key map (kbd "4") #'pearl-gtd-horizons--edit-goal-at-point)
     (define-key map (kbd "5") #'pearl-gtd-horizons--edit-vision-at-point)
     (define-key map (kbd "6") #'pearl-gtd-horizons--edit-purpose-at-point)
-    (define-key map (kbd "7") #'pearl-gtd-horizons--edit-principle-at-point)
     map))
 
 (define-minor-mode pearl-gtd-review-view-mode
