@@ -103,16 +103,19 @@ Returns list of unique project names from entries where BRAINSTORM is \"t\"."
 (defun pearl-gtd-planning--select-project ()
   "Prompt user to create new project name with completion from brainstorm projects.
 Return project name string after validation (non-empty and not existing).
-Supports spaces in project names. Use ; to separate multiple projects."
+Supports spaces in project names."
   (let ((project-name "")
         (brainstorm-projects (pearl-gtd-planning--collect-brainstorm-projects)))
     (while (or (string= project-name "")
                (pearl-gtd-planning--project-exists-p project-name))
       (setq project-name (string-trim (completing-read
-                          "Project name: <Unique identifier> (e.g., Website Redesign) [TAB for existing projects, use ; to separate multiple projects]: "
+                          "Project name: <Unique identifier> (e.g., Website Redesign) [TAB for existing projects]: "
                           brainstorm-projects nil nil)))
-      ;; Normalize input to handle Chinese semicolons and commas
-      (setq project-name (pearl-gtd-core--normalize-project-input project-name))
+      ;; Planning is for single project only, reject multi-project input
+      (when (string-match-p "[;；]" project-name)
+        (message "Only single project name is allowed in planning mode")
+        (sit-for 1)
+        (setq project-name ""))
       (cond
        ((string= project-name "")
         (message "Project name cannot be empty, please re-enter.")
