@@ -764,7 +764,7 @@
   :asserts t
   :teardown nil)
 
-(pearl-gtd-test-define-story pearl-gtd-planning-project-name-with-space-test
+(pearl-gtd-test-define-story pearl-gtd-planning-proj-name-with-space-test
   "Project name containing spaces should be handled correctly."
   :setup (pearl-gtd-init-initialize)
   :files nil

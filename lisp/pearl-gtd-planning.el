@@ -95,27 +95,27 @@ Returns list of unique project names from entries where BRAINSTORM is \"t\"."
   "Prompt user to create new project name with completion from brainstorm projects.
 Return project name string after validation (non-empty and not existing).
 Supports spaces in project names."
-  (let ((project-name "")
+  (let ((proj-name "")
         (brainstorm-projects (pearl-gtd-planning--collect-brainstorm-projects)))
-    (while (or (string= project-name "")
-               (pearl-gtd-planning--project-exists-p project-name))
-      (setq project-name (string-trim (completing-read
+    (while (or (string= proj-name "")
+               (pearl-gtd-planning--project-exists-p proj-name))
+      (setq proj-name (string-trim (completing-read
                           "Project name: <Unique identifier> (e.g., Website Redesign) [TAB for existing projects]: "
                           brainstorm-projects nil nil)))
       ;; Planning is for single project only, reject multi-project input
-      (when (string-match-p "[;；]" project-name)
+      (when (string-match-p "[;；]" proj-name)
         (message "Only single project name is allowed in planning mode")
         (sit-for 1)
-        (setq project-name ""))
+        (setq proj-name ""))
       (cond
-       ((string= project-name "")
+       ((string= proj-name "")
         (message "Project name cannot be empty, please re-enter.")
         (sit-for 1))
-       ((pearl-gtd-planning--project-exists-p project-name)
-        (message "Project '%s' already exists, please use a new name." project-name)
+       ((pearl-gtd-planning--project-exists-p proj-name)
+        (message "Project '%s' already exists, please use a new name." proj-name)
         (sit-for 1)
-        (setq project-name ""))))
-    project-name))
+        (setq proj-name ""))))
+    proj-name))
 
 (defun pearl-gtd-planning--ask-horizon (level description &optional optional example-level)
   "Prompt for horizon value at LEVEL with DESCRIPTION.
@@ -381,7 +381,7 @@ Coordinator pattern: delegates all business logic to domain layer,
 all state operations to state layer."
   (interactive)
   (let* (;; Step 1: Collect inputs (interaction layer)
-         (project-name (pearl-gtd-planning--select-project))
+         (proj-name (pearl-gtd-planning--select-project))
          (purpose (pearl-gtd-planning--ask-horizon 6 "Purpose" nil))
          (principle (pearl-gtd-planning--ask-horizon 6 "Principle" t))
          (vision (pearl-gtd-planning--ask-horizon 5 "Vision" nil))
@@ -396,19 +396,19 @@ all state operations to state layer."
 
     ;; Validate inputs (domain layer)
     (cl-destructuring-bind (valid-p . error-msg)
-        (pearl-gtd-domain--planning-input-valid-p project-name purpose vision goal)
+        (pearl-gtd-domain--planning-input-valid-p proj-name purpose vision goal)
       (unless valid-p
         (error "Planning validation failed: %s" error-msg)))
 
     ;; Execute workflow with transaction (state layer)
     (pearl-gtd-state--with-transaction '("actions.org" "inbox.org")
       ;; Brainstorm phase
-      (pearl-gtd-planning--ask-brainstorm project-name)
+      (pearl-gtd-planning--ask-brainstorm proj-name)
 
       ;; Organize phase (returns count of next actions created)
       (let ((next-action-count
-             (if (pearl-gtd-planning--has-brainstorm-items-p project-name)
-                 (pearl-gtd-planning--organize-brainstorm-items project-name default-context)
+             (if (pearl-gtd-planning--has-brainstorm-items-p proj-name)
+                 (pearl-gtd-planning--organize-brainstorm-items proj-name default-context)
                0)))
 
         ;; Force next action if required (domain rule)
@@ -416,14 +416,14 @@ all state operations to state layer."
           (let ((forced-action
                  (pearl-gtd-planning--read-forced-action "Required next action: ")))
             (pearl-gtd-planning--create-action
-             forced-action project-name default-context horizons)))
+             forced-action proj-name default-context horizons)))
 
         ;; Apply horizons to all project actions
-        (pearl-gtd-planning--apply-horizons-to-project project-name horizons)))
+        (pearl-gtd-planning--apply-horizons-to-project proj-name horizons)))
 
     ;; Presentation
-    (pearl-gtd-planning--show-project-summary project-name horizons)
-    (message "Natural planning completed for project: %s" project-name)))
+    (pearl-gtd-planning--show-project-summary proj-name horizons)
+    (message "Natural planning completed for project: %s" proj-name)))
 
 (defun pearl-gtd-planning-start ()
   "Start Natural Planning Model workflow."

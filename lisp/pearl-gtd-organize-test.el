@@ -483,7 +483,7 @@
              (should (pearl-gtd-test-file-contains-p-bool ref-file "* Task with")))
   :teardown nil)
 
-(pearl-gtd-test-define-story pearl-gtd-organize-user-enters-long-project-name-test
+(pearl-gtd-test-define-story pearl-gtd-organize-user-enters-long-proj-name-test
   "Very long project names (500+ chars) must be handled."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Long project task\n:PROPERTIES:\n:ID: long-proj-1\n:END:\n"))

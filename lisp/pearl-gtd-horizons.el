@@ -352,9 +352,9 @@ Supports multiple values per horizon level (split by semicolon)."
           (no-project-actions (cdr value)))
       ;; Insert projects
       (dolist (project projects)
-        (let ((project-name (car project))
+        (let ((proj-name (car project))
               (actions (cdr project)))
-          (insert (make-string (1+ depth) ?*) " " project-name "\n")
+          (insert (make-string (1+ depth) ?*) " " proj-name "\n")
           (dolist (action actions)
             (let ((head (nth 0 action))
                   (id (nth 1 action))
