@@ -954,6 +954,147 @@
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
               (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
 
+(pearl-gtd-test-define-story pearl-gtd-planning-mixed-separators-with-whitespace-test
+  "Mixed semicolons with surrounding spaces and tabs."
+  :setup (pearl-gtd-init-initialize)
+  :files nil
+  :mock (((symbol-function 'completing-read)
+          (pearl-gtd-test-planning--make-completing-read-mock
+           '("P1 ; P2 ； P3\t;\tP4")))  ; Mixed with whitespace
+         ((symbol-function 'read-string)
+          (pearl-gtd-test-planning--make-read-string-mock
+           '("Purpose" "" "Vision" "Goal" "Area" "@ctx" "Forced action")))
+         ((symbol-function 'pearl-gtd-inbox--read-destination-key)
+          (lambda (_) ?a))
+         ((symbol-function 'pearl-gtd-inbox--read-context)
+          (lambda () "@ctx"))
+         ((symbol-function 'pearl-gtd-inbox--read-project)
+          (lambda () ""))
+         ((symbol-function 'pearl-gtd-inbox--read-delegate)
+          (lambda () ""))
+         ((symbol-function 'pearl-gtd-core-read-date)
+          (lambda (&rest _) ""))
+         ((symbol-function 'pearl-gtd-planning--project-exists-p) (lambda (_) nil))
+         ((symbol-function 'recursive-edit)
+          (lambda ()
+            (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
+              (with-current-buffer buf
+                (insert "Action\n"))))))
+  :body (pearl-gtd-planning-start)
+  :asserts (let ((content (with-temp-buffer
+                            (insert-file-contents
+                             (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+                            (buffer-string))))
+             ;; All four projects should be stored correctly (allow for extra space after colon)
+             (should (string-match-p ":PROJECT:[ \t]*P1; P2; P3; P4" content)))
+  :teardown (progn
+              (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
+              (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
+
+(pearl-gtd-test-define-story pearl-gtd-planning-project-with-spaces-around-name-test
+  "Project name with leading/trailing spaces should be trimmed."
+  :setup (pearl-gtd-init-initialize)
+  :files nil
+  :mock (((symbol-function 'completing-read)
+          (lambda (&rest _) "  Project Name  "))  ; With spaces
+         ((symbol-function 'read-string)
+          (pearl-gtd-test-planning--make-read-string-mock
+           '("Purpose" "" "Vision" "Goal" "Area" "@ctx" "Forced action")))
+         ((symbol-function 'pearl-gtd-inbox--read-destination-key)
+          (lambda (_) ?a))
+         ((symbol-function 'pearl-gtd-inbox--read-context)
+          (lambda () "@ctx"))
+         ((symbol-function 'pearl-gtd-inbox--read-project)
+          (lambda () ""))
+         ((symbol-function 'pearl-gtd-inbox--read-delegate)
+          (lambda () ""))
+         ((symbol-function 'pearl-gtd-core-read-date)
+          (lambda (&rest _) ""))
+         ((symbol-function 'pearl-gtd-planning--project-exists-p) (lambda (_) nil))
+         ((symbol-function 'recursive-edit)
+          (lambda ()
+            (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
+              (with-current-buffer buf
+                (insert "Action\n"))))))
+  :body (pearl-gtd-planning-start)
+  :asserts (let ((content (with-temp-buffer
+                            (insert-file-contents
+                             (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+                            (buffer-string))))
+             ;; Project name should be trimmed (allow for extra space after colon)
+             (should (string-match-p ":PROJECT:[ \t]*Project Name" content))
+             (should-not (string-match-p ":PROJECT:[ \t]*  Project Name  " content)))
+  :teardown (progn
+              (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
+              (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
+
+(pearl-gtd-test-define-story pearl-gtd-planning-multiple-purposes-with-mixed-separators-test
+  "Multiple purposes with mixed separators and whitespace."
+  :setup (pearl-gtd-init-initialize)
+  :files nil
+  :mock (((symbol-function 'completing-read)
+          (pearl-gtd-test-planning--make-completing-read-mock
+           '("MultiPurposeProject")))
+         ((symbol-function 'read-string)
+          (pearl-gtd-test-planning--make-read-string-mock
+           '("Purpose1 ; Purpose2 ； Purpose3"  ; Mixed separators
+             ""                    ; Principle
+             "Vision"              ; Vision
+             "Goal"                ; Goal
+             "Area"                ; Area
+             "@ctx"                ; Default context
+             )))
+         ((symbol-function 'pearl-gtd-inbox--read-destination-key)
+          (lambda (_) ?a))
+         ((symbol-function 'pearl-gtd-core-read-date) (lambda (&rest _) ""))
+         ((symbol-function 'pearl-gtd-inbox--read-delegate) (lambda () ""))
+         ((symbol-function 'recursive-edit)
+          (lambda ()
+            (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
+              (with-current-buffer buf
+                (insert "Task\n"))))))
+  :body (pearl-gtd-planning-start)
+  :asserts (progn
+             ;; Verify multiple purposes stored correctly
+             (should (pearl-gtd-test-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      ":L6_PURPOSE: Purpose1; Purpose2; Purpose3")))
+  :teardown (progn
+              (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
+              (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
+
+(pearl-gtd-test-define-story pearl-gtd-planning-empty-brainstorm-after-trim-test
+  "Brainstorm items that are whitespace-only after trim should be ignored."
+  :setup (pearl-gtd-init-initialize)
+  :files nil
+  :mock (((symbol-function 'completing-read)
+          (pearl-gtd-test-planning--make-completing-read-mock
+           '("EmptyBrainstorm")))
+         ((symbol-function 'read-string)
+          (pearl-gtd-test-planning--make-read-string-mock
+           '("Purpose" "" "Vision" "Goal" "Area" "@ctx" "Forced action")))
+         ((symbol-function 'recursive-edit)
+          (lambda ()
+            (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
+              (with-current-buffer buf
+                ;; Only whitespace entries
+                (insert "   \n")
+                (insert "\t\t\n")
+                (insert "  \n"))))))
+  :body (pearl-gtd-planning-start)
+  :asserts (let ((content (with-temp-buffer
+                            (insert-file-contents
+                             (expand-file-name "inbox.org" pearl-gtd-init-base-directory))
+                            (buffer-string))))
+             ;; Whitespace-only entries should not be captured
+             (should-not (string-match-p ":BRAINSTORM: t" content))
+             (should (pearl-gtd-test-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      "Forced action")))
+  :teardown (progn
+              (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
+              (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
+
 
 (pearl-gtd-test-define-story pearl-gtd-planning-existing-project-with-space-detected-test
   "Existing project with space in name should be detected correctly."

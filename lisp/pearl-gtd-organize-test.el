@@ -392,6 +392,97 @@
                (should-not (string-match-p ":PROJECT: Company\n.*:PROJECT: Inc" content))))
   :teardown nil)
 
+(pearl-gtd-test-define-story pearl-gtd-organize-user-enters-project-with-mixed-separators-test
+  "Project input with mixed semicolons and surrounding whitespace."
+  :setup (pearl-gtd-init-initialize)
+  :files (("inbox.org" "* Multi project task\n:PROPERTIES:\n:ID: proj-mixed-1\n:END:\n"))
+  :mock (((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) ?a))
+         ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil)))
+         ((symbol-function 'pearl-gtd-core-read-date) (lambda (&rest _) ""))
+         ((symbol-function 'pearl-gtd-inbox--read-delegate) (lambda () ""))
+         ((symbol-function 'pearl-gtd-inbox--read-context) (lambda () ""))
+         ((symbol-function 'pearl-gtd-inbox--read-project) (lambda () "Project A ; Project B ； Project C")))
+  :body (pearl-gtd-process-inbox)
+  :asserts (progn
+             (let ((content (with-temp-buffer
+                              (insert-file-contents
+                               (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+                              (buffer-string))))
+               ;; All three projects should be stored (allow for whitespace after colon)
+               (should (string-match-p ":PROJECT:[ \t]*Project A; Project B; Project C" content))
+               ;; Should not have malformed split
+               (should-not (string-match-p ":PROJECT: Project A\n" content))))
+  :teardown nil)
+
+(pearl-gtd-test-define-story pearl-gtd-organize-user-enters-project-with-tabs-test
+  "Project input with tabs as separators or around separators."
+  :setup (pearl-gtd-init-initialize)
+  :files (("inbox.org" "* Tab project task\n:PROPERTIES:\n:ID: proj-tab-1\n:END:\n"))
+  :mock (((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) ?a))
+         ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil)))
+         ((symbol-function 'pearl-gtd-core-read-date) (lambda (&rest _) ""))
+         ((symbol-function 'pearl-gtd-inbox--read-delegate) (lambda () ""))
+         ((symbol-function 'pearl-gtd-inbox--read-context) (lambda () ""))
+         ((symbol-function 'pearl-gtd-inbox--read-project) (lambda () "ProjA\t;\tProjB")))
+  :body (pearl-gtd-process-inbox)
+  :asserts (let ((content (with-temp-buffer
+                            (insert-file-contents
+                             (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+                            (buffer-string))))
+             ;; Allow for whitespace after colon
+             (should (string-match-p ":PROJECT:[ \t]*ProjA; ProjB" content)))
+  :teardown nil)
+
+(pearl-gtd-test-define-story pearl-gtd-organize-user-enters-context-with-mixed-whitespace-test
+  "Context input with leading/trailing spaces and tabs."
+  :setup (pearl-gtd-init-initialize)
+  :files (("inbox.org" "* Context task\n:PROPERTIES:\n:ID: ctx-ws-1\n:END:\n"))
+  :mock (((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) ?a))
+         ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil)))
+         ((symbol-function 'pearl-gtd-core-read-date) (lambda (&rest _) ""))
+         ((symbol-function 'pearl-gtd-inbox--read-delegate) (lambda () ""))
+         ((symbol-function 'pearl-gtd-inbox--read-context) (lambda () "  @office  "))
+         ((symbol-function 'pearl-gtd-inbox--read-project) (lambda () "")))
+  :body (pearl-gtd-process-inbox)
+  :asserts (let ((content (with-temp-buffer
+                            (insert-file-contents
+                             (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+                            (buffer-string))))
+             ;; Context should be trimmed (tag format)
+             (should (string-match-p ":office:" content))
+             (should-not (string-match-p ":  @office  :" content)))
+  :teardown nil)
+
+(pearl-gtd-test-define-story pearl-gtd-organize-user-enters-empty-project-whitespace-only-test
+  "Whitespace-only project should be treated as empty."
+  :setup (pearl-gtd-init-initialize)
+  :files (("inbox.org" "* No project task\n:PROPERTIES:\n:ID: empty-proj-2\n:END:\n"))
+  :mock (((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) ?a))
+         ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil)))
+         ((symbol-function 'pearl-gtd-core-read-date) (lambda (&rest _) ""))
+         ((symbol-function 'pearl-gtd-inbox--read-delegate) (lambda () ""))
+         ((symbol-function 'pearl-gtd-inbox--read-context) (lambda () ""))
+         ((symbol-function 'pearl-gtd-inbox--read-project) (lambda () "   \t  ")))  ; Only whitespace
+  :body (pearl-gtd-process-inbox)
+  :asserts (let ((content (with-temp-buffer
+                            (insert-file-contents
+                             (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+                            (buffer-string))))
+             ;; Should not have PROJECT property with non-empty value
+             (should-not (string-match-p ":PROJECT:[ \t]*[^ \t\n\r]" content)))
+  :teardown nil)
+
+(pearl-gtd-test-define-story pearl-gtd-organize-headline-with-org-special-chars-test
+  "Headline with org special chars like *, #, [ should be handled."
+  :setup (pearl-gtd-init-initialize)
+  :files (("inbox.org" "* Task with [brackets] and *stars*\n:PROPERTIES:\n:ID: org-chars-1\n:END:\n"))
+  :mock (((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) ?r))
+         ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil))))
+  :body (pearl-gtd-process-inbox)
+  :asserts (let ((ref-file (expand-file-name "reference.org" pearl-gtd-init-base-directory)))
+             (should (pearl-gtd-test-file-contains-p-bool ref-file "* Task with")))
+  :teardown nil)
+
 (pearl-gtd-test-define-story pearl-gtd-organize-user-skips-project-name-test
   "Empty or whitespace-only project name should be treated as no project."
   :setup (pearl-gtd-init-initialize)

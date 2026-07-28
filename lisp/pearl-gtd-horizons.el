@@ -210,18 +210,35 @@ Supports multiple values per horizon level (split by semicolon)."
                   (l5 (org-entry-get nil "L5_VISION"))
                   (l6 (org-entry-get nil "L6_PURPOSE"))
                   (entry (list head id todo-state)))
-             ;; Only process if any horizon is set
-             (when (or l3 l4 l5 l6)
-               ;; For entries with only L3 set, put them at top level
-               (if (and l3 (not (or l4 l5 l6)))
+             ;; Only process if any horizon is set (non-empty)
+             (when (or (and l3 (not (string= l3 "")))
+                       (and l4 (not (string= l4 "")))
+                       (and l5 (not (string= l5 "")))
+                       (and l6 (not (string= l6 ""))))
+               ;; For entries with only L3 set, put them at top level (but check for project)
+               (if (and l3 (not (string= l3 ""))
+                        (not (or (and l4 (not (string= l4 "")))
+                                 (and l5 (not (string= l5 "")))
+                                 (and l6 (not (string= l6 ""))))))
                    (let* ((l3-values (pearl-gtd-core--split-values l3)))
                      (dolist (l3-key l3-values)
                        (let* ((l3-key-normalized (if (string= l3-key "") "" l3-key))
                               ;; Get or create top-level L3 entry
                               (l3-entry (or (gethash l3-key-normalized hierarchy)
                                             (puthash l3-key-normalized (list nil nil) hierarchy))))
-                         ;; Add to no-project list
-                         (setcdr l3-entry (cons entry (cdr l3-entry))))))
+                         ;; Check if entry has project
+                         (if (and proj (not (string= proj "")))
+                             ;; Add to project's list
+                             (let ((projects (pearl-gtd-core--split-values proj)))
+                               (dolist (p projects)
+                                 (let* ((project-list (car l3-entry))
+                                        (existing (assoc p project-list))
+                                        (entry-with-proj (list head id todo-state p)))
+                                   (if existing
+                                       (setcdr existing (cons entry-with-proj (cdr existing)))
+                                     (setcar l3-entry (cons (list p entry-with-proj) project-list))))))
+                           ;; Add to no-project list
+                           (setcdr l3-entry (cons entry (cdr l3-entry)))))))
                  ;; For entries with L4/L5/L6, build full hierarchy
                  ;; Split each level into multiple values
                  (let* ((l6-values (pearl-gtd-core--split-values (or l6 "")))

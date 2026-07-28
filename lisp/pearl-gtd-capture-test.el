@@ -261,6 +261,58 @@
                (should (> size 1000))))
   :teardown nil)
 
+(pearl-gtd-test-define-story pearl-gtd-capture-user-captures-with-leading-trailing-spaces-test
+  "Leading and trailing spaces should be trimmed in capture."
+  :setup (pearl-gtd-init-initialize)
+  :files nil
+  :mock (((symbol-function 'read-string) (lambda (&rest _) "  Task with spaces  ")))
+  :body (pearl-gtd-capture)
+  :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+             (should (pearl-gtd-test-file-contains-p-bool inbox-file "* Task with spaces"))
+             (should-not (pearl-gtd-test-file-contains-p-bool inbox-file "*  Task with spaces  ")))
+  :teardown nil)
+
+(pearl-gtd-test-define-story pearl-gtd-capture-user-captures-with-tabs-test
+  "Tabs in input should be handled."
+  :setup (pearl-gtd-init-initialize)
+  :files nil
+  :mock (((symbol-function 'read-string) (lambda (&rest _) "Task\twith\ttabs")))
+  :body (pearl-gtd-capture)
+  :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+             (should (pearl-gtd-test-file-contains-p-bool inbox-file "* Task")))
+  :teardown nil)
+
+(pearl-gtd-test-define-story pearl-gtd-capture-user-captures-multiple-consecutive-spaces-test
+  "Multiple consecutive spaces should be preserved or handled gracefully."
+  :setup (pearl-gtd-init-initialize)
+  :files nil
+  :mock (((symbol-function 'read-string) (lambda (&rest _) "Task    with    spaces")))
+  :body (pearl-gtd-capture)
+  :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+             (should (pearl-gtd-test-file-contains-p-bool inbox-file "* Task    with    spaces")))
+  :teardown nil)
+
+(pearl-gtd-test-define-story pearl-gtd-capture-user-captures-chinese-punctuation-test
+  "Chinese punctuation should be handled correctly."
+  :setup (pearl-gtd-init-initialize)
+  :files nil
+  :mock (((symbol-function 'read-string) (lambda (&rest _) "任务：测试【紧急】")))
+  :body (pearl-gtd-capture)
+  :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+             (should (pearl-gtd-test-file-contains-p-bool inbox-file "任务：测试【紧急】")))
+  :teardown nil)
+
+(pearl-gtd-test-define-story pearl-gtd-capture-user-captures-org-special-chars-test
+  "Org-mode special characters should be escaped or handled."
+  :setup (pearl-gtd-init-initialize)
+  :files nil
+  :mock (((symbol-function 'read-string) (lambda (&rest _) "Task with *asterisk* and #hash")))
+  :body (pearl-gtd-capture)
+  :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+             (should (pearl-gtd-test-file-contains-p-bool inbox-file "* Task with"))
+             (should (pearl-gtd-test-file-contains-p-bool inbox-file ":ID:")))
+  :teardown nil)
+
 (provide 'pearl-gtd-test-capture)
 
 ;;; pearl-gtd-test-capture.el ends here

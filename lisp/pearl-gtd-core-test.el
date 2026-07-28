@@ -90,6 +90,45 @@
   (should (string= (pearl-gtd-core--normalize-project-input "  Project A; Project B  ")
                    "Project A; Project B")))
 
+(ert-deftest pearl-gtd-test-core-split-values-mixed-separators-with-spaces ()
+  "Test splitting values with mixed separators and surrounding whitespace."
+  (should (equal (pearl-gtd-core--split-values "  Project A ; Project B ； Project C ;Project D  ")
+                 '("Project A" "Project B" "Project C" "Project D"))))
+
+(ert-deftest pearl-gtd-test-core-split-values-tabs-and-spaces ()
+  "Test splitting values with tabs and mixed whitespace."
+  (should (equal (pearl-gtd-core--split-values "Project A\t;\tProject B  ;\t\tProject C")
+                 '("Project A" "Project B" "Project C"))))
+
+(ert-deftest pearl-gtd-test-core-split-values-empty-between-separators ()
+  "Test splitting with empty values between separators."
+  (should (equal (pearl-gtd-core--split-values "Project A;; Project B；;Project C")
+                 '("Project A" "Project B" "Project C"))))
+
+(ert-deftest pearl-gtd-test-core-split-values-single-value-with-spaces ()
+  "Test splitting single value with surrounding whitespace."
+  (should (equal (pearl-gtd-core--split-values "  Single Project  ")
+                 '("Single Project"))))
+
+(ert-deftest pearl-gtd-test-core-join-values-preserves-internal-spaces ()
+  "Test that join preserves internal spaces in values."
+  (should (string= (pearl-gtd-core--join-values '("Project A" "B" "C"))
+                   "Project A; B; C")))
+
+(ert-deftest pearl-gtd-test-core-normalize-project-input-mixed-separators ()
+  "Test normalizing input with mixed English and Chinese semicolons."
+  (should (string= (pearl-gtd-core--normalize-project-input "Project A；Project B;Project C")
+                   "Project A; Project B; Project C")))
+
+(ert-deftest pearl-gtd-test-core-normalize-project-input-only-whitespace ()
+  "Test that whitespace-only input becomes nil."
+  (should (null (pearl-gtd-core--normalize-project-input "   \t  \n  "))))
+
+(ert-deftest pearl-gtd-test-core-normalize-project-input-mixed-whitespace-separators ()
+  "Test normalizing with tabs and spaces around separators."
+  (should (string= (pearl-gtd-core--normalize-project-input "P1 \t ; \t P2 ；  P3")
+                   "P1; P2; P3")))
+
 (provide 'pearl-gtd-core-test)
 
 ;;; pearl-gtd-core-test.el ends here

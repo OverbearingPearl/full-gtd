@@ -229,6 +229,74 @@
               (let ((buf (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory))))
                 (when buf (kill-buffer buf)))))
 
+(pearl-gtd-test-define-story pearl-gtd-workflows-multi-project-action-inheritance-test
+  "Action linked to multiple projects inherits horizons from all."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* TODO Shared action\n:PROPERTIES:\n:ID: shared-multi-1\n:PROJECT: Alpha; Beta\n:END:\n"))
+  :mock (((symbol-function 'pearl-gtd-review--get-project-stats)
+          (lambda (proj)
+            ;; Return stats that mark both projects as active (have TODOs)
+            '("1" "1" "0" "" "" "" "" ""))))
+  :body (pearl-gtd-review-weekly)
+  :asserts (progn
+             (should (get-buffer "*Pearl-GTD Weekly Review*"))
+             ;; Should appear in project views - look in Active Projects section
+             (with-current-buffer "*Pearl-GTD Weekly Review*"
+               (goto-char (point-min))
+               (let ((active-pos (search-forward "** Projects - Active" nil t)))
+                 (should active-pos)
+                 ;; Both projects should be listed
+                 (goto-char active-pos)
+                 (should (search-forward "Alpha" nil t))
+                 (goto-char active-pos)
+                 (should (search-forward "Beta" nil t)))))
+  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
+
+(pearl-gtd-test-define-story pearl-gtd-workflows-multiple-contexts-on-single-action-test
+  "Action can have multiple context tags."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* TODO Multi context task\n:PROPERTIES:\n:ID: multi-ctx-1\n:CONTEXT: office\n:END:\n"))
+  :mock nil
+  :body (progn
+          ;; Add second context manually
+          (let ((file (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
+            (with-current-buffer (find-file-noselect file)
+              (goto-char (point-min))
+              (re-search-forward "Multi context task")
+              (org-set-tags '("office" "phone"))
+              (save-buffer)
+              (kill-buffer))))
+          (pearl-gtd-do-view-all-actions)
+  :asserts (progn
+             (should (get-buffer "*Pearl-GTD: All Actions*"))
+             (with-current-buffer "*Pearl-GTD: All Actions*"
+               (should (search-forward "@office" nil t))
+               (should (search-forward "@phone" nil t))))
+  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD: All Actions*")))
+
+(pearl-gtd-test-define-story pearl-gtd-workflows-extreme-whitespace-in-fields-test
+  "Extreme whitespace in various fields should be handled."
+  :setup (pearl-gtd-init-initialize)
+  :files (("inbox.org" "*    Task with lots of spaces    \n:PROPERTIES:\n:ID: ws-extreme-1\n:END:\n"))
+  :mock (((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) ?a))
+         ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil)))
+         ((symbol-function 'pearl-gtd-core-read-date) (lambda (&rest _) ""))
+         ((symbol-function 'pearl-gtd-inbox--read-delegate) (lambda () "  Bob  "))
+         ((symbol-function 'pearl-gtd-inbox--read-context) (lambda () "  @office  "))
+         ((symbol-function 'pearl-gtd-inbox--read-project) (lambda () "  ProjA  ;  ProjB  ")))
+  :body (pearl-gtd-process-inbox)
+  :asserts (let ((content (with-temp-buffer
+                            (insert-file-contents
+                             (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+                            (buffer-string))))
+             ;; All values should be trimmed (allow for whitespace after colon)
+             (should (string-match-p ":office:" content))
+             (should (string-match-p ":DELEGATED:[ \t]*Bob" content))
+             (should (string-match-p ":PROJECT:[ \t]*ProjA; ProjB" content))
+             ;; Original whitespace should not be preserved
+             (should-not (string-match-p ":  @office  :" content)))
+  :teardown nil)
+
 (pearl-gtd-test-define-story pearl-gtd-workflows-large-number-entries-test
   "System should handle 100+ entries without significant slowdown."
   :setup (pearl-gtd-init-initialize)
