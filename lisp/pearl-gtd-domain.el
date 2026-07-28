@@ -53,7 +53,8 @@ INPUT must be string or nil."
 (defun pearl-gtd-domain--check-hierarchy-constraint (existing-horizons level)
   "Check hierarchy constraint for setting LEVEL horizon.
 EXISTING-HORIZONS is an alist of ((L3_AREA . val) (L4_GOAL . val) ...).
-LEVEL must be a symbol: 'area, 'goal, 'vision, 'purpose, or 'principle.
+LEVEL must be a symbol:
+  \\='area, \\='goal, \\='vision, \\='purpose, or \\='principle.
 Returns (VALID-P . ERROR-MSG)."
   (cl-assert (memq level '(area goal vision purpose principle))
              t "Internal: invalid horizon level %s" level)

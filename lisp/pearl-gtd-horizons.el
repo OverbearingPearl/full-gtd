@@ -73,7 +73,7 @@ PROPERTY should be one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE."
 (defun pearl-gtd-horizons--check-hierarchy-constraint (project level)
   "Check hierarchy constraint for setting LEVEL horizon for PROJECT.
 PROJECT is project name string (external input, must be string).
-LEVEL is symbol: 'area, 'goal, 'vision, 'purpose, or 'principle."
+LEVEL is symbol: \\='area, \\='goal, \\='vision, \\='purpose, or \\='principle."
   (cl-assert (stringp project) t "Internal: project must be string")
   (let ((existing-horizons
          (list (cons 'L3_AREA (pearl-gtd-horizons--get-project-horizon project "L3_AREA"))
