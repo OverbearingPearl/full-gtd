@@ -71,7 +71,8 @@ PROPERTY should be one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE."
 
 (defun pearl-gtd-horizons--check-hierarchy-constraint (project level)
   "Check hierarchy constraint for setting LEVEL horizon for PROJECT.
-LEVEL should be a symbol: \\='area, \\='goal, \\='vision, \\='purpose, or \\='principle.
+LEVEL should be a symbol:
+  \\='area, \\='goal, \\='vision, \\='purpose, or \\='principle.
 L5 (vision) requires L4 (goal), L6 (purpose) requires L5 (vision),
 L6 (principle) requires L6 (purpose).
 Returns non-nil if constraint is satisfied, nil otherwise."
@@ -94,7 +95,8 @@ Returns non-nil if constraint is satisfied, nil otherwise."
 
 (defun pearl-gtd-horizons--edit-horizon-at-point (level &optional project)
   "Edit horizon LEVEL for entry at point or for PROJECT if provided.
-LEVEL should be a symbol: \\='area, \\='goal, \\='vision, \\='purpose, or \\='principle.
+LEVEL should be a symbol:
+  \\='area, \\='goal, \\='vision, \\='purpose, or \\='principle.
 Supports multiple values separated by semicolon."
   (let* ((entry (unless project (pearl-gtd-review--get-entry-at-point)))
          (project (or project

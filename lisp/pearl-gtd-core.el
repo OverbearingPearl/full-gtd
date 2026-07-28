@@ -242,7 +242,8 @@ Signals \\='quit if user presses \\`C-g\\'."
   "Split VALUE-STRING using semicolon separator.
 Supports both English (;) and Chinese (；) semicolons.
 Trim whitespace from each value. Filter empty values.
-Example: \"Project A; Project B；Project C\" -> (\"Project A\" \"Project B\" \"Project C\")"
+Example: \"Project A; Project B；Project C\"
+  -> (\"Project A\" \"Project B\" \"Project C\")"
   (when value-string
     (let ((normalized (replace-regexp-in-string "；" ";" value-string)))
       (seq-filter (lambda (s) (not (string-empty-p s)))
