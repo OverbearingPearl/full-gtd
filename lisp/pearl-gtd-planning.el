@@ -63,7 +63,8 @@ Signals \\='quit if user presses \\`C-g\\'."
 
 (defun pearl-gtd-planning--project-exists-p (proj-name)
   "Check if PROJ-NAME already exists in actions.org.
-Handles multi-project values with semicolon separators (both English and Chinese)."
+  This also handles multi-project values separated by semicolons
+  (English and Chinese)."
   (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
     (when (file-exists-p file-path)
       (with-temp-buffer

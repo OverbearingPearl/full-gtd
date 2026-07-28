@@ -385,7 +385,8 @@ DEADLINE is the deadline date string, or nil if not set.")
 ;;;; Entry Point
 
 (defun pearl-gtd-inbox--process-entry (headline buffer entry-ref original-tags &optional default-context default-project)
-  "Process HEADLINE entry with new streamlined flow.
+  "Process HEADLINE entry in BUFFER with new streamlined flow.
+BUFFER is the staging buffer containing the entry.
 Optional DEFAULT-CONTEXT and DEFAULT-PROJECT are passed to action
 attribute collection.  ORIGINAL-TAGS is the original tags string from
 the staging buffer."
