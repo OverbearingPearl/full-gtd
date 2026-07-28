@@ -143,9 +143,9 @@ EXTRA-CLEANUP is a form to execute when removing the property
                (,setter id file ,property new-value))
              (pearl-gtd-review--refresh-view)))))))
 
-(pearl-gtd-review-define-property-editor "context" "CONTEXT" "Context (RET=remove, e.g., @office): ")
+(pearl-gtd-review-define-property-editor "context" "CONTEXT" "Context (RET=remove, supports spaces, e.g., @office, @home office): ")
 
-(pearl-gtd-review-define-property-editor "delegated" "DELEGATED" "Delegated to (RET=remove, e.g., John): "
+(pearl-gtd-review-define-property-editor "delegated" "DELEGATED" "Delegated to (RET=remove, supports full name, e.g., John Smith): "
   (pearl-gtd-review--remove-property-by-id id file "DELEGATED_DATE"))
 
 (defun pearl-gtd-review--edit-scheduled-at-point ()
@@ -157,7 +157,7 @@ EXTRA-CLEANUP is a form to execute when removing the property
              (file (cdr entry))
              (current-scheduled (pearl-gtd-review--get-scheduled-by-id id file))
              (default-value (or current-scheduled ""))
-             (new-value (read-string "Schedule date (RET=remove, e.g., 2023-12-25): " default-value)))
+             (new-value (read-string "Schedule date (RET=remove, e.g., 2026-12-25, 2026-12-25 14:30): " default-value)))
         (pearl-gtd-core-with-entry-at-id id file
           (if (string= new-value "")
               (org-schedule '(4))
@@ -172,8 +172,8 @@ EXTRA-CLEANUP is a form to execute when removing the property
     (when entry
       (let* ((id (car entry))
              (file (cdr entry))
-             (deadline (read-string "Deadline (e.g., 2023-12-25): "))
-             (reminder (read-string "Reminder days before (e.g., 3): " "0")))
+             (deadline (read-string "Deadline (e.g., 2026-12-25, 2026-12-25 14:30): "))
+             (reminder (read-string "Reminder days before (e.g., 3, 0 for none): " "0")))
         (pearl-gtd-core-with-entry-at-id id file
           (org-deadline nil deadline)
           (org-set-property "REMINDER_DAYS" reminder)
@@ -188,14 +188,14 @@ EXTRA-CLEANUP is a form to execute when removing the property
       (let* ((id (car entry))
              (file (cdr entry))
              (current-headline (pearl-gtd-review--get-headline-by-id id file))
-             (new-name (read-string "New task name (e.g., Prepare quarterly report): " current-headline)))
+             (new-name (read-string "New task name (supports spaces, e.g., Prepare quarterly report): " current-headline)))
         (when (and new-name (not (string= new-name "")) (not (string= new-name current-headline)))
           (pearl-gtd-core-with-entry-at-id id file
             (org-edit-headline new-name)
             (save-buffer))
           (pearl-gtd-review--refresh-view))))))
 
-(pearl-gtd-review-define-property-editor "project" "PROJECT" "Project (RET=remove, e.g., Website-Redesign): "
+(pearl-gtd-review-define-property-editor "project" "PROJECT" "Project (RET=remove, supports spaces, use ; for multiple, e.g., Website Redesign; Q1 Goals): "
   (progn
     (pearl-gtd-review--remove-property-by-id id file "L3_AREA")
     (pearl-gtd-review--remove-property-by-id id file "L4_GOAL")
@@ -401,7 +401,8 @@ Returns list of entry lists suitable for table display."
    nil))  ; no Created field
 
 (defun pearl-gtd-review--collect-all-projects ()
-  "Collect all unique project names from actions.org."
+  "Collect all unique project names from actions.org.
+Supports semicolon separators (both English and Chinese)."
   (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
         (projects '()))
     (when (file-exists-p actions-file)
@@ -412,8 +413,7 @@ Returns list of entry lists suitable for table display."
          (lambda ()
            (let ((proj (org-entry-get nil "PROJECT")))
              (when proj
-               ;; PROJECT can contain multiple projects separated by comma or space
-               (dolist (p (split-string proj "[, ]" t))
+               (dolist (p (pearl-gtd-core--split-values proj))
                  (cl-pushnew p projects :test #'string=)))))
          nil nil)))
     (nreverse projects)))
@@ -421,12 +421,7 @@ Returns list of entry lists suitable for table display."
 (defun pearl-gtd-review--get-project-stats (proj-name)
   "Get statistics for PROJ-NAME from actions.org.
 PROJ-NAME is a string naming the project to analyze.
-Returns list (TOTAL TODO DONE NEXT-DEADLINE L3 L4 L5 L6) where:
-TOTAL is the total number of entries,
-TODO is the count of unfinished entries,
-DONE is the count of completed entries,
-NEXT-DEADLINE is the earliest deadline string or empty string,
-L3-L6 are horizon values from project entries."
+Returns list (TOTAL TODO DONE NEXT-DEADLINE L3 L4 L5 L6)."
   (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
         (total 0)
         (done 0)
@@ -444,7 +439,7 @@ L3-L6 are horizon values from project entries."
          (lambda ()
            (let ((proj (org-entry-get nil "PROJECT")))
              (when proj
-               (let ((projects (split-string proj "[, ]" t)))
+               (let ((projects (pearl-gtd-core--split-values proj)))
                  (when (member proj-name projects)
                    (cl-incf total)
                    (let ((todo-state (org-get-todo-state)))

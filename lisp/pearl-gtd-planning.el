@@ -63,7 +63,7 @@ Signals \\='quit if user presses \\`C-g\\'."
 
 (defun pearl-gtd-planning--project-exists-p (proj-name)
   "Check if PROJ-NAME already exists in actions.org.
-Handles multi-project tags (comma-separated)."
+Handles multi-project values with semicolon separators (both English and Chinese)."
   (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
     (when (file-exists-p file-path)
       (with-temp-buffer
@@ -73,9 +73,8 @@ Handles multi-project tags (comma-separated)."
         (catch 'found
           (while (re-search-forward (concat ":PROJECT:[ \t]+\\([^\n]*\\)") nil t)
             (let ((project-value (match-string 1)))
-              ;; Split by comma and trim whitespace
-              (dolist (proj (split-string project-value "," t))
-                (when (string= (string-trim proj) proj-name)
+              (dolist (proj (pearl-gtd-core--split-values project-value))
+                (when (string= proj proj-name)
                   (throw 'found t)))))
           nil)))))
 
@@ -93,23 +92,26 @@ Returns list of unique project names from entries where BRAINSTORM is \"t\"."
            (when (string= (org-entry-get nil "BRAINSTORM") "t")
              (let ((proj (org-entry-get nil "PROJECT")))
                (when proj
-                 ;; Handle multi-project tags (comma-separated)
-                 (dolist (p (split-string proj "," t))
-                   (let ((trimmed (string-trim p)))
-                     (when (not (string= trimmed ""))
-                       (cl-pushnew trimmed projects :test #'string=))))))))
+                 (let ((normalized (pearl-gtd-core--normalize-project-input proj)))
+                   (when normalized
+                     (dolist (p (pearl-gtd-core--split-values normalized))
+                       (cl-pushnew p projects :test #'string=))))))))
          nil nil)))
     (nreverse projects)))
 
 (defun pearl-gtd-planning--select-project ()
   "Prompt user to create new project name with completion from brainstorm projects.
-Return project name string after validation (non-empty and not existing)."
+Return project name string after validation (non-empty and not existing).
+Supports spaces in project names. Use ; to separate multiple projects."
   (let ((project-name "")
         (brainstorm-projects (pearl-gtd-planning--collect-brainstorm-projects)))
     (while (or (string= project-name "")
                (pearl-gtd-planning--project-exists-p project-name))
-      (setq project-name (completing-read "Project name: <Unique identifier> (e.g., Website-Redesign, Q1-Marketing) [TAB for brainstorm projects]: "
-                                          brainstorm-projects nil nil))
+      (setq project-name (completing-read
+                          "Project name: <Unique identifier> (e.g., Website Redesign, Q1 Marketing Campaign) [TAB for existing projects, use ; to separate multiple projects]: "
+                          brainstorm-projects nil nil))
+      ;; Normalize input to handle Chinese semicolons and commas
+      (setq project-name (pearl-gtd-core--normalize-project-input project-name))
       (cond
        ((string= project-name "")
         (message "Project name cannot be empty, please re-enter.")
@@ -125,9 +127,10 @@ Return project name string after validation (non-empty and not existing)."
 LEVEL is a number (3-7).  DESCRIPTION is a string describing the horizon.
 If OPTIONAL is non-nil, empty input is allowed.
 EXAMPLE-LEVEL is the level to use for examples (defaults to LEVEL).
-Return the input string (guaranteed non-empty when OPTIONAL is nil)."
-  (let* ((examples '((3 . "Career, Health, Family, Personal Development")
-                     (4 . "Launch website by March, Complete certification Q2")
+Return the input string (guaranteed non-empty when OPTIONAL is nil).
+Supports spaces in horizon values."
+  (let* ((examples '((3 . "Career Development, Personal Health, Family Life")
+                     (4 . "Launch website by March 2026, Complete certification Q2")
                      (5 . "Become industry leader in 3 years, Build sustainable business")
                      (6 . "Help professionals organize work, Create positive impact")
                      (7 . "Quality over speed, Family first, Continuous learning")))
@@ -136,7 +139,7 @@ Return the input string (guaranteed non-empty when OPTIONAL is nil)."
          (required-str (if optional "optional" "required"))
          (prompt (format "%s (L%d, %s): <Description> [RET %s] (e.g., %s): "
                          description level required-str
-                         (if optional "skip" "must fill")
+                         (if optional "to skip" "must fill")
                          example)))
     (let ((input (read-string prompt)))
       (while (and (not optional) (string= input ""))
@@ -370,7 +373,7 @@ HORIZONS is an alist of horizon properties."
          (goal (pearl-gtd-planning--ask-horizon 4 "Goal" nil))
          (area (pearl-gtd-planning--ask-horizon 3 "Area" t))
          (default-context (read-string
-                          (format "Default context for '%s' [RET none]: <@location/tool> (e.g., @phone, @office): "
+                          (format "Default context for '%s' [RET for none]: <@location/tool> (e.g., @office, @home, @phone): "
                                   pearl-gtd-planning--current-project)))
          (horizons `(("L6_PURPOSE" . ,purpose)
                      ("L6_PRINCIPLE" . ,principle)

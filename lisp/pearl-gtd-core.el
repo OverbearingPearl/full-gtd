@@ -237,6 +237,32 @@ Signals \\='quit if user presses \\`C-g\\'."
            (t (message "Invalid key") (sit-for 0.5)))))
       result)))
 
+(defun pearl-gtd-core--split-values (value-string)
+  "Split VALUE-STRING using semicolon separator.
+Supports both English (;) and Chinese (；) semicolons.
+Trim whitespace from each value. Filter empty values.
+Example: \"Project A; Project B；Project C\" -> (\"Project A\" \"Project B\" \"Project C\")"
+  (when value-string
+    (let ((normalized (replace-regexp-in-string "；" ";" value-string)))
+      (seq-filter (lambda (s) (not (string-empty-p s)))
+                  (mapcar #'string-trim
+                          (split-string normalized ";"))))))
+
+(defun pearl-gtd-core--join-values (values)
+  "Join VALUES list using English semicolon separator.
+Always uses English semicolon for storage consistency.
+Example: (\"Project A\" \"Project B\") -> \"Project A; Project B\""
+  (mapconcat #'identity values "; "))
+
+(defun pearl-gtd-core--normalize-project-input (input)
+  "Normalize project input: convert commas and Chinese semicolons to English semicolons.
+Trim whitespace. Returns nil if empty.
+Example: \"Project A，Project B；Project C\" -> \"Project A; Project B; Project C\""
+  (when input
+    (let* ((trimmed (string-trim input))
+           (normalized (replace-regexp-in-string "[,\uFF0C；] *" "; " trimmed)))
+      (if (string-empty-p normalized) nil normalized))))
+
 (provide 'pearl-gtd-core)
 
 ;;; pearl-gtd-core.el ends here

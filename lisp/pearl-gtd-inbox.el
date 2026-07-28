@@ -73,11 +73,11 @@ Signals \\='quit if user presses \\`C-g\\'."
 (defun pearl-gtd-inbox--clarify-entry (headline)
   "Clarify HEADLINE and remarks.
 Returns (NEW-HEADLINE . REMARKS).  Either can be nil."
-  (let* ((new (read-string (format "Clarify '%s' [RET keep]: <Clear next action> (e.g., Buy organic milk from Whole Foods): "
+  (let* ((new (read-string (format "Clarify '%s' [RET keep]: <Clear next action> (e.g., Buy organic milk from Whole Foods, Call John about project): "
                                    headline)))
          (new-headline (let ((trimmed (string-trim new)))
                         (unless (string= trimmed "") trimmed)))
-         (remarks-text (read-string (format "Notes for '%s' [RET skip]: <Details or constraints> (e.g., Check brand: Organic Valley): "
+         (remarks-text (read-string (format "Notes for '%s' [RET skip]: <Details or constraints> (e.g., Check brand: Organic Valley, Ask about deadline): "
                                             (or new-headline headline)))))
     (cons new-headline (unless (string= remarks-text "") remarks-text))))
 
@@ -111,28 +111,33 @@ Returns alist: ((context . VAL) (schedule . VAL) (deadline . VAL)
       (delegate . ,deleg) (project . ,proj))))
 
 (defun pearl-gtd-inbox--read-context ()
-  "Read context with completion from existing actions, allowing free input."
+  "Read context with completion from existing actions, allowing free input.
+Supports spaces in context names. Examples: @office, @home office, @phone."
   (let* ((existing (pearl-gtd-core-collect-contexts
                     (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
          (default (or pearl-gtd-inbox--last-context ""))
          (prompt (if (string= default "")
-                     "Context [RET none, TAB complete]: <@location/tool> (e.g., @office, @home, @phone): "
-                   (format "Context [RET '%s', TAB complete]: <@location/tool> (e.g., @office, @home): " default)))
+                     "Context [RET none, TAB complete]: <@location/tool> (e.g., @office, @home office, @phone): "
+                   (format "Context [RET '%s', TAB complete]: <@location/tool> (e.g., @office, @home office): " default)))
          (input (completing-read prompt existing nil nil nil nil default)))
     (unless (string= input "")
       (setq pearl-gtd-inbox--last-context input))
     input))
 
 (defun pearl-gtd-inbox--read-project ()
-  "Read project with completion from existing projects."
+  "Read project with completion from existing projects.
+Supports spaces in project names. Use ; to separate multiple projects.
+Examples: Website Redesign, Q1 Marketing; Q2 Planning."
   (let* ((existing (pearl-gtd-review--collect-all-projects))
-         (input (completing-read "Project [RET none, TAB complete]: <Project name> (e.g., Website-Redesign, Q1-Goals): " existing nil nil)))
-    input))
+         (input (completing-read "Project [RET none, TAB complete]: <Project name> (e.g., Website Redesign, Q1 Goals; Q2 Planning): " existing nil nil)))
+    ;; Normalize to handle semicolons
+    (pearl-gtd-core--normalize-project-input input)))
 
 (defun pearl-gtd-inbox--read-delegate ()
-  "Read delegate with completion from existing delegates."
+  "Read delegate with completion from existing delegates.
+Supports full names with spaces. Examples: John Smith, Alice Johnson."
   (let* ((existing '())
-         (input (completing-read "Delegated to [RET none, TAB complete]: <Person name> (e.g., John Smith, Alice): " existing nil nil)))
+         (input (completing-read "Delegated to [RET none, TAB complete]: <Person name> (e.g., John Smith, Alice Johnson): " existing nil nil)))
     input))
 
 (defvar-local pearl-gtd-inbox--current-highlight nil
@@ -549,9 +554,10 @@ DEADLINE is the deadline date string (nil if not set)."
                   (org-schedule nil date-str)))
                ((string-match "^:PROJECT:\\(.+\\):$" comp)
                 (let ((projects (match-string 1 comp)))
-                  (dolist (proj (split-string projects "," t))
+                  ;; Support semicolon separators (both English and Chinese)
+                  (dolist (proj (pearl-gtd-core--split-values projects))
                     (org-entry-add-to-multivalued-property
-                     nil "PROJECT" (string-trim proj)))))
+                     nil "PROJECT" proj))))
                ((string-match "^:\\([^:]+\\):\\(.+\\):$" comp)
                 (let ((prop-name (match-string 1 comp))
                       (prop-value (match-string 2 comp)))

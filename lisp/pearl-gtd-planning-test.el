@@ -801,6 +801,199 @@
   :asserts t
   :teardown nil)
 
+(pearl-gtd-test-define-story pearl-gtd-planning-project-name-with-space-test
+  "Project name containing spaces should be handled correctly."
+  :setup (pearl-gtd-init-initialize)
+  :files nil
+  :mock (((symbol-function 'completing-read)
+          (pearl-gtd-test-planning--make-completing-read-mock
+           '("Website Redesign")))       ; Project name with space
+         ((symbol-function 'read-string)
+          (pearl-gtd-test-planning--make-read-string-mock
+           '("Purpose" "" "Vision" "Goal" "Area" "@ctx" "Forced action")))
+         ((symbol-function 'pearl-gtd-inbox--read-destination-key)
+          (lambda (_) ?a))
+         ((symbol-function 'pearl-gtd-inbox--read-context)
+          (lambda () "@ctx"))
+         ((symbol-function 'pearl-gtd-inbox--read-project)
+          (lambda () ""))
+         ((symbol-function 'pearl-gtd-inbox--read-delegate)
+          (lambda () ""))
+         ((symbol-function 'pearl-gtd-core-read-date)
+          (lambda (&rest _) ""))
+         ((symbol-function 'recursive-edit)
+          (lambda ()
+            (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
+              (with-current-buffer buf
+                (insert "Action item\n"))))))
+  :body (pearl-gtd-planning-start)
+  :asserts (progn
+             ;; Verify project name with space is preserved
+             (should (pearl-gtd-test-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      ":PROJECT: Website Redesign"))
+             ;; Verify action is created
+             (should (pearl-gtd-test-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      "Action item")))
+  :teardown (progn
+              (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
+              (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
+
+(pearl-gtd-test-define-story pearl-gtd-planning-multiple-projects-semicolon-test
+  "Multiple projects separated by semicolon should be parsed correctly."
+  :setup (pearl-gtd-init-initialize)
+  :files nil
+  :mock (((symbol-function 'completing-read)
+          (pearl-gtd-test-planning--make-completing-read-mock
+           '("Alpha Project; Beta Project")))  ; Multiple projects with semicolon
+         ((symbol-function 'read-string)
+          (pearl-gtd-test-planning--make-read-string-mock
+           '("Purpose" "" "Vision" "Goal" "Area" "@ctx" "Forced action")))
+         ((symbol-function 'pearl-gtd-inbox--read-destination-key)
+          (lambda (_) ?a))
+         ((symbol-function 'pearl-gtd-inbox--read-context)
+          (lambda () "@ctx"))
+         ((symbol-function 'pearl-gtd-inbox--read-project)
+          (lambda () ""))
+         ((symbol-function 'pearl-gtd-inbox--read-delegate)
+          (lambda () ""))
+         ((symbol-function 'pearl-gtd-core-read-date)
+          (lambda (&rest _) ""))
+         ((symbol-function 'recursive-edit)
+          (lambda ()
+            (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
+              (with-current-buffer buf
+                (insert "Shared action\n"))))))
+  :body (pearl-gtd-planning-start)
+  :asserts (progn
+             ;; Verify both projects are stored with English semicolon
+             (should (pearl-gtd-test-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      ":PROJECT: Alpha Project; Beta Project"))
+             ;; Verify action is linked to both projects
+             (should (pearl-gtd-test-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      "Shared action")))
+  :teardown (progn
+              (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
+              (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
+
+(pearl-gtd-test-define-story pearl-gtd-planning-chinese-semicolon-support-test
+  "Chinese semicolon should work as separator and be normalized."
+  :setup (pearl-gtd-init-initialize)
+  :files nil
+  :mock (((symbol-function 'completing-read)
+          (pearl-gtd-test-planning--make-completing-read-mock
+           '("Project A；Project B")))  ; Chinese semicolon
+         ((symbol-function 'read-string)
+          (pearl-gtd-test-planning--make-read-string-mock
+           '("Purpose" "" "Vision" "Goal" "Area" "@ctx" "Forced action")))
+         ((symbol-function 'pearl-gtd-inbox--read-destination-key)
+          (lambda (_) ?a))
+         ((symbol-function 'pearl-gtd-inbox--read-context)
+          (lambda () "@ctx"))
+         ((symbol-function 'pearl-gtd-inbox--read-project)
+          (lambda () ""))
+         ((symbol-function 'pearl-gtd-inbox--read-delegate)
+          (lambda () ""))
+         ((symbol-function 'pearl-gtd-core-read-date)
+          (lambda (&rest _) ""))
+         ((symbol-function 'recursive-edit)
+          (lambda ()
+            (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
+              (with-current-buffer buf
+                (insert "Action\n"))))))
+  :body (pearl-gtd-planning-start)
+  :asserts (progn
+             ;; Verify normalized to English semicolon in storage
+             (should (pearl-gtd-test-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      ":PROJECT: Project A; Project B")))
+  :teardown (progn
+              (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
+              (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
+
+(pearl-gtd-test-define-story pearl-gtd-planning-comma-normalized-to-semicolon-test
+  "Comma separator should be normalized to semicolon."
+  :setup (pearl-gtd-init-initialize)
+  :files nil
+  :mock (((symbol-function 'completing-read)
+          (pearl-gtd-test-planning--make-completing-read-mock
+           '("Project A, Project B")))  ; Comma separator
+         ((symbol-function 'read-string)
+          (pearl-gtd-test-planning--make-read-string-mock
+           '("Purpose" "" "Vision" "Goal" "Area" "@ctx" "Forced action")))
+         ((symbol-function 'pearl-gtd-inbox--read-destination-key)
+          (lambda (_) ?a))
+         ((symbol-function 'pearl-gtd-inbox--read-context)
+          (lambda () "@ctx"))
+         ((symbol-function 'pearl-gtd-inbox--read-project)
+          (lambda () ""))
+         ((symbol-function 'pearl-gtd-inbox--read-delegate)
+          (lambda () ""))
+         ((symbol-function 'pearl-gtd-core-read-date)
+          (lambda (&rest _) ""))
+         ((symbol-function 'recursive-edit)
+          (lambda ()
+            (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
+              (with-current-buffer buf
+                (insert "Action\n"))))))
+  :body (pearl-gtd-planning-start)
+  :asserts (progn
+             ;; Verify comma normalized to semicolon in storage
+             (should (pearl-gtd-test-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      ":PROJECT: Project A; Project B")))
+  :teardown (progn
+              (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
+              (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
+
+(pearl-gtd-test-define-story pearl-gtd-planning-existing-project-with-space-detected-test
+  "Existing project with space in name should be detected correctly."
+  :setup (progn
+           (pearl-gtd-init-initialize)
+           ;; Pre-create a project with space in name
+           (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
+             (with-temp-file actions-file
+               (insert "* TODO Existing task\n:PROPERTIES:\n:PROJECT: Existing Project\n:ID: existing-1\n:END:\n"))))
+  :files nil
+  :mock (((symbol-function 'completing-read)
+          (let ((inputs '("Existing Project"  ; Try to create same name
+                          "New Project Name")) ; Then use new name
+                (index 0))
+            (lambda (_prompt &optional _collection &rest _)
+              (let ((val (nth index inputs)))
+                (setq index (1+ index))
+                val))))
+         ((symbol-function 'read-string)
+          (pearl-gtd-test-planning--make-read-string-mock
+           '("Purpose" "" "Vision" "Goal" "Area" "@ctx" "Forced action")))
+         ((symbol-function 'pearl-gtd-inbox--read-destination-key)
+          (lambda (_) ?a))
+         ((symbol-function 'pearl-gtd-inbox--read-context)
+          (lambda () "@ctx"))
+         ((symbol-function 'pearl-gtd-inbox--read-project)
+          (lambda () ""))
+         ((symbol-function 'pearl-gtd-inbox--read-delegate)
+          (lambda () ""))
+         ((symbol-function 'pearl-gtd-core-read-date)
+          (lambda (&rest _) ""))
+         ((symbol-function 'recursive-edit)
+          (lambda ()
+            (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
+              (with-current-buffer buf
+                (insert "New action\n"))))))
+  :body (pearl-gtd-planning-start)
+  :asserts (progn
+             ;; Verify new project was created (after first was rejected)
+             (should (pearl-gtd-test-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      ":PROJECT: New Project Name")))
+  :teardown (progn
+              (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
+              (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
+
 (provide 'pearl-gtd-test-planning)
 
 ;;; pearl-gtd-test-planning.el ends here

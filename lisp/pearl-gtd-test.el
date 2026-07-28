@@ -141,6 +141,71 @@ ARGS is a plist with:
            (ignore-errors ,teardown)
            (pearl-gtd-test--cleanup temp-dir))))))
 
+;;; Unit tests for core utility functions
+
+(ert-deftest pearl-gtd-test-core-split-values-english-semicolon ()
+  "Test splitting values with English semicolon."
+  (should (equal (pearl-gtd-core--split-values "Project A; Project B; Project C")
+                 '("Project A" "Project B" "Project C"))))
+
+(ert-deftest pearl-gtd-test-core-split-values-chinese-semicolon ()
+  "Test splitting values with Chinese semicolon."
+  (should (equal (pearl-gtd-core--split-values "Project A；Project B；Project C")
+                 '("Project A" "Project B" "Project C"))))
+
+(ert-deftest pearl-gtd-test-core-split-values-mixed-semicolons ()
+  "Test splitting values with mixed English and Chinese semicolons."
+  (should (equal (pearl-gtd-core--split-values "Project A; Project B；Project C; Project D")
+                 '("Project A" "Project B" "Project C" "Project D"))))
+
+(ert-deftest pearl-gtd-test-core-split-values-with-spaces ()
+  "Test splitting values containing spaces."
+  (should (equal (pearl-gtd-core--split-values "Website Redesign; Marketing Campaign")
+                 '("Website Redesign" "Marketing Campaign"))))
+
+(ert-deftest pearl-gtd-test-core-split-values-empty-input ()
+  "Test splitting empty or nil input."
+  (should (null (pearl-gtd-core--split-values nil)))
+  (should (null (pearl-gtd-core--split-values "")))
+  (should (null (pearl-gtd-core--split-values "   "))))
+
+(ert-deftest pearl-gtd-test-core-split-values-extra-whitespace ()
+  "Test splitting values with extra whitespace."
+  (should (equal (pearl-gtd-core--split-values "  Project A  ;  Project B  ;  ")
+                 '("Project A" "Project B"))))
+
+(ert-deftest pearl-gtd-test-core-join-values ()
+  "Test joining values with English semicolon."
+  (should (string= (pearl-gtd-core--join-values '("Project A" "Project B"))
+                   "Project A; Project B")))
+
+(ert-deftest pearl-gtd-test-core-join-values-single ()
+  "Test joining single value."
+  (should (string= (pearl-gtd-core--join-values '("Project A"))
+                   "Project A")))
+
+(ert-deftest pearl-gtd-test-core-join-values-empty ()
+  "Test joining empty list."
+  (should (string= (pearl-gtd-core--join-values '())
+                   "")))
+
+(ert-deftest pearl-gtd-test-core-normalize-project-input ()
+  "Test normalizing project input with various separators."
+  (should (string= (pearl-gtd-core--normalize-project-input "Project A，Project B；Project C")
+                   "Project A; Project B; Project C")))
+
+(ert-deftest pearl-gtd-test-core-normalize-project-input-comma-only ()
+  "Test normalizing project input with comma only."
+  (should (string= (pearl-gtd-core--normalize-project-input "Project A,Project B,Project C")
+                   "Project A; Project B; Project C")))
+
+(ert-deftest pearl-gtd-test-core-normalize-project-input-nil ()
+  "Test normalizing nil input."
+  (should (null (pearl-gtd-core--normalize-project-input nil))))
+
+(ert-deftest pearl-gtd-test-core-normalize-project-input-empty ()
+  "Test normalizing empty input."
+  (should (null (pearl-gtd-core--normalize-project-input ""))))
 (provide 'pearl-gtd-test)
 
 ;;; pearl-gtd-test.el ends here

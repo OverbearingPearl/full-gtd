@@ -276,7 +276,7 @@ Context tags are normalized by removing the @ prefix for matching."
     (when entry
       (let* ((id (car entry))
              (file (cdr entry))
-             (new-name (read-string "New task name (e.g., Buy milk): ")))
+             (new-name (read-string "New task name (supports spaces, e.g., Buy organic milk from Whole Foods): ")))
         (when (and new-name (not (string= new-name "")))
           (pearl-gtd-core-with-entry-at-id id file
             (org-edit-headline new-name))
