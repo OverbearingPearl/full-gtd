@@ -81,13 +81,15 @@ Returns (VALID-P . ERROR-MSG)."
 ;;;; Planning workflow validation
 
 (defun pearl-gtd-domain--planning-input-valid-p (proj-name purpose vision goal)
-  "Validate required planning fields.
+  "Validate PROJ-NAME, PURPOSE, VISION, and GOAL for required planning fields.
 Returns (VALID-P . ERROR-MSG)."
   (cond
    ((or (null proj-name) (string= proj-name ""))
     (cons nil "Project name is required"))
    ((or (null purpose) (string= purpose ""))
     (cons nil "Purpose (L6) is required"))
+   ((or (null vision) (string= vision ""))
+    (cons nil "Vision (L5) is required"))
    ((or (null goal) (string= goal ""))
     (cons nil "Goal (L4) is required"))
    (t (cons t nil))))

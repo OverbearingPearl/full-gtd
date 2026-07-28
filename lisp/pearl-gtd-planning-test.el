@@ -42,7 +42,7 @@
           (pearl-gtd-test-planning--make-read-string-mock
            '("Improve user experience"  ; Purpose (L6) - required
              "Keep it simple"           ; Principle (L6) - optional but filled
-             "Industry leader"          ; Vision (L5) - optional but filled
+             "Industry leader"          ; Vision (L5) - required
              "Launch in Q2"             ; Goal (L4) - required
              "Product Development"      ; Area (L3) - required
              "@design"                  ; NEW: Default context for all next actions

@@ -231,7 +231,7 @@ Signal error if user aborts."
              nil)))))
 
 (defun pearl-gtd-planning--read-forced-action (prompt)
-  "Read forced next action from user with validation.
+  "Read forced next action from user with validation using PROMPT.
 Returns non-empty string."
   (let ((action ""))
     (while (string= action "")
@@ -240,7 +240,7 @@ Returns non-empty string."
     action))
 
 (defun pearl-gtd-planning--organize-brainstorm-items (project default-context)
-  "Organize all brainstorm items for PROJECT.
+  "Organize all brainstorm items for PROJECT with DEFAULT-CONTEXT.
 Returns count of next actions created (integer)."
   (let ((count 0))
     (pearl-gtd-inbox--process t default-context project)

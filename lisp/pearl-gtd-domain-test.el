@@ -42,10 +42,10 @@
     (should (string-match-p "Goal" (cdr result)))))
 
 (ert-deftest pearl-gtd-domain-test-planning-input-valid-p-empty-vision ()
-  "Empty vision should be valid (optional field)."
+  "Empty vision should be invalid (required field)."
   (let ((result (pearl-gtd-domain--planning-input-valid-p "Proj" "Purpose" "" "Goal")))
-    (should (car result))
-    (should (null (cdr result)))))
+    (should-not (car result))
+    (should (string-match-p "Vision" (cdr result)))))
 
 (ert-deftest pearl-gtd-domain-test-require-next-action-p-zero ()
   "Zero actions should require forced next action."
