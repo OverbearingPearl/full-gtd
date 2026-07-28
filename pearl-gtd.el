@@ -120,7 +120,7 @@ Create the base directory and necessary files."
     (let ((test-file (expand-file-name "pearl-gtd-test.el" test-dir)))
       (when (file-exists-p test-file)
         (load-file test-file)))
-    (dolist (file (directory-files test-dir nil "pearl-gtd-test-.*\\.el$"))
+    (dolist (file (directory-files test-dir nil "pearl-gtd-.*-test\\.el$"))
       (let ((full-path (expand-file-name file test-dir)))
         (when (file-exists-p full-path)
           (load-file full-path)))))

@@ -16,6 +16,7 @@
 (require 'org)
 (require 'pearl-gtd-init)
 (require 'pearl-gtd-domain)
+(require 'pearl-gtd-state)
 
 ;;;; Predicates
 
@@ -179,30 +180,16 @@ HEADER-REGEXP matches header lines to skip (default: \"| Headline\")."
 ;;;; Macros for file operations
 
 (defmacro pearl-gtd-core-with-file-buffer (file-path &rest body)
-  "Execute BODY in buffer of FILE-PATH (expanded relative to base dir).
-Buffer is saved if modified after BODY.  Internal errors crash (no catch-all)."
+  "Execute BODY in buffer of FILE-PATH.
+Delegate to state layer for transactional file operations."
   (declare (indent 1))
-  `(let* ((file-path-expanded (expand-file-name ,file-path pearl-gtd-init-base-directory))
-          (buf (find-file-noselect file-path-expanded)))
-     (with-current-buffer buf
-       (org-mode)
-       (widen)
-       (prog1
-           (progn ,@body)
-         (when (buffer-modified-p)
-           (save-buffer))))))
+  `(pearl-gtd-state--with-file-buffer ,file-path ,@body))
 
 (defmacro pearl-gtd-core-with-entry-at-id (id file &rest body)
   "Execute BODY with point at entry ID in FILE.
-Signals error if entry not found (internal state violation)."
+Delegate to state layer for transactional file operations."
   (declare (indent 2))
-  `(pearl-gtd-core-with-file-buffer ,file
-     (goto-char (point-min))
-     (let ((id-val ,id))
-       (cl-assert (re-search-forward (concat ":ID:[ \t]+" (regexp-quote id-val)) nil t)
-                  t "Internal: entry %s not found in %s" id-val ,file)
-       (org-back-to-heading)
-       ,@body)))
+  `(pearl-gtd-state--with-entry-at-id ,id ,file ,@body))
 
 (defun pearl-gtd-core-read-date (prompt-type)
   "Hybrid date input: letter=quick, number=free-form, RET=skip.

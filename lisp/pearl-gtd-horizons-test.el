@@ -227,9 +227,16 @@
             (search-forward "ConstraintProj")
             (beginning-of-line)
             (condition-case err
-                (pearl-gtd-horizons--edit-vision-at-point)
-              (error (should (string-match-p "L4 Goal must be set first" (error-message-string err)))))))
-  :asserts t
+                (progn
+                  (pearl-gtd-horizons--edit-vision-at-point)
+                  (setq pearl-gtd-test-caught-error nil))
+              (error (setq pearl-gtd-test-caught-error (error-message-string err))))))
+  :asserts (progn
+             (should (stringp pearl-gtd-test-caught-error))
+             (should (string-match-p "L4 Goal must be set first" pearl-gtd-test-caught-error))
+             (should-not (car (pearl-gtd-test-file-contains-p
+                               (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                               ":L5_VISION:"))))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
 
 (pearl-gtd-test-define-story pearl-gtd-horizons-constraint-rejects-purpose-without-vision-test
@@ -245,9 +252,16 @@
             (search-forward "ConstraintProj2")
             (beginning-of-line)
             (condition-case err
-                (pearl-gtd-horizons--edit-purpose-at-point)
-              (error (should (string-match-p "L5 Vision must be set first" (error-message-string err)))))))
-  :asserts t
+                (progn
+                  (pearl-gtd-horizons--edit-purpose-at-point)
+                  (setq pearl-gtd-test-caught-error nil))
+              (error (setq pearl-gtd-test-caught-error (error-message-string err))))))
+  :asserts (progn
+             (should (stringp pearl-gtd-test-caught-error))
+             (should (string-match-p "L5 Vision must be set first" pearl-gtd-test-caught-error))
+             (should-not (car (pearl-gtd-test-file-contains-p
+                               (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                               ":L6_PURPOSE:"))))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
 
 (pearl-gtd-test-define-story pearl-gtd-horizons-constraint-rejects-principle-without-purpose-test
@@ -263,9 +277,16 @@
             (search-forward "ConstraintProj3")
             (beginning-of-line)
             (condition-case err
-                (pearl-gtd-horizons--edit-principle-at-point)
-              (error (should (string-match-p "L6 Purpose must be set first" (error-message-string err)))))))
-  :asserts t
+                (progn
+                  (pearl-gtd-horizons--edit-principle-at-point)
+                  (setq pearl-gtd-test-caught-error nil))
+              (error (setq pearl-gtd-test-caught-error (error-message-string err))))))
+  :asserts (progn
+             (should (stringp pearl-gtd-test-caught-error))
+             (should (string-match-p "L6 Purpose must be set first" pearl-gtd-test-caught-error))
+             (should-not (car (pearl-gtd-test-file-contains-p
+                               (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                               ":L6_PRINCIPLE:"))))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
 
 (pearl-gtd-test-define-story pearl-gtd-horizons-principle-allows-multiple-purposes-test

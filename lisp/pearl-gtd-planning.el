@@ -31,6 +31,7 @@
 (require 'pearl-gtd-init)
 (require 'pearl-gtd-core)
 (require 'pearl-gtd-horizons)
+(require 'pearl-gtd-state)
 
 (declare-function pearl-gtd-core-read-date "pearl-gtd-core")
 (declare-function pearl-gtd-inbox--read-context "pearl-gtd-inbox")
@@ -250,44 +251,37 @@ HEADLINE is the task title.
 PROJECT is the project name.
 CONTEXT is the context tag (may be empty).
 HORIZONS is an alist of horizon properties."
-  (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
-    (with-current-buffer (find-file-noselect file-path)
-      (org-mode)
-      (goto-char (point-max))
-      (unless (bolp) (insert "\n"))
-      (insert "* TODO " (or headline "Unnamed action") "\n")
-      (org-set-property "PROJECT" (or project "NoProject"))
-      (when (and context (stringp context) (not (string= context "")))
-        (if (string-match "^@" context)
-            (org-set-tags (list (substring context 1)))
-          (org-set-tags (list context))))
-      (dolist (horizon horizons)
-        (let ((prop (car horizon))
-              (val (cdr horizon)))
-          (when (and val (stringp val) (not (string= val "")))
-            (org-set-property prop val))))
-      (org-id-get-create)
-      (save-buffer))))
+  (pearl-gtd-state--with-file-buffer "actions.org"
+    (goto-char (point-max))
+    (unless (bolp) (insert "\n"))
+    (insert "* TODO " (or headline "Unnamed action") "\n")
+    (org-set-property "PROJECT" (or project "NoProject"))
+    (when (and context (stringp context) (not (string= context "")))
+      (if (string-match "^@" context)
+          (org-set-tags (list (substring context 1)))
+        (org-set-tags (list context))))
+    (dolist (horizon horizons)
+      (let ((prop (car horizon))
+            (val (cdr horizon)))
+        (when (and val (stringp val) (not (string= val "")))
+          (org-set-property prop val))))
+    (org-id-get-create)))
 
 (defun pearl-gtd-planning--apply-horizons-to-project (project horizons)
   "Apply HORIZONS to all actions in newly created PROJECT.
 HORIZONS is an alist of horizon properties."
-  (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
-    (when (file-exists-p file-path)
-      (with-current-buffer (find-file-noselect file-path)
-        (org-mode)
-        (org-map-entries
-         (lambda ()
-           (let ((proj (org-entry-get nil "PROJECT")))
-             (when (and proj (string= proj project))
-               (dolist (horizon horizons)
-                 (let ((prop (car horizon))
-                       (val (cdr horizon)))
-                   (if (string= val "")
-                       (org-delete-property prop)
-                     (org-entry-put nil prop val)))))))
-         nil nil)
-        (save-buffer)))))
+  (pearl-gtd-state--with-file-buffer "actions.org"
+    (org-map-entries
+     (lambda ()
+       (let ((proj (org-entry-get nil "PROJECT")))
+         (when (and proj (string= proj project))
+           (dolist (horizon horizons)
+             (let ((prop (car horizon))
+                   (val (cdr horizon)))
+               (if (string= val "")
+                   (org-delete-property prop)
+                 (org-entry-put nil prop val)))))))
+     nil nil)))
 
 (defun pearl-gtd-planning--show-project-summary (project horizons)
   "Display PROJECT overview with HORIZONS and all related items."
@@ -399,15 +393,14 @@ HORIZONS is an alist of horizon properties."
     (let ((has-next-action (pearl-gtd-planning--organize-brainstorm-items pearl-gtd-planning--current-project)))
 
       ;; 4. Force at least one next action if none created
-      (unless has-next-action
-        (let ((forced-action ""))
-          (while (string= forced-action "")
-            (setq forced-action (read-string "Required next action: <Specific physical action> (e.g., Call designer for quote): ")))
-          ;; Use default-context directly, no need to ask again
-          (pearl-gtd-planning--create-action forced-action pearl-gtd-planning--current-project default-context horizons)))
-
       ;; 5. Apply horizons to all project actions
-      (pearl-gtd-planning--apply-horizons-to-project pearl-gtd-planning--current-project horizons)
+      (pearl-gtd-state--with-transaction '("actions.org")
+        (unless has-next-action
+          (let ((forced-action ""))
+            (while (string= forced-action "")
+              (setq forced-action (read-string "Required next action: <Specific physical action> (e.g., Call designer for quote): ")))
+            (pearl-gtd-planning--create-action forced-action pearl-gtd-planning--current-project default-context horizons)))
+        (pearl-gtd-planning--apply-horizons-to-project pearl-gtd-planning--current-project horizons))
 
       ;; 6. Show project summary (NEW)
       (pearl-gtd-planning--show-project-summary pearl-gtd-planning--current-project horizons)

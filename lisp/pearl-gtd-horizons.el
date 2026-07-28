@@ -20,6 +20,7 @@
 (require 'pearl-gtd-core)
 (require 'pearl-gtd-review)
 (require 'pearl-gtd-domain)
+(require 'pearl-gtd-state)
 
 (declare-function pearl-gtd-horizons-view "pearl-gtd")
 
@@ -46,28 +47,22 @@ PROPERTY should be one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE."
 
 (defun pearl-gtd-horizons--set-project-horizon (project property value)
   "Set horizon PROPERTY to VALUE for all actions in PROJECT.
-PROPERTY should be one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE."
-  (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
-        (count 0))
-    (when (file-exists-p file-path)
-      (let ((buf (find-file-noselect file-path)))
-        (with-current-buffer buf
-          (org-mode)
-          (org-map-entries
-           (lambda ()
-             (let ((proj (org-entry-get nil "PROJECT")))
-               (when proj
-                 (let ((projects (pearl-gtd-core--split-values proj)))
-                   (when (member project projects)
-                     (if (string= value "")
-                         (org-delete-property property)
-                       (org-entry-put nil property value))
-                     (cl-incf count))))))
-           nil nil)
-          (when (> count 0)
-            (save-buffer))))
-      (let ((buf (get-file-buffer file-path)))
-        (when buf (kill-buffer buf))))
+PROPERTY should be one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE.
+Returns count of modified entries."
+  (let ((count 0))
+    (pearl-gtd-state--with-transaction '("actions.org")
+      (pearl-gtd-state--with-file-buffer "actions.org"
+        (org-map-entries
+         (lambda ()
+           (let ((proj (org-entry-get nil "PROJECT")))
+             (when proj
+               (let ((projects (pearl-gtd-core--split-values proj)))
+                 (when (member project projects)
+                   (if (string= value "")
+                       (org-delete-property property)
+                     (org-entry-put nil property value))
+                   (cl-incf count))))))
+         nil nil)))
     count))
 
 (defun pearl-gtd-horizons--check-hierarchy-constraint (project level)
@@ -80,7 +75,7 @@ LEVEL is symbol: \\='area, \\='goal, \\='vision, \\='purpose, or \\='principle."
                (cons 'L4_GOAL (pearl-gtd-horizons--get-project-horizon project "L4_GOAL"))
                (cons 'L5_VISION (pearl-gtd-horizons--get-project-horizon project "L5_VISION"))
                (cons 'L6_PURPOSE (pearl-gtd-horizons--get-project-horizon project "L6_PURPOSE")))))
-    (pearl-gtd-domain--check-hierarchy-constraint existing-horizons level)))
+    (car (pearl-gtd-domain--check-hierarchy-constraint existing-horizons level))))
 
 (defun pearl-gtd-horizons--edit-horizon-at-point (level &optional project)
   "Edit horizon LEVEL for entry at point or for PROJECT if provided.
