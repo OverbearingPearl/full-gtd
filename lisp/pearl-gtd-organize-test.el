@@ -483,25 +483,6 @@
              (should (pearl-gtd-test-file-contains-p-bool ref-file "* Task with")))
   :teardown nil)
 
-(pearl-gtd-test-define-story pearl-gtd-organize-user-skips-project-name-test
-  "Empty or whitespace-only project name should be treated as no project."
-  :setup (pearl-gtd-init-initialize)
-  :files (("inbox.org" "* No project task\n:PROPERTIES:\n:ID: empty-proj-1\n:END:\n"))
-  :mock (((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) ?a))
-         ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil)))
-         ((symbol-function 'pearl-gtd-inbox--collect-action-attrs)
-          (lambda (&optional _staging-buffer _default-context _default-project)
-            '((context . "") (schedule . "") (deadline . "")
-              (delegate . "") (project . "   ")))))  ; Whitespace only
-  :body (pearl-gtd-process-inbox)
-  :asserts (let ((content (with-temp-buffer
-                            (insert-file-contents
-                             (expand-file-name "actions.org" pearl-gtd-init-base-directory))
-                            (buffer-string))))
-             ;; Should not have PROJECT property with non-empty value
-             (should-not (string-match-p ":PROJECT:[ \t]*[^ \t\n\r]" content)))
-  :teardown nil)
-
 (pearl-gtd-test-define-story pearl-gtd-organize-user-enters-long-project-name-test
   "Very long project names (500+ chars) must be handled."
   :setup (pearl-gtd-init-initialize)

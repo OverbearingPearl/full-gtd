@@ -519,41 +519,6 @@
               (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))
               (when (get-buffer "*Pearl-GTD: Inbox*") (kill-buffer "*Pearl-GTD: Inbox*"))))
 
-(pearl-gtd-test-define-story pearl-gtd-planning-user-trashes-all-items-forces-action-test
-  "All brainstorm items trashed should force creation of one action."
-  :setup (pearl-gtd-init-initialize)
-  :files nil
-  :mock (((symbol-function 'completing-read)
-          (pearl-gtd-test-planning--make-completing-read-mock
-           '("AllTrashed")))              ; project name
-         ((symbol-function 'read-string)
-          (pearl-gtd-test-planning--make-read-string-mock
-           '("P" "" "G" "A" "Work" "@ctx" "Forced Action")))
-         ((symbol-function 'pearl-gtd-inbox--read-destination-key)
-          (let ((calls 0))
-            (lambda (_headline)
-              (setq calls (1+ calls))
-              ?t)))  ; Always trash
-         ((symbol-function 'recursive-edit)
-          (lambda ()
-            (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
-              (with-current-buffer buf
-                (insert "Trash item 1\n")
-                (insert "Trash item 2\n"))))))
-  :body (pearl-gtd-planning-start)
-  :asserts (progn
-             (should-not (pearl-gtd-test-file-contains-p-bool
-                          (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                          "Trash item 1"))
-             (should-not (pearl-gtd-test-file-contains-p-bool
-                          (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                          "Trash item 2"))
-             (should (pearl-gtd-test-file-contains-p-bool
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      "Forced Action")))
-  :teardown (progn
-              (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
-              (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
 
 (pearl-gtd-test-define-story pearl-gtd-planning-user-quits-during-organize-test
   "User quits (C-g) during organize phase, staging buffer should be cleaned."

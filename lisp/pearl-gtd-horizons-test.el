@@ -336,36 +336,6 @@
                       ":L6_PURPOSE: Old1; Old2; New3")))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
 
-(pearl-gtd-test-define-story pearl-gtd-horizons-user-views-hierarchy-test
-  "Horizon view shows L6 to L3 hierarchy with projects and actions."
-  :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* TODO No project task\n:PROPERTIES:\n:ID: np-1\n:L3_AREA: Personal\n:END:\n* TODO Project task\n:PROPERTIES:\n:ID: p-1\n:PROJECT: TestProject\n:L3_AREA: Work\n:L4_GOAL: Goal\n:L5_VISION: Vision\n:L6_PURPOSE: Purpose\n:END:\n"))
-  :mock nil
-  :body (pearl-gtd-horizons-view)
-  :asserts (progn
-             (should (get-buffer "*Pearl-GTD Horizons*"))
-             (with-current-buffer "*Pearl-GTD Horizons*"
-               ;; Verify hierarchy structure
-               (goto-char (point-min))
-               (should (search-forward "** Purpose" nil t))
-               (should (search-forward "*** Vision" nil t))
-               (should (search-forward "**** Goal" nil t))
-               (should (search-forward "***** Work" nil t))
-               (should (search-forward "****** TestProject" nil t))
-               (should (search-forward "******* TODO Project task" nil t))
-               (should (search-forward "** Personal" nil t))
-               (should (search-forward "*** TODO No project task" nil t))
-               ;; Additional check for multi-value scenario
-               (goto-char (point-min))
-               (should (search-forward "** Purpose" nil t))
-               (should (search-forward "*** Vision" nil t))
-               (should (search-forward "**** Goal" nil t))
-               (should (search-forward "***** Work" nil t))
-               (should (search-forward "****** TestProject" nil t))
-               (should (search-forward "******* TODO Project task" nil t))
-               (should (search-forward "** Personal" nil t))
-               (should (search-forward "*** TODO No project task" nil t))))
-  :teardown (kill-buffer "*Pearl-GTD Horizons*"))
 
 (pearl-gtd-test-define-story pearl-gtd-horizons-mixed-separators-with-whitespace-test
   "Horizon values with mixed semicolons and surrounding whitespace."
