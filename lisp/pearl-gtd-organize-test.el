@@ -182,7 +182,7 @@
          ((symbol-function 'pearl-gtd-inbox--collect-action-attrs)
           (lambda (&optional _staging-buffer _default-context _default-project)
             '((context . "") (schedule . "") (deadline . "")
-              (delegate . "") (project . "Alpha,Beta")))))
+              (delegate . "") (project . "Alpha;Beta")))))
   :body (pearl-gtd-process-inbox)
   :asserts (progn
            (should (pearl-gtd-test-file-contains-p

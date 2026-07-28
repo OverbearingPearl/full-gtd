@@ -77,8 +77,8 @@ Returns (NEW-HEADLINE . REMARKS).  Either can be nil."
                                    headline)))
          (new-headline (let ((trimmed (string-trim new)))
                         (unless (string= trimmed "") trimmed)))
-         (remarks-text (read-string (format "Notes for '%s' [RET skip]: <Details or constraints> (e.g., Check brand: Organic Valley, Ask about deadline): "
-                                            (or new-headline headline)))))
+         (remarks-text (string-trim (read-string (format "Notes for '%s' [RET skip]: <Details or constraints> (e.g., Check brand: Organic Valley, Ask about deadline): "
+                                            (or new-headline headline))))))
     (cons new-headline (unless (string= remarks-text "") remarks-text))))
 
 (defun pearl-gtd-inbox--collect-action-attrs (&optional staging-buffer default-context default-project)
@@ -119,7 +119,7 @@ Supports spaces in context names. Examples: @office, @home office, @phone."
          (prompt (if (string= default "")
                      "Context [RET none, TAB complete]: <@location/tool> (e.g., @office, @home office, @phone): "
                    (format "Context [RET '%s', TAB complete]: <@location/tool> (e.g., @office, @home office): " default)))
-         (input (completing-read prompt existing nil nil nil nil default)))
+         (input (string-trim (completing-read prompt existing nil nil nil nil default))))
     (unless (string= input "")
       (setq pearl-gtd-inbox--last-context input))
     input))
@@ -129,7 +129,7 @@ Supports spaces in context names. Examples: @office, @home office, @phone."
 Supports spaces in project names. Use ; to separate multiple projects.
 Examples: Website Redesign, Q1 Marketing; Q2 Planning."
   (let* ((existing (pearl-gtd-review--collect-all-projects))
-         (input (completing-read "Project [RET none, TAB complete]: <Project name> (e.g., Website Redesign, Q1 Goals; Q2 Planning): " existing nil nil)))
+         (input (completing-read "Project [RET none, TAB complete]: <Project name> (e.g., Website Redesign; Q1 Goals; Q2 Planning): " existing nil nil)))
     ;; Normalize to handle semicolons
     (pearl-gtd-core--normalize-project-input input)))
 
@@ -137,7 +137,7 @@ Examples: Website Redesign, Q1 Marketing; Q2 Planning."
   "Read delegate with completion from existing delegates.
 Supports full names with spaces. Examples: John Smith, Alice Johnson."
   (let* ((existing '())
-         (input (completing-read "Delegated to [RET none, TAB complete]: <Person name> (e.g., John Smith, Alice Johnson): " existing nil nil)))
+         (input (string-trim (completing-read "Delegated to [RET none, TAB complete]: <Person name> (e.g., John Smith, Alice Johnson): " existing nil nil))))
     input))
 
 (defvar-local pearl-gtd-inbox--current-highlight nil

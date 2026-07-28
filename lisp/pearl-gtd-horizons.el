@@ -130,7 +130,10 @@ Supports multiple values separated by semicolon."
                                    ((eq level 'purpose)   "L6 Purpose")
                                    ((eq level 'principle) "L6 Principle")
                                    (t (symbol-name level)))))
-             (new-value (read-string prompt current-values-display)))
+             (raw-input (string-trim (read-string prompt current-values-display)))
+             (new-value (if (string-match-p "[;；]" raw-input)
+                           (pearl-gtd-core--join-values (pearl-gtd-core--split-values raw-input))
+                         raw-input)))
         (if project
             (progn
               ;; For project, check hierarchy constraint

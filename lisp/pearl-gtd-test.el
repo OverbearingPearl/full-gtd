@@ -191,13 +191,9 @@ ARGS is a plist with:
 
 (ert-deftest pearl-gtd-test-core-normalize-project-input ()
   "Test normalizing project input with various separators."
-  (should (string= (pearl-gtd-core--normalize-project-input "Project A，Project B；Project C")
+  (should (string= (pearl-gtd-core--normalize-project-input "Project A；Project B；Project C")
                    "Project A; Project B; Project C")))
 
-(ert-deftest pearl-gtd-test-core-normalize-project-input-comma-only ()
-  "Test normalizing project input with comma only."
-  (should (string= (pearl-gtd-core--normalize-project-input "Project A,Project B,Project C")
-                   "Project A; Project B; Project C")))
 
 (ert-deftest pearl-gtd-test-core-normalize-project-input-nil ()
   "Test normalizing nil input."

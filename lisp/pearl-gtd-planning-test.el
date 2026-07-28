@@ -689,7 +689,7 @@
 (pearl-gtd-test-define-story pearl-gtd-planning-brainstorm-projects-deduplicated-test
   "Brainstorm projects with same name are deduplicated in completion list."
   :setup (pearl-gtd-init-initialize)
-  :files (("inbox.org" "* Item 1\n:PROPERTIES:\n:ID: bs-1\n:BRAINSTORM: t\n:PROJECT: SharedProject\n:END:\n* Item 2\n:PROPERTIES:\n:ID: bs-2\n:BRAINSTORM: t\n:PROJECT: SharedProject\n:END:\n* Item 3\n:PROPERTIES:\n:ID: bs-3\n:BRAINSTORM: t\n:PROJECT: MultiA,MultiB\n:END:\n"))
+  :files (("inbox.org" "* Item 1\n:PROPERTIES:\n:ID: bs-1\n:BRAINSTORM: t\n:PROJECT: SharedProject\n:END:\n* Item 2\n:PROPERTIES:\n:ID: bs-2\n:BRAINSTORM: t\n:PROJECT: SharedProject\n:END:\n* Item 3\n:PROPERTIES:\n:ID: bs-3\n:BRAINSTORM: t\n:PROJECT: MultiA;MultiB\n:END:\n"))
   :mock nil
   :body (let ((projects (pearl-gtd-planning--collect-brainstorm-projects)))
           (should (= 3 (length projects)))
@@ -954,40 +954,6 @@
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
               (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
 
-(pearl-gtd-test-define-story pearl-gtd-planning-comma-normalized-to-semicolon-test
-  "Comma separator should be normalized to semicolon."
-  :setup (pearl-gtd-init-initialize)
-  :files nil
-  :mock (((symbol-function 'completing-read)
-          (pearl-gtd-test-planning--make-completing-read-mock
-           '("Project A, Project B")))  ; Comma separator
-         ((symbol-function 'read-string)
-          (pearl-gtd-test-planning--make-read-string-mock
-           '("Purpose" "" "Vision" "Goal" "Area" "@ctx" "Forced action")))
-         ((symbol-function 'pearl-gtd-inbox--read-destination-key)
-          (lambda (_) ?a))
-         ((symbol-function 'pearl-gtd-inbox--read-context)
-          (lambda () "@ctx"))
-         ((symbol-function 'pearl-gtd-inbox--read-project)
-          (lambda () ""))
-         ((symbol-function 'pearl-gtd-inbox--read-delegate)
-          (lambda () ""))
-         ((symbol-function 'pearl-gtd-core-read-date)
-          (lambda (&rest _) ""))
-         ((symbol-function 'recursive-edit)
-          (lambda ()
-            (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
-              (with-current-buffer buf
-                (insert "Action\n"))))))
-  :body (pearl-gtd-planning-start)
-  :asserts (progn
-             ;; Verify comma normalized to semicolon in storage
-             (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      ":PROJECT: Project A; Project B")))
-  :teardown (progn
-              (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
-              (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
 
 (pearl-gtd-test-define-story pearl-gtd-planning-existing-project-with-space-detected-test
   "Existing project with space in name should be detected correctly."

@@ -257,15 +257,19 @@ Example: (\"Project A\" \"Project B\") -> \"Project A; Project B\""
   (mapconcat #'identity values "; "))
 
 (defun pearl-gtd-core--normalize-project-input (input)
-  "Normalize project input: convert commas and Chinese semicolons to English.
-Trim whitespace. Returns nil if empty.
+  "Normalize project input: convert Chinese semicolons to English.
+Trim whitespace from each value. Returns nil if empty.
 INPUT is the input string to normalize.
-Example: \"Project A，Project B；Project C\"
+Example: \"Project A；Project B；Project C\"
   -> \"Project A; Project B; Project C\""
   (when input
-    (let* ((trimmed (string-trim input))
-           (normalized (replace-regexp-in-string "[,\uFF0C；] *" "; " trimmed)))
-      (if (string-empty-p normalized) nil normalized))))
+    (let ((trimmed (string-trim input)))
+      (if (string-empty-p trimmed)
+          nil
+        (let ((values (pearl-gtd-core--split-values trimmed)))
+          (if values
+              (pearl-gtd-core--join-values values)
+            nil))))))
 
 (provide 'pearl-gtd-core)
 

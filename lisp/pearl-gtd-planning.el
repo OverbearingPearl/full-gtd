@@ -108,9 +108,9 @@ Supports spaces in project names. Use ; to separate multiple projects."
         (brainstorm-projects (pearl-gtd-planning--collect-brainstorm-projects)))
     (while (or (string= project-name "")
                (pearl-gtd-planning--project-exists-p project-name))
-      (setq project-name (completing-read
-                          "Project name: <Unique identifier> (e.g., Website Redesign, Q1 Marketing Campaign) [TAB for existing projects, use ; to separate multiple projects]: "
-                          brainstorm-projects nil nil))
+      (setq project-name (string-trim (completing-read
+                          "Project name: <Unique identifier> (e.g., Website Redesign) [TAB for existing projects, use ; to separate multiple projects]: "
+                          brainstorm-projects nil nil)))
       ;; Normalize input to handle Chinese semicolons and commas
       (setq project-name (pearl-gtd-core--normalize-project-input project-name))
       (cond
@@ -130,11 +130,11 @@ If OPTIONAL is non-nil, empty input is allowed.
 EXAMPLE-LEVEL is the level to use for examples (defaults to LEVEL).
 Return the input string (guaranteed non-empty when OPTIONAL is nil).
 Supports multiple values separated by semicolon (;)."
-  (let* ((examples '((3 . "Career Development, Personal Health, Family Life")
-                     (4 . "Launch website by March 2026, Complete certification Q2")
-                     (5 . "Become industry leader in 3 years, Build sustainable business")
-                     (6 . "Help professionals organize work, Create positive impact")
-                     (7 . "Quality over speed, Family first, Continuous learning")))
+  (let* ((examples '((3 . "Career Development")
+                     (4 . "Launch website by March 2026")
+                     (5 . "Become industry leader in 3 years")
+                     (6 . "Help professionals organize work")
+                     (7 . "Quality over speed")))
          (example-idx (or example-level level))
          (example (or (cdr (assoc example-idx examples)) "value"))
          (required-str (if optional "optional" "required"))
@@ -142,12 +142,16 @@ Supports multiple values separated by semicolon (;)."
                          description level required-str
                          (if optional "to skip" "must fill")
                          example)))
-    (let ((input (read-string prompt)))
+    (let ((input (string-trim (read-string prompt))))
       (while (and (not optional) (string= input ""))
         (message "This field is required, please enter a value.")
         (sit-for 1)
-        (setq input (read-string prompt)))
-      input)))
+        (setq input (string-trim (read-string prompt))))
+      ;; Normalize multiple values if present
+      (if (string-match-p "[;；]" input)
+          (let ((values (pearl-gtd-core--split-values input)))
+            (pearl-gtd-core--join-values values))
+        input))))
 
 (defun pearl-gtd-planning--collect-brainstorm-items (project)
   "Collect brainstorm item headlines for PROJECT from inbox.org.

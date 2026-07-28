@@ -135,7 +135,7 @@ EXTRA-CLEANUP is a form to execute when removing the property
            (let* ((id (car entry))
                   (file (cdr entry))
                   (current-value (,getter id file ,property))
-                  (new-value (read-string ,prompt (or current-value ""))))
+                  (new-value (string-trim (read-string ,prompt (or current-value "")))))
              (if (string= new-value "")
                  (progn
                    (,remover id file ,property)
@@ -157,7 +157,7 @@ EXTRA-CLEANUP is a form to execute when removing the property
              (file (cdr entry))
              (current-scheduled (pearl-gtd-review--get-scheduled-by-id id file))
              (default-value (or current-scheduled ""))
-             (new-value (read-string "Schedule date (RET=remove, e.g., 2026-12-25, 2026-12-25 14:30): " default-value)))
+             (new-value (string-trim (read-string "Schedule date (RET=remove, e.g., 2026-12-25, 2026-12-25 14:30): " default-value))))
         (pearl-gtd-core-with-entry-at-id id file
           (if (string= new-value "")
               (org-schedule '(4))
@@ -172,8 +172,8 @@ EXTRA-CLEANUP is a form to execute when removing the property
     (when entry
       (let* ((id (car entry))
              (file (cdr entry))
-             (deadline (read-string "Deadline (e.g., 2026-12-25, 2026-12-25 14:30): "))
-             (reminder (read-string "Reminder days before (e.g., 3, 0 for none): " "0")))
+             (deadline (string-trim (read-string "Deadline (e.g., 2026-12-25, 2026-12-25 14:30): ")))
+             (reminder (string-trim (read-string "Reminder days before (e.g., 3, 0 for none): " "0"))))
         (pearl-gtd-core-with-entry-at-id id file
           (org-deadline nil deadline)
           (org-set-property "REMINDER_DAYS" reminder)
@@ -188,7 +188,7 @@ EXTRA-CLEANUP is a form to execute when removing the property
       (let* ((id (car entry))
              (file (cdr entry))
              (current-headline (pearl-gtd-review--get-headline-by-id id file))
-             (new-name (read-string "New task name (supports spaces, e.g., Prepare quarterly report): " current-headline)))
+             (new-name (string-trim (read-string "New task name (supports spaces, e.g., Prepare quarterly report): " current-headline))))
         (when (and new-name (not (string= new-name "")) (not (string= new-name current-headline)))
           (pearl-gtd-core-with-entry-at-id id file
             (org-edit-headline new-name)
@@ -484,7 +484,7 @@ Returns list of entries formatted for project table display."
              (when (pearl-gtd-core-entry-todo-p)
                (let ((proj (org-entry-get nil "PROJECT")))
                  (when proj
-                   (dolist (p (split-string proj "[, ]" t))
+                   (dolist (p (pearl-gtd-core--split-values proj))
                      (cl-pushnew p projects-with-todos :test #'string=))))))
            nil nil))))
     (dolist (proj all-projects)
@@ -518,7 +518,7 @@ Returns list of entries formatted for project table display."
              (when (pearl-gtd-core-entry-todo-p)
                (let ((proj (org-entry-get nil "PROJECT")))
                  (when proj
-                   (dolist (p (split-string proj "[, ]" t))
+                   (dolist (p (pearl-gtd-core--split-values proj))
                      (cl-pushnew p projects-with-todos :test #'string=))))))
            nil nil))))
     (dolist (proj projects-with-todos)
@@ -653,7 +653,7 @@ Returns list of entry lists suitable for `pearl-gtd-review--insert-table-row'."
             (cl-remove-if-not
              (lambda (e)
                (let ((proj (nth 5 e)))
-                 (and proj (member proj-name (split-string proj "[, ]" t)))))
+                 (and proj (member proj-name (pearl-gtd-core--split-values proj)))))
              entries))))
 
 (defun pearl-gtd-review--show-project-tasks (proj-name)
