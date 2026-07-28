@@ -21,6 +21,8 @@
           (should (pearl-gtd-test-file-contains-p-bool
                    (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                    "* TODO Test")))
+      (let ((buf (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory))))
+        (when buf (kill-buffer buf)))
       (delete-directory pearl-gtd-init-base-directory t))))
 
 (ert-deftest pearl-gtd-state-test-transaction-commits-on-success ()
@@ -34,6 +36,8 @@
               (goto-char (point-max))
               (insert "* TODO After\n")))
           (should (pearl-gtd-test-file-contains-p-bool file "* TODO After")))
+      (let ((buf (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory))))
+        (when buf (kill-buffer buf)))
       (delete-directory pearl-gtd-init-base-directory t))))
 
 (ert-deftest pearl-gtd-state-test-transaction-rolls-back-on-error ()
@@ -51,6 +55,8 @@
           (should (pearl-gtd-test-file-contains-p-bool file "* TODO Original"))
           (should-not (pearl-gtd-test-file-contains-p-bool file "* TODO Modified"))
           (should-not (get-file-buffer file)))
+      (let ((buf (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory))))
+        (when buf (kill-buffer buf)))
       (delete-directory pearl-gtd-init-base-directory t))))
 
 (ert-deftest pearl-gtd-state-test-transaction-rolls-back-on-quit ()
@@ -67,6 +73,8 @@
             (quit nil))
           (should (pearl-gtd-test-file-contains-p-bool file "* TODO Original"))
           (should-not (pearl-gtd-test-file-contains-p-bool file "* TODO Modified")))
+      (let ((buf (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory))))
+        (when buf (kill-buffer buf)))
       (delete-directory pearl-gtd-init-base-directory t))))
 
 (ert-deftest pearl-gtd-state-test-entry-at-id-found ()
@@ -79,6 +87,8 @@
                         (expand-file-name "actions.org" pearl-gtd-init-base-directory))
           (pearl-gtd-state--with-entry-at-id "id-2" "actions.org"
             (should (looking-at-p "\\*+ TODO Task 2"))))
+      (let ((buf (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory))))
+        (when buf (kill-buffer buf)))
       (delete-directory pearl-gtd-init-base-directory t))))
 
 (ert-deftest pearl-gtd-state-test-entry-at-id-missing ()
@@ -93,6 +103,8 @@
            (pearl-gtd-state--with-entry-at-id "missing-id" "actions.org"
              (ignore))
            :type 'error))
+      (let ((buf (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory))))
+        (when buf (kill-buffer buf)))
       (delete-directory pearl-gtd-init-base-directory t))))
 
 (provide 'pearl-gtd-state-test)
