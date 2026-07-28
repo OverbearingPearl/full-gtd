@@ -64,7 +64,7 @@ Signals \\='quit if user presses \\`C-g\\'."
 (defun pearl-gtd-planning--project-exists-p (proj-name)
   "Check if PROJ-NAME already exists in actions.org.
 This also handles multi-project values separated by semicolons
-(English and Chinese)."
+\(English and Chinese)."
   (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
     (when (file-exists-p file-path)
       (with-temp-buffer
@@ -331,8 +331,8 @@ HORIZONS is an alist of horizon properties."
                    ("L4_GOAL" . "Goal (L4)")
                    ("L3_AREA" . "Area (L3)")))
         (let ((val (cdr (assoc (car h) horizons))))
-          (insert (format "- %s: %s\n" (cdr h) 
-                         (if (string= val "") 
+          (insert (format "- %s: %s\n" (cdr h)
+                         (if (string= val "")
                              "(not set)"
                            ;; Split and display multiple values
                            (string-join (pearl-gtd-core--split-values val) ", "))))))

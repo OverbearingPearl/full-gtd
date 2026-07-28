@@ -71,7 +71,7 @@ PROPERTY should be one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE."
 
 (defun pearl-gtd-horizons--check-hierarchy-constraint (project level)
   "Check hierarchy constraint for setting LEVEL horizon for PROJECT.
-LEVEL should be a symbol: 'area, 'goal, 'vision, 'purpose, or 'principle.
+LEVEL should be a symbol: \\='area, \\='goal, \\='vision, \\='purpose, or \\='principle.
 L5 (vision) requires L4 (goal), L6 (purpose) requires L5 (vision),
 L6 (principle) requires L6 (purpose).
 Returns non-nil if constraint is satisfied, nil otherwise."
@@ -87,7 +87,7 @@ Returns non-nil if constraint is satisfied, nil otherwise."
    ((eq level 'principle)  ; L6_PRINCIPLE: needs L6_PURPOSE
     (let ((l6 (pearl-gtd-horizons--get-project-horizon project "L6_PURPOSE")))
       ;; Support multiple purposes: check if any non-empty value exists
-      (and l6 
+      (and l6
            (cl-some (lambda (v) (not (string= v "")))
                     (pearl-gtd-core--split-values l6)))))
    (t t)))
