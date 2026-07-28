@@ -285,7 +285,6 @@
               (when (get-buffer "*Pearl-GTD Planning Summary*")
                 (kill-buffer "*Pearl-GTD Planning Summary*"))))
 
-
 (pearl-gtd-test-define-story pearl-gtd-planning-user-provides-required-fields-test
   "Purpose, Vision, and Goal cannot be empty; code loops until valid input."
   :setup (pearl-gtd-init-initialize)
@@ -385,7 +384,6 @@
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
               (when (get-buffer "*Pearl-GTD Planning Summary*")
                 (kill-buffer "*Pearl-GTD Planning Summary*"))))
-
 
 (pearl-gtd-test-define-story pearl-gtd-planning-user-skips-context-for-action-test
   "Context can be skipped for Next Action (empty string)."
@@ -518,7 +516,6 @@
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
               (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))
               (when (get-buffer "*Pearl-GTD: Inbox*") (kill-buffer "*Pearl-GTD: Inbox*"))))
-
 
 (pearl-gtd-test-define-story pearl-gtd-planning-user-quits-during-organize-test
   "User quits (C-g) during organize phase, staging buffer should be cleaned."
@@ -845,9 +842,6 @@
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
               (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
 
-
-
-
 (pearl-gtd-test-define-story pearl-gtd-planning-project-with-spaces-around-name-test
   "Project name with leading/trailing spaces should be trimmed."
   :setup (pearl-gtd-init-initialize)
@@ -951,7 +945,6 @@
   :teardown (progn
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
               (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
-
 
 (pearl-gtd-test-define-story pearl-gtd-planning-existing-project-with-space-detected-test
   "Existing project with space in name should be detected correctly."

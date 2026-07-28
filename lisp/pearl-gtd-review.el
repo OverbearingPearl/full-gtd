@@ -215,7 +215,6 @@ EXTRA-CLEANUP is a form to execute when removing the property
           (save-buffer))
         (pearl-gtd-review--refresh-view)))))
 
-
 (defun pearl-gtd-review--refresh-view ()
   "Refresh current review view."
   (interactive)

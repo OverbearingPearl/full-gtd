@@ -116,7 +116,6 @@
                (should found3)))
   :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
 
-
 (pearl-gtd-test-define-story pearl-gtd-horizons-user-sees-horizon-inheritance-test
   "Project horizon inheritance to its actions."
   :setup (pearl-gtd-init-initialize)
@@ -335,7 +334,6 @@
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
                       ":L6_PURPOSE: Old1; Old2; New3")))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
-
 
 (pearl-gtd-test-define-story pearl-gtd-horizons-mixed-separators-with-whitespace-test
   "Horizon values with mixed semicolons and surrounding whitespace."

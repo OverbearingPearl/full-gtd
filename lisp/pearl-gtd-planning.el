@@ -244,9 +244,6 @@ action created."
          nil nil)))
     has-next-action))
 
-
-
-
 (defun pearl-gtd-planning--create-action (headline project context horizons)
   "Create a new action in actions.org.
 HEADLINE is the task title.
