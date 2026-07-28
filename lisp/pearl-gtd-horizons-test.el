@@ -269,6 +269,104 @@
   :asserts t
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
 
+(pearl-gtd-test-define-story pearl-gtd-horizons-principle-allows-multiple-purposes-test
+  "Setting Principle passes when any Purpose exists in multi-value."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: multi-purpose-1\n:PROJECT: MultiPurposeProj\n:L3_AREA: Area\n:L4_GOAL: Goal\n:L5_VISION: Vision\n:L6_PURPOSE: P1; P2\n:END:\n"))
+  :mock (((symbol-function 'read-string) (lambda (&rest _) "PrincipleValue")))
+  :body (progn
+          (pearl-gtd-review-weekly)
+          (with-current-buffer "*Pearl-GTD Weekly Review*"
+            (goto-char (point-min))
+            (search-forward "** Projects - Active")
+            (search-forward "MultiPurposeProj")
+            (beginning-of-line)
+            (pearl-gtd-horizons--edit-principle-at-point)))
+  :asserts (progn
+             (should (pearl-gtd-test-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      ":L6_PRINCIPLE: PrincipleValue")))
+  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
+
+(pearl-gtd-test-define-story pearl-gtd-horizons-multiple-values-in-hierarchy-test
+  "Entry with multiple horizon values appears under each node."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* TODO MultiHorizonTask\n:PROPERTIES:\n:ID: multi-horizon-1\n:PROJECT: MultiHorizonProj\n:L6_PURPOSE: PurposeA; PurposeB\n:L5_VISION: VisionA; VisionB\n:L4_GOAL: GoalA; GoalB\n:L3_AREA: AreaA; AreaB\n:END:\n"))
+  :mock nil
+  :body (pearl-gtd-horizons-view)
+  :asserts (progn
+             (should (get-buffer "*Pearl-GTD Horizons*"))
+             (with-current-buffer "*Pearl-GTD Horizons*"
+               ;; Should appear under both PurposeA and PurposeB
+               (goto-char (point-min))
+               (should (search-forward "** PurposeA" nil t))
+               (should (search-forward "*** VisionA" nil t))
+               (should (search-forward "**** GoalA" nil t))
+               (should (search-forward "***** AreaA" nil t))
+               (should (search-forward "****** MultiHorizonProj" nil t))
+               (should (search-forward "TODO MultiHorizonTask" nil t))
+               (goto-char (point-min))
+               (should (search-forward "** PurposeB" nil t))
+               (should (search-forward "*** VisionB" nil t))
+               (should (search-forward "**** GoalB" nil t))
+               (should (search-forward "***** AreaB" nil t))
+               (should (search-forward "****** MultiHorizonProj" nil t))
+               (should (search-forward "TODO MultiHorizonTask" nil t))))
+  :teardown (kill-buffer "*Pearl-GTD Horizons*"))
+
+(pearl-gtd-test-define-story pearl-gtd-horizons-user-edits-multiple-values-test
+  "Editing horizon shows joined values and saves split values."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* TODO EditTask\n:PROPERTIES:\n:ID: edit-multi-1\n:PROJECT: EditProj\n:L5_VISION: VisionValue\n:L6_PURPOSE: Old1; Old2\n:END:\n"))
+  :mock (((symbol-function 'read-string)
+          (lambda (prompt &optional initial _history)
+            (should (string= initial "Old1; Old2"))
+            "Old1; Old2; New3")))
+  :body (progn
+          (pearl-gtd-review-weekly)
+          (with-current-buffer "*Pearl-GTD Weekly Review*"
+            (goto-char (point-min))
+            (search-forward "** Projects - Active")
+            (search-forward "EditProj")
+            (beginning-of-line)
+            (pearl-gtd-horizons--edit-purpose-at-point)))
+  :asserts (progn
+             (should (pearl-gtd-test-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      ":L6_PURPOSE: Old1; Old2; New3")))
+  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
+
+(pearl-gtd-test-define-story pearl-gtd-horizons-user-views-hierarchy-test
+  "Horizon view shows L6 to L3 hierarchy with projects and actions."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* TODO No project task\n:PROPERTIES:\n:ID: np-1\n:L3_AREA: Personal\n:END:\n* TODO Project task\n:PROPERTIES:\n:ID: p-1\n:PROJECT: TestProject\n:L3_AREA: Work\n:L4_GOAL: Goal\n:L5_VISION: Vision\n:L6_PURPOSE: Purpose\n:END:\n"))
+  :mock nil
+  :body (pearl-gtd-horizons-view)
+  :asserts (progn
+             (should (get-buffer "*Pearl-GTD Horizons*"))
+             (with-current-buffer "*Pearl-GTD Horizons*"
+               ;; Verify hierarchy structure
+               (goto-char (point-min))
+               (should (search-forward "** Purpose" nil t))
+               (should (search-forward "*** Vision" nil t))
+               (should (search-forward "**** Goal" nil t))
+               (should (search-forward "***** Work" nil t))
+               (should (search-forward "****** TestProject" nil t))
+               (should (search-forward "******* TODO Project task" nil t))
+               (should (search-forward "** Personal" nil t))
+               (should (search-forward "*** TODO No project task" nil t))
+               ;; Additional check for multi-value scenario
+               (goto-char (point-min))
+               (should (search-forward "** Purpose" nil t))
+               (should (search-forward "*** Vision" nil t))
+               (should (search-forward "**** Goal" nil t))
+               (should (search-forward "***** Work" nil t))
+               (should (search-forward "****** TestProject" nil t))
+               (should (search-forward "******* TODO Project task" nil t))
+               (should (search-forward "** Personal" nil t))
+               (should (search-forward "*** TODO No project task" nil t))))
+  :teardown (kill-buffer "*Pearl-GTD Horizons*"))
+
 (provide 'pearl-gtd-test-horizons)
 
 ;;; pearl-gtd-test-horizons.el ends here

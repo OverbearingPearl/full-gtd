@@ -87,12 +87,16 @@ Returns t if constraint satisfied, nil otherwise."
       (and l5 (not (string= l5 "")))))
    ((eq level 'principle)  ; L6_PRINCIPLE: needs L6_PURPOSE
     (let ((l6 (pearl-gtd-horizons--get-project-horizon project "L6_PURPOSE")))
-      (and l6 (not (string= l6 "")))))
+      ;; Support multiple purposes: check if any non-empty value exists
+      (and l6 
+           (cl-some (lambda (v) (not (string= v "")))
+                    (pearl-gtd-core--split-values l6)))))
    (t t)))
 
 (defun pearl-gtd-horizons--edit-horizon-at-point (level &optional project)
   "Edit horizon LEVEL for entry at point or for PROJECT if provided.
-LEVEL should be a symbol: \\='area, \\='goal, \\='vision, \\='purpose, or \\='principle."
+LEVEL should be a symbol: \\='area, \\='goal, \\='vision, \\='purpose, or \\='principle.
+Supports multiple values separated by semicolon."
   (let* ((entry (unless project (pearl-gtd-review--get-entry-at-point)))
          (project (or project
                       (save-excursion
@@ -115,27 +119,24 @@ LEVEL should be a symbol: \\='area, \\='goal, \\='vision, \\='purpose, or \\='pr
              (current-value (if project
                                 (pearl-gtd-horizons--get-project-horizon project property)
                               (pearl-gtd-review--get-property-by-id id file property)))
-             (prompt (format "Horizon %s (RET=remove, supports spaces, e.g., %s): "
+             (current-values-display (if current-value
+                                        (string-join (pearl-gtd-core--split-values current-value) "; ")
+                                      ""))
+             (prompt (format "Horizon %s (RET=remove, use ; to separate multiple): "
                              (cond ((eq level 'area)      "L3 Area")
                                    ((eq level 'goal)      "L4 Goal")
                                    ((eq level 'vision)    "L5 Vision")
                                    ((eq level 'purpose)   "L6 Purpose")
                                    ((eq level 'principle) "L6 Principle")
-                                   (t (symbol-name level)))
-                             (cond ((eq level 'area)      "Career Development, Personal Health")
-                                   ((eq level 'goal)      "Launch in Q2 2026, Complete certification")
-                                   ((eq level 'vision)    "Industry leader in 3 years")
-                                   ((eq level 'purpose)   "Improve user experience")
-                                   ((eq level 'principle) "Keep it simple")
-                                   (t "value"))))
-             (new-value (read-string prompt (or current-value ""))))
+                                   (t (symbol-name level)))))
+             (new-value (read-string prompt current-values-display)))
         (if project
             (progn
               ;; For project, check hierarchy constraint
               (unless (pearl-gtd-horizons--check-hierarchy-constraint project level)
                 (error "%s must be set first"
                        (cond ((eq level 'vision)    "L4 Goal")
-                             ((eq level 'purpose).  "L5 Vision")
+                             ((eq level 'purpose)   "L5 Vision")
                              ((eq level 'principle) "L6 Purpose")
                              (t "Previous horizon"))))
               (let ((count (pearl-gtd-horizons--set-project-horizon project property new-value)))
@@ -186,7 +187,8 @@ LEVEL should be a symbol: \\='area, \\='goal, \\='vision, \\='purpose, or \\='pr
 (defun pearl-gtd-horizons--collect-horizon-hierarchy ()
   "Collect all horizon data in hierarchical structure.
 Returns alist mapping L6 to L5, L5 to L4, L4 to L3,
-and L3 to a list of projects and no-project actions."
+and L3 to a list of projects and no-project actions.
+Supports multiple values per horizon level (split by semicolon)."
   (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
         (hierarchy (make-hash-table :test 'equal)))
     (when (file-exists-p file-path)
@@ -208,42 +210,46 @@ and L3 to a list of projects and no-project actions."
              (when (or l3 l4 l5 l6)
                ;; For entries with only L3 set, put them at top level
                (if (and l3 (not (or l4 l5 l6)))
-                   (let* ((l3-key (or l3 ""))
-                          ;; Get or create top-level L3 entry
-                          (l3-entry (or (gethash l3-key hierarchy)
-                                        (puthash l3-key (list nil nil) hierarchy))))
-                     ;; Add to no-project list
-                     (setcdr l3-entry (cons entry (cdr l3-entry))))
+                   (let* ((l3-values (pearl-gtd-core--split-values l3)))
+                     (dolist (l3-key l3-values)
+                       (let* ((l3-key-normalized (if (string= l3-key "") "" l3-key))
+                              ;; Get or create top-level L3 entry
+                              (l3-entry (or (gethash l3-key-normalized hierarchy)
+                                            (puthash l3-key-normalized (list nil nil) hierarchy))))
+                         ;; Add to no-project list
+                         (setcdr l3-entry (cons entry (cdr l3-entry))))))
                  ;; For entries with L4/L5/L6, build full hierarchy
-                 (let* ((l6-key (or l6 ""))
-                        (l5-key (or l5 ""))
-                        (l4-key (or l4 ""))
-                        (l3-key (or l3 ""))
-                        ;; Get or create L6 level
-                        (l6-entry (or (gethash l6-key hierarchy)
-                                      (puthash l6-key (make-hash-table :test 'equal) hierarchy)))
-                        ;; Get or create L5 level
-                        (l5-entry (or (gethash l5-key l6-entry)
-                                      (puthash l5-key (make-hash-table :test 'equal) l6-entry)))
-                        ;; Get or create L4 level
-                        (l4-entry (or (gethash l4-key l5-entry)
-                                      (puthash l4-key (make-hash-table :test 'equal) l5-entry)))
-                        ;; Get or create L3 level (this is a list, not hash)
-                        (l3-entry (or (gethash l3-key l4-entry)
-                                      (puthash l3-key (list nil nil) l4-entry))))
-                   ;; Now add the entry to the appropriate place
-                   (if (and proj (not (string= proj "")))
-                       ;; Project action - add to project's list
-                       (let ((projects (pearl-gtd-core--split-values proj)))
-                         (dolist (p projects)
-                           (let* ((project-list (car l3-entry))
-                                  (existing (assoc p project-list))
-                                  (entry-with-proj (list head id todo-state p)))
-                             (if existing
-                                 (setcdr existing (cons entry-with-proj (cdr existing)))
-                               (setcar l3-entry (cons (list p entry-with-proj) project-list))))))
-                     ;; No-project action - add to no-project list
-                     (setcdr l3-entry (cons entry (cdr l3-entry)))))))))
+                 ;; Split each level into multiple values
+                 (let* ((l6-values (pearl-gtd-core--split-values (or l6 "")))
+                        (l5-values (pearl-gtd-core--split-values (or l5 "")))
+                        (l4-values (pearl-gtd-core--split-values (or l4 "")))
+                        (l3-values (pearl-gtd-core--split-values (or l3 ""))))
+                   ;; Iterate over all combinations of L6, L5, L4, L3
+                   (dolist (l6-key l6-values)
+                     (let ((l6-entry (or (gethash l6-key hierarchy)
+                                         (puthash l6-key (make-hash-table :test 'equal) hierarchy))))
+                       (dolist (l5-key l5-values)
+                         (let ((l5-entry (or (gethash l5-key l6-entry)
+                                             (puthash l5-key (make-hash-table :test 'equal) l6-entry))))
+                           (dolist (l4-key l4-values)
+                             (let ((l4-entry (or (gethash l4-key l5-entry)
+                                                 (puthash l4-key (make-hash-table :test 'equal) l5-entry))))
+                               (dolist (l3-key l3-values)
+                                 (let ((l3-entry (or (gethash l3-key l4-entry)
+                                                     (puthash l3-key (list nil nil) l4-entry))))
+                                   ;; Now add the entry to the appropriate place
+                                   (if (and proj (not (string= proj "")))
+                                       ;; Project action - add to project's list
+                                       (let ((projects (pearl-gtd-core--split-values proj)))
+                                         (dolist (p projects)
+                                           (let* ((project-list (car l3-entry))
+                                                  (existing (assoc p project-list))
+                                                  (entry-with-proj (list head id todo-state p)))
+                                             (if existing
+                                                 (setcdr existing (cons entry-with-proj (cdr existing)))
+                                               (setcar l3-entry (cons (list p entry-with-proj) project-list))))))
+                                     ;; No-project action - add to no-project list
+                                     (setcdr l3-entry (cons entry (cdr l3-entry)))))))))))))))))
          nil nil)))
     hierarchy))
 

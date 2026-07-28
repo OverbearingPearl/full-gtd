@@ -128,7 +128,7 @@ LEVEL is a number (3-7).  DESCRIPTION is a string describing the horizon.
 If OPTIONAL is non-nil, empty input is allowed.
 EXAMPLE-LEVEL is the level to use for examples (defaults to LEVEL).
 Return the input string (guaranteed non-empty when OPTIONAL is nil).
-Supports spaces in horizon values."
+Supports multiple values separated by semicolon (;)."
   (let* ((examples '((3 . "Career Development, Personal Health, Family Life")
                      (4 . "Launch website by March 2026, Complete certification Q2")
                      (5 . "Become industry leader in 3 years, Build sustainable business")
@@ -137,7 +137,7 @@ Supports spaces in horizon values."
          (example-idx (or example-level level))
          (example (or (cdr (assoc example-idx examples)) "value"))
          (required-str (if optional "optional" "required"))
-         (prompt (format "%s (L%d, %s): <Description> [RET %s] (e.g., %s): "
+         (prompt (format "%s (L%d, %s): <Description> [RET %s] (e.g., %s; use ; to separate multiple): "
                          description level required-str
                          (if optional "to skip" "must fill")
                          example)))
@@ -330,7 +330,11 @@ HORIZONS is an alist of horizon properties."
                    ("L4_GOAL" . "Goal (L4)")
                    ("L3_AREA" . "Area (L3)")))
         (let ((val (cdr (assoc (car h) horizons))))
-          (insert (format "- %s: %s\n" (cdr h) (if (string= val "") "(not set)" val)))))
+          (insert (format "- %s: %s\n" (cdr h) 
+                         (if (string= val "") 
+                             "(not set)"
+                           ;; Split and display multiple values
+                           (string-join (pearl-gtd-core--split-values val) ", "))))))
 
       ;; Next Actions
       (insert "\n* Next Actions\n")

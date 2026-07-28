@@ -840,6 +840,46 @@
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
               (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
 
+(pearl-gtd-test-define-story pearl-gtd-planning-user-sets-multiple-purposes-test
+  "User can set multiple purposes separated by semicolon."
+  :setup (pearl-gtd-init-initialize)
+  :files nil
+  :mock (((symbol-function 'completing-read)
+          (pearl-gtd-test-planning--make-completing-read-mock
+           '("MultiPurposeProject")))
+         ((symbol-function 'read-string)
+          (pearl-gtd-test-planning--make-read-string-mock
+           '("Purpose1; Purpose2"  ; Multiple purposes
+             ""                    ; Principle
+             "Vision"              ; Vision
+             "Goal"                ; Goal
+             "Area"                ; Area
+             "@ctx"                ; Default context
+             )))
+         ((symbol-function 'pearl-gtd-inbox--read-destination-key)
+          (lambda (_) ?a))
+         ((symbol-function 'pearl-gtd-core-read-date) (lambda (&rest _) ""))
+         ((symbol-function 'pearl-gtd-inbox--read-delegate) (lambda () ""))
+         ((symbol-function 'recursive-edit)
+          (lambda ()
+            (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
+              (with-current-buffer buf
+                (insert "Task\n"))))))
+  :body (pearl-gtd-planning-start)
+  :asserts (progn
+             ;; Verify multiple purposes stored as semicolon-separated
+             (should (pearl-gtd-test-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      ":L6_PURPOSE: Purpose1; Purpose2"))
+             ;; Verify summary displays comma-separated
+             (let ((summary-buffer (get-buffer "*Pearl-GTD Planning Summary*")))
+               (should summary-buffer)
+               (with-current-buffer summary-buffer
+                 (should (string-match-p "Purpose1, Purpose2" (buffer-string))))))
+  :teardown (progn
+              (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
+              (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
+
 (pearl-gtd-test-define-story pearl-gtd-planning-multiple-projects-semicolon-test
   "Multiple projects separated by semicolon should be parsed correctly."
   :setup (pearl-gtd-init-initialize)
