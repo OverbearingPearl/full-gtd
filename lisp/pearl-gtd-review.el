@@ -211,7 +211,7 @@ EXTRA-CLEANUP is a form to execute when removing the property
             (file (cdr entry)))
         (pearl-gtd-core-with-entry-at-id id file
           (let ((org-log-done 'time))
-            (org-todo "DONE"))
+            (org-todo 'done))
           (save-buffer))
         (pearl-gtd-review--refresh-view)))))
 
@@ -444,7 +444,7 @@ Returns list (TOTAL TODO DONE NEXT-DEADLINE L3 L4 L5 L6)."
                    (let ((todo-state (org-get-todo-state)))
                      (cond
                       ((member todo-state org-done-keywords) (cl-incf done))
-                      ((string= todo-state "TODO") (cl-incf todo)))
+                      ((member todo-state org-not-done-keywords) (cl-incf todo)))
                      ;; Collect horizon values from first TODO entry
                      (when (and (null horizon-l3) (pearl-gtd-core-entry-todo-p))
                        (setq horizon-l3 (org-entry-get nil "L3_AREA"))

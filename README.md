@@ -138,7 +138,7 @@ Inbox processing (`pearl-gtd-process-inbox`) presents a **staging table** with v
 `M‑x pearl‑gtd‑planning‑start` enforces David Allen’s five‑step project thinking:
 
 1. **Purpose** (L6) – Why are we doing this?
-2. **Principle** (L6) – What standards must we keep?
+2. **Principle** (L6) – What standards must we keep? (Optional: press RET to skip)
 3. **Vision** (L5) – What does success look like?
 4. **Brainstorming** – Dump all ideas into a temporary buffer
 5. **Organizing** – Force‑complete every brainstorm item via **staging buffer** with visual highlighting and **single‑key selection** (`n`ext/`r`ef/`s`omeday/`t`rash/`c`larify). The optional **clarify** step (`c`) allows renaming and adding remarks before final classification. A **session‑wide default context** is set once and auto‑applied to all Next Actions; if omitted, context is prompted per‑item using the same completion flow as inbox processing.
@@ -160,7 +160,7 @@ Horizons are inherited from projects to their actions. The horizon view (`pearl�
 - **Daily Review** (`pearl‑gtd‑review‑daily`) – Today’s scheduled tasks, completed today, next actions, and inbox.
 - **Weekly Review** (`pearl‑gtd‑review‑weekly`) – Comprehensive 10‑section review: inbox, overdue, upcoming deadlines, completed, delegated, next actions, stuck/active projects, no‑project actions, and someday/maybe.
 
-Both reviews use a unified table interface with keyboard shortcuts for navigation, editing properties, marking tasks complete, and jumping to source entries.
+Both reviews use a unified table interface with keyboard shortcuts for navigation, editing properties, marking tasks complete, and jumping to source entries. Shortcuts: `c` (context), `d` (delegated), `t` (scheduled), `s` (deadline), `r` (rename), `P` (project), `C` (complete), and `3`-`7` (horizons L3-L6).
 
 ### 5. Do/Work Phase
 Context‑filtered action views (`pearl‑gtd‑do‑view‑by‑context`), delegated tasks, today’s scheduled actions, and a global “All Actions” table. Each view is a read‑only Org table with live navigation (`n`/`p`/`j`/`k`), completion (`C`), renaming (`r`), and jump‑to‑source (`RET`).
@@ -180,7 +180,7 @@ Most GTD software becomes a todo‑list app with extra steps. Pearl‑GTD stays 
 
 - **Capture must be frictionless** – One key, no categorization, no thinking.
 - **The Natural Planning Model is not optional** – It’s how projects actually get done.
-- **Horizons are not tags** – They are a hierarchy. L4 goals must connect to L2 projects. If a goal has no projects, it’s a fantasy.
+- **Horizons are not tags** – They are a hierarchy. L4 goals must connect to L2 projects. If a goal has no projects, it’s a fantasy. Horizons can be edited directly in review views using `3`-`7` keys.
 - **Review is the engine** – Without weekly review, GTD decays into a mess of stale lists. The tool enforces the habit.
 
 Emacs is the right host because GTD is fundamentally **text and structure**. Org‑mode gives us outlines, tags, links, and agenda views. Pearl‑GTD adds the **workflow layer** on top.

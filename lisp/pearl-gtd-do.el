@@ -248,7 +248,7 @@ Context tags are normalized by removing the @ prefix for matching."
       (let ((id (car entry))
             (file (cdr entry)))
         (pearl-gtd-core-with-entry-at-id id file
-          (let ((org-log-done 'time)) (org-todo "DONE")))
+          (let ((org-log-done 'time)) (org-todo 'done)))
         (let ((inhibit-read-only t))
           (org-table-goto-column 3)
           (org-table-blank-field)

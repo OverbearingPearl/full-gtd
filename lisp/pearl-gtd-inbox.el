@@ -587,7 +587,7 @@ DEADLINE is the deadline date string (nil if not set)."
         (when new-headline
           (org-edit-headline new-headline))
         (when (and target-file (string= target-file "actions.org"))
-          (org-todo "TODO"))
+          (org-todo (car org-not-done-keywords)))
         (when remarks
           (org-end-of-meta-data t)
           (unless (bolp)

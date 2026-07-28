@@ -264,7 +264,7 @@ HORIZONS is an alist of horizon properties."
   (pearl-gtd-state--with-file-buffer "actions.org"
     (goto-char (point-max))
     (unless (bolp) (insert "\n"))
-    (insert "* TODO " (or headline "Unnamed action") "\n")
+    (insert "* " (car org-not-done-keywords) " " (or headline "Unnamed action") "\n")
     (org-set-property "PROJECT" (or project "NoProject"))
     (when (and context (stringp context) (not (string= context "")))
       (if (string-match "^@" context)
