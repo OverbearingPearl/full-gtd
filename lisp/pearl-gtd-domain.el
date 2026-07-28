@@ -77,6 +77,26 @@ Returns (VALID-P . ERROR-MSG)."
                     (cons nil "L6 Purpose must be set first")))
       (_ (cons nil (format "Unknown horizon level: %s" level))))))
 
+;;;; Planning workflow validation
+
+(defun pearl-gtd-domain--planning-input-valid-p (project-name purpose vision goal)
+  "Validate required planning fields.
+Returns (VALID-P . ERROR-MSG)."
+  (cond
+   ((or (null project-name) (string= project-name ""))
+    (cons nil "Project name is required"))
+   ((or (null purpose) (string= purpose ""))
+    (cons nil "Purpose (L6) is required"))
+   ((or (null goal) (string= goal ""))
+    (cons nil "Goal (L4) is required"))
+   (t (cons t nil))))
+
+(defun pearl-gtd-domain--require-next-action-p (actions-count)
+  "Determine if forced next action is required.
+ACTIONS-COUNT is number of next actions created.
+Returns t if no next actions exist."
+  (zerop actions-count))
+
 (provide 'pearl-gtd-domain)
 
 ;;; pearl-gtd-domain.el ends here

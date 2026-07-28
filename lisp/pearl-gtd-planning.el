@@ -224,26 +224,46 @@ Signal error if user aborts."
                 lines))))
       (kill-buffer buf))))
 
-(defun pearl-gtd-planning--organize-brainstorm-items (project)
-  "Organize all brainstorm items for PROJECT using inbox processing.
-Force completion of all items.  Return t if at least one next
-action created."
-  (pearl-gtd-inbox--process t pearl-gtd-planning--default-context project)
-  ;; Verify at least one next action exists for this project
-  (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
-        (has-next-action nil))
-    (when (file-exists-p file-path)
-      (with-temp-buffer
-        (insert-file-contents file-path)
-        (org-mode)
-        (org-map-entries
-         (lambda ()
-           (when (and (pearl-gtd-core-entry-todo-p)
-                      (let ((proj (org-entry-get nil "PROJECT")))
-                        (and proj (string= proj project))))
-             (setq has-next-action t)))
-         nil nil)))
-    has-next-action))
+(defun pearl-gtd-planning--has-brainstorm-items-p (project)
+  "Check if PROJECT has brainstorm items in inbox (pure query)."
+  (let ((inbox-path (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+    (and (file-exists-p inbox-path)
+         (with-temp-buffer
+           (insert-file-contents inbox-path)
+           (org-mode)
+           (catch 'found
+             (org-map-entries
+              (lambda ()
+                (when (and (string= (org-entry-get nil "BRAINSTORM") "t")
+                           (string= (org-entry-get nil "PROJECT") project))
+                  (throw 'found t)))
+              nil nil)
+             nil)))))
+
+(defun pearl-gtd-planning--read-forced-action (prompt)
+  "Read forced next action from user with validation.
+Returns non-empty string."
+  (let ((action ""))
+    (while (string= action "")
+      (let ((raw (read-string prompt)))
+        (setq action (string-trim raw))))
+    action))
+
+(defun pearl-gtd-planning--organize-brainstorm-items (project default-context)
+  "Organize all brainstorm items for PROJECT.
+Returns count of next actions created (integer)."
+  (let ((count 0))
+    (pearl-gtd-inbox--process t default-context project)
+    ;; Count next actions created for this project
+    (pearl-gtd-state--with-file-buffer "actions.org"
+      (org-map-entries
+       (lambda ()
+         (let ((todo-p (pearl-gtd-core-entry-todo-p))
+               (proj (org-entry-get nil "PROJECT")))
+           (when (and todo-p (string= proj project))
+             (cl-incf count))))
+       nil nil))
+    count))
 
 (defun pearl-gtd-planning--create-action (headline project context horizons)
   "Create a new action in actions.org.
@@ -366,46 +386,55 @@ HORIZONS is an alist of horizon properties."
     (goto-char (point-min))))
 
 (defun pearl-gtd-planning--start ()
-  "Start Natural Planning Model workflow."
-  (setq pearl-gtd-planning--current-project (pearl-gtd-planning--select-project))
-
-  ;; 1. Define horizons
-  (let* ((purpose (pearl-gtd-planning--ask-horizon 6 "Purpose" nil))
-         (principle (pearl-gtd-planning--ask-horizon 6 "Principle" t 7))
+  "Start Natural Planning Model workflow.
+Coordinator pattern: delegates all business logic to domain layer,
+all state operations to state layer."
+  (interactive)
+  (let* ((wf-ctx (make-hash-table :test 'equal))
+         ;; Step 1: Collect inputs (interaction layer)
+         (project-name (pearl-gtd-planning--select-project))
+         (purpose (pearl-gtd-planning--ask-horizon 6 "Purpose" nil))
+         (principle (pearl-gtd-planning--ask-horizon 6 "Principle" t))
          (vision (pearl-gtd-planning--ask-horizon 5 "Vision" nil))
          (goal (pearl-gtd-planning--ask-horizon 4 "Goal" nil))
          (area (pearl-gtd-planning--ask-horizon 3 "Area" t))
-         (default-context (read-string
-                          (format "Default context for '%s' [RET for none]: <@location/tool> (e.g., @office, @home, @phone): "
-                                  pearl-gtd-planning--current-project)))
+         (default-context (read-string "Default context [RET for none]: "))
          (horizons `(("L6_PURPOSE" . ,purpose)
                      ("L6_PRINCIPLE" . ,principle)
                      ("L5_VISION" . ,vision)
                      ("L4_GOAL" . ,goal)
                      ("L3_AREA" . ,area))))
-    ;; Store default context for organize phase
-    (setq pearl-gtd-planning--default-context default-context)
 
-    ;; 2. Brainstorm - write to inbox
-    (pearl-gtd-planning--ask-brainstorm pearl-gtd-planning--current-project)
+    ;; Validate inputs (domain layer)
+    (cl-destructuring-bind (valid-p . error-msg)
+        (pearl-gtd-domain--planning-input-valid-p project-name purpose vision goal)
+      (unless valid-p
+        (error "Planning validation failed: %s" error-msg)))
 
-    ;; 3. Organize - force complete all brainstorm items
-    (let ((has-next-action (pearl-gtd-planning--organize-brainstorm-items pearl-gtd-planning--current-project)))
+    ;; Execute workflow with transaction (state layer)
+    (pearl-gtd-state--with-transaction '("actions.org" "inbox.org")
+      ;; Brainstorm phase
+      (pearl-gtd-planning--ask-brainstorm project-name)
 
-      ;; 4. Force at least one next action if none created
-      ;; 5. Apply horizons to all project actions
-      (pearl-gtd-state--with-transaction '("actions.org")
-        (unless has-next-action
-          (let ((forced-action ""))
-            (while (string= forced-action "")
-              (setq forced-action (read-string "Required next action: <Specific physical action> (e.g., Call designer for quote): ")))
-            (pearl-gtd-planning--create-action forced-action pearl-gtd-planning--current-project default-context horizons)))
-        (pearl-gtd-planning--apply-horizons-to-project pearl-gtd-planning--current-project horizons))
+      ;; Organize phase (returns count of next actions created)
+      (let ((next-action-count
+             (if (pearl-gtd-planning--has-brainstorm-items-p project-name)
+                 (pearl-gtd-planning--organize-brainstorm-items project-name default-context)
+               0)))
 
-      ;; 6. Show project summary (NEW)
-      (pearl-gtd-planning--show-project-summary pearl-gtd-planning--current-project horizons)
+        ;; Force next action if required (domain rule)
+        (when (pearl-gtd-domain--require-next-action-p next-action-count)
+          (let ((forced-action
+                 (pearl-gtd-planning--read-forced-action "Required next action: ")))
+            (pearl-gtd-planning--create-action
+             forced-action project-name default-context horizons)))
 
-      (message "Natural planning completed for project: %s" pearl-gtd-planning--current-project))))
+        ;; Apply horizons to all project actions
+        (pearl-gtd-planning--apply-horizons-to-project project-name horizons)))
+
+    ;; Presentation
+    (pearl-gtd-planning--show-project-summary project-name horizons)
+    (message "Natural planning completed for project: %s" project-name)))
 
 (defun pearl-gtd-planning-start ()
   "Start Natural Planning Model workflow."

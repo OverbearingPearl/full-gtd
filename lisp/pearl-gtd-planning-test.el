@@ -349,8 +349,9 @@
            '("TrashTest")))              ; New project name
          ((symbol-function 'read-string)
           (pearl-gtd-test-planning--make-read-string-mock
-           '("P" "" "V" "G" "A"  ; Horizons
-             ""                  ; Default context (empty)
+           '("P" "" "V" "G" "A"         ; Horizons (Purpose/Principle/Vision/Goal/Area)
+             ""                          ; Default context (empty)
+             "Forced next action"        ; REQUIRED: forced next action when all items trashed
              )))
          ((symbol-function 'pearl-gtd-inbox--read-destination-key)
           (lambda (_) ?t))  ; Trash
@@ -379,7 +380,7 @@
              ;; But forced next action should exist (since trashed item doesn't count)
              (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      "TODO")))
+                      "TODO Forced next action")))
   :teardown (progn
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
               (when (get-buffer "*Pearl-GTD Planning Summary*")

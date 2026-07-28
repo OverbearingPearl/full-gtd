@@ -22,7 +22,8 @@
 
 (defun pearl-gtd-core-entry-todo-p ()
   "Return non-nil if current entry is a TODO item."
-  (string= (org-get-todo-state) "TODO"))
+  (let ((state (org-get-todo-state)))
+    (string= state "TODO")))
 
 (defun pearl-gtd-core-entry-done-p ()
   "Return non-nil if current entry is a DONE item."
