@@ -214,7 +214,8 @@ Or with `use‑package`:
          ("C-c g r" . pearl-gtd-review-weekly)
          ("C-c g d" . pearl-gtd-review-daily)
          ("C-c g a" . pearl-gtd-do-view-all-actions)
-         ("C-c g h" . pearl-gtd-horizons-view)))
+         ("C-c g h" . pearl-gtd-horizons-view))
+  :config (package-initialize))
 ```
 
 ### Manual installation
