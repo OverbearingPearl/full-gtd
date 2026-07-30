@@ -19,14 +19,20 @@
   :files (("inbox.org" "* Raw task\n:PROPERTIES:\n:ID: c1\n:END:\n"))
   :mock (((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) ?r))
          ((symbol-function 'pearl-gtd-inbox--clarify-entry)
-          (lambda (_headline) (error "Should not be called when skipping clarify"))))
+          (lambda (_headline) (error "Should not be called when skipping clarify"))
+         )
+        )
   :body (pearl-gtd-process-inbox)
   :asserts (progn
              (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "reference.org" pearl-gtd-init-base-directory)
-                      "* Raw task"))
-             (should (pearl-gtd-test-inbox-empty-p pearl-gtd-init-base-directory)))
-  :teardown nil)
+                      "* Raw task"
+                     )
+             )
+             (should (pearl-gtd-test-inbox-empty-p pearl-gtd-init-base-directory))
+           )
+  :teardown nil
+)
 
 (pearl-gtd-test-define-story pearl-gtd-clarify-user-clarifies-then-trash-test
   "User clarifies title and remarks, then trashes."
@@ -36,11 +42,17 @@
           (let ((calls 0))
             (lambda (_headline)
               (setq calls (1+ calls))
-              (if (= calls 1) ?c ?t))))  ; First c (clarify), then t (trash)
+              (if (= calls 1) ?c ?t)
+            )
+          )
+         )  ; First c (clarify), then t (trash)
          ((symbol-function 'pearl-gtd-inbox--clarify-entry)
-          (lambda (_headline) (cons "Worse idea" "Actually terrible")))
+          (lambda (_headline) (cons "Worse idea" "Actually terrible"))
+         )
          ((symbol-function 'pearl-gtd-inbox--collect-action-attrs)
-          (lambda () (error "Should not collect attrs for trash"))))
+          (lambda () (error "Should not collect attrs for trash"))
+         )
+        )
   :body (pearl-gtd-process-inbox)
   :asserts (progn
              ;; Verify original moved to trash (inbox empty)
@@ -48,8 +60,12 @@
              ;; Clarified content should not appear in reference or actions
              (should-not (pearl-gtd-test-file-contains-p-bool
                           (expand-file-name "reference.org" pearl-gtd-init-base-directory)
-                          "Worse idea")))
-  :teardown nil)
+                          "Worse idea"
+                         )
+             )
+           )
+  :teardown nil
+)
 
 (pearl-gtd-test-define-story pearl-gtd-clarify-user-clarifies-then-action-test
   "User clarifies then sends to action."
@@ -59,25 +75,41 @@
           (let ((calls 0))
             (lambda (_headline)
               (setq calls (1+ calls))
-              (if (= calls 1) ?c ?a))))  ; First c, then a
+              (if (= calls 1) ?c ?a)
+            )
+          )
+         )  ; First c, then a
          ((symbol-function 'pearl-gtd-inbox--clarify-entry)
-          (lambda (_headline) (cons "Clear action" "Important notes")))
+          (lambda (_headline) (cons "Clear action" "Important notes"))
+         )
          ((symbol-function 'pearl-gtd-inbox--collect-action-attrs)
           (lambda (&optional _staging-buffer _default-context _default-project)
             '((context . "@office") (schedule . "") (deadline . "")
-              (delegate . "") (project . "")))))
+              (delegate . "") (project . "")
+             )
+          )
+         )
+        )
   :body (pearl-gtd-process-inbox)
   :asserts (progn
              (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      "* TODO Clear action"))
+                      "* TODO Clear action"
+                     )
+             )
              (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      "Important notes"))
+                      "Important notes"
+                     )
+             )
              (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      ":office:")))
-  :teardown nil)
+                      ":office:"
+                     )
+             )
+           )
+  :teardown nil
+)
 
 (pearl-gtd-test-define-story pearl-gtd-clarify-user-quits-during-clarify-test
   "User quits (C-g) during clarify input."
@@ -85,34 +117,49 @@
   :files (("inbox.org" "* Task to clarify\n:PROPERTIES:\n:ID: c4\n:END:\n"))
   :mock (((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) ?c))
          ((symbol-function 'pearl-gtd-inbox--clarify-entry)
-          (lambda (_headline) (signal 'quit nil))))
+          (lambda (_headline) (signal 'quit nil))
+         )
+        )
   :body (condition-case nil
             (pearl-gtd-process-inbox)
-          (quit (setq pearl-gtd-test-caught-error 'quit)))
+          (quit (setq pearl-gtd-test-caught-error 'quit))
+        )
   :asserts (progn
              (should (eq pearl-gtd-test-caught-error 'quit))
              (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                      "* Task to clarify")))  ; Still in inbox
-  :teardown nil)
+                      "* Task to clarify"
+                     )
+             )
+           )  ; Still in inbox
+  :teardown nil
+)
 
 (pearl-gtd-test-define-story pearl-gtd-clarify-user-quits-during-destination-test
   "User quits at destination selection prompt."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Task to route\n:PROPERTIES:\n:ID: c5\n:END:\n"))
   :mock (((symbol-function 'pearl-gtd-inbox--read-destination-key)
-          (lambda (_headline) (signal 'quit nil)))
+          (lambda (_headline) (signal 'quit nil))
+         )
          ((symbol-function 'pearl-gtd-inbox--clarify-entry)
-          (lambda (_headline) (cons nil nil))))
+          (lambda (_headline) (cons nil nil))
+         )
+        )
   :body (condition-case nil
             (pearl-gtd-process-inbox)
-          (quit (setq pearl-gtd-test-caught-error 'quit)))
+          (quit (setq pearl-gtd-test-caught-error 'quit))
+        )
   :asserts (progn
              (should (eq pearl-gtd-test-caught-error 'quit))
              (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                      "* Task to route")))
-  :teardown nil)
+                      "* Task to route"
+                     )
+             )
+           )
+  :teardown nil
+)
 
 (provide 'pearl-gtd-test-clarify)
 

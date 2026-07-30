@@ -20,14 +20,20 @@
 Buffer is saved if modified after BODY."
   (declare (indent 1))
   `(let* ((file-path-expanded (expand-file-name ,file-path pearl-gtd-init-base-directory))
-          (buf (find-file-noselect file-path-expanded)))
+          (buf (find-file-noselect file-path-expanded))
+         )
      (with-current-buffer buf
        (org-mode)
        (widen)
        (prog1
            (progn ,@body)
          (when (buffer-modified-p)
-           (save-buffer))))))
+           (save-buffer)
+         )
+       )
+     )
+   )
+)
 
 (defmacro pearl-gtd-state--with-entry-at-id (id file &rest body)
   "Execute BODY with point at entry ID in FILE.
@@ -37,9 +43,13 @@ Signals error if entry not found (internal state violation)."
      (goto-char (point-min))
      (let ((id-val ,id))
        (unless (re-search-forward (concat ":ID:[ \t]+" (regexp-quote id-val)) nil t)
-         (error "Internal: entry %s not found in %s" id-val ,file))
+         (error "Internal: entry %s not found in %s" id-val ,file)
+       )
        (org-back-to-heading)
-       ,@body)))
+       ,@body
+     )
+   )
+)
 
 (defun pearl-gtd-state--snapshot (file)
   "Create memory snapshot of FILE for transaction.
@@ -48,22 +58,36 @@ Returns (FILE PATH CONTENT-STRING-OR-NIL)."
     (list file path (when (file-exists-p path)
                       (with-temp-buffer
                         (insert-file-contents path)
-                        (buffer-string))))))
+                        (buffer-string)
+                      )
+                    )
+    )
+  )
+)
 
 (defun pearl-gtd-state--rollback (snapshots)
   "Restore files from SNAPSHOTS and kill visiting buffers."
   (dolist (snap snapshots)
     (let ((path (cadr snap))
-          (content (caddr snap)))
+          (content (caddr snap))
+         )
       (when-let ((buf (find-buffer-visiting path)))
         (with-current-buffer buf
-          (set-buffer-modified-p nil))
-        (kill-buffer buf))
+          (set-buffer-modified-p nil)
+        )
+        (kill-buffer buf)
+      )
       (if content
           (with-temp-file path
-            (insert content))
+            (insert content)
+          )
         (when (file-exists-p path)
-          (delete-file path))))))
+          (delete-file path)
+        )
+      )
+    )
+  )
+)
 
 (defmacro pearl-gtd-state--with-transaction (files &rest body)
   "Execute BODY with transactional safety on FILES.
@@ -74,7 +98,11 @@ If any signal, rollback to original state and re-signal."
          (progn ,@body)
        (t
         (pearl-gtd-state--rollback snapshots)
-        (signal (car err) (cdr err))))))
+        (signal (car err) (cdr err))
+       )
+     )
+   )
+)
 
 (provide 'pearl-gtd-state)
 

@@ -14,7 +14,8 @@
   "Daily review shows Today, Next Actions, and Inbox in separate tables."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* New idea\n:PROPERTIES:\n:ID: d-1\n:CREATED: 2026-01-15\n:END:\n")
-          ("actions.org" "* TODO Today task\nSCHEDULED: <2026-01-15 Thu>\n:PROPERTIES:\n:ID: d-2\n:PROJECT: Web\n:CREATED: 2026-01-10\n:END:\n* TODO Next task\n:PROPERTIES:\n:ID: d-3\n:PROJECT: App\n:CREATED: 2026-01-11\n:END:\n* DONE Completed today task\nCLOSED: [2026-01-15 Thu 10:00]\n:PROPERTIES:\n:ID: d-4\n:END:\n"))
+          ("actions.org" "* TODO Today task\nSCHEDULED: <2026-01-15 Thu>\n:PROPERTIES:\n:ID: d-2\n:PROJECT: Web\n:CREATED: 2026-01-10\n:END:\n* TODO Next task\n:PROPERTIES:\n:ID: d-3\n:PROJECT: App\n:CREATED: 2026-01-11\n:END:\n* DONE Completed today task\nCLOSED: [2026-01-15 Thu 10:00]\n:PROPERTIES:\n:ID: d-4\n:END:\n")
+         )
   :mock (((symbol-function 'current-time) (lambda () (encode-time 0 0 0 15 1 2026 t))))
   :body (pearl-gtd-review-daily)
   :asserts (progn
@@ -31,21 +32,27 @@
                (let* ((today-start (search-forward "** actions.org - Today"))
                       (today-end (save-excursion
                                    (search-forward "** actions.org - Next Actions" nil t)
-                                   (line-beginning-position))))
+                                   (line-beginning-position)
+                                 )
+                      )
+                     )
                  ;; Verify Today task is in Today section
                  (goto-char today-start)
                  (should (search-forward "Today task" today-end t))
                  ;; Verify Next task is NOT in Today section
                  (goto-char today-start)
-                 (should-not (search-forward "Next task" today-end t)))
+                 (should-not (search-forward "Next task" today-end t))
+               )
                ;; Verify Next Actions contains Next task but not Today task
                (goto-char (point-min))
                (let* ((next-start (search-forward "** actions.org - Next Actions"))
-                      (next-end (point-max)))
+                      (next-end (point-max))
+                     )
                  (goto-char next-start)
                  (should (search-forward "Next task" next-end t))
                  (goto-char next-start)
-                 (should-not (search-forward "Today task" next-end t)))
+                 (should-not (search-forward "Today task" next-end t))
+               )
                ;; Verify Today section has 7 columns (no Created)
                (goto-char (point-min))
                (search-forward "** actions.org - Today")
@@ -69,29 +76,39 @@
                (let ((pos-today (search-forward "** actions.org - Today" nil t))
                      (pos-completed (search-forward "** actions.org - Completed Today" nil t))
                      (pos-next (search-forward "** actions.org - Next Actions" nil t))
-                     (pos-inbox (search-forward "** inbox.org - Inbox" nil t)))
+                     (pos-inbox (search-forward "** inbox.org - Inbox" nil t))
+                    )
                  (should (< pos-today pos-completed))
                  (should (< pos-completed pos-next))
-                 (should (< pos-next pos-inbox)))
+                 (should (< pos-next pos-inbox))
+               )
                ;; Verify completed task is in Completed Today section and not in Today
                (goto-char (point-min))
                (let* ((today-start (search-forward "** actions.org - Today"))
                       (today-end (save-excursion
                                    (search-forward "** actions.org - Completed Today" nil t)
-                                   (line-beginning-position))))
+                                   (line-beginning-position)
+                                 )
+                      )
+                     )
                  (goto-char today-start)
-                 (should-not (search-forward "Completed today task" today-end t)))
+                 (should-not (search-forward "Completed today task" today-end t))
+               )
                (goto-char (point-min))
                (search-forward "** actions.org - Completed Today")
-               (should (search-forward "Completed today task" nil t))))
-  :teardown (kill-buffer "*Pearl-GTD Daily Review*"))
+               (should (search-forward "Completed today task" nil t))
+             )
+           )
+  :teardown (kill-buffer "*Pearl-GTD Daily Review*")
+)
 
 (pearl-gtd-test-define-story pearl-gtd-review-user-views-weekly-sections-test
   "Weekly review aggregates all lists and action sub-views into separate tables."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Unprocessed\n:PROPERTIES:\n:ID: w-1\n:END:\n")
           ("actions.org" "* TODO Normal action\n:PROPERTIES:\n:ID: w-2\n:PROJECT: Active project\n:END:\n* TODO Overdue task\nSCHEDULED: <2026-01-01 Wed>\n:PROPERTIES:\n:ID: w-overdue\n:END:\n* TODO Delegated task\n:PROPERTIES:\n:ID: w-del\n:DELEGATED: Bob\n:END:\n* DONE Completed today task\nCLOSED: [2026-01-15 Thu 10:00]\n:PROPERTIES:\n:ID: w-done-today\n:END:\n* TODO No project task\n:PROPERTIES:\n:ID: w-no-proj\n:END:\n")
-          ("someday.org" "* Maybe later\n:PROPERTIES:\n:ID: w-4\n:END:\n"))
+          ("someday.org" "* Maybe later\n:PROPERTIES:\n:ID: w-4\n:END:\n")
+         )
   :mock (((symbol-function 'current-time) (lambda () (encode-time 0 0 0 15 1 2026))))
   :body (pearl-gtd-review-weekly)
   :asserts (progn
@@ -139,9 +156,16 @@
                                       (search-forward "** Projects - Stuck" nil t)
                                       (search-forward "** Projects - Active" nil t)
                                       (search-forward "** actions.org - No Project" nil t)
-                                      (search-forward "** someday.org - Someday" nil t))))
-                 (should (equal positions (sort (copy-sequence positions) #'<))))))
-  :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
+                                      (search-forward "** someday.org - Someday" nil t)
+                                )
+                     )
+                    )
+                 (should (equal positions (sort (copy-sequence positions) #'<)))
+               )
+             )
+           )
+  :teardown (kill-buffer "*Pearl-GTD Weekly Review*")
+)
 
 (pearl-gtd-test-define-story pearl-gtd-review-user-edits-context-with-default-test
   "Press 'c' to edit context with current value as default."
@@ -150,7 +174,10 @@
   :mock (((symbol-function 'read-string)
           (lambda (_prompt &optional initial _history)
             (should (string-match-p "home" initial))
-            "office")))
+            "office"
+          )
+         )
+        )
   :body (progn
           (pearl-gtd-review-daily)
           (with-current-buffer "*Pearl-GTD Daily Review*"
@@ -158,12 +185,18 @@
             (search-forward "** actions.org - Today")
             (search-forward "Task with context")
             (beginning-of-line)
-            (pearl-gtd-review--edit-context-at-point)))
+            (pearl-gtd-review--edit-context-at-point)
+          )
+        )
   :asserts (progn
              (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      ":CONTEXT:\\s-*office")))
-  :teardown (kill-buffer "*Pearl-GTD Daily Review*"))
+                      ":CONTEXT:\\s-*office"
+                     )
+             )
+           )
+  :teardown (kill-buffer "*Pearl-GTD Daily Review*")
+)
 
 (pearl-gtd-test-define-story pearl-gtd-review-user-removes-context-by-empty-input-test
   "Press 'c' and delete all to remove context property."
@@ -172,7 +205,10 @@
   :mock (((symbol-function 'read-string)
           (lambda (_prompt &optional initial _history)
             (should (string= initial "home"))
-            "")))
+            ""
+          )
+         )
+        )
   :body (progn
           (pearl-gtd-review-daily)
           (with-current-buffer "*Pearl-GTD Daily Review*"
@@ -180,12 +216,19 @@
             (search-forward "** actions.org - Today")
             (search-forward "Task to clear")
             (beginning-of-line)
-            (pearl-gtd-review--edit-context-at-point)))
+            (pearl-gtd-review--edit-context-at-point)
+          )
+        )
   :asserts (let ((result (pearl-gtd-test-file-contains-p
                           (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                          ":CONTEXT:")))
-             (should-not (car result)))
-  :teardown (kill-buffer "*Pearl-GTD Daily Review*"))
+                          ":CONTEXT:"
+                         )
+                 )
+                )
+             (should-not (car result))
+           )
+  :teardown (kill-buffer "*Pearl-GTD Daily Review*")
+)
 
 (pearl-gtd-test-define-story pearl-gtd-review-user-edits-delegated-with-default-test
   "Press 'd' to edit delegated with current value shown."
@@ -194,7 +237,10 @@
   :mock (((symbol-function 'read-string)
           (lambda (_prompt &optional initial _history)
             (should (string= initial "John"))
-            "Bob")))
+            "Bob"
+          )
+         )
+        )
   :body (progn
           (pearl-gtd-review-weekly)
           (with-current-buffer "*Pearl-GTD Weekly Review*"
@@ -202,16 +248,26 @@
             (search-forward "** actions.org - Delegated")
             (search-forward "Delegated task")
             (beginning-of-line)
-            (pearl-gtd-review--edit-delegated-at-point)))
+            (pearl-gtd-review--edit-delegated-at-point)
+          )
+        )
   :asserts (progn
              (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      ":DELEGATED: Bob"))
+                      ":DELEGATED: Bob"
+                     )
+             )
              (let ((result (pearl-gtd-test-file-contains-p
                             (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                            ":DELEGATED: John")))
-               (should-not (car result))))
-  :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
+                            ":DELEGATED: John"
+                           )
+                   )
+                  )
+               (should-not (car result))
+             )
+           )
+  :teardown (kill-buffer "*Pearl-GTD Weekly Review*")
+)
 
 (pearl-gtd-test-define-story pearl-gtd-review-user-edits-schedule-with-default-test
   "Press 't' to edit scheduled date with current value as default."
@@ -220,7 +276,10 @@
   :mock (((symbol-function 'read-string)
           (lambda (_prompt &optional initial _history)
             (should (string-match-p (format-time-string "%F") (or initial "")))
-            "2026-05-15")))
+            "2026-05-15"
+          )
+         )
+        )
   :body (progn
           (pearl-gtd-review-daily)
           (with-current-buffer "*Pearl-GTD Daily Review*"
@@ -228,16 +287,26 @@
             (search-forward "** actions.org - Today")
             (search-forward "Scheduled task")
             (beginning-of-line)
-            (pearl-gtd-review--edit-scheduled-at-point)))
+            (pearl-gtd-review--edit-scheduled-at-point)
+          )
+        )
   :asserts (progn
              (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      "SCHEDULED: <2026-05-15"))
+                      "SCHEDULED: <2026-05-15"
+                     )
+             )
              (let ((result (pearl-gtd-test-file-contains-p
                             (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                            "SCHEDULED: <2026-01-01")))
-               (should-not (car result))))
-  :teardown (kill-buffer "*Pearl-GTD Daily Review*"))
+                            "SCHEDULED: <2026-01-01"
+                           )
+                   )
+                  )
+               (should-not (car result))
+             )
+           )
+  :teardown (kill-buffer "*Pearl-GTD Daily Review*")
+)
 
 (pearl-gtd-test-define-story pearl-gtd-review-user-jumps-to-task-from-table-test
   "Press RET to jump to task in source file."
@@ -251,15 +320,22 @@
             (search-forward "** actions.org - Next Actions")
             (search-forward "Jump target")
             (beginning-of-line)
-            (pearl-gtd-review--goto-task-at-point)))
+            (pearl-gtd-review--goto-task-at-point)
+          )
+        )
   :asserts (progn
              (should (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
              (with-current-buffer (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory))
-               (should (looking-at-p "\\*+ TODO Jump target"))))
+               (should (looking-at-p "\\*+ TODO Jump target"))
+             )
+           )
   :teardown (progn
              (kill-buffer "*Pearl-GTD Weekly Review*")
              (let ((buf (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory))))
-               (when buf (kill-buffer buf)))))
+               (when buf (kill-buffer buf))
+             )
+            )
+)
 
 (pearl-gtd-test-define-story pearl-gtd-review-user-sets-deadline-with-keybinding-test
   "Press 's' in review buffer to set deadline for task at point."
@@ -270,7 +346,11 @@
             (cond
              ((string-match "Deadline" prompt) "2026-05-20")
              ((string-match "Reminder" prompt) "2")
-             (t "")))))
+             (t "")
+            )
+          )
+         )
+        )
   :body (progn
           (pearl-gtd-review-weekly)
           (with-current-buffer "*Pearl-GTD Weekly Review*"
@@ -278,15 +358,23 @@
             (search-forward "** actions.org - Next Actions")
             (search-forward "Task for deadline")
             (beginning-of-line)
-            (pearl-gtd-review--set-deadline-at-point)))
+            (pearl-gtd-review--set-deadline-at-point)
+          )
+        )
   :asserts (progn
              (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      "DEADLINE: <2026-05-20"))
+                      "DEADLINE: <2026-05-20"
+                     )
+             )
              (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      ":REMINDER_DAYS: 2")))
-  :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
+                      ":REMINDER_DAYS: 2"
+                     )
+             )
+           )
+  :teardown (kill-buffer "*Pearl-GTD Weekly Review*")
+)
 
 (pearl-gtd-test-define-story pearl-gtd-review-user-edits-task-in-review-window-test
   "User edits a task directly from review buffer."
@@ -300,22 +388,33 @@
             (search-forward "** actions.org - Next Actions")
             (search-forward "Old task name")
             (beginning-of-line)
-            (pearl-gtd-review--rename-task-at-point)))
+            (pearl-gtd-review--rename-task-at-point)
+          )
+        )
   :asserts (progn
              (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                      "* TODO Updated task name"))
+                      "* TODO Updated task name"
+                     )
+             )
              (let ((result (pearl-gtd-test-file-contains-p
                             (expand-file-name "actions.org" pearl-gtd-init-base-directory)
-                            "* TODO Old task name")))
-               (should-not (car result))))
-  :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
+                            "* TODO Old task name"
+                           )
+                   )
+                  )
+               (should-not (car result))
+             )
+           )
+  :teardown (kill-buffer "*Pearl-GTD Weekly Review*")
+)
 
 (pearl-gtd-test-define-story pearl-gtd-review-user-jumps-across-sections-test
   "RET jump works correctly from tasks in different sections and source files."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Today task\nSCHEDULED: <2026-01-15 Thu>\n:PROPERTIES:\n:ID: jump-sec-1\n:END:\n* TODO Next task\n:PROPERTIES:\n:ID: jump-sec-2\n:END:\n")
-          ("inbox.org" "* Inbox item\n:PROPERTIES:\n:ID: jump-sec-3\n:END:\n"))
+          ("inbox.org" "* Inbox item\n:PROPERTIES:\n:ID: jump-sec-3\n:END:\n")
+         )
   :mock (((symbol-function 'current-time) (lambda () (encode-time 0 0 0 15 1 2026))))
   :body (progn
           (pearl-gtd-review-daily)
@@ -324,15 +423,22 @@
             (search-forward "** actions.org - Next Actions")
             (search-forward "Next task")
             (beginning-of-line)
-            (pearl-gtd-review--goto-task-at-point)))
+            (pearl-gtd-review--goto-task-at-point)
+          )
+        )
   :asserts (progn
              (should (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
              (with-current-buffer (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory))
-               (should (looking-at-p "\\*+ TODO Next task"))))
+               (should (looking-at-p "\\*+ TODO Next task"))
+             )
+           )
   :teardown (progn
               (kill-buffer "*Pearl-GTD Daily Review*")
               (let ((buf (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory))))
-                (when buf (kill-buffer buf)))))
+                (when buf (kill-buffer buf))
+              )
+            )
+)
 
 (pearl-gtd-test-define-story pearl-gtd-review-user-views-project-stats-test
   "Project row displays total, todo, done counts and next deadline."
@@ -347,8 +453,11 @@
                (search-forward "** Projects - Active")
                (forward-line 3)
                (beginning-of-line)
-               (should (search-forward-regexp "|\\s-*Website\\s-*|\\s-*3\\s-*|\\s-*2\\s-*|\\s-*1\\s-*|\\s-*<2026-05-20[^>]*>\\s-*|" (line-end-position) t))))
-  :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
+               (should (search-forward-regexp "|\\s-*Website\\s-*|\\s-*3\\s-*|\\s-*2\\s-*|\\s-*1\\s-*|\\s-*<2026-05-20[^>]*>\\s-*|" (line-end-position) t))
+             )
+           )
+  :teardown (kill-buffer "*Pearl-GTD Weekly Review*")
+)
 
 (pearl-gtd-test-define-story pearl-gtd-review-user-jumps-to-project-tasks-test
   "Press RET on project row opens project task sub-view."
@@ -362,7 +471,9 @@
             (search-forward "** Projects - Active")
             (search-forward "Alpha")
             (beginning-of-line)
-            (pearl-gtd-review--goto-task-at-point)))
+            (pearl-gtd-review--goto-task-at-point)
+          )
+        )
   :asserts (progn
              (should (get-buffer "*Pearl-GTD Project: Alpha*"))
              (with-current-buffer "*Pearl-GTD Project: Alpha*"
@@ -372,21 +483,29 @@
                (goto-char (point-min))
                (let* ((_header-start (search-forward "| Headline |" nil t))
                       (header-line (buffer-substring (line-beginning-position) (line-end-position)))
-                      (pipe-count (cl-count ?| header-line)))
+                      (pipe-count (cl-count ?| header-line))
+                     )
                  ;; 8 columns = 9 pipes (Headline Status Scheduled Deadline Context Delegated Project Created)
                  (should (= pipe-count 9))
                  ;; Verify exact column headers including Created
-                 (should (string-match-p "Created" header-line)))
+                 (should (string-match-p "Created" header-line))
+               )
                ;; Verify data rows have same column count
                (goto-char (point-min))
                (search-forward "|---------") ; Skip to separator
                (forward-line 1)
                (let ((data-line (buffer-substring (line-beginning-position) (line-end-position))))
-                 (should (= (cl-count ?| data-line) 9)))))
+                 (should (= (cl-count ?| data-line) 9))
+               )
+             )
+           )
   :teardown (progn
               (kill-buffer "*Pearl-GTD Weekly Review*")
               (when (get-buffer "*Pearl-GTD Project: Alpha*")
-                (kill-buffer "*Pearl-GTD Project: Alpha*"))))
+                (kill-buffer "*Pearl-GTD Project: Alpha*")
+              )
+            )
+)
 
 (pearl-gtd-test-define-story pearl-gtd-review-user-returns-from-project-view-test
   "Press q in project sub-view returns to weekly review."
@@ -400,14 +519,20 @@
             (search-forward "** Projects - Active")
             (search-forward "Beta")
             (beginning-of-line)
-            (pearl-gtd-review--goto-task-at-point))
+            (pearl-gtd-review--goto-task-at-point)
+          )
           (with-current-buffer "*Pearl-GTD Project: Beta*"
-            (pearl-gtd-review--quit-or-return)))
+            (pearl-gtd-review--quit-or-return)
+          )
+        )
   :asserts (progn
              (should-not (get-buffer "*Pearl-GTD Project: Beta*"))
-             (should (get-buffer "*Pearl-GTD Weekly Review*")))
+             (should (get-buffer "*Pearl-GTD Weekly Review*"))
+           )
   :teardown (when (get-buffer "*Pearl-GTD Weekly Review*")
-              (kill-buffer "*Pearl-GTD Weekly Review*")))
+              (kill-buffer "*Pearl-GTD Weekly Review*")
+            )
+)
 
 (pearl-gtd-test-define-story pearl-gtd-review-user-identifies-stuck-project-test
   "Stuck project shows zero todo count."
@@ -422,8 +547,11 @@
                (search-forward "** Projects - Stuck")
                (forward-line 3)
                (beginning-of-line)
-               (should (search-forward-regexp "|\\s-*StuckProj\\s-*|\\s-*2\\s-*|\\s-*0\\s-*|\\s-*1\\s-*|" (line-end-position) t))))
-  :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
+               (should (search-forward-regexp "|\\s-*StuckProj\\s-*|\\s-*2\\s-*|\\s-*0\\s-*|\\s-*1\\s-*|" (line-end-position) t))
+             )
+           )
+  :teardown (kill-buffer "*Pearl-GTD Weekly Review*")
+)
 
 (pearl-gtd-test-define-story pearl-gtd-review-project-exact-match-not-substring-test
   "Project names that are substrings of each other are matched exactly."
@@ -442,7 +570,8 @@
                       (stuck-start stuck-pos)
                       (stuck-end active-pos)
                       (active-start active-pos)
-                      (active-end someday-pos))
+                      (active-end someday-pos)
+                     )
                  ;; P1 has no TODO, must appear in Stuck
                  (goto-char stuck-start)
                  (should (re-search-forward "|\\s-*P1\\s-*|" stuck-end t))
@@ -452,7 +581,8 @@
                  (goto-char active-start)
                  (should (re-search-forward "|\\s-*P10\\s-*|" active-end t))
                  (goto-char active-start)
-                 (should-not (re-search-forward "|\\s-*P1\\s-*|" active-end t)))
+                 (should-not (re-search-forward "|\\s-*P1\\s-*|" active-end t))
+               )
                ;; Verify P1 stats: Total=1, Todo=0, Done=1
                (goto-char (point-min))
                (search-forward "** Projects - Stuck")
@@ -464,8 +594,11 @@
                (search-forward "** Projects - Active")
                (search-forward "P10")
                (beginning-of-line)
-               (should (search-forward-regexp "|\\s-*P10\\s-*|\\s-*1\\s-*|\\s-*1\\s-*|\\s-*0\\s-*|" (line-end-position) t))))
-  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
+               (should (search-forward-regexp "|\\s-*P10\\s-*|\\s-*1\\s-*|\\s-*1\\s-*|\\s-*0\\s-*|" (line-end-position) t))
+             )
+           )
+  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*"))
+)
 
 (pearl-gtd-test-define-story pearl-gtd-review-weekly-no-project-table-no-project-column-test
   "No Project table should not have Project column and should be after Project sections."
@@ -480,9 +613,11 @@
                (goto-char (point-min))
                (let ((pos-active (search-forward "** Projects - Active" nil t))
                      (pos-no-project (search-forward "** actions.org - No Project" nil t))
-                     (pos-someday (search-forward "** someday.org - Someday" nil t)))
+                     (pos-someday (search-forward "** someday.org - Someday" nil t))
+                    )
                  (should (< pos-active pos-no-project))
-                 (should (< pos-no-project pos-someday)))
+                 (should (< pos-no-project pos-someday))
+               )
                ;; Verify No Project table has correct columns (7 columns: no Project and no Created, but with L3)
                (goto-char (point-min))
                (search-forward "** actions.org - No Project")
@@ -491,7 +626,8 @@
                (let ((line (buffer-substring (line-beginning-position) (line-end-position))))
                  ;; Count pipe separators - should be 8 pipes for 7 columns
                  (let ((pipe-count (cl-count ?| line)))
-                   (should (= pipe-count 8)))
+                   (should (= pipe-count 8))
+                 )
                  ;; Verify column headers
                  (should (string-match-p "Headline" line))
                  (should (string-match-p "Status" line))
@@ -501,7 +637,8 @@
                  (should (string-match-p "Delegated" line))
                  (should (string-match-p "L3" line))
                  (should-not (string-match-p "Project" line))
-                 (should-not (string-match-p "Created" line)))
+                 (should-not (string-match-p "Created" line))
+               )
                ;; Verify data rows also have correct number of columns
                (goto-char (point-min))
                (search-forward "** actions.org - No Project")
@@ -510,11 +647,17 @@
                (while (and (not (eobp)) (looking-at "|"))
                  (let ((line (buffer-substring (line-beginning-position) (line-end-position))))
                    (let ((pipe-count (cl-count ?| line)))
-                     (should (= pipe-count 8))) ; 7 columns + closing pipe
+                     (should (= pipe-count 8))
+                   ) ; 7 columns + closing pipe
                    (should (string-match-p "No project task" line))
-                   (should-not (string-match-p "TestProject" line)))
-                 (forward-line 1))))
-  :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
+                   (should-not (string-match-p "TestProject" line))
+                 )
+                 (forward-line 1)
+               )
+             )
+           )
+  :teardown (kill-buffer "*Pearl-GTD Weekly Review*")
+)
 
 (pearl-gtd-test-define-story pearl-gtd-review-user-renames-task-and-view-updates-test
   "Renaming task in review buffer should refresh display."
@@ -527,12 +670,16 @@
             (goto-char (point-min))
             (search-forward "Old name")
             (beginning-of-line)
-            (pearl-gtd-review--rename-task-at-point)))
+            (pearl-gtd-review--rename-task-at-point)
+          )
+        )
   :asserts (with-current-buffer "*Pearl-GTD Weekly Review*"
              (goto-char (point-min))
              (should (search-forward "New name" nil t))
-             (should-not (search-forward "Old name" nil t)))
-  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
+             (should-not (search-forward "Old name" nil t))
+           )
+  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*"))
+)
 
 (provide 'pearl-gtd-test-review)
 
