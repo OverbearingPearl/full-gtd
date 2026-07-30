@@ -4,6 +4,13 @@ on:
   push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: 'Commit SHA (or branch/tag) to test'
+        required: false
+        default: ''
+        type: string
 
 jobs:
   build:
@@ -12,6 +19,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.commit || github.ref }}
 
       - name: Set up Python 3.10
         uses: actions/setup-python@v4
@@ -42,7 +51,7 @@ jobs:
 
       - name: Build release package
         id: build_release
-        if: success() && endsWith(github.ref_name, '.0')
+        if: success() && github.event_name == 'push' && endsWith(github.ref_name, '.0')
         run: |
           {
             echo "=== Building release package ==="
@@ -54,7 +63,7 @@ jobs:
           } 2>&1 | tee -a build-logs.txt
 
       - name: Create GitHub Release
-        if: success() && endsWith(github.ref_name, '.0')
+        if: success() && github.event_name == 'push' && endsWith(github.ref_name, '.0')
         uses: softprops/action-gh-release@v1
         with:
           files: pearl-gtd-*.zip

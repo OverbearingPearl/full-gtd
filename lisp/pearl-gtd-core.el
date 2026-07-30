@@ -8,23 +8,28 @@
 
 ;;; Commentary:
 
-;; This file provides core infrastructure for Pearl-GTD, including
-;; predicates, filters, and data collection utilities used by other modules.
+;; Core infrastructure and thin delegation layer.
+;; Predicates, filters, and data collection utilities.
+;; File operation macros delegate to pearl-gtd-state.
+;; Data normalization functions delegate to pearl-gtd-domain.
 
 ;;; Code:
 
 (require 'org)
 (require 'pearl-gtd-init)
+(require 'pearl-gtd-domain)
+(require 'pearl-gtd-state)
 
 ;;;; Predicates
 
 (defun pearl-gtd-core-entry-todo-p ()
   "Return non-nil if current entry is a TODO item."
-  (string= (org-get-todo-state) "TODO"))
+  (let ((state (org-get-todo-state)))
+    (member state org-not-done-keywords)))
 
 (defun pearl-gtd-core-entry-done-p ()
   "Return non-nil if current entry is a DONE item."
-  (string= (org-get-todo-state) "DONE"))
+  (member (org-get-todo-state) org-done-keywords))
 
 (defun pearl-gtd-core-entry-context-p (contexts)
   "Return non-nil if current entry has any of CONTEXTS.
@@ -63,8 +68,9 @@ CONTEXTS is a list of normalized context strings (without @ prefix)."
 PREDICATES is a list of predicate functions to apply.
 Each predicate is called with no arguments in the context of the entry.
 Return list of entries that pass all predicates.
-Entries are lists: (HEADLINE TAGS-STRING TODO-STATE SCHEDULED DELEGATED
-PROJECT CREATED ID FILE DEADLINE CONTEXT L3_AREA L4_GOAL L5_VISION L6_PURPOSE).
+Entries are lists:
+\(HEADLINE TAGS-STRING TODO-STATE SCHEDULED DELEGATED PROJECT CREATED
+  ID FILE DEADLINE CONTEXT L3_AREA L4_GOAL L5_VISION L6_PURPOSE).
 Nil values indicate unset properties."
   (let ((entries '())
         (file-name (file-name-nondirectory file-path)))
@@ -136,11 +142,11 @@ Nil values indicate unset properties."
 
 (defmacro pearl-gtd-core-define-table-navigators (prefix boundaries-func &optional header-regexp)
   "Define table navigation functions for PREFIX using BOUNDARIES-FUNC.
-Creates PREFIX-next-row and PREFIX-previous-row interactive functions.
+Creates PREFIX--next-row and PREFIX--previous-row interactive functions.
 BOUNDARIES-FUNC should return (first-row-pos . last-row-pos).
 HEADER-REGEXP matches header lines to skip (default: \"| Headline\")."
-  (let ((next-fn (intern (concat prefix "-next-row")))
-        (prev-fn (intern (concat prefix "-previous-row")))
+  (let ((next-fn (intern (concat prefix "--next-row")))
+        (prev-fn (intern (concat prefix "--previous-row")))
         (skip-fn (intern (concat prefix "--skip-line-p")))
         (header-re (or header-regexp "| Headline")))
     `(progn
@@ -177,30 +183,80 @@ HEADER-REGEXP matches header lines to skip (default: \"| Headline\")."
 ;;;; Macros for file operations
 
 (defmacro pearl-gtd-core-with-file-buffer (file-path &rest body)
-  "Execute BODY in buffer of FILE-PATH (expanded relative to base dir).
-Buffer is saved if modified after BODY.  Internal errors crash (no catch-all)."
+  "Execute BODY in buffer of FILE-PATH.
+Delegate to state layer for transactional file operations."
   (declare (indent 1))
-  `(let* ((file-path-expanded (expand-file-name ,file-path pearl-gtd-init-base-directory))
-          (buf (find-file-noselect file-path-expanded)))
-     (with-current-buffer buf
-       (org-mode)
-       (widen)
-       (prog1
-           (progn ,@body)
-         (when (buffer-modified-p)
-           (save-buffer))))))
+  `(pearl-gtd-state--with-file-buffer ,file-path ,@body))
 
 (defmacro pearl-gtd-core-with-entry-at-id (id file &rest body)
   "Execute BODY with point at entry ID in FILE.
-Signals error if entry not found (internal state violation)."
+Delegate to state layer for transactional file operations."
   (declare (indent 2))
-  `(pearl-gtd-core-with-file-buffer ,file
-     (goto-char (point-min))
-     (let ((id-val ,id))
-       (cl-assert (re-search-forward (concat ":ID:[ \t]+" (regexp-quote id-val)) nil t)
-                  t "Internal: entry %s not found in %s" id-val ,file)
-       (org-back-to-heading)
-       ,@body)))
+  `(pearl-gtd-state--with-entry-at-id ,id ,file ,@body))
+
+(defun pearl-gtd-core-read-date (prompt-type)
+  "Hybrid date input: letter=quick, number=free-form, RET=skip.
+PROMPT-TYPE is \\='schedule or \\='deadline for display.
+Quick keys: t (today), T (tomorrow), w (week), h (hour, schedule only).
+Returns date string or nil if skipped.
+Signals \\='quit if user presses \\`C-g\\'."
+  (catch 'done
+    (let (result)
+      (while (not result)
+        (if (eq prompt-type 'schedule)
+            (message "[Schedule] Quick: [t]oday, [T]omorrow, [w]eek, [h]our | Custom: <YYYY-MM-DD> or <YYYY-MM-DD HH:MM> | [RET] Skip: ")
+          (message "[Deadline] Quick: [t]oday, [T]omorrow, [w]eek | Custom: <YYYY-MM-DD> | [RET] Skip: "))
+        (let ((key (read-key)))
+          (cond
+           ((eq key ?t) (setq result (format-time-string "%F")))
+           ((eq key ?T) (setq result (format-time-string "%F" (time-add (current-time) (* 24 3600)))))
+           ((eq key ?w) (setq result (format-time-string "%F" (time-add (current-time) (* 7 24 3600)))))
+           ((and (eq prompt-type 'schedule) (eq key ?h))
+            (setq result (format-time-string "%F %R" (time-add (current-time) 3600))))
+           ((eq key ?\r) (throw 'done nil))
+           ((and (>= key ?0) (<= key ?9))
+            (condition-case nil
+                (let ((full (minibuffer-with-setup-hook
+                                (lambda () (select-window (minibuffer-window)))
+                              (read-string (format "%s (e.g., 2023-12-25 or 2023-12-25 14:30): " prompt-type)
+                                           (string key) nil nil))))
+                  (if (string-match-p "^[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\(?: [0-2][0-9]:[0-5][0-9]\\)?$" full)
+                      (setq result full)
+                    (message "Invalid date, retry") (sit-for 0.5)))
+              (quit (signal 'quit nil))))
+           ((eq key 7)
+            (signal 'quit nil))
+           (t (message "Invalid key") (sit-for 0.5)))))
+      result)))
+
+(defun pearl-gtd-core--split-values (value-string)
+  "Split VALUE-STRING using semicolon separator.
+Supports both English (;) and Chinese (；) semicolons.
+Trim whitespace from each value. Filter empty values.
+Example: \"Project A; Project B；Project C\"
+  -> (\"Project A\" \"Project B\" \"Project C\")
+Delegate to domain layer for pure computation."
+  (pearl-gtd-domain--split-values value-string))
+
+(defun pearl-gtd-core--join-values (values)
+  "Join VALUES list using English semicolon separator.
+Always uses English semicolon for storage consistency.
+Example: (\"Project A\" \"Project B\") -> \"Project A; Project B\"
+Delegate to domain layer for pure computation."
+  (pearl-gtd-domain--join-values values))
+
+(defun pearl-gtd-core--normalize-project-input (input)
+  "Normalize project input: convert Chinese semicolons to English.
+Trim whitespace from each value. Returns nil if empty.
+INPUT is the input string to normalize.
+Example: \"Project A；Project B；Project C\"
+  -> \"Project A; Project B; Project C\"
+Delegate to domain layer for pure computation."
+  (pearl-gtd-domain--normalize-project-input input))
+
+(defun pearl-gtd-core--escape-table-field (field)
+  "Escape pipe characters in FIELD for org-table display."
+  (replace-regexp-in-string "|" "\\\\vert{}" field))
 
 (provide 'pearl-gtd-core)
 

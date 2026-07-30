@@ -28,10 +28,10 @@
 (defvar pearl-gtd-do-view-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "q") #'quit-window)
-    (define-key map (kbd "n") #'pearl-gtd-do-next-row)
-    (define-key map (kbd "p") #'pearl-gtd-do-previous-row)
-    (define-key map (kbd "j") #'pearl-gtd-do-next-row)
-    (define-key map (kbd "k") #'pearl-gtd-do-previous-row)
+    (define-key map (kbd "n") #'pearl-gtd-do--next-row)
+    (define-key map (kbd "p") #'pearl-gtd-do--previous-row)
+    (define-key map (kbd "j") #'pearl-gtd-do--next-row)
+    (define-key map (kbd "k") #'pearl-gtd-do--previous-row)
     (define-key map (kbd "C") #'pearl-gtd-do--complete-task-at-point)
     (define-key map (kbd "RET") #'pearl-gtd-do--goto-task)
     (define-key map (kbd "g") #'pearl-gtd-do--refresh-view)
@@ -95,7 +95,7 @@ Returns (HEADER . ROWS) where ROWS is list of
       (let* ((raw-headline (nth 0 entry))
              (id (nth 7 entry))
              (file (nth 8 entry))
-             (escaped-headline (replace-regexp-in-string "|" "\\\\vert{}" raw-headline)))
+             (escaped-headline (pearl-gtd-core--escape-table-field raw-headline)))
         (push (list escaped-headline (nth 1 entry) (nth 2 entry) (nth 3 entry)
                    (nth 4 entry) (nth 5 entry) (nth 6 entry) id file)
               rows)))
@@ -128,7 +128,7 @@ Returns (HEADER . ROWS) where ROWS is list of
       (forward-line 2))))
 
 (defun pearl-gtd-do--create-view-buffer (buffer-name predicates view-type
-                                                  &optional empty-msg contexts)
+                                                     &optional empty-msg contexts)
   "Create a read-only table buffer showing actions filtered by PREDICATES.
 BUFFER-NAME is the name of the buffer to create.
 PREDICATES is a list of predicate functions to filter entries.
@@ -142,7 +142,14 @@ view."
         (with-current-buffer buffer
           (setq buffer-read-only nil)
           (erase-buffer)
-          (insert (format "%s\n" (or empty-msg "(No actions found)")))
+          (org-mode)
+          ;; 7 columns: Headline, Context, Status, Scheduled, Delegated, Project, Created
+          (insert "| Headline | Context | Status | Scheduled | Delegated | Project | Created |\n")
+          (insert "|----------+---------+--------+-----------+-----------+---------+---------|\n")
+          (let ((display-msg (or empty-msg "(No entries)")))
+            (insert (format "| %s | | | | | | |\n"
+                            (pearl-gtd-core--escape-table-field display-msg))))
+          (org-table-align)
           (setq buffer-read-only t))
       (pearl-gtd-do--render-table buffer table-data))
     (with-current-buffer buffer
@@ -248,7 +255,7 @@ Context tags are normalized by removing the @ prefix for matching."
       (let ((id (car entry))
             (file (cdr entry)))
         (pearl-gtd-core-with-entry-at-id id file
-          (let ((org-log-done 'time)) (org-todo "DONE")))
+          (let ((org-log-done 'time)) (org-todo 'done)))
         (let ((inhibit-read-only t))
           (org-table-goto-column 3)
           (org-table-blank-field)
@@ -276,7 +283,7 @@ Context tags are normalized by removing the @ prefix for matching."
     (when entry
       (let* ((id (car entry))
              (file (cdr entry))
-             (new-name (read-string "New task name: ")))
+             (new-name (read-string "New task name (supports spaces, e.g., Buy organic milk from Whole Foods): ")))
         (when (and new-name (not (string= new-name "")))
           (pearl-gtd-core-with-entry-at-id id file
             (org-edit-headline new-name))

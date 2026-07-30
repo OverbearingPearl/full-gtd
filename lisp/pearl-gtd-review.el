@@ -27,10 +27,10 @@
 (defvar pearl-gtd-review-view-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "q") #'pearl-gtd-review--quit-or-return)
-    (define-key map (kbd "n") #'pearl-gtd-review-next-row)
-    (define-key map (kbd "p") #'pearl-gtd-review-previous-row)
-    (define-key map (kbd "j") #'pearl-gtd-review-next-row)
-    (define-key map (kbd "k") #'pearl-gtd-review-previous-row)
+    (define-key map (kbd "n") #'pearl-gtd-review--next-row)
+    (define-key map (kbd "p") #'pearl-gtd-review--previous-row)
+    (define-key map (kbd "j") #'pearl-gtd-review--next-row)
+    (define-key map (kbd "k") #'pearl-gtd-review--previous-row)
     (define-key map (kbd "RET") #'pearl-gtd-review--goto-task-at-point)
     (define-key map (kbd "g") #'pearl-gtd-review--refresh-view)
     ;; Property editing with defaults
@@ -46,7 +46,6 @@
     (define-key map (kbd "4") #'pearl-gtd-horizons--edit-goal-at-point)
     (define-key map (kbd "5") #'pearl-gtd-horizons--edit-vision-at-point)
     (define-key map (kbd "6") #'pearl-gtd-horizons--edit-purpose-at-point)
-    (define-key map (kbd "7") #'pearl-gtd-horizons--edit-principle-at-point)
     map))
 
 (define-minor-mode pearl-gtd-review-view-mode
@@ -135,7 +134,7 @@ EXTRA-CLEANUP is a form to execute when removing the property
            (let* ((id (car entry))
                   (file (cdr entry))
                   (current-value (,getter id file ,property))
-                  (new-value (read-string ,prompt (or current-value ""))))
+                  (new-value (string-trim (read-string ,prompt (or current-value "")))))
              (if (string= new-value "")
                  (progn
                    (,remover id file ,property)
@@ -143,9 +142,9 @@ EXTRA-CLEANUP is a form to execute when removing the property
                (,setter id file ,property new-value))
              (pearl-gtd-review--refresh-view)))))))
 
-(pearl-gtd-review-define-property-editor "context" "CONTEXT" "Context (empty to remove): ")
+(pearl-gtd-review-define-property-editor "context" "CONTEXT" "Context (RET=remove, supports spaces, e.g., @office, @home office): ")
 
-(pearl-gtd-review-define-property-editor "delegated" "DELEGATED" "Delegated to (empty to remove): "
+(pearl-gtd-review-define-property-editor "delegated" "DELEGATED" "Delegated to (RET=remove, supports full name, e.g., John Smith): "
   (pearl-gtd-review--remove-property-by-id id file "DELEGATED_DATE"))
 
 (defun pearl-gtd-review--edit-scheduled-at-point ()
@@ -157,7 +156,7 @@ EXTRA-CLEANUP is a form to execute when removing the property
              (file (cdr entry))
              (current-scheduled (pearl-gtd-review--get-scheduled-by-id id file))
              (default-value (or current-scheduled ""))
-             (new-value (read-string "Schedule date YYYY-MM-DD (empty to remove): " default-value)))
+             (new-value (string-trim (read-string "Schedule date (RET=remove, e.g., 2026-12-25, 2026-12-25 14:30): " default-value))))
         (pearl-gtd-core-with-entry-at-id id file
           (if (string= new-value "")
               (org-schedule '(4))
@@ -172,8 +171,8 @@ EXTRA-CLEANUP is a form to execute when removing the property
     (when entry
       (let* ((id (car entry))
              (file (cdr entry))
-             (deadline (read-string "Deadline (YYYY-MM-DD): "))
-             (reminder (read-string "Reminder days before: " "0")))
+             (deadline (string-trim (read-string "Deadline (e.g., 2026-12-25, 2026-12-25 14:30): ")))
+             (reminder (string-trim (read-string "Reminder days before (e.g., 3, 0 for none): " "0"))))
         (pearl-gtd-core-with-entry-at-id id file
           (org-deadline nil deadline)
           (org-set-property "REMINDER_DAYS" reminder)
@@ -188,14 +187,14 @@ EXTRA-CLEANUP is a form to execute when removing the property
       (let* ((id (car entry))
              (file (cdr entry))
              (current-headline (pearl-gtd-review--get-headline-by-id id file))
-             (new-name (read-string "New task name: " current-headline)))
+             (new-name (string-trim (read-string "New task name (supports spaces, e.g., Prepare quarterly report): " current-headline))))
         (when (and new-name (not (string= new-name "")) (not (string= new-name current-headline)))
           (pearl-gtd-core-with-entry-at-id id file
             (org-edit-headline new-name)
             (save-buffer))
           (pearl-gtd-review--refresh-view))))))
 
-(pearl-gtd-review-define-property-editor "project" "PROJECT" "Project (empty to remove): "
+(pearl-gtd-review-define-property-editor "project" "PROJECT" "Project (RET=remove, supports spaces, use ; for multiple, e.g., Website Redesign; Q1 Goals): "
   (progn
     (pearl-gtd-review--remove-property-by-id id file "L3_AREA")
     (pearl-gtd-review--remove-property-by-id id file "L4_GOAL")
@@ -211,10 +210,9 @@ EXTRA-CLEANUP is a form to execute when removing the property
             (file (cdr entry)))
         (pearl-gtd-core-with-entry-at-id id file
           (let ((org-log-done 'time))
-            (org-todo "DONE"))
+            (org-todo 'done))
           (save-buffer))
         (pearl-gtd-review--refresh-view)))))
-
 
 (defun pearl-gtd-review--refresh-view ()
   "Refresh current review view."
@@ -239,7 +237,7 @@ The number of fields determines the table format:
 - 7 fields: Status, Scheduled, Deadline, Context, Delegated, Project (standard)
 - 6 fields: Status, Scheduled, Deadline, Context, Delegated, L3 (No Project)
 - 8 fields: Total, Todo, Done, Next Deadline, L3, L4, L5, L6 (Project rows)"
-  (let* ((headline-escaped (replace-regexp-in-string "|" "\\\\vert{}" head)))
+  (let* ((headline-escaped (pearl-gtd-core--escape-table-field head)))
     ;; Insert headline with properties
     (insert "| ")
     (let ((start (point)))
@@ -324,12 +322,24 @@ META is an alist with keys :entry-map and :entry-index."
                (insert "| Headline | Status | Scheduled | Deadline | Context | Delegated | Project |\n")
                (insert "|----------+--------+-----------+----------+---------+-----------+---------|\n")))
             (if (null entries)
-                (pcase type
-                  ('no-project (insert "| (No entries) | | | | | | |\n"))
-                  ('project (insert "| (No entries) | | | | | | | | |\n"))
-                  ('inbox (insert "| (No entries) | |\n"))
-                  ('project-tasks (insert "| (No entries) | | | | | | | |\n"))
-                  (_ (insert "| (No entries) | | | | | | |\n")))
+                (progn
+                  (pcase type
+                    ('no-project
+                     ;; 7 columns: Headline, Status, Scheduled, Deadline, Context, Delegated, L3_AREA
+                     (insert "| (No entries) | | | | | | |\n"))
+                    ('project
+                     ;; 9 columns: Project, Total, Todo, Done, Next Deadline, L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE
+                     (insert "| (No entries) | | | | | | | | |\n"))
+                    ('inbox
+                     ;; 2 columns: Headline, Created
+                     (insert "| (No entries) | |\n"))
+                    ('project-tasks
+                     ;; 8 columns: Headline, Status, Scheduled, Deadline, Context, Delegated, Project, Created
+                     (insert "| (No entries) | | | | | | | |\n"))
+                    (_
+                     ;; 7 columns: Headline, Status, Scheduled, Deadline, Context, Delegated, Project
+                     (insert "| (No entries) | | | | | | |\n")))
+                  (org-table-align))
               (dolist (entry entries)
                 (let ((head (nth 0 entry))
                       (id (nth 1 entry))
@@ -401,7 +411,8 @@ Returns list of entry lists suitable for table display."
    nil))  ; no Created field
 
 (defun pearl-gtd-review--collect-all-projects ()
-  "Collect all unique project names from actions.org."
+  "Collect all unique project names from actions.org.
+Supports semicolon separators (both English and Chinese)."
   (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
         (projects '()))
     (when (file-exists-p actions-file)
@@ -412,8 +423,7 @@ Returns list of entry lists suitable for table display."
          (lambda ()
            (let ((proj (org-entry-get nil "PROJECT")))
              (when proj
-               ;; PROJECT can contain multiple projects separated by comma or space
-               (dolist (p (split-string proj "[, ]" t))
+               (dolist (p (pearl-gtd-core--split-values proj))
                  (cl-pushnew p projects :test #'string=)))))
          nil nil)))
     (nreverse projects)))
@@ -421,12 +431,7 @@ Returns list of entry lists suitable for table display."
 (defun pearl-gtd-review--get-project-stats (proj-name)
   "Get statistics for PROJ-NAME from actions.org.
 PROJ-NAME is a string naming the project to analyze.
-Returns list (TOTAL TODO DONE NEXT-DEADLINE L3 L4 L5 L6) where:
-TOTAL is the total number of entries,
-TODO is the count of unfinished entries,
-DONE is the count of completed entries,
-NEXT-DEADLINE is the earliest deadline string or empty string,
-L3-L6 are horizon values from project entries."
+Returns list (TOTAL TODO DONE NEXT-DEADLINE L3 L4 L5 L6)."
   (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
         (total 0)
         (done 0)
@@ -444,13 +449,13 @@ L3-L6 are horizon values from project entries."
          (lambda ()
            (let ((proj (org-entry-get nil "PROJECT")))
              (when proj
-               (let ((projects (split-string proj "[, ]" t)))
+               (let ((projects (pearl-gtd-core--split-values proj)))
                  (when (member proj-name projects)
                    (cl-incf total)
                    (let ((todo-state (org-get-todo-state)))
                      (cond
                       ((member todo-state org-done-keywords) (cl-incf done))
-                      ((string= todo-state "TODO") (cl-incf todo)))
+                      ((member todo-state org-not-done-keywords) (cl-incf todo)))
                      ;; Collect horizon values from first TODO entry
                      (when (and (null horizon-l3) (pearl-gtd-core-entry-todo-p))
                        (setq horizon-l3 (org-entry-get nil "L3_AREA"))
@@ -489,7 +494,7 @@ Returns list of entries formatted for project table display."
              (when (pearl-gtd-core-entry-todo-p)
                (let ((proj (org-entry-get nil "PROJECT")))
                  (when proj
-                   (dolist (p (split-string proj "[, ]" t))
+                   (dolist (p (pearl-gtd-core--split-values proj))
                      (cl-pushnew p projects-with-todos :test #'string=))))))
            nil nil))))
     (dolist (proj all-projects)
@@ -523,7 +528,7 @@ Returns list of entries formatted for project table display."
              (when (pearl-gtd-core-entry-todo-p)
                (let ((proj (org-entry-get nil "PROJECT")))
                  (when proj
-                   (dolist (p (split-string proj "[, ]" t))
+                   (dolist (p (pearl-gtd-core--split-values proj))
                      (cl-pushnew p projects-with-todos :test #'string=))))))
            nil nil))))
     (dolist (proj projects-with-todos)
@@ -658,7 +663,7 @@ Returns list of entry lists suitable for `pearl-gtd-review--insert-table-row'."
             (cl-remove-if-not
              (lambda (e)
                (let ((proj (nth 5 e)))
-                 (and proj (member proj-name (split-string proj "[, ]" t)))))
+                 (and proj (member proj-name (pearl-gtd-core--split-values proj)))))
              entries))))
 
 (defun pearl-gtd-review--show-project-tasks (proj-name)

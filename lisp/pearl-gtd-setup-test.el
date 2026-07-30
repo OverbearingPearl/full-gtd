@@ -1,11 +1,5 @@
 ;;; pearl-gtd-test-setup.el --- User stories: System initialization  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2026 OverbearingPearl
-;; Author: OverbearingPearl <OverbearingPearl@outlook.com>
-;; Assisted-by: Kimi:kimi-k2.5, DeepSeek:deepseek-v3.2, Claude:claude-sonnet-4.6
-;; URL: https://github.com/OverbearingPearl/pearl-gtd
-;; SPDX-License-Identifier: MIT
-
 ;;; Commentary:
 
 ;; User stories for initializing the Pearl-GTD system.
@@ -74,6 +68,6 @@
                       "* Existing reference")))
   :teardown nil)
 
-(provide 'pearl-gtd-test-setup)
+(provide 'pearl-gtd-setup-test)
 
-;;; pearl-gtd-test-setup.el ends here
+;;; pearl-gtd-setup-test.el ends here
