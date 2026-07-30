@@ -84,8 +84,8 @@ Prompts for context, time budget, and energy level, then enters
 a single-card execution loop. The session continues until you
 choose to quit or modify conditions when no actions remain.
 
-With prefix arg (C-u), prompts for view type (next/delegated/today)
-before asking for filters."
+With \\[universal-argument] as prefix, prompts for view type
+\(next/delegated/today) before asking for filters."
   (interactive)
   (let ((view-type (if current-prefix-arg
                        (intern (completing-read "View type: "

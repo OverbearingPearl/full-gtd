@@ -144,52 +144,31 @@ CONTEXT-STRING uses @ prefixes like \"@office,@home\"."
 Returns list of action plists."
   (let* ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
          (file-name (file-name-nondirectory file-path))
-         (actions '())
-         (entry-count 0)
-         (match-count 0))
-    (message "[DEBUG] collect-actions: file-path=%s, predicates=%d" file-path (length predicates))
-    (message "[DEBUG] collect-actions: file-exists=%s" (file-exists-p file-path))
+         (actions '()))
     (when (file-exists-p file-path)
       (with-temp-buffer
         (insert-file-contents file-path)
-        (message "[DEBUG] collect-actions: file loaded, size=%d" (point-max))
         (org-mode)
-        (message "[DEBUG] collect-actions: org-mode activated")
         (org-map-entries
          (lambda ()
-           (setq entry-count (1+ entry-count))
-           (let ((matches t)
-                 (todo-state (org-get-todo-state)))
-             (message "[DEBUG] collect-actions: entry %d, headline=%s, todo-state=%s"
-                      entry-count (org-get-heading t t) todo-state)
-             (dolist (pred predicates)
-               (condition-case err
-                   (unless (funcall pred)
-                     (setq matches nil))
-                 (error (message "[DEBUG] collect-actions: predicate error: %s" err)
-                        (setq matches nil))))
-             (message "[DEBUG] collect-actions: entry %d matches=%s" entry-count matches)
-             (when matches
-               (setq match-count (1+ match-count))
-               (push (list
-                      :headline (org-get-heading t t)
-                      :context (mapconcat (lambda (c) (concat "@" c)) (org-get-tags) ",")
-                      :status (org-get-todo-state)
-                      :scheduled (org-entry-get nil "SCHEDULED")
-                      :delegated (org-entry-get nil "DELEGATED")
-                      :project (org-entry-get nil "PROJECT")
-                      :created (org-entry-get nil "CREATED")
-                      :id (org-entry-get nil "ID")
-                      :file file-name
-                      :deadline (org-entry-get nil "DEADLINE")
-                      :l3 (org-entry-get nil "L3_AREA")
-                      :l4 (org-entry-get nil "L4_GOAL")
-                      :l5 (org-entry-get nil "L5_VISION")
-                      :l6 (org-entry-get nil "L6_PURPOSE"))
-                     actions))))
-         nil nil))
-      (message "[DEBUG] collect-actions: total entries=%d, matches=%d" entry-count match-count))
-    (message "[DEBUG] collect-actions: returning %d actions" (length actions))
+           (when (cl-every (lambda (pred) (funcall pred)) predicates)
+             (push (list
+                    :headline (org-get-heading t t)
+                    :context (mapconcat (lambda (c) (concat "@" c)) (org-get-tags) ",")
+                    :status (org-get-todo-state)
+                    :scheduled (org-entry-get nil "SCHEDULED")
+                    :delegated (org-entry-get nil "DELEGATED")
+                    :project (org-entry-get nil "PROJECT")
+                    :created (org-entry-get nil "CREATED")
+                    :id (org-entry-get nil "ID")
+                    :file file-name
+                    :deadline (org-entry-get nil "DEADLINE")
+                    :l3 (org-entry-get nil "L3_AREA")
+                    :l4 (org-entry-get nil "L4_GOAL")
+                    :l5 (org-entry-get nil "L5_VISION")
+                    :l6 (org-entry-get nil "L6_PURPOSE"))
+                   actions)))
+         nil nil)))
     (nreverse actions)))
 
 (defun pearl-gtd-do--context-matches-p (action context-filter)
@@ -237,7 +216,6 @@ CONTEXT-FILTER is used for context-match bonus."
 
 (defun pearl-gtd-do--render-card (buffer)
   "Render current action card in BUFFER."
-  (message "[DEBUG] render-card: entering")
   (with-current-buffer buffer
     (setq buffer-read-only nil)
     (erase-buffer)
@@ -258,11 +236,8 @@ CONTEXT-FILTER is used for context-match bonus."
       (setq-local pearl-gtd-do--session-view-type saved-view-type)
       (let* ((actions pearl-gtd-do--session-actions)
              (action (when actions (car actions))))
-        (message "[DEBUG] render-card: actions=%d, action=%s" 
-                 (length actions) (if action "present" "nil"))
       (if (null action)
           (progn
-            (message "[DEBUG] render-card: showing Session Complete")
             (insert "#+TITLE: Pearl-GTD Do Session\n\n")
             (insert "* Session Complete\n\n")
             (when pearl-gtd-do--session-total-count
@@ -291,7 +266,6 @@ CONTEXT-FILTER is used for context-match bonus."
               (l5 (plist-get action :l5))
               (l6 (plist-get action :l6))
               (score (pearl-gtd-do--score-action action pearl-gtd-do--session-context)))
-          (message "[DEBUG] render-card: headline=%s" headline)
           (insert "#+TITLE: Pearl-GTD Do Session\n\n")
           (insert (format "* %s\n\n" headline))
           (when pearl-gtd-do--session-total-count
@@ -339,10 +313,7 @@ CONTEXT-FILTER is used for context-match bonus."
           (insert "| [?]     | Help                 |\n")
           (org-table-align))))
       (setq buffer-read-only t)
-      (goto-char (point-min))
-      (message "[DEBUG] render-card: buffer-read-only set, point at min"))
-    (message "[DEBUG] render-card: exiting with result"))
-  (message "[DEBUG] render-card: function exit"))
+      (goto-char (point-min)))))
 
 ;;;; Session commands
 
@@ -425,7 +396,10 @@ Returns a list (context time-budget energy)."
     (list context time-budget energy)))
 
 (defun pearl-gtd-do--refresh-session (context time-budget energy)
-  "Rebuild session actions with given filters."
+  "Rebuild session actions with given filters.
+CONTEXT is the context filter string, or nil for all contexts.
+TIME-BUDGET is available time in minutes, or nil for unlimited.
+ENERGY is the energy level string, or nil for any."
   (let* ((view-type pearl-gtd-do--session-view-type)
          (predicates (pcase view-type
                        ('delegated (list #'pearl-gtd-core-entry-todo-p
@@ -466,11 +440,6 @@ CONTEXT, TIME-BUDGET, and ENERGY are optional initial filters."
          (filtered (pearl-gtd-do--filter-actions actions context))
          (sorted (pearl-gtd-do--sort-actions filtered context))
          (buffer (get-buffer-create buffer-name)))
-    (message "[DEBUG] start-session: view-type=%s, context=%s, time=%s, energy=%s" 
-             view-type context time-budget energy)
-    (message "[DEBUG] start-session: collected=%d actions" (length actions))
-    (message "[DEBUG] start-session: filtered=%d actions" (length filtered))
-    (message "[DEBUG] start-session: sorted=%d actions" (length sorted))
     (with-current-buffer buffer
       (setq pearl-gtd-do--session-actions sorted
             pearl-gtd-do--session-context context
@@ -478,7 +447,6 @@ CONTEXT, TIME-BUDGET, and ENERGY are optional initial filters."
             pearl-gtd-do--session-energy energy
             pearl-gtd-do--session-time-budget time-budget
             pearl-gtd-do--session-view-type view-type)
-      (message "[DEBUG] start-session: buffer-local session-actions=%d" (length pearl-gtd-do--session-actions))
       (pearl-gtd-do--render-card buffer)
       (pearl-gtd-do-session-mode 1))
     (pop-to-buffer buffer)))
