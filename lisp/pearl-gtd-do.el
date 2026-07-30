@@ -128,12 +128,12 @@ Returns (HEADER . ROWS) where ROWS is list of
       (forward-line 2))))
 
 (defun pearl-gtd-do--create-view-buffer (buffer-name predicates view-type
-                                                  &optional empty-msg contexts)
+                                                     &optional _empty-msg contexts)
   "Create a read-only table buffer showing actions filtered by PREDICATES.
 BUFFER-NAME is the name of the buffer to create.
 PREDICATES is a list of predicate functions to filter entries.
 VIEW-TYPE is a symbol indicating the type of view.
-Optional EMPTY-MSG is the message to display when no actions
+Optional _EMPTY-MSG is the message to display when no actions
 are found.  Optional CONTEXTS is a list of contexts for the
 view."
   (let* ((buffer (get-buffer-create buffer-name))
