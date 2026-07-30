@@ -322,12 +322,24 @@ META is an alist with keys :entry-map and :entry-index."
                (insert "| Headline | Status | Scheduled | Deadline | Context | Delegated | Project |\n")
                (insert "|----------+--------+-----------+----------+---------+-----------+---------|\n")))
             (if (null entries)
-                (pcase type
-                  ('no-project (insert "| (No entries) | | | | | | |\n"))
-                  ('project (insert "| (No entries) | | | | | | | | |\n"))
-                  ('inbox (insert "| (No entries) | |\n"))
-                  ('project-tasks (insert "| (No entries) | | | | | | | |\n"))
-                  (_ (insert "| (No entries) | | | | | | |\n")))
+                (progn
+                  (pcase type
+                    ('no-project
+                     ;; 7 columns: Headline, Status, Scheduled, Deadline, Context, Delegated, L3_AREA
+                     (insert "| (No entries) | | | | | | |\n"))
+                    ('project
+                     ;; 9 columns: Project, Total, Todo, Done, Next Deadline, L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE
+                     (insert "| (No entries) | | | | | | | | |\n"))
+                    ('inbox
+                     ;; 2 columns: Headline, Created
+                     (insert "| (No entries) | |\n"))
+                    ('project-tasks
+                     ;; 8 columns: Headline, Status, Scheduled, Deadline, Context, Delegated, Project, Created
+                     (insert "| (No entries) | | | | | | | |\n"))
+                    (_
+                     ;; 7 columns: Headline, Status, Scheduled, Deadline, Context, Delegated, Project
+                     (insert "| (No entries) | | | | | | |\n")))
+                  (org-table-align))
               (dolist (entry entries)
                 (let ((head (nth 0 entry))
                       (id (nth 1 entry))

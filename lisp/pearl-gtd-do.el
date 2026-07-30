@@ -142,7 +142,9 @@ view."
         (with-current-buffer buffer
           (setq buffer-read-only nil)
           (erase-buffer)
-          (insert (format "%s\n" (or empty-msg "(No actions found)")))
+          ;; 7 columns: Headline, Context, Status, Scheduled, Delegated, Project, Created
+          (insert "| Headline | Context | Status | Scheduled | Delegated | Project | Created |\n|----------+---------+--------+-----------+-----------+---------+---------|\n| (No entries) | | | | | | |\n")
+          (org-table-align)
           (setq buffer-read-only t))
       (pearl-gtd-do--render-table buffer table-data))
     (with-current-buffer buffer
