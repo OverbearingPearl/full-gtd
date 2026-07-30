@@ -248,7 +248,7 @@ CONTEXT-FILTER is used for context-match bonus."
             (insert "** Current Conditions\n")
             (insert (format "| Context | %s |\n" (or pearl-gtd-do--session-context "All")))
             (insert (format "| Energy  | %s |\n" (or pearl-gtd-do--session-energy "Any")))
-            (insert (format "| Time    | %s |\n" (if pearl-gtd-do--session-time-budget 
+            (insert (format "| Time    | %s |\n" (if pearl-gtd-do--session-time-budget
                                                    (format "%d min" pearl-gtd-do--session-time-budget)
                                                  "Unlimited")))
             (org-table-align)
@@ -275,7 +275,7 @@ CONTEXT-FILTER is used for context-match bonus."
           (insert "** Current Conditions\n")
           (insert (format "| Context | %s |\n" (or pearl-gtd-do--session-context "All")))
           (insert (format "| Energy  | %s |\n" (or pearl-gtd-do--session-energy "Any")))
-          (insert (format "| Time    | %s |\n" (if pearl-gtd-do--session-time-budget 
+          (insert (format "| Time    | %s |\n" (if pearl-gtd-do--session-time-budget
                                                  (format "%d min" pearl-gtd-do--session-time-budget)
                                                "Unlimited")))
           (org-table-align)
