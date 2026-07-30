@@ -620,6 +620,6 @@
       (should (null (cdr (assoc 'schedule result))))
       (should (null (cdr (assoc 'deadline result)))))))
 
-(provide 'pearl-gtd-test-organize)
+(provide 'pearl-gtd-organize-test)
 
-;;; pearl-gtd-test-organize.el ends here
+;;; pearl-gtd-organize-test.el ends here

@@ -313,6 +313,6 @@
              (should (pearl-gtd-test-file-contains-p-bool inbox-file ":ID:")))
   :teardown nil)
 
-(provide 'pearl-gtd-test-capture)
+(provide 'pearl-gtd-capture-test)
 
-;;; pearl-gtd-test-capture.el ends here
+;;; pearl-gtd-capture-test.el ends here

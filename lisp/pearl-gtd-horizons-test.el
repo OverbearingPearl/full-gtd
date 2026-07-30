@@ -433,6 +433,6 @@
                (should (search-forward "*** PartialProj" nil t))))
   :teardown (kill-buffer "*Pearl-GTD Horizons*"))
 
-(provide 'pearl-gtd-test-horizons)
+(provide 'pearl-gtd-horizons-test)
 
-;;; pearl-gtd-test-horizons.el ends here
+;;; pearl-gtd-horizons-test.el ends here

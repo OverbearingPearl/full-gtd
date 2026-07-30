@@ -68,6 +68,6 @@
                       "* Existing reference")))
   :teardown nil)
 
-(provide 'pearl-gtd-test-setup)
+(provide 'pearl-gtd-setup-test)
 
-;;; pearl-gtd-test-setup.el ends here
+;;; pearl-gtd-setup-test.el ends here

@@ -992,6 +992,6 @@
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
               (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
 
-(provide 'pearl-gtd-test-planning)
+(provide 'pearl-gtd-planning-test)
 
-;;; pearl-gtd-test-planning.el ends here
+;;; pearl-gtd-planning-test.el ends here

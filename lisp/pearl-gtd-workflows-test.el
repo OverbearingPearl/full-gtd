@@ -312,6 +312,6 @@
   :asserts (should (pearl-gtd-test-inbox-empty-p pearl-gtd-init-base-directory))
   :teardown nil)
 
-(provide 'pearl-gtd-test-workflows)
+(provide 'pearl-gtd-workflows-test)
 
-;;; pearl-gtd-test-workflows.el ends here
+;;; pearl-gtd-workflows-test.el ends here

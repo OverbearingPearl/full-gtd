@@ -114,6 +114,6 @@
                       "* Task to route")))
   :teardown nil)
 
-(provide 'pearl-gtd-test-clarify)
+(provide 'pearl-gtd-clarify-test)
 
-;;; pearl-gtd-test-clarify.el ends here
+;;; pearl-gtd-clarify-test.el ends here

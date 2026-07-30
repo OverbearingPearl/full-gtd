@@ -315,6 +315,6 @@
               (let ((buf (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory))))
                 (when buf (kill-buffer buf)))))
 
-(provide 'pearl-gtd-test-do)
+(provide 'pearl-gtd-do-test)
 
-;;; pearl-gtd-test-do.el ends here
+;;; pearl-gtd-do-test.el ends here

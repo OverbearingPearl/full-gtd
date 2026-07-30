@@ -534,6 +534,6 @@
              (should-not (search-forward "Old name" nil t)))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
 
-(provide 'pearl-gtd-test-review)
+(provide 'pearl-gtd-review-test)
 
-;;; pearl-gtd-test-review.el ends here
+;;; pearl-gtd-review-test.el ends here
