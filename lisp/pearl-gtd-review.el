@@ -294,9 +294,9 @@ META is an alist with keys :entry-map and :entry-index."
       (org-mode)
       (setq-local header-line-format
                   (pcase pearl-gtd-review--current-view-type
-                    ('daily "Daily Review | n/p/j/k: navigate | RET: jump | c/d/t/s/r/P: edit | C: complete | g: refresh | q: quit")
-                    ('weekly "Weekly Review | n/p/j/k: navigate | RET: jump | c/d/t/s/r/P: edit | C: complete | g: refresh | q: quit")
-                    (_ "Review | n/p/j/k: navigate | RET: jump | c/d/t/s/r/P: edit | C: complete | g: refresh | q: quit")))
+                    ('daily "Daily Review | n/p/j/k: move | RET: jump | c/d/t/s/r/P: property | C: complete | g: refresh | q: quit")
+                    ('weekly "Weekly Review | n/p/j/k: move | RET: jump | c/d/t/s/r/P/3-6: property | C: complete | g: refresh | q: quit")
+                    (_ "Review | n/p/j/k: move | RET: jump | c/d/t/s/r/P/3-6: property | C: complete | g: refresh | q: quit")))
       (setq pearl-gtd-review--entry-map entry-map)
       (if (null sections-data)
           (insert "(No entries to review)\n")
