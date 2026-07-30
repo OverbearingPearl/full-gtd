@@ -49,12 +49,12 @@ A complete [Getting Things Done](https://gettingthingsdone.com/) implementation 
   ===========================
   +-------------------------------+    +-------------------------------+
   |            ENGAGE             |    |           HORIZONS            |
-  | pearl-gtd-do-view-by-context  |    |    pearl-gtd-horizons-view    |
-  | pearl-gtd-do-view-all-actions |    |                               |
-  |                               |    |  L6 Purpose                   |
-  |       all next actions        |    |    -> L5 Vision               |
-  |       filter by context       |    |      -> L4 Goals              |
-  |       delegated tracking      |    |        -> L3 Area             |
+  |         pearl-gtd-do          |    |    pearl-gtd-horizons-view    |
+  |                               |    |                               |
+  |    single-card execution      |    |  L6 Purpose                   |
+  |    system pushes optimal task |    |    -> L5 Vision               |
+  |    based on your conditions   |    |      -> L4 Goals              |
+  |    (context, time, energy)    |    |        -> L3 Area             |
   |                               |    |          -> Projects/Actions  |
   +-------------------------------+    +-------------------------------+
   ```
@@ -89,7 +89,7 @@ This package is for you if you've read the book and want your tool to match the 
          ("C-c g p" . pearl-gtd-planning-start)
          ("C-c g r" . pearl-gtd-review-weekly)
          ("C-c g d" . pearl-gtd-review-daily)
-         ("C-c g a" . pearl-gtd-do-view-all-actions)
+         ("C-c g e" . pearl-gtd-do)
          ("C-c g h" . pearl-gtd-horizons-view)))
 ```
 
@@ -98,7 +98,7 @@ This package is for you if you've read the book and want your tool to match the 
 3. `C-c g p` — Plan a project using the Natural Planning Model
 4. `C-c g r` — Run the Weekly Review
 5. `C-c g d` — Run the Daily Review
-6. `C-c g a` — View all next actions
+6. `C-c g e` — Start a Do session (Engage/Execute)
 7. `C-c g h` — View the Six Horizons hierarchy
 
 ## A Day with Pearl-GTD
@@ -110,7 +110,7 @@ This package is for you if you've read the book and want your tool to match the 
 **Throughout the day:**
 
 2. `pearl-gtd-capture` — Dump anything into inbox
-3. `pearl-gtd-do-view-by-context` — Pick actions by context (@office, @home, @errands)
+3. `pearl-gtd-do` — Start a Do session; the system will ask for your current context, available time, and energy level, then push the optimal task
 
 **When inbox piles up:**
 
@@ -154,7 +154,7 @@ Horizons are stored as Org properties (`L3_AREA` … `L6_PURPOSE`) and obey stri
 - **L5 Vision** – 3‑5 year picture
 - **L6 Purpose & Principle** – Life purpose and guiding principles
 
-Horizons are inherited from projects to their actions. The horizon view (`pearl‑gtd‑horizons‑view`) shows the full hierarchy from Purpose down to individual tasks.
+Horizons flow from high levels down: Purpose (L6) → Vision (L5) → Goals (L4) → Areas (L3) → Projects → Actions. The horizon view (`pearl‑gtd‑horizons‑view`) shows this full hierarchy.
 
 ### 4. Review Cycles
 - **Daily Review** (`pearl‑gtd‑review‑daily`) – Today’s scheduled tasks, completed today, next actions, and inbox.
@@ -163,7 +163,29 @@ Horizons are inherited from projects to their actions. The horizon view (`pearl�
 Both reviews use a unified table interface with keyboard shortcuts for navigation, editing properties, marking tasks complete, and jumping to source entries. Shortcuts: `c` (context), `d` (delegated), `t` (scheduled), `s` (deadline), `r` (rename), `P` (project), `C` (complete), and `3`-`6` (horizons L3-L6, where `6` edits both Purpose and Principle sequentially).
 
 ### 5. Do/Work Phase
-Context‑filtered action views (`pearl‑gtd‑do‑view‑by‑context`), delegated tasks, today’s scheduled actions, and a global “All Actions” table. Each view is a read‑only Org table with live navigation (`n`/`p`/`j`/`k`), completion (`C`), renaming (`r`), and jump‑to‑source (`RET`).
+The Do phase uses **single-card execution** (`pearl-gtd-do`). Instead of browsing a long list, you tell the system your current conditions—**context** (e.g., @office, @home), **available time** (minutes), and **energy level** (high/normal/low)—and it **pushes the single most optimal task** based on a scoring algorithm:
+
+- **Urgency** – deadline proximity, scheduled today, task age
+- **Importance** – horizon alignment (L6 Purpose → L3 Area), project association
+- **Context match** – bonus when action context matches your current context
+
+**Constraint awareness**: The system scores tasks based on your declared context, available time, and energy level. Time and energy filters help narrow the candidate pool before scoring.
+
+**Continuous loop design**: The session encourages you to stay in flow. After you complete or skip a task, the next optimal task is automatically pushed. When no tasks match your current conditions, you're prompted to either adjust your conditions (new context/time/energy) or quit. No need to kill buffers or restart.
+
+Session commands:
+
+| Key | Action |
+|-----|--------|
+| `d` / `RET` | Mark current card done and push next |
+| `s` | Skip (push next without state change) |
+| `r` | Rename current task |
+| `j` | Jump to source entry |
+| `c` | Change conditions (context/time/energy) |
+| `q` | Quit session |
+| `?` | Show command help |
+
+This design eliminates decision fatigue—you don't choose from a list, the system tells you what to do next based on your constraints and the task priority scores.
 
 ### 6. Technical Foundation
 - **ID‑based tracking** – Every entry receives a unique `:ID:` property that persists across moves and renames.
@@ -182,6 +204,7 @@ Most GTD software becomes a todo‑list app with extra steps. Pearl‑GTD stays 
 - **The Natural Planning Model is not optional** – It’s how projects actually get done.
 - **Horizons are not tags** – They are a hierarchy. L4 goals must connect to L2 projects. If a goal has no projects, it’s a fantasy. Horizons can be edited directly in review views using `3`-`6` keys (L6 Purpose and Principle are edited together via key `6`).
 - **Review is the engine** – Without weekly review, GTD decays into a mess of stale lists. The tool enforces the habit.
+- **Engage needs focus** – A long next-actions list is overwhelming. Single-card execution with smart prioritization helps you pick the right next thing and finish the session with momentum.
 
 Emacs is the right host because GTD is fundamentally **text and structure**. Org‑mode gives us outlines, tags, links, and agenda views. Pearl‑GTD adds the **workflow layer** on top.
 
@@ -213,7 +236,7 @@ Or with `use‑package`:
          ("C-c g p" . pearl-gtd-planning-start)
          ("C-c g r" . pearl-gtd-review-weekly)
          ("C-c g d" . pearl-gtd-review-daily)
-         ("C-c g a" . pearl-gtd-do-view-all-actions)
+         ("C-c g e" . pearl-gtd-do)
          ("C-c g h" . pearl-gtd-horizons-view))
   :config (package-initialize))
 ```

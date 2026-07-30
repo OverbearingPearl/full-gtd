@@ -8,7 +8,8 @@
 
 ;;; Commentary:
 
-;; Natural Planning Model workflow.
+;; Natural Planning Model workflow: Purpose -> Principle -> Vision
+;; -> Goal -> Area -> Brainstorm -> Organize -> Next Actions.
 ;; Coordinator pattern: this module orchestrates user interaction,
 ;; delegates business rule validation to pearl-gtd-domain,
 ;; and delegates all file operations to pearl-gtd-state.

@@ -8,9 +8,10 @@
 
 ;;; Commentary:
 
-;; This file handles the "Do" phase of GTD, focusing on executing
-;; tasks and viewing contexts.  Delegation tracking and reminders are
-;; handled in the Review phase.
+;; This file handles the "Do" phase of GTD via a single-card,
+;; session-based workflow.  It provides smart prioritization,
+;; constraint awareness (context and energy), and GTD-aligned
+;; state transitions.
 
 ;;; Code:
 
@@ -19,280 +20,560 @@
 (require 'pearl-gtd-init)
 (require 'pearl-gtd-core)
 
-(defvar-local pearl-gtd-do--current-view-type nil
-  "Type of the current view: `context, `delegated, `today, etc.")
+;;;; Session state
 
-(defvar-local pearl-gtd-do--current-view-contexts nil
-  "Contexts used for the current view buffer when type is `context.")
+(defvar-local pearl-gtd-do--session-actions nil
+  "List of action plists for the current Do session.")
 
-(defvar pearl-gtd-do-view-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "q") #'quit-window)
-    (define-key map (kbd "n") #'pearl-gtd-do--next-row)
-    (define-key map (kbd "p") #'pearl-gtd-do--previous-row)
-    (define-key map (kbd "j") #'pearl-gtd-do--next-row)
-    (define-key map (kbd "k") #'pearl-gtd-do--previous-row)
-    (define-key map (kbd "C") #'pearl-gtd-do--complete-task-at-point)
-    (define-key map (kbd "RET") #'pearl-gtd-do--goto-task)
-    (define-key map (kbd "g") #'pearl-gtd-do--refresh-view)
-    (define-key map (kbd "r") #'pearl-gtd-do--rename-task-at-point)
-    map))
+(defvar-local pearl-gtd-do--session-context nil
+  "Current context filter for the session, or nil for all contexts.")
 
-(define-minor-mode pearl-gtd-do-view-mode
-  "Minor mode for viewing GTD actions in table format."
-  :init-value nil
-  :lighter " Pearl-Do"
-  :keymap pearl-gtd-do-view-mode-map
-  :interactive nil)
+(defvar-local pearl-gtd-do--session-energy nil
+  "Current energy level for the session, or nil for no filter.")
 
-(defun pearl-gtd-do--data-row-boundaries ()
-  "Return cons cell (FIRST-DATA-ROW . LAST-DATA-ROW) positions.
-FIRST-DATA-ROW is the position of the first data row in the table.
-LAST-DATA-ROW is the position of the last data row in the table."
-  (save-excursion
-    (goto-char (point-min))
-    ;; Skip header and separator to find first data row
-    (while (and (not (eobp))
-                (or (looking-at "|[-+]")      ; Separator
-                    (looking-at "| Headline") ; Header
-                    (not (looking-at "|"))))  ; Non-table
-      (forward-line 1))
-    (let ((first-data (line-beginning-position)))
-      ;; Find last data row from end of buffer
-      (goto-char (point-max))
-      (forward-line -1)
-      (while (and (not (bobp))
-                  (or (looking-at "|[-+]")      ; Separator
-                      (looking-at "| Headline") ; Header
-                      (not (looking-at "|"))    ; Non-table
-                      (looking-at "^$")))       ; Empty line
-        (forward-line -1))
-      (cons first-data (line-beginning-position)))))
+(defvar-local pearl-gtd-do--session-time-budget nil
+  "Current time budget in minutes for the session, or nil for no filter.")
 
-(defun pearl-gtd-do--get-entry-at-point ()
-  "Get (ID . FILE) from current row in table using text properties."
-  (save-excursion
-    (beginning-of-line)
-    (let ((end (line-end-position))
-          (id nil)
-          (file nil))
-      (while (and (not id) (< (point) end))
-        (setq id (get-text-property (point) 'pearl-gtd-id))
-        (setq file (get-text-property (point) 'pearl-gtd-file))
-        (forward-char 1))
-      (when (and id file)
-        (cons id file)))))
+(defvar-local pearl-gtd-do--session-total-count nil
+  "Total number of matching actions at session start.
+Decrements when actions are completed, unchanged when skipped.")
 
-(defun pearl-gtd-do--build-table-data (predicates)
-  "Build table data from actions.org filtered by PREDICATES.
-Returns (HEADER . ROWS) where ROWS is list of
-\(HEADLINE CONTEXT STATUS SCHEDULED DELEGATED PROJECT CREATED ID FILE)."
+(defvar-local pearl-gtd-do--session-view-type nil
+  "Type of the current session: `next, `delegated, or `today.")
+
+(defvar pearl-gtd-do--energy-levels '("high" "normal" "low")
+  "Supported energy levels.")
+
+;;;; Scoring
+
+(defconst pearl-gtd-do--score-weights
+  '((overdue . 100)
+    (deadline-1d . 50)
+    (deadline-3d . 30)
+    (deadline-7d . 15)
+    (scheduled-today . 20)
+    (age-day . 1)
+    (age-max . 30)
+    (l6-purpose . 20)
+    (l5-vision . 15)
+    (l4-goal . 10)
+    (l3-area . 5)
+    (project . 5)
+    (context-match . 10))
+  "Weights for action priority scoring.")
+
+(defun pearl-gtd-do--days-until (date-string)
+  "Return number of days until DATE-STRING, or nil if not a date.
+DATE-STRING should be an Org date or timestamp."
+  (when date-string
+    (let ((time (ignore-errors (org-time-string-to-time date-string))))
+      (when time
+        (/ (- (float-time time) (float-time (current-time))) 86400.0)))))
+
+(defun pearl-gtd-do--score-action (action &optional context-filter)
+  "Calculate priority score for ACTION plist.
+Optional CONTEXT-FILTER boosts matching contexts."
+  (let ((score 0)
+        (deadline (plist-get action :deadline))
+        (scheduled (plist-get action :scheduled))
+        (created (plist-get action :created))
+        (context (plist-get action :context))
+        (project (plist-get action :project))
+        (l3 (plist-get action :l3))
+        (l4 (plist-get action :l4))
+        (l5 (plist-get action :l5))
+        (l6 (plist-get action :l6)))
+    ;; Urgency: deadline
+    (when deadline
+      (let ((days (pearl-gtd-do--days-until deadline)))
+        (cond
+         ((null days) nil)
+         ((< days 0) (setq score (+ score (cdr (assq 'overdue pearl-gtd-do--score-weights)))))
+         ((<= days 1) (setq score (+ score (cdr (assq 'deadline-1d pearl-gtd-do--score-weights)))))
+         ((<= days 3) (setq score (+ score (cdr (assq 'deadline-3d pearl-gtd-do--score-weights)))))
+         ((<= days 7) (setq score (+ score (cdr (assq 'deadline-7d pearl-gtd-do--score-weights))))))))
+    ;; Urgency: scheduled today
+    (when (and scheduled
+               (string-match-p (format-time-string "<%F" (current-time)) scheduled))
+      (setq score (+ score (cdr (assq 'scheduled-today pearl-gtd-do--score-weights)))))
+    ;; Urgency: age
+    (when created
+      (let* ((created-time (ignore-errors (date-to-time created)))
+             (days (when created-time
+                     (/ (- (float-time (current-time)) (float-time created-time)) 86400.0))))
+        (when days
+          (setq score (+ score (min (* days (cdr (assq 'age-day pearl-gtd-do--score-weights)))
+                                    (cdr (assq 'age-max pearl-gtd-do--score-weights))))))))
+    ;; Importance: horizons
+    (when (and l6 (not (string= l6 "")))
+      (setq score (+ score (cdr (assq 'l6-purpose pearl-gtd-do--score-weights)))))
+    (when (and l5 (not (string= l5 "")))
+      (setq score (+ score (cdr (assq 'l5-vision pearl-gtd-do--score-weights)))))
+    (when (and l4 (not (string= l4 "")))
+      (setq score (+ score (cdr (assq 'l4-goal pearl-gtd-do--score-weights)))))
+    (when (and l3 (not (string= l3 "")))
+      (setq score (+ score (cdr (assq 'l3-area pearl-gtd-do--score-weights)))))
+    ;; Project presence
+    (when (and project (not (string= project "")))
+      (setq score (+ score (cdr (assq 'project pearl-gtd-do--score-weights)))))
+    ;; Context match
+    (when (and context-filter context)
+      (let ((ctxs (pearl-gtd-do--split-contexts context)))
+        (when (member context-filter ctxs)
+          (setq score (+ score (cdr (assq 'context-match pearl-gtd-do--score-weights)))))))
+    score))
+
+;;;; Action collection
+
+(defun pearl-gtd-do--normalize-context (context)
+  "Normalize CONTEXT string by removing @ prefix."
+  (if (string-prefix-p "@" context)
+      (substring context 1)
+    context))
+
+(defun pearl-gtd-do--split-contexts (context-string)
+  "Split CONTEXT-STRING by comma and normalize each value.
+CONTEXT-STRING uses @ prefixes like \"@office,@home\"."
+  (when context-string
+    (mapcar #'pearl-gtd-do--normalize-context
+            (seq-filter (lambda (s) (not (string-empty-p s)))
+                        (mapcar #'string-trim (split-string context-string ","))))))
+
+(defun pearl-gtd-do--collect-actions (predicates)
+  "Collect TODO actions from actions.org matching PREDICATES.
+Returns list of action plists."
   (let* ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
-         (entries (pearl-gtd-core-filter-entries file-path predicates))
-         (header "| Headline | Context | Status | Scheduled | Delegated | Project | Created |")
-         (rows '()))
-    (dolist (entry entries)
-      (let* ((raw-headline (nth 0 entry))
-             (id (nth 7 entry))
-             (file (nth 8 entry))
-             (escaped-headline (pearl-gtd-core--escape-table-field raw-headline)))
-        (push (list escaped-headline (nth 1 entry) (nth 2 entry) (nth 3 entry)
-                   (nth 4 entry) (nth 5 entry) (nth 6 entry) id file)
-              rows)))
-    (cons header (nreverse rows))))
+         (file-name (file-name-nondirectory file-path))
+         (actions '())
+         (entry-count 0)
+         (match-count 0))
+    (message "[DEBUG] collect-actions: file-path=%s, predicates=%d" file-path (length predicates))
+    (message "[DEBUG] collect-actions: file-exists=%s" (file-exists-p file-path))
+    (when (file-exists-p file-path)
+      (with-temp-buffer
+        (insert-file-contents file-path)
+        (message "[DEBUG] collect-actions: file loaded, size=%d" (point-max))
+        (org-mode)
+        (message "[DEBUG] collect-actions: org-mode activated")
+        (org-map-entries
+         (lambda ()
+           (setq entry-count (1+ entry-count))
+           (let ((matches t)
+                 (todo-state (org-get-todo-state)))
+             (message "[DEBUG] collect-actions: entry %d, headline=%s, todo-state=%s"
+                      entry-count (org-get-heading t t) todo-state)
+             (dolist (pred predicates)
+               (condition-case err
+                   (unless (funcall pred)
+                     (setq matches nil))
+                 (error (message "[DEBUG] collect-actions: predicate error: %s" err)
+                        (setq matches nil))))
+             (message "[DEBUG] collect-actions: entry %d matches=%s" entry-count matches)
+             (when matches
+               (setq match-count (1+ match-count))
+               (push (list
+                      :headline (org-get-heading t t)
+                      :context (mapconcat (lambda (c) (concat "@" c)) (org-get-tags) ",")
+                      :status (org-get-todo-state)
+                      :scheduled (org-entry-get nil "SCHEDULED")
+                      :delegated (org-entry-get nil "DELEGATED")
+                      :project (org-entry-get nil "PROJECT")
+                      :created (org-entry-get nil "CREATED")
+                      :id (org-entry-get nil "ID")
+                      :file file-name
+                      :deadline (org-entry-get nil "DEADLINE")
+                      :l3 (org-entry-get nil "L3_AREA")
+                      :l4 (org-entry-get nil "L4_GOAL")
+                      :l5 (org-entry-get nil "L5_VISION")
+                      :l6 (org-entry-get nil "L6_PURPOSE"))
+                     actions))))
+         nil nil))
+      (message "[DEBUG] collect-actions: total entries=%d, matches=%d" entry-count match-count))
+    (message "[DEBUG] collect-actions: returning %d actions" (length actions))
+    (nreverse actions)))
 
-(defun pearl-gtd-do--render-table (buffer table-data)
-  "Render TABLE-DATA into BUFFER.  TABLE-DATA is (HEADER . ROWS)."
-  (let ((header (car table-data))
-        (rows (cdr table-data)))
-    (with-current-buffer buffer
-      (setq buffer-read-only nil)
-      (erase-buffer)
+(defun pearl-gtd-do--context-matches-p (action context-filter)
+  "Return non-nil if ACTION context matches CONTEXT-FILTER.
+CONTEXT-FILTER is a normalized context string (without @)."
+  (if (null context-filter)
+      t
+    (let ((contexts (pearl-gtd-do--split-contexts (plist-get action :context))))
+      (member context-filter contexts))))
+
+(defun pearl-gtd-do--filter-actions (actions &optional context)
+  "Filter ACTIONS by CONTEXT constraint."
+  (seq-filter
+   (lambda (action)
+     (pearl-gtd-do--context-matches-p action context))
+   actions))
+
+(defun pearl-gtd-do--sort-actions (actions context-filter)
+  "Sort ACTIONS by priority score, highest first.
+CONTEXT-FILTER is used for context-match bonus."
+  (sort (copy-sequence actions)
+        (lambda (a b)
+          (> (pearl-gtd-do--score-action a context-filter)
+             (pearl-gtd-do--score-action b context-filter)))))
+
+;;;; Session UI
+
+(defun pearl-gtd-do--session-buffer-name (view-type)
+  "Return buffer name for VIEW-TYPE session."
+  (pcase view-type
+    ('delegated "*Pearl-GTD: Delegated Session*")
+    ('today "*Pearl-GTD: Today Session*")
+    (_ "*Pearl-GTD: Do Session*")))
+
+(defun pearl-gtd-do--format-date (date-string)
+  "Format Org DATE-STRING for display, including relative days."
+  (when date-string
+    (let ((days (pearl-gtd-do--days-until date-string)))
+      (cond
+       ((null days) date-string)
+       ((< days 0) (format "%s (overdue %.0f days)" date-string (abs days)))
+       ((= days 0) (format "%s (today)" date-string))
+       ((<= days 7) (format "%s (in %.0f days)" date-string days))
+       (t date-string)))))
+
+(defun pearl-gtd-do--render-card (buffer)
+  "Render current action card in BUFFER."
+  (message "[DEBUG] render-card: entering")
+  (with-current-buffer buffer
+    (setq buffer-read-only nil)
+    (erase-buffer)
+    ;; Save all session state before org-mode clears buffer-local vars
+    (let ((saved-actions pearl-gtd-do--session-actions)
+          (saved-context pearl-gtd-do--session-context)
+          (saved-energy pearl-gtd-do--session-energy)
+          (saved-time-budget pearl-gtd-do--session-time-budget)
+          (saved-total-count pearl-gtd-do--session-total-count)
+          (saved-view-type pearl-gtd-do--session-view-type))
       (org-mode)
-      (insert header "\n")
-      (insert "|----------+---------+--------+-----------+-----------+---------+---------|\n")
-      (dolist (row rows)
-        (let ((escaped-headline (nth 0 row))
-              (id (nth 7 row))
-              (file (nth 8 row)))
-          (when id
-            (put-text-property 0 (length escaped-headline) 'pearl-gtd-id id escaped-headline)
-            (put-text-property 0 (length escaped-headline) 'pearl-gtd-file file escaped-headline))
-          (insert (format "| %s | %s | %s | %s | %s | %s | %s |\n"
-                          escaped-headline
-                          (nth 1 row) (nth 2 row) (nth 3 row)
-                          (nth 4 row) (nth 5 row) (nth 6 row)))))
-      (org-table-align)
+      ;; Restore all session state after org-mode clears buffer-local vars
+      (setq-local pearl-gtd-do--session-actions saved-actions)
+      (setq-local pearl-gtd-do--session-context saved-context)
+      (setq-local pearl-gtd-do--session-energy saved-energy)
+      (setq-local pearl-gtd-do--session-time-budget saved-time-budget)
+      (setq-local pearl-gtd-do--session-total-count saved-total-count)
+      (setq-local pearl-gtd-do--session-view-type saved-view-type)
+      (let* ((actions pearl-gtd-do--session-actions)
+             (action (when actions (car actions))))
+        (message "[DEBUG] render-card: actions=%d, action=%s" 
+                 (length actions) (if action "present" "nil"))
+      (if (null action)
+          (progn
+            (message "[DEBUG] render-card: showing Session Complete")
+            (insert "#+TITLE: Pearl-GTD Do Session\n\n")
+            (insert "* Session Complete\n\n")
+            (when pearl-gtd-do--session-total-count
+              (insert (format "Completed: %d / %d tasks\n\n"
+                             (- pearl-gtd-do--session-total-count (length actions))
+                             pearl-gtd-do--session-total-count)))
+            (insert "No more actions matching current conditions.\n\n")
+            (insert "** Current Conditions\n")
+            (insert (format "| Context | %s |\n" (or pearl-gtd-do--session-context "All")))
+            (insert (format "| Energy  | %s |\n" (or pearl-gtd-do--session-energy "Any")))
+            (insert (format "| Time    | %s |\n" (if pearl-gtd-do--session-time-budget 
+                                                   (format "%d min" pearl-gtd-do--session-time-budget)
+                                                 "Unlimited")))
+            (org-table-align)
+            (insert "\nPress [q] to quit, or [c] to change conditions.\n"))
+        (let ((headline (plist-get action :headline))
+              (status (plist-get action :status))
+              (project (plist-get action :project))
+              (context (plist-get action :context))
+              (deadline (plist-get action :deadline))
+              (scheduled (plist-get action :scheduled))
+              (delegated (plist-get action :delegated))
+              (created (plist-get action :created))
+              (l3 (plist-get action :l3))
+              (l4 (plist-get action :l4))
+              (l5 (plist-get action :l5))
+              (l6 (plist-get action :l6))
+              (score (pearl-gtd-do--score-action action pearl-gtd-do--session-context)))
+          (message "[DEBUG] render-card: headline=%s" headline)
+          (insert "#+TITLE: Pearl-GTD Do Session\n\n")
+          (insert (format "* %s\n\n" headline))
+          (when pearl-gtd-do--session-total-count
+            (insert (format "Backlog: %d task%s remaining\n\n"
+                           pearl-gtd-do--session-total-count
+                           (if (= pearl-gtd-do--session-total-count 1) "" "s"))))
+          (insert "** Current Conditions\n")
+          (insert (format "| Context | %s |\n" (or pearl-gtd-do--session-context "All")))
+          (insert (format "| Energy  | %s |\n" (or pearl-gtd-do--session-energy "Any")))
+          (insert (format "| Time    | %s |\n" (if pearl-gtd-do--session-time-budget 
+                                                 (format "%d min" pearl-gtd-do--session-time-budget)
+                                               "Unlimited")))
+          (org-table-align)
+          (insert "\n** Task Details\n")
+          (insert (format "| Score     | %d |\n" (round score)))
+          (insert (format "| Status    | %s |\n" (or status "TODO")))
+          (when (and project (not (string= project "")))
+            (insert (format "| Project   | %s |\n" project)))
+          (when (and context (not (string= context "")))
+            (insert (format "| Context   | %s |\n" context)))
+          (when (and deadline (not (string= deadline "")))
+            (insert (format "| Deadline  | %s |\n" (pearl-gtd-do--format-date deadline))))
+          (when (and scheduled (not (string= scheduled "")))
+            (insert (format "| Scheduled | %s |\n" (pearl-gtd-do--format-date scheduled))))
+          (when (and delegated (not (string= delegated "")))
+            (insert (format "| Delegated | %s |\n" delegated)))
+          (when (and created (not (string= created "")))
+            (insert (format "| Created   | %s |\n" created)))
+          (when (and l6 (not (string= l6 "")))
+            (insert (format "| L6 Purpose | %s |\n" l6)))
+          (when (and l5 (not (string= l5 "")))
+            (insert (format "| L5 Vision  | %s |\n" l5)))
+          (when (and l4 (not (string= l4 "")))
+            (insert (format "| L4 Goal    | %s |\n" l4)))
+          (when (and l3 (not (string= l3 "")))
+            (insert (format "| L3 Area    | %s |\n" l3)))
+          (org-table-align)
+          (insert "\n** Commands\n\n")
+          (insert "| [d/RET] | Done (mark complete) |\n")
+          (insert "| [s]     | Skip (next task)     |\n")
+          (insert "| [r]     | Rename               |\n")
+          (insert "| [j]     | Jump to source       |\n")
+          (insert "| [c]     | Change conditions    |\n")
+          (insert "| [q]     | Quit session         |\n")
+          (insert "| [?]     | Help                 |\n")
+          (org-table-align))))
       (setq buffer-read-only t)
       (goto-char (point-min))
-      (forward-line 2))))
+      (message "[DEBUG] render-card: buffer-read-only set, point at min"))
+    (message "[DEBUG] render-card: exiting with result"))
+  (message "[DEBUG] render-card: function exit"))
 
-(defun pearl-gtd-do--create-view-buffer (buffer-name predicates view-type
-                                                     &optional empty-msg contexts)
-  "Create a read-only table buffer showing actions filtered by PREDICATES.
-BUFFER-NAME is the name of the buffer to create.
-PREDICATES is a list of predicate functions to filter entries.
-VIEW-TYPE is a symbol indicating the type of view.
-Optional EMPTY-MSG is the message to display when no actions
-are found.  Optional CONTEXTS is a list of contexts for the
-view."
-  (let* ((buffer (get-buffer-create buffer-name))
-         (table-data (pearl-gtd-do--build-table-data predicates)))
-    (if (null (cdr table-data))
-        (with-current-buffer buffer
-          (setq buffer-read-only nil)
-          (erase-buffer)
-          (org-mode)
-          ;; 7 columns: Headline, Context, Status, Scheduled, Delegated, Project, Created
-          (insert "| Headline | Context | Status | Scheduled | Delegated | Project | Created |\n")
-          (insert "|----------+---------+--------+-----------+-----------+---------+---------|\n")
-          (let ((display-msg (or empty-msg "(No entries)")))
-            (insert (format "| %s | | | | | | |\n"
-                            (pearl-gtd-core--escape-table-field display-msg))))
-          (org-table-align)
-          (setq buffer-read-only t))
-      (pearl-gtd-do--render-table buffer table-data))
-    (with-current-buffer buffer
-      (setq-local header-line-format
-                  (pcase view-type
-                    ('context "Context View | n/p/j/k: navigate | RET: jump | C: complete | r: rename | g: refresh | q: quit")
-                    ('delegated "Delegated View | n/p/j/k: navigate | RET: jump | C: complete | r: rename | g: refresh | q: quit")
-                    ('today "Today View | n/p/j/k: navigate | RET: jump | C: complete | r: rename | g: refresh | q: quit")
-                    (_ "Actions View | n/p/j/k: navigate | RET: jump | C: complete | r: rename | g: refresh | q: quit")))
-      (setq pearl-gtd-do--current-view-type view-type
-            pearl-gtd-do--current-view-contexts contexts))
-    buffer))
+;;;; Session commands
 
-(defun pearl-gtd-do--create-actions-table-buffer (contexts buffer-name)
-  "Create a read-only table buffer showing actions filtered by CONTEXTS.
-CONTEXTS is a list of normalized context strings (without @ prefix),
-or nil for all.
-BUFFER-NAME is the name for the new buffer."
-  (let ((predicates (list #'pearl-gtd-core-entry-todo-p)))
-    (when contexts
-      (setq predicates
-            (append predicates
-                    (list (lambda () (pearl-gtd-core-entry-context-p contexts))))))
-    (pearl-gtd-do--create-view-buffer buffer-name predicates 'context "(No actions found)" contexts)))
+(defun pearl-gtd-do--current-action ()
+  "Return current action plist in session, or nil."
+  (when pearl-gtd-do--session-actions
+    (car pearl-gtd-do--session-actions)))
+
+(defun pearl-gtd-do--remove-current-action ()
+  "Remove current action from session list."
+  (when pearl-gtd-do--session-actions
+    (setq pearl-gtd-do--session-actions (cdr pearl-gtd-do--session-actions))))
+
+(defun pearl-gtd-do--complete-current ()
+  "Mark current action as done."
+  (let ((action (pearl-gtd-do--current-action)))
+    (when action
+      (let ((id (plist-get action :id))
+            (file (plist-get action :file)))
+        (when (numberp pearl-gtd-do--session-total-count)
+          (setq pearl-gtd-do--session-total-count (1- pearl-gtd-do--session-total-count)))
+        (pearl-gtd-core-with-entry-at-id id file
+          (let ((org-log-done 'time)) (org-todo 'done)))
+        (pearl-gtd-do--remove-current-action)
+        (message "Task completed")))))
+
+(defun pearl-gtd-do--snooze-current ()
+  "Reschedule current action to tomorrow."
+  (let ((action (pearl-gtd-do--current-action)))
+    (when action
+      (let ((id (plist-get action :id))
+            (file (plist-get action :file))
+            (tomorrow (format-time-string "%F" (time-add (current-time) (* 24 3600)))))
+        (pearl-gtd-core-with-entry-at-id id file
+          (org-schedule nil tomorrow))
+        (pearl-gtd-do--remove-current-action)
+        (message "Task snoozed to %s" tomorrow)))))
+
+(defun pearl-gtd-do--rename-current ()
+  "Rename current action."
+  (let ((action (pearl-gtd-do--current-action)))
+    (when action
+      (let* ((id (plist-get action :id))
+             (file (plist-get action :file))
+             (new-name (read-string "New task name: " (plist-get action :headline))))
+        (when (and new-name (not (string= new-name "")))
+          (pearl-gtd-core-with-entry-at-id id file
+            (org-edit-headline new-name))
+          (plist-put action :headline new-name)
+          (message "Task renamed"))))))
+
+(defun pearl-gtd-do--jump-to-current ()
+  "Jump to source of current action."
+  (let ((action (pearl-gtd-do--current-action)))
+    (when action
+      (let* ((id (plist-get action :id))
+             (file (plist-get action :file))
+             (buffer (find-file-noselect (expand-file-name file pearl-gtd-init-base-directory))))
+        (pop-to-buffer buffer)
+        (goto-char (point-min))
+        (if (re-search-forward (concat ":ID:[ \t]+" (regexp-quote id)) nil t)
+            (org-back-to-heading)
+          (message "Task not found in source file"))))))
+
+(defun pearl-gtd-do--skip-current ()
+  "Skip current action without marking done."
+  (pearl-gtd-do--remove-current-action)
+  (message "Task skipped"))
+
+(defun pearl-gtd-do--prompt-conditions ()
+  "Prompt user for context, time budget, and energy level.
+Returns a list (context time-budget energy)."
+  (let* ((contexts (pearl-gtd-do--collect-contexts))
+         (context-choice (completing-read "Context (RET=all): " contexts nil nil))
+         (context (if (string= context-choice "") nil (pearl-gtd-do--normalize-context context-choice)))
+         (time-str (read-string "Available time in minutes (RET=unlimited): "))
+         (time-budget (if (string= time-str "") nil (string-to-number time-str)))
+         (energy-choice (completing-read "Energy level (RET=any): " pearl-gtd-do--energy-levels nil nil))
+         (energy (if (string= energy-choice "") nil energy-choice)))
+    (list context time-budget energy)))
+
+(defun pearl-gtd-do--refresh-session (context time-budget energy)
+  "Rebuild session actions with given filters."
+  (let* ((view-type pearl-gtd-do--session-view-type)
+         (predicates (pcase view-type
+                       ('delegated (list #'pearl-gtd-core-entry-todo-p
+                                         #'pearl-gtd-core-entry-delegated-p))
+                       ('today (list #'pearl-gtd-core-entry-todo-p
+                                     #'pearl-gtd-core-entry-scheduled-today-p))
+                       (_ (list #'pearl-gtd-core-entry-todo-p))))
+         (actions (pearl-gtd-do--collect-actions predicates))
+         (filtered (pearl-gtd-do--filter-actions actions context))
+         (sorted (pearl-gtd-do--sort-actions filtered context)))
+    (setq pearl-gtd-do--session-actions sorted
+          pearl-gtd-do--session-context context
+          pearl-gtd-do--session-total-count (length sorted)
+          pearl-gtd-do--session-energy energy
+          pearl-gtd-do--session-time-budget time-budget)
+    (pearl-gtd-do--render-card (current-buffer))))
+
+;;;; Session startup
 
 (defun pearl-gtd-do--collect-contexts ()
   "Collect all unique context tags from actions.org."
   (pearl-gtd-core-collect-contexts
    (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
 
-(defun pearl-gtd-do--view-context (context-input)
-  "Internal function to view tasks by CONTEXT-INPUT in table format.
-CONTEXT-INPUT can be a single context string, comma-separated string,
-or nil for all.
-Context tags are normalized by removing the @ prefix for matching."
-  (let* ((raw-input context-input)
-         (contexts (cond
-                    ((null context-input) nil)
-                    ((listp context-input) context-input)
-                    ((string-match-p "," context-input)
-                     (mapcar #'string-trim (split-string context-input "," t)))
-                    (t (list context-input))))
-         (normalized-contexts (when contexts
-                               (mapcar (lambda (c)
-                                        (if (string-prefix-p "@" c)
-                                            (substring c 1)
-                                          c))
-                                      contexts)))
-         (display-name (cond
-                       ((null raw-input) "All Actions")
-                       ((listp raw-input) (mapconcat #'identity raw-input ", "))
-                       (t raw-input)))
-         (buffer-name (format "*Pearl-GTD: %s*" display-name)))
-    (pop-to-buffer (pearl-gtd-do--create-actions-table-buffer normalized-contexts buffer-name))
-    (pearl-gtd-do-view-mode 1)))
+(defun pearl-gtd-do--start-session (&optional view-type context time-budget energy)
+  "Start a Do session.
+VIEW-TYPE is `next, `delegated, or `today.
+CONTEXT, TIME-BUDGET, and ENERGY are optional initial filters."
+  (let* ((view-type (or view-type 'next))
+         (buffer-name (pearl-gtd-do--session-buffer-name view-type))
+         (predicates (pcase view-type
+                       ('delegated (list #'pearl-gtd-core-entry-todo-p
+                                         #'pearl-gtd-core-entry-delegated-p))
+                       ('today (list #'pearl-gtd-core-entry-todo-p
+                                     #'pearl-gtd-core-entry-scheduled-today-p))
+                       (_ (list #'pearl-gtd-core-entry-todo-p))))
+         (actions (pearl-gtd-do--collect-actions predicates))
+         (filtered (pearl-gtd-do--filter-actions actions context))
+         (sorted (pearl-gtd-do--sort-actions filtered context))
+         (buffer (get-buffer-create buffer-name)))
+    (message "[DEBUG] start-session: view-type=%s, context=%s, time=%s, energy=%s" 
+             view-type context time-budget energy)
+    (message "[DEBUG] start-session: collected=%d actions" (length actions))
+    (message "[DEBUG] start-session: filtered=%d actions" (length filtered))
+    (message "[DEBUG] start-session: sorted=%d actions" (length sorted))
+    (with-current-buffer buffer
+      (setq pearl-gtd-do--session-actions sorted
+            pearl-gtd-do--session-context context
+            pearl-gtd-do--session-total-count (length sorted)
+            pearl-gtd-do--session-energy energy
+            pearl-gtd-do--session-time-budget time-budget
+            pearl-gtd-do--session-view-type view-type)
+      (message "[DEBUG] start-session: buffer-local session-actions=%d" (length pearl-gtd-do--session-actions))
+      (pearl-gtd-do--render-card buffer)
+      (pearl-gtd-do-session-mode 1))
+    (pop-to-buffer buffer)))
 
-(defun pearl-gtd-do--view-by-context ()
-  "View next actions filtered by a specific context."
-  (let ((contexts (pearl-gtd-do--collect-contexts)))
-    (when contexts
-      (let ((context (completing-read "Select context: " contexts)))
-        (pearl-gtd-do--view-context context)))))
+;;;; Minor mode
 
-(defun pearl-gtd-do--view-all-actions ()
-  "View all next actions regardless of context."
-  (pearl-gtd-do--view-context nil))
+(defvar pearl-gtd-do-session-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "d") #'pearl-gtd-do--session-done)
+    (define-key map (kbd "RET") #'pearl-gtd-do--session-done)
+    (define-key map (kbd "s") #'pearl-gtd-do--session-skip)
+    (define-key map (kbd "z") #'pearl-gtd-do--session-snooze)
+    (define-key map (kbd "r") #'pearl-gtd-do--session-rename)
+    (define-key map (kbd "j") #'pearl-gtd-do--session-jump)
+    (define-key map (kbd "c") #'pearl-gtd-do--session-change-conditions)
+    (define-key map (kbd "q") #'pearl-gtd-do--session-quit)
+    (define-key map (kbd "?") #'pearl-gtd-do--session-help)
+    map)
+  "Keymap for Do session mode.")
 
-(defun pearl-gtd-do--view-delegated ()
-  "View all delegated tasks in table format."
-  (let ((buffer-name "*Pearl-GTD: Delegated*")
-        (predicates (list #'pearl-gtd-core-entry-todo-p
-                          #'pearl-gtd-core-entry-delegated-p)))
-    (pop-to-buffer (pearl-gtd-do--create-view-buffer buffer-name predicates 'delegated "(No delegated tasks)"))
-    (pearl-gtd-do-view-mode 1)))
+(define-minor-mode pearl-gtd-do-session-mode
+  "Minor mode for Pearl-GTD Do card session."
+  :init-value nil
+  :lighter " Pearl-Do"
+  :keymap pearl-gtd-do-session-mode-map
+  :interactive nil)
 
-(defun pearl-gtd-do--view-today ()
-  "View actions scheduled for today in table format."
-  (let ((buffer-name "*Pearl-GTD: Today*")
-        (predicates (list #'pearl-gtd-core-entry-todo-p
-                          #'pearl-gtd-core-entry-scheduled-today-p)))
-    (pop-to-buffer (pearl-gtd-do--create-view-buffer buffer-name predicates 'today "(No actions scheduled for today)"))
-    (pearl-gtd-do-view-mode 1)))
-
-(defun pearl-gtd-do--goto-task ()
-  "Jump from table view to the corresponding task in actions.org."
+(defun pearl-gtd-do--session-done ()
+  "Mark current card as done and advance."
   (interactive)
-  (let ((entry (pearl-gtd-do--get-entry-at-point)))
-    (when entry
-      (let* ((id (car entry))
-             (file (cdr entry)))
-        (let ((buffer (find-file-noselect (expand-file-name file pearl-gtd-init-base-directory))))
-          (pop-to-buffer buffer)
-          (goto-char (point-min))
-          (if (re-search-forward (concat ":ID:[ \t]+" (regexp-quote id)) nil t)
-              (progn (org-back-to-heading) (message "Jumped to task"))
-            (message "Task not found in actions.org")))))))
+  (pearl-gtd-do--complete-current)
+  (if pearl-gtd-do--session-actions
+      (pearl-gtd-do--render-card (current-buffer))
+    (let ((choice (read-char-choice "Continue with same conditions? (y/n): " '(?y ?n))))
+      (if (eq choice ?y)
+          (pearl-gtd-do--refresh-session pearl-gtd-do--session-context
+                                         pearl-gtd-do--session-time-budget
+                                         pearl-gtd-do--session-energy)
+        (pearl-gtd-do--session-change-conditions)))))
 
-(defun pearl-gtd-do--complete-task-at-point ()
-  "Mark the task at point as complete in the view buffer."
+(defun pearl-gtd-do--session-skip ()
+  "Skip current card without marking done."
   (interactive)
-  (let ((entry (pearl-gtd-do--get-entry-at-point)))
-    (when entry
-      (let ((id (car entry))
-            (file (cdr entry)))
-        (pearl-gtd-core-with-entry-at-id id file
-          (let ((org-log-done 'time)) (org-todo 'done)))
-        (let ((inhibit-read-only t))
-          (org-table-goto-column 3)
-          (org-table-blank-field)
-          (insert "DONE")
-          (org-table-align)
-          (message "Task marked as complete"))))))
+  (pearl-gtd-do--skip-current)
+  (if pearl-gtd-do--session-actions
+      (pearl-gtd-do--render-card (current-buffer))
+    (let ((choice (read-char-choice "Continue with same conditions? (y/n): " '(?y ?n))))
+      (if (eq choice ?y)
+          (pearl-gtd-do--refresh-session pearl-gtd-do--session-context
+                                         pearl-gtd-do--session-time-budget
+                                         pearl-gtd-do--session-energy)
+        (pearl-gtd-do--session-change-conditions)))))
 
-(defun pearl-gtd-do--refresh-view ()
-  "Refresh the current view buffer based on its type."
+(defun pearl-gtd-do--session-snooze ()
+  "Snooze current card to tomorrow."
   (interactive)
-  (pcase pearl-gtd-do--current-view-type
-    ('context
-     (pearl-gtd-do--view-context pearl-gtd-do--current-view-contexts))
-    ('delegated
-     (pearl-gtd-do--view-delegated))
-    ('today
-     (pearl-gtd-do--view-today))
-    (_
-     (pearl-gtd-do--view-all-actions))))
+  (pearl-gtd-do--snooze-current)
+  (if pearl-gtd-do--session-actions
+      (pearl-gtd-do--render-card (current-buffer))
+    (let ((choice (read-char-choice "Continue with same conditions? (y/n): " '(?y ?n))))
+      (if (eq choice ?y)
+          (pearl-gtd-do--refresh-session pearl-gtd-do--session-context
+                                         pearl-gtd-do--session-time-budget
+                                         pearl-gtd-do--session-energy)
+        (pearl-gtd-do--session-change-conditions)))))
 
-(defun pearl-gtd-do--rename-task-at-point ()
-  "Rename the task at point in the view buffer."
+(defun pearl-gtd-do--session-rename ()
+  "Rename current card."
   (interactive)
-  (let ((entry (pearl-gtd-do--get-entry-at-point)))
-    (when entry
-      (let* ((id (car entry))
-             (file (cdr entry))
-             (new-name (read-string "New task name (supports spaces, e.g., Buy organic milk from Whole Foods): ")))
-        (when (and new-name (not (string= new-name "")))
-          (pearl-gtd-core-with-entry-at-id id file
-            (org-edit-headline new-name))
-          (pearl-gtd-do--refresh-view))))))
+  (pearl-gtd-do--rename-current)
+  (pearl-gtd-do--render-card (current-buffer)))
 
-(pearl-gtd-core-define-table-navigators
-  "pearl-gtd-do"
-  #'pearl-gtd-do--data-row-boundaries
-  "| Headline")
+(defun pearl-gtd-do--session-jump ()
+  "Jump to source of current card."
+  (interactive)
+  (pearl-gtd-do--jump-to-current))
+
+(defun pearl-gtd-do--session-change-conditions ()
+  "Change context, time budget, and energy filters."
+  (interactive)
+  (let ((conditions (pearl-gtd-do--prompt-conditions)))
+    (apply #'pearl-gtd-do--refresh-session conditions)))
+
+(defun pearl-gtd-do--session-quit ()
+  "Quit Do session."
+  (interactive)
+  (quit-window))
+
+(defun pearl-gtd-do--session-help ()
+  "Show help for Do session."
+  (interactive)
+  (message "d/RET=done, s=skip, z=snooze, r=rename, j=jump, c=change conditions, q=quit"))
+
+;;;; Public entry points
+;; The single entry point pearl-gtd-do is defined in pearl-gtd.el
 
 (provide 'pearl-gtd-do)
 

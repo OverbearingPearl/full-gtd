@@ -78,25 +78,22 @@ Create the base directory and necessary files."
   (interactive)
   (pearl-gtd-review--weekly))
 
-(defun pearl-gtd-do-view-by-context ()
-  "View next actions filtered by a specific context."
-  (interactive)
-  (pearl-gtd-do--view-by-context))
+(defun pearl-gtd-do ()
+  "Start a Do session for engaging with next actions.
+Prompts for context, time budget, and energy level, then enters
+a single-card execution loop. The session continues until you
+choose to quit or modify conditions when no actions remain.
 
-(defun pearl-gtd-do-view-all-actions ()
-  "View all next actions regardless of context."
+With prefix arg (C-u), prompts for view type (next/delegated/today)
+before asking for filters."
   (interactive)
-  (pearl-gtd-do--view-all-actions))
-
-(defun pearl-gtd-do-view-delegated ()
-  "View all delegated tasks."
-  (interactive)
-  (pearl-gtd-do--view-delegated))
-
-(defun pearl-gtd-do-view-today ()
-  "View actions scheduled for today."
-  (interactive)
-  (pearl-gtd-do--view-today))
+  (let ((view-type (if current-prefix-arg
+                       (intern (completing-read "View type: "
+                                                '("next" "delegated" "today")
+                                                nil t))
+                     'next)))
+    (let ((conditions (pearl-gtd-do--prompt-conditions)))
+      (apply #'pearl-gtd-do--start-session (cons view-type conditions)))))
 
 (defun pearl-gtd-horizons-view ()
   "Display horizon hierarchy view."
@@ -153,10 +150,10 @@ Create the base directory and necessary files."
     (let ((pearl-gtd-el (expand-file-name "pearl-gtd.el" root-dir)))
       (when (file-exists-p pearl-gtd-el)
         (load-file pearl-gtd-el)))
-    ;; Load .el source files from lisp directory, ignoring .elc
+    ;; Load .el source files from lisp directory, ignoring .elc and test files
     (dolist (file el-files)
       (when (and (string-match "^[^.]+\\.el$" file)
-                 (not (string-match "^test-" file)))
+                 (not (string-match "-test\\.el$" file)))
         (let ((el-path (expand-file-name file lisp-dir)))
           (load-file el-path))))
     (message "Modules reloaded.")))

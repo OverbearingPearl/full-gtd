@@ -211,21 +211,22 @@
   "Malformed file with duplicate IDs should still allow jumping to first match."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task A\n:PROPERTIES:\n:ID: dup-id\n:END:\n* TODO Task B\n:PROPERTIES:\n:ID: dup-id\n:END:\n"))
-  :mock nil
+  :mock (((symbol-function 'completing-read) (lambda (&rest _) ""))
+         ((symbol-function 'read-string) (lambda (&rest _) "")))
   :body (progn
-          (pearl-gtd-do-view-all-actions)
-          (with-current-buffer "*Pearl-GTD: All Actions*"
+          (pearl-gtd-do)
+          (with-current-buffer "*Pearl-GTD: Do Session*"
             (goto-char (point-min))
-            (search-forward "Task B")
+            (search-forward "Task A")
             (beginning-of-line)
-            (pearl-gtd-do--goto-task)))
+            (pearl-gtd-do--session-jump)))
   :asserts (progn
              (let ((buf (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory))))
                (should buf)
                (with-current-buffer buf
                  (should (looking-at-p "\\*+ TODO Task")))))
   :teardown (progn
-              (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD: All Actions*"))
+              (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD: Do Session*"))
               (let ((buf (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory))))
                 (when buf (kill-buffer buf)))))
 
