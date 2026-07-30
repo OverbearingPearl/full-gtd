@@ -21,10 +21,8 @@
              (should (file-exists-p (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
              (should (file-exists-p (expand-file-name "reference.org" pearl-gtd-init-base-directory)))
              (should (file-exists-p (expand-file-name "someday.org" pearl-gtd-init-base-directory)))
-             (should (file-exists-p (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
-           )
-  :teardown nil
-)
+             (should (file-exists-p (expand-file-name "actions.org" pearl-gtd-init-base-directory))))
+  :teardown nil)
 
 (pearl-gtd-test-define-story pearl-gtd-setup-user-reinitializes-without-losing-data-test
   "User reinitializes system, existing files are preserved."
@@ -35,12 +33,8 @@
   :asserts (progn
              (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                      "* Existing task"
-                     )
-             )
-           )
-  :teardown nil
-)
+                      "* Existing task")))
+  :teardown nil)
 
 (pearl-gtd-test-define-story pearl-gtd-setup-user-initializes-with-existing-files-test
   "User initializes system with existing files."
@@ -52,40 +46,27 @@
              (should (file-exists-p (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
              (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                      "* Existing task"
-                     )
-             )
-           )
-  :teardown nil
-)
+                      "* Existing task")))
+  :teardown nil)
 
 (pearl-gtd-test-define-story pearl-gtd-setup-user-initializes-with-two-existing-files-test
   "User initializes system with two existing files preserved."
   :setup nil
   :files (("inbox.org" "* Task one\n* Task two\n")
-          ("reference.org" "* Existing reference\n")
-         )
+          ("reference.org" "* Existing reference\n"))
   :mock nil
   :body (pearl-gtd-init-initialize)
   :asserts (progn
              (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                      "* Task one"
-                     )
-             )
+                      "* Task one"))
              (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "inbox.org" pearl-gtd-init-base-directory)
-                      "* Task two"
-                     )
-             )
+                      "* Task two"))
              (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "reference.org" pearl-gtd-init-base-directory)
-                      "* Existing reference"
-                     )
-             )
-           )
-  :teardown nil
-)
+                      "* Existing reference")))
+  :teardown nil)
 
 (provide 'pearl-gtd-test-setup)
 

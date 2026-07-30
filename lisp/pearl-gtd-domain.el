@@ -26,20 +26,14 @@ Returns list of strings or nil."
     (let ((normalized (replace-regexp-in-string "；" ";" value-string)))
       (seq-filter (lambda (s) (not (string-empty-p s)))
                   (mapcar #'string-trim
-                          (split-string normalized ";")
-                  )
-      )
-    )
-  )
-)
+                          (split-string normalized ";"))))))
 
 (defun pearl-gtd-domain--join-values (values)
   "Join VALUES list using English semicolon separator.
 VALUES must be a list of strings.
 Returns string."
   (cl-assert (listp values) t "Internal: join-values requires list")
-  (mapconcat #'identity values "; ")
-)
+  (mapconcat #'identity values "; "))
 
 (defun pearl-gtd-domain--normalize-project-input (input)
   "Normalize project input: convert Chinese semicolons to English.
@@ -53,13 +47,7 @@ INPUT must be string or nil."
         (let ((values (pearl-gtd-domain--split-values trimmed)))
           (if values
               (pearl-gtd-domain--join-values values)
-            nil
-          )
-        )
-      )
-    )
-  )
-)
+            nil))))))
 
 ;;;; Horizon validation (migrated from pearl-gtd-horizons)
 
@@ -70,38 +58,25 @@ LEVEL must be a symbol:
   \\='area, \\='goal, \\='vision, \\='purpose, or \\='principle.
 Returns (VALID-P . ERROR-MSG)."
   (cl-assert (memq level '(area goal vision purpose principle))
-             t "Internal: invalid horizon level %s" level
-  )
+             t "Internal: invalid horizon level %s" level)
   (let ((l4 (cdr (assoc 'L4_GOAL existing-horizons)))
         (l5 (cdr (assoc 'L5_VISION existing-horizons)))
-        (l6-purpose (cdr (assoc 'L6_PURPOSE existing-horizons)))
-       )
+        (l6-purpose (cdr (assoc 'L6_PURPOSE existing-horizons))))
     (pcase level
       ('area (cons t nil))
       ('goal (cons t nil))
       ('vision (if (and l4 (not (string= l4 "")))
                    (cons t nil)
-                 (cons nil "L4 Goal must be set first")
-               )
-      )
+                 (cons nil "L4 Goal must be set first")))
       ('purpose (if (and l5 (not (string= l5 "")))
                     (cons t nil)
-                  (cons nil "L5 Vision must be set first")
-                )
-      )
+                  (cons nil "L5 Vision must be set first")))
       ('principle (if (and l6-purpose
                            (cl-some (lambda (v) (not (string= v "")))
-                                    (pearl-gtd-domain--split-values l6-purpose)
-                           )
-                      )
+                                    (pearl-gtd-domain--split-values l6-purpose)))
                       (cons t nil)
-                    (cons nil "L6 Purpose must be set first")
-                  )
-      )
-      (_ (cons nil (format "Unknown horizon level: %s" level)))
-    )
-  )
-)
+                    (cons nil "L6 Purpose must be set first")))
+      (_ (cons nil (format "Unknown horizon level: %s" level))))))
 
 ;;;; Planning workflow validation
 
@@ -110,27 +85,20 @@ Returns (VALID-P . ERROR-MSG)."
 Returns (VALID-P . ERROR-MSG)."
   (cond
    ((or (null proj-name) (string= proj-name ""))
-    (cons nil "Project name is required")
-   )
+    (cons nil "Project name is required"))
    ((or (null purpose) (string= purpose ""))
-    (cons nil "Purpose (L6) is required")
-   )
+    (cons nil "Purpose (L6) is required"))
    ((or (null vision) (string= vision ""))
-    (cons nil "Vision (L5) is required")
-   )
+    (cons nil "Vision (L5) is required"))
    ((or (null goal) (string= goal ""))
-    (cons nil "Goal (L4) is required")
-   )
-   (t (cons t nil))
-  )
-)
+    (cons nil "Goal (L4) is required"))
+   (t (cons t nil))))
 
 (defun pearl-gtd-domain--require-next-action-p (actions-count)
   "Determine if forced next action is required.
 ACTIONS-COUNT is number of next actions created.
 Returns t if no next actions exist."
-  (zerop actions-count)
-)
+  (zerop actions-count))
 
 (provide 'pearl-gtd-domain)
 

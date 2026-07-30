@@ -35,17 +35,13 @@
 (declare-function ert-run-tests-batch-and-exit "ert")
 
 (defvar pearl-gtd-directory nil
-  "Root directory of Pearl-GTD."
-)
+  "Root directory of Pearl-GTD.")
 
 (eval-and-compile
   (when load-file-name
-    (setq pearl-gtd-directory (file-name-directory load-file-name))
-  )
+    (setq pearl-gtd-directory (file-name-directory load-file-name)))
   (when pearl-gtd-directory
-    (add-to-list 'load-path (expand-file-name "lisp" pearl-gtd-directory))
-  )
-)
+    (add-to-list 'load-path (expand-file-name "lisp" pearl-gtd-directory))))
 
 (require 'pearl-gtd-init)
 (require 'pearl-gtd-state)
@@ -59,69 +55,58 @@
 (defun pearl-gtd-capture ()
   "Capture a new item to the inbox."
   (interactive)
-  (pearl-gtd-inbox--capture)
-)
+  (pearl-gtd-inbox--capture))
 
 (defun pearl-gtd-process-inbox ()
   "Process the inbox."
   (interactive)
-  (pearl-gtd-inbox--process)
-)
+  (pearl-gtd-inbox--process))
 
 (defun pearl-gtd-init-initialize ()
   "Initialize the Pearl-GTD system.
 Create the base directory and necessary files."
   (interactive)
-  (pearl-gtd-init--initialize)
-)
+  (pearl-gtd-init--initialize))
 
 (defun pearl-gtd-review-daily ()
   "Run daily review."
   (interactive)
-  (pearl-gtd-review--daily)
-)
+  (pearl-gtd-review--daily))
 
 (defun pearl-gtd-review-weekly ()
   "Run weekly review."
   (interactive)
-  (pearl-gtd-review--weekly)
-)
+  (pearl-gtd-review--weekly))
 
 (defun pearl-gtd-do-view-by-context ()
   "View next actions filtered by a specific context."
   (interactive)
-  (pearl-gtd-do--view-by-context)
-)
+  (pearl-gtd-do--view-by-context))
 
 (defun pearl-gtd-do-view-all-actions ()
   "View all next actions regardless of context."
   (interactive)
-  (pearl-gtd-do--view-all-actions)
-)
+  (pearl-gtd-do--view-all-actions))
 
 (defun pearl-gtd-do-view-delegated ()
   "View all delegated tasks."
   (interactive)
-  (pearl-gtd-do--view-delegated)
-)
+  (pearl-gtd-do--view-delegated))
 
 (defun pearl-gtd-do-view-today ()
   "View actions scheduled for today."
   (interactive)
-  (pearl-gtd-do--view-today)
-)
+  (pearl-gtd-do--view-today))
 
 (defun pearl-gtd-horizons-view ()
   "Display horizon hierarchy view."
   (interactive)
-  (pearl-gtd-horizons--view)
-)
+  (pearl-gtd-horizons--view))
 
 (defun pearl-gtd-planning-start ()
   "Start Natural Planning Model workflow."
   (interactive)
-  (pearl-gtd-planning--start)
-)
+  (pearl-gtd-planning--start))
 
 (defun pearl-gtd-run-tests ()
   "Run all Pearl-GTD unit tests."
@@ -135,31 +120,22 @@ Create the base directory and necessary files."
     ;; First load the test infrastructure
     (let ((test-file (expand-file-name "pearl-gtd-test.el" test-dir)))
       (when (file-exists-p test-file)
-        (load-file test-file)
-      )
-    )
+        (load-file test-file)))
     (dolist (file (directory-files test-dir nil "pearl-gtd-.*-test\\.el$"))
       (let ((full-path (expand-file-name file test-dir)))
         (when (file-exists-p full-path)
-          (load-file full-path)
-        )
-      )
-    )
-  )
+          (load-file full-path)))))
   ;; Use batch-compatible function to ensure output is visible in terminal
   (if noninteractive
       (ert-run-tests-batch-and-exit)
-    (ert t)
-  )
-)
+    (ert t)))
 
 (defun pearl-gtd-reload-modules ()
   "Reload Pearl-GTD modules for updated code."
   (interactive)
   (let* ((root-dir pearl-gtd-directory)
          (lisp-dir (expand-file-name "lisp" pearl-gtd-directory))
-         (el-files (directory-files lisp-dir nil "\\.el$"))
-        )
+         (el-files (directory-files lisp-dir nil "\\.el$")))
     ;; Unload all features first
     (dolist (file el-files)
       (when (string-match "^[^.]+\\.el$" file)
@@ -167,38 +143,23 @@ Create the base directory and necessary files."
           (when (featurep feature)
             (condition-case nil
                 (unload-feature feature)
-              (error nil)
-            )
-          )
-        )
-      )
-    )
+              (error nil))))))
     ;; Unload pearl-gtd.el if loaded
     (when (featurep 'pearl-gtd)
       (condition-case nil
           (unload-feature 'pearl-gtd)
-        (error nil)
-      )
-    )
+        (error nil)))
     ;; Load pearl-gtd.el from root directory
     (let ((pearl-gtd-el (expand-file-name "pearl-gtd.el" root-dir)))
       (when (file-exists-p pearl-gtd-el)
-        (load-file pearl-gtd-el)
-      )
-    )
+        (load-file pearl-gtd-el)))
     ;; Load .el source files from lisp directory, ignoring .elc
     (dolist (file el-files)
       (when (and (string-match "^[^.]+\\.el$" file)
-                 (not (string-match "^test-" file))
-            )
+                 (not (string-match "^test-" file)))
         (let ((el-path (expand-file-name file lisp-dir)))
-          (load-file el-path)
-        )
-      )
-    )
-    (message "Modules reloaded.")
-  )
-)
+          (load-file el-path))))
+    (message "Modules reloaded.")))
 
 (provide 'pearl-gtd)
 
