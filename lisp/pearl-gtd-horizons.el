@@ -132,7 +132,7 @@ Supports multiple values separated by semicolon."
              (current-values-display (if current-value
                                         (string-join (pearl-gtd-core--split-values current-value) "; ")
                                       ""))
-             (prompt (format "Horizon %s (RET=remove, use ; to separate multiple): "
+             (prompt (format "Horizon %s (empty to remove, use ; to separate multiple): "
                              (cond ((eq level 'area)      "L3 Area")
                                    ((eq level 'goal)      "L4 Goal")
                                    ((eq level 'vision)    "L5 Vision")

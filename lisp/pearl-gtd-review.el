@@ -142,9 +142,9 @@ EXTRA-CLEANUP is a form to execute when removing the property
                (,setter id file ,property new-value))
              (pearl-gtd-review--refresh-view)))))))
 
-(pearl-gtd-review-define-property-editor "context" "CONTEXT" "Context (RET=remove, supports spaces, e.g., @office, @home office): ")
+(pearl-gtd-review-define-property-editor "context" "CONTEXT" "Context (empty to remove, supports spaces, e.g., @office, @home office): ")
 
-(pearl-gtd-review-define-property-editor "delegated" "DELEGATED" "Delegated to (RET=remove, supports full name, e.g., John Smith): "
+(pearl-gtd-review-define-property-editor "delegated" "DELEGATED" "Delegated to (empty to remove, supports full name, e.g., John Smith): "
   (pearl-gtd-review--remove-property-by-id id file "DELEGATED_DATE"))
 
 (defun pearl-gtd-review--edit-scheduled-at-point ()
@@ -156,7 +156,7 @@ EXTRA-CLEANUP is a form to execute when removing the property
              (file (cdr entry))
              (current-scheduled (pearl-gtd-review--get-scheduled-by-id id file))
              (default-value (or current-scheduled ""))
-             (new-value (string-trim (read-string "Schedule date (RET=remove, e.g., 2026-12-25, 2026-12-25 14:30): " default-value))))
+             (new-value (string-trim (read-string "Schedule date (empty to remove, e.g., 2026-12-25, 2026-12-25 14:30): " default-value))))
         (pearl-gtd-core-with-entry-at-id id file
           (if (string= new-value "")
               (org-schedule '(4))
@@ -194,7 +194,7 @@ EXTRA-CLEANUP is a form to execute when removing the property
             (save-buffer))
           (pearl-gtd-review--refresh-view))))))
 
-(pearl-gtd-review-define-property-editor "project" "PROJECT" "Project (RET=remove, supports spaces, use ; for multiple, e.g., Website Redesign; Q1 Goals): "
+(pearl-gtd-review-define-property-editor "project" "PROJECT" "Project (empty to remove, supports spaces, use ; for multiple, e.g., Website Redesign; Q1 Goals): "
   (progn
     (pearl-gtd-review--remove-property-by-id id file "L3_AREA")
     (pearl-gtd-review--remove-property-by-id id file "L4_GOAL")
