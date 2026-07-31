@@ -147,10 +147,12 @@
   "Press 'c' to edit context with current value as default."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" (concat "* TODO Task with context\nSCHEDULED: <" (format-time-string "%F %a") ">\n:PROPERTIES:\n:ID: edit-ctx-1\n:CONTEXT: home\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n")))
-  :mock (((symbol-function 'read-string)
-          (lambda (_prompt &optional initial _history)
+  :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
+          (lambda (_prompt _type &optional initial)
             (should (string-match-p "home" initial))
-            "office")))
+            "office"))
+         ((symbol-function 'read-string)
+          (lambda (&rest _) "")))
   :body (progn
           (pearl-gtd-review-daily)
           (with-current-buffer "*Pearl-GTD Daily Review*"
@@ -169,10 +171,12 @@
   "Press 'c' and delete all to remove context property."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" (concat "* TODO Task to clear\nSCHEDULED: <" (format-time-string "%F %a") ">\n:PROPERTIES:\n:ID: edit-ctx-2\n:CONTEXT: home\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n")))
-  :mock (((symbol-function 'read-string)
-          (lambda (_prompt &optional initial _history)
+  :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
+          (lambda (_prompt _type &optional initial)
             (should (string= initial "home"))
-            "")))
+            ""))
+         ((symbol-function 'read-string)
+          (lambda (&rest _) "")))
   :body (progn
           (pearl-gtd-review-daily)
           (with-current-buffer "*Pearl-GTD Daily Review*"
@@ -191,10 +195,12 @@
   "Press 'd' to edit delegated with current value shown."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Delegated task\n:PROPERTIES:\n:ID: edit-del-1\n:DELEGATED: John\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n"))
-  :mock (((symbol-function 'read-string)
-          (lambda (_prompt &optional initial _history)
+  :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
+          (lambda (_prompt _type &optional initial)
             (should (string= initial "John"))
-            "Bob")))
+            "Bob"))
+         ((symbol-function 'read-string)
+          (lambda (&rest _) "")))
   :body (progn
           (pearl-gtd-review-weekly)
           (with-current-buffer "*Pearl-GTD Weekly Review*"

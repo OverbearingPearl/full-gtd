@@ -118,9 +118,10 @@
   (pearl-gtd-core-with-entry-at-id id file
     (org-get-heading t t)))
 
-(defmacro pearl-gtd-review-define-property-editor (name property prompt &optional extra-cleanup)
+(defmacro pearl-gtd-review-define-property-editor (name property prompt property-type &optional extra-cleanup)
   "Define property editor function with NAME for PROPERTY.
 PROMPT is the user prompt string.
+PROPERTY-TYPE is a symbol for completion (context, project, delegate, l3, l4, l5, l6, principle).
 EXTRA-CLEANUP is a form to execute when removing the property
 \(e.g., also remove DELEGATED_DATE)."
   (let ((fn-name (intern (concat "pearl-gtd-review--edit-" name "-at-point")))
@@ -135,7 +136,10 @@ EXTRA-CLEANUP is a form to execute when removing the property
            (let* ((id (car entry))
                   (file (cdr entry))
                   (current-value (,getter id file ,property))
-                  (new-value (string-trim (read-string ,prompt (or current-value "")))))
+                  (new-value (if ',property-type
+                                (pearl-gtd-core-read-property-with-completion 
+                                 ,prompt ',property-type (or current-value ""))
+                              (string-trim (read-string ,prompt (or current-value ""))))))
              (if (string= new-value "")
                  (progn
                    (,remover id file ,property)
@@ -143,9 +147,9 @@ EXTRA-CLEANUP is a form to execute when removing the property
                (,setter id file ,property new-value))
              (pearl-gtd-review--refresh-view)))))))
 
-(pearl-gtd-review-define-property-editor "context" "CONTEXT" "Context (empty to remove, supports spaces, e.g., @office, @home office): ")
+(pearl-gtd-review-define-property-editor "context" "CONTEXT" "Context (empty to remove, supports spaces, e.g., @office, @home office): " context)
 
-(pearl-gtd-review-define-property-editor "delegated" "DELEGATED" "Delegated to (empty to remove, supports full name, e.g., John Smith): "
+(pearl-gtd-review-define-property-editor "delegated" "DELEGATED" "Delegated to (empty to remove, supports full name, e.g., John Smith): " delegate
   (pearl-gtd-review--remove-property-by-id id file "DELEGATED_DATE"))
 
 (defun pearl-gtd-review--edit-scheduled-at-point ()
@@ -195,7 +199,7 @@ EXTRA-CLEANUP is a form to execute when removing the property
             (save-buffer))
           (pearl-gtd-review--refresh-view))))))
 
-(pearl-gtd-review-define-property-editor "project" "PROJECT" "Project (empty to remove, supports spaces, use ; for multiple, e.g., Website Redesign; Q1 Goals): "
+(pearl-gtd-review-define-property-editor "project" "PROJECT" "Project (empty to remove, supports spaces, use ; for multiple, e.g., Website Redesign; Q1 Goals): " project
   (progn
     (pearl-gtd-review--remove-property-by-id id file "L3_AREA")
     (pearl-gtd-review--remove-property-by-id id file "L4_GOAL")

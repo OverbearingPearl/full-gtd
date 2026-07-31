@@ -574,7 +574,7 @@
              (lambda (&rest _) nil))  ; Mock: user pressed RET to skip
             ((symbol-function 'pearl-gtd-inbox--read-context)
              (lambda () (cl-letf (((symbol-function 'pearl-gtd-core-read-property-with-completion)
-                                   (lambda (&rest _) ""))) "")))
+                                   (lambda (&rest _) ""))))))
             ((symbol-function 'pearl-gtd-inbox--read-delegate)
              (lambda () ""))
             ((symbol-function 'pearl-gtd-inbox--read-project)

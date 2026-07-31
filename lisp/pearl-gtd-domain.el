@@ -138,7 +138,7 @@ Returns list of strings."
 (defun pearl-gtd-domain--collect-horizon-candidates (level)
   "Collect horizon candidates for LEVEL.
 LEVEL is one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE, L6_PRINCIPLE."
-  (cl-assert (member level '("L3_AREA" "L4_GOAL" "L5_VISION" "L6_PURPOSE" "L6_PRINCIPLE"))
+  (cl-assert (member level '("L3_AREA" "L4_GOAL" "L5_VISION" "L6_PURPOSE" "L6_PRINCIPLE" "PRINCIPLE"))
              t "Internal: invalid horizon level %s" level)
   (pearl-gtd-domain--collect-unique-properties level))
 

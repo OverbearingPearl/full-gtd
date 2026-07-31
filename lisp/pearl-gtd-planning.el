@@ -78,16 +78,14 @@ Returns list of unique project names from entries where BRAINSTORM is \"t\"."
     (nreverse projects)))
 
 (defun pearl-gtd-planning--select-project ()
-  "Prompt user to create new project name with completion from brainstorm projects.
+  "Prompt user to create new project name.
 Return project name string after validation (non-empty and not existing).
 Supports spaces in project names."
-  (let ((proj-name "")
-        (brainstorm-projects (pearl-gtd-planning--collect-brainstorm-projects)))
+  (let ((proj-name ""))
     (while (or (string= proj-name "")
                (pearl-gtd-planning--project-exists-p proj-name))
-      (setq proj-name (string-trim (completing-read
-                          "Project name: <Unique identifier> (e.g., Website Redesign) [TAB for existing projects]: "
-                          brainstorm-projects nil nil)))
+      (setq proj-name (string-trim (read-string
+                          "Project name: <Unique identifier> (e.g., Website Redesign): ")))
       ;; Planning is for single project only, reject multi-project input
       (when (string-match-p "[;；]" proj-name)
         (message "Only single project name is allowed in planning mode")
@@ -121,12 +119,24 @@ Supports multiple values separated by semicolon (;)."
          (prompt (format "%s (L%d, %s): <Description> [RET %s] (e.g., %s; use ; to separate multiple): "
                          description level required-str
                          (if optional "to skip" "must fill")
-                         example)))
-    (let ((input (string-trim (read-string prompt))))
+                         example))
+         (property-type (pcase (list level description)
+                          (`(3 ,_) 'l3)
+                          (`(4 ,_) 'l4)
+                          (`(5 ,_) 'l5)
+                          (`(6 "Purpose") 'l6)
+                          (`(6 "Principle") 'principle)
+                          (`(7 ,_) 'principle)
+                          (_ nil))))
+    (let ((input (if property-type
+                     (pearl-gtd-core-read-property-with-completion prompt property-type "")
+                   (string-trim (read-string prompt)))))
       (while (and (not optional) (string= input ""))
         (message "This field is required, please enter a value.")
         (sit-for 1)
-        (setq input (string-trim (read-string prompt))))
+        (setq input (if property-type
+                        (pearl-gtd-core-read-property-with-completion prompt property-type "")
+                      (string-trim (read-string prompt)))))
       ;; Normalize multiple values if present
       (if (string-match-p "[;；]" input)
           (let ((values (pearl-gtd-core--split-values input)))
