@@ -100,6 +100,48 @@ ACTIONS-COUNT is number of next actions created.
 Returns t if no next actions exist."
   (zerop actions-count))
 
+;;;; Completion candidates collection
+
+(defun pearl-gtd-domain--collect-unique-properties (property)
+  "Collect all unique values for PROPERTY from actions.org.
+PROPERTY is a string like \"CONTEXT\", \"PROJECT\", \"DELEGATED\", \"L3_AREA\", etc.
+Returns list of strings."
+  (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+        (values '()))
+    (when (file-exists-p file-path)
+      (with-temp-buffer
+        (insert-file-contents file-path)
+        (org-mode)
+        (org-map-entries
+         (lambda ()
+           (let ((val (org-entry-get nil property)))
+             (when val
+               (dolist (v (pearl-gtd-domain--split-values val))
+                 (when (and v (not (string= v "")))
+                   (cl-pushnew v values :test #'string=))))))
+         nil nil)))
+    (sort values #'string<)))
+
+(defun pearl-gtd-domain--collect-context-candidates ()
+  "Collect context candidates (with @ prefix)."
+  (mapcar (lambda (c) (concat "@" c))
+          (pearl-gtd-domain--collect-unique-properties "CONTEXT")))
+
+(defun pearl-gtd-domain--collect-project-candidates ()
+  "Collect project candidates."
+  (pearl-gtd-domain--collect-unique-properties "PROJECT"))
+
+(defun pearl-gtd-domain--collect-delegate-candidates ()
+  "Collect delegate candidates."
+  (pearl-gtd-domain--collect-unique-properties "DELEGATED"))
+
+(defun pearl-gtd-domain--collect-horizon-candidates (level)
+  "Collect horizon candidates for LEVEL.
+LEVEL is one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE, L6_PRINCIPLE."
+  (cl-assert (member level '("L3_AREA" "L4_GOAL" "L5_VISION" "L6_PURPOSE" "L6_PRINCIPLE"))
+             t "Internal: invalid horizon level %s" level)
+  (pearl-gtd-domain--collect-unique-properties level))
+
 (provide 'pearl-gtd-domain)
 
 ;;; pearl-gtd-domain.el ends here

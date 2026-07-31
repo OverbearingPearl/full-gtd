@@ -111,7 +111,8 @@
   "Press 6 to edit L6 Purpose in horizon view."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: edit-l6-1\n:PROJECT: EditProject\n:L3_AREA: Work\n:L4_GOAL: Goal1\n:L5_VISION: Vision1\n:L6_PURPOSE: OldPurpose\n:END:\n"))
-  :mock (((symbol-function 'read-string) (lambda (&rest _) "NewPurpose")))
+  :mock (((symbol-function 'read-string) (lambda (&rest _) "NewPurpose"))
+         ((symbol-function 'pearl-gtd-core-read-property-with-completion) (lambda (&rest _) "NewPurpose")))
   :body (progn
           (pearl-gtd-horizons-view)
           (with-current-buffer "*Pearl-GTD Horizon View*"
@@ -165,7 +166,8 @@
   "Editing horizon in view applies to all actions of that project."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task 1\n:PROPERTIES:\n:ID: t1\n:PROJECT: TestProject\n:END:\n* TODO Task 2\n:PROPERTIES:\n:ID: t2\n:PROJECT: TestProject\n:END:\n"))
-  :mock (((symbol-function 'read-string) (lambda (&rest _) "Work")))
+  :mock (((symbol-function 'read-string) (lambda (&rest _) "Work"))
+         ((symbol-function 'pearl-gtd-core-read-property-with-completion) (lambda (&rest _) "Work")))
   :body (progn
           (pearl-gtd-horizons-view)
           (with-current-buffer "*Pearl-GTD Horizon View*"
@@ -187,7 +189,8 @@
   "Clearing L3 from project removes it from all project actions."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task 1\n:PROPERTIES:\n:ID: cascade-1\n:PROJECT: TestProj\n:L3_AREA: Work\n:END:\n"))
-  :mock (((symbol-function 'read-string) (lambda (&rest _) "")))
+  :mock (((symbol-function 'read-string) (lambda (&rest _) ""))
+         ((symbol-function 'pearl-gtd-core-read-property-with-completion) (lambda (&rest _) "")))
   :body (progn
           (pearl-gtd-horizons-view)
           (with-current-buffer "*Pearl-GTD Horizon View*"
@@ -205,7 +208,8 @@
   "User is blocked when attempting to set Vision (L5) without Goal (L4)."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: constraint-1\n:PROJECT: ConstraintProj\n:L3_AREA: Area\n:END:\n"))
-  :mock (((symbol-function 'read-string) (lambda (&rest _) "VisionValue")))
+  :mock (((symbol-function 'read-string) (lambda (&rest _) "VisionValue"))
+         ((symbol-function 'pearl-gtd-core-read-property-with-completion) (lambda (&rest _) "VisionValue")))
   :body (progn
           (pearl-gtd-horizons-view)
           (with-current-buffer "*Pearl-GTD Horizon View*"
@@ -228,7 +232,8 @@
   "User is blocked when attempting to set Purpose (L6) without Vision (L5)."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: constraint-2\n:PROJECT: ConstraintProj2\n:L3_AREA: Area\n:L4_GOAL: Goal\n:END:\n"))
-  :mock (((symbol-function 'read-string) (lambda (&rest _) "PurposeValue")))
+  :mock (((symbol-function 'read-string) (lambda (&rest _) "PurposeValue"))
+         ((symbol-function 'pearl-gtd-core-read-property-with-completion) (lambda (&rest _) "PurposeValue")))
   :body (progn
           (pearl-gtd-horizons-view)
           (with-current-buffer "*Pearl-GTD Horizon View*"
@@ -251,7 +256,8 @@
   "User is blocked when attempting to set L6 Principle without L6 Purpose."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: constraint-3\n:PROJECT: ConstraintProj3\n:L3_AREA: Area\n:L4_GOAL: Goal\n:L5_VISION: Vision\n:END:\n"))
-  :mock (((symbol-function 'read-string) (lambda (&rest _) "PrincipleValue")))
+  :mock (((symbol-function 'read-string) (lambda (&rest _) "PrincipleValue"))
+         ((symbol-function 'pearl-gtd-core-read-property-with-completion) (lambda (&rest _) "PrincipleValue")))
   :body (progn
           (pearl-gtd-horizons-view)
           (with-current-buffer "*Pearl-GTD Horizon View*"
@@ -274,7 +280,8 @@
   "Setting Principle passes when any Purpose exists in multi-value."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: multi-purpose-1\n:PROJECT: MultiPurposeProj\n:L3_AREA: Area\n:L4_GOAL: Goal\n:L5_VISION: Vision\n:L6_PURPOSE: P1; P2\n:END:\n"))
-  :mock (((symbol-function 'read-string) (lambda (&rest _) "PrincipleValue")))
+  :mock (((symbol-function 'read-string) (lambda (&rest _) "PrincipleValue"))
+         ((symbol-function 'pearl-gtd-core-read-property-with-completion) (lambda (&rest _) "PrincipleValue")))
   :body (progn
           (pearl-gtd-horizons-view)
           (with-current-buffer "*Pearl-GTD Horizon View*"
@@ -292,7 +299,8 @@
   "Editing project horizon when tasks have different existing values."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task1\n:PROPERTIES:\n:ID: mixed-1\n:PROJECT: MixedProj\n:L3_AREA: OldArea1\n:END:\n* TODO Task2\n:PROPERTIES:\n:ID: mixed-2\n:PROJECT: MixedProj\n:L3_AREA: OldArea2\n:END:\n* TODO Task3\n:PROPERTIES:\n:ID: mixed-3\n:PROJECT: MixedProj\n:END:\n"))
-  :mock (((symbol-function 'read-string) (lambda (&rest _) "NewArea")))
+  :mock (((symbol-function 'read-string) (lambda (&rest _) "NewArea"))
+         ((symbol-function 'pearl-gtd-core-read-property-with-completion) (lambda (&rest _) "NewArea")))
   :body (progn
           (pearl-gtd-horizons-view)
           (with-current-buffer "*Pearl-GTD Horizon View*"
@@ -317,7 +325,8 @@
   "Editing horizon for one project does not affect other projects sharing the same task."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO SharedTask\n:PROPERTIES:\n:ID: multi-proj-1\n:PROJECT: ProjA; ProjB\n:L3_AREA: OldArea\n:END:\n"))
-  :mock (((symbol-function 'read-string) (lambda (&rest _) "NewArea")))
+  :mock (((symbol-function 'read-string) (lambda (&rest _) "NewArea"))
+         ((symbol-function 'pearl-gtd-core-read-property-with-completion) (lambda (&rest _) "NewArea")))
   :body (progn
           (pearl-gtd-horizons-view)
           (with-current-buffer "*Pearl-GTD Horizon View*"
@@ -344,7 +353,8 @@
   "When hierarchy constraint fails, no partial horizon changes are applied."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task1\n:PROPERTIES:\n:ID: atomic-1\n:PROJECT: AtomicProj\n:L3_AREA: Area\n:END:\n* TODO Task2\n:PROPERTIES:\n:ID: atomic-2\n:PROJECT: AtomicProj\n:L3_AREA: Area\n:END:\n"))
-  :mock (((symbol-function 'read-string) (lambda (&rest _) "VisionValue")))
+  :mock (((symbol-function 'read-string) (lambda (&rest _) "VisionValue"))
+         ((symbol-function 'pearl-gtd-core-read-property-with-completion) (lambda (&rest _) "VisionValue")))
   :body (progn
           (pearl-gtd-horizons-view)
           (with-current-buffer "*Pearl-GTD Horizon View*"
@@ -398,7 +408,8 @@
   :mock (((symbol-function 'read-string)
           (lambda (prompt &optional initial _history)
             (should (string= initial "Old1; Old2"))
-            "Old1; Old2; New3")))
+            "Old1; Old2; New3"))
+         ((symbol-function 'pearl-gtd-core-read-property-with-completion) (lambda (&rest _) "Old1; Old2; New3")))
   :body (progn
           (pearl-gtd-horizons-view)
           (with-current-buffer "*Pearl-GTD Horizon View*"

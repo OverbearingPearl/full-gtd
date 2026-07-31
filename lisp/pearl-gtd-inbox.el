@@ -105,32 +105,22 @@ Returns alist: ((context . VAL) (schedule . VAL) (deadline . VAL)
 (defun pearl-gtd-inbox--read-context ()
   "Read context with completion from existing actions, allowing free input.
 Supports spaces in context names. Examples: @office, @home office, @phone."
-  (let* ((existing (pearl-gtd-core-collect-contexts
-                    (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
-         (default (or pearl-gtd-inbox--last-context ""))
-         (prompt (if (string= default "")
-                     "Context [RET none, TAB complete]: <@location/tool> (e.g., @office, @home office, @phone): "
-                   (format "Context [RET '%s', TAB complete]: <@location/tool> (e.g., @office, @home office): " default)))
-         (input (string-trim (completing-read prompt existing nil nil nil nil default))))
-    (unless (string= input "")
-      (setq pearl-gtd-inbox--last-context input))
-    input))
+  (let* ((default (or pearl-gtd-inbox--last-context ""))
+         (prompt (format "Context [RET %s, TAB complete]: " (if (string= default "") "none" (concat "keep '" default "'"))))
+         (input (pearl-gtd-core-read-property-with-completion prompt 'context default)))
+    (unless (string= input "") (setq pearl-gtd-inbox--last-context input))
+    (if (string= input "") "" input)))
 
 (defun pearl-gtd-inbox--read-project ()
   "Read project with completion from existing projects.
 Supports spaces in project names. Use ; to separate multiple projects.
 Examples: Website Redesign, Q1 Marketing; Q2 Planning."
-  (let* ((existing (pearl-gtd-review--collect-all-projects))
-         (input (completing-read "Project [RET none, TAB complete]: <Project name> (e.g., Website Redesign; Q1 Goals; Q2 Planning): " existing nil nil)))
-    ;; Normalize to handle semicolons
-    (pearl-gtd-core--normalize-project-input input)))
+  (pearl-gtd-core-read-property-with-completion "Project [RET none, TAB complete]: " 'project))
 
 (defun pearl-gtd-inbox--read-delegate ()
   "Read delegate with completion from existing delegates.
 Supports full names with spaces. Examples: John Smith, Alice Johnson."
-  (let* ((existing '())
-         (input (string-trim (completing-read "Delegated to [RET none, TAB complete]: <Person name> (e.g., John Smith, Alice Johnson): " existing nil nil))))
-    input))
+  (pearl-gtd-core-read-property-with-completion "Delegated to [RET none, TAB complete]: " 'delegate))
 
 (defvar-local pearl-gtd-inbox--current-highlight nil
   "Current highlight overlay in the staging buffer.")

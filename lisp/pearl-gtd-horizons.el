@@ -132,16 +132,9 @@ Supports multiple values separated by semicolon."
   (let* ((project (or project
                       (pearl-gtd-horizons--get-project-at-point))))
     (when project
-      (let* ((property (cond ((eq level 'area)      "L3_AREA")
-                             ((eq level 'goal)      "L4_GOAL")
-                             ((eq level 'vision)    "L5_VISION")
-                             ((eq level 'purpose)   "L6_PURPOSE")
-                             ((eq level 'principle) "L6_PRINCIPLE")
-                             (t (error "Internal: unknown horizon level %S" level))))
+      (let* ((property (pearl-gtd-horizons--level-to-property level))
              (current-value (pearl-gtd-horizons--get-project-horizon project property))
-             (current-values-display (if current-value
-                                        (string-join (pearl-gtd-core--split-values current-value) "; ")
-                                      ""))
+             (current-values-display (or current-value ""))
              (prompt (format "Horizon %s (empty to remove, use ; to separate multiple): "
                              (cond ((eq level 'area)      "L3 Area")
                                    ((eq level 'goal)      "L4 Goal")
@@ -149,10 +142,9 @@ Supports multiple values separated by semicolon."
                                    ((eq level 'purpose)   "L6 Purpose")
                                    ((eq level 'principle) "L6 Principle")
                                    (t (symbol-name level)))))
-             (raw-input (string-trim (read-string prompt current-values-display)))
-             (new-value (if (string-match-p "[;；]" raw-input)
-                           (pearl-gtd-core--join-values (pearl-gtd-core--split-values raw-input))
-                         raw-input)))
+             (new-value (pearl-gtd-core-read-property-with-completion
+                         prompt (pearl-gtd-horizons--level-to-symbol level)
+                         current-values-display)))
         ;; Check hierarchy constraint
         (unless (pearl-gtd-horizons--check-hierarchy-constraint project level)
           (error "%s must be set first"
@@ -171,6 +163,26 @@ Supports multiple values separated by semicolon."
                    count project))
         (pearl-gtd-horizons--view)
         project))))
+
+(defun pearl-gtd-horizons--level-to-property (level)
+  "Convert LEVEL symbol to property string."
+  (pcase level
+    ('area "L3_AREA")
+    ('goal "L4_GOAL")
+    ('vision "L5_VISION")
+    ('purpose "L6_PURPOSE")
+    ('principle "L6_PRINCIPLE")
+    (_ (error "Internal: unknown horizon level %S" level))))
+
+(defun pearl-gtd-horizons--level-to-symbol (level)
+  "Convert LEVEL symbol to property type symbol."
+  (pcase level
+    ('area 'l3)
+    ('goal 'l4)
+    ('vision 'l5)
+    ('purpose 'l6)
+    ('principle 'principle)
+    (_ (error "Internal: unknown horizon level %S" level))))
 
 (defun pearl-gtd-horizons--edit-area-at-point ()
   "Edit L3 Area horizon for project at point."

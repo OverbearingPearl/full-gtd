@@ -258,6 +258,33 @@ Delegate to domain layer for pure computation."
   "Escape pipe characters in FIELD for org-table display."
   (replace-regexp-in-string "|" "\\\\vert{}" field))
 
+;;;; Unified property reading with completion
+
+(defun pearl-gtd-core-read-property-with-completion (prompt property-type &optional initial)
+  "Read property value with completion from existing values.
+PROMPT is the prompt string.
+PROPERTY-TYPE is one of: context, project, delegate, l3, l4, l5, l6, principle.
+INITIAL is the initial input value.
+Returns the input string (may be empty)."
+  (let* ((candidates (pcase property-type
+                       ('context (pearl-gtd-domain--collect-context-candidates))
+                       ('project (pearl-gtd-domain--collect-project-candidates))
+                       ('delegate (pearl-gtd-domain--collect-delegate-candidates))
+                       ('l3 (pearl-gtd-domain--collect-horizon-candidates "L3_AREA"))
+                       ('l4 (pearl-gtd-domain--collect-horizon-candidates "L4_GOAL"))
+                       ('l5 (pearl-gtd-domain--collect-horizon-candidates "L5_VISION"))
+                       ('l6 (pearl-gtd-domain--collect-horizon-candidates "L6_PURPOSE"))
+                       ('principle (pearl-gtd-domain--collect-horizon-candidates "L6_PRINCIPLE"))
+                       (_ (error "Unknown property type: %s" property-type))))
+         (input (string-trim (completing-read prompt candidates nil nil initial))))
+    ;; Normalize multiple values
+    (if (member property-type '(project l3 l4 l5 l6 principle))
+        (let ((values (pearl-gtd-domain--split-values input)))
+          (if values
+              (pearl-gtd-domain--join-values values)
+            ""))
+      input)))
+
 (provide 'pearl-gtd-core)
 
 ;;; pearl-gtd-core.el ends here
