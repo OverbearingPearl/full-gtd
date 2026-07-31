@@ -138,7 +138,7 @@ EXTRA-CLEANUP is a form to execute when removing the property
                   (file (cdr entry))
                   (current-value (,getter id file ,property))
                   (new-value (if ',property-type
-                                (pearl-gtd-core-read-property-with-completion 
+                                (pearl-gtd-core-read-property-with-completion
                                  ,prompt ',property-type (or current-value ""))
                               (string-trim (read-string ,prompt (or current-value ""))))))
              (if (string= new-value "")

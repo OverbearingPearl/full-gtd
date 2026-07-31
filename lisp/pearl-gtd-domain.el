@@ -104,7 +104,8 @@ Returns t if no next actions exist."
 
 (defun pearl-gtd-domain--collect-unique-properties (property)
   "Collect all unique values for PROPERTY from actions.org.
-PROPERTY is a string like \"CONTEXT\", \"PROJECT\", \"DELEGATED\", \"L3_AREA\", etc.
+PROPERTY is a string like \"CONTEXT\", \"PROJECT\", \"DELEGATED\",
+\"L3_AREA\", etc.
 Returns list of strings."
   (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
         (values '()))
@@ -137,7 +138,8 @@ Returns list of strings."
 
 (defun pearl-gtd-domain--collect-horizon-candidates (level)
   "Collect horizon candidates for LEVEL.
-LEVEL is one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE, L6_PRINCIPLE."
+LEVEL is one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE,
+L6_PRINCIPLE."
   (cl-assert (member level '("L3_AREA" "L4_GOAL" "L5_VISION" "L6_PURPOSE" "L6_PRINCIPLE" "PRINCIPLE"))
              t "Internal: invalid horizon level %s" level)
   (pearl-gtd-domain--collect-unique-properties level))
