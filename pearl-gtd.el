@@ -107,7 +107,7 @@ With \\[universal-argument] as prefix, prompts for view type
   (pearl-gtd-planning--start))
 
 (defun pearl-gtd-run-tests ()
-  "Run all Pearl-GTD unit tests."
+  "Run all Pearl-GTD tests (unit tests and user story tests)."
   (interactive)
   (require 'ert)
   (ert-delete-all-tests)
@@ -119,10 +119,12 @@ With \\[universal-argument] as prefix, prompts for view type
     (let ((test-file (expand-file-name "pearl-gtd-test.el" test-dir)))
       (when (file-exists-p test-file)
         (load-file test-file)))
+    ;; Then load all other test files (horizontal layer + vertical layer)
     (dolist (file (directory-files test-dir nil "pearl-gtd-.*-test\\.el$"))
-      (let ((full-path (expand-file-name file test-dir)))
-        (when (file-exists-p full-path)
-          (load-file full-path)))))
+      (unless (string= file "pearl-gtd-test.el")  ; Infrastructure already loaded above
+        (let ((full-path (expand-file-name file test-dir)))
+          (when (file-exists-p full-path)
+            (load-file full-path))))))
   ;; Use batch-compatible function to ensure output is visible in terminal
   (if noninteractive
       (ert-run-tests-batch-and-exit)
