@@ -91,9 +91,9 @@
   :teardown (kill-buffer "*Pearl-GTD Horizon View*"))
 
 (pearl-gtd-test-define-story pearl-gtd-horizons-view-shows-multi-horizon-projects-test
-  "Projects with multiple horizon values shown in dedicated section."
+  "Projects with incomplete horizons and multiple values shown in dedicated section."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: multi-1\n:PROJECT: MultiProject\n:L3_AREA: Work; Personal\n:L4_GOAL: Goal1; Goal2\n:L5_VISION: Vision1\n:L6_PURPOSE: Purpose1\n:END:\n"))
+  :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: multi-1\n:PROJECT: MultiProject\n:L3_AREA: Work; Personal\n:L4_GOAL: Goal1; Goal2\n:END:\n"))
   :mock nil
   :body (pearl-gtd-horizons-view)
   :asserts (progn
@@ -102,7 +102,7 @@
                (goto-char (point-min))
                (search-forward "** Multi-Horizon Projects")
                (should (search-forward "MultiProject" nil t))
-               ;; Verify semicolon-separated values displayed
+               ;; Verify semicolon-separated values displayed for incomplete project
                (beginning-of-line)
                (should (search-forward-regexp "Work; Personal" (line-end-position) t))))
   :teardown (kill-buffer "*Pearl-GTD Horizon View*"))
@@ -379,8 +379,9 @@
   :asserts (progn
              (should (get-buffer "*Pearl-GTD Horizon View*"))
              (with-current-buffer "*Pearl-GTD Horizon View*"
+               ;; Complete project with multi-values appears in Aligned section
                (goto-char (point-min))
-               (search-forward "** Multi-Horizon Projects")
+               (search-forward "** Aligned Projects")
                (search-forward "MultiHorizonProj")
                (beginning-of-line)
                ;; Verify semicolon-separated values in cells
@@ -420,8 +421,9 @@
   :asserts (progn
              (should (get-buffer "*Pearl-GTD Horizon View*"))
              (with-current-buffer "*Pearl-GTD Horizon View*"
+               ;; Complete project with mixed separators appears in Aligned section
                (goto-char (point-min))
-               (search-forward "** Multi-Horizon Projects")
+               (search-forward "** Aligned Projects")
                (search-forward "MixProj")
                (beginning-of-line)
                ;; Should show normalized semicolon format
@@ -429,7 +431,7 @@
   :teardown (kill-buffer "*Pearl-GTD Horizon View*"))
 
 (pearl-gtd-test-define-story pearl-gtd-horizons-multiple-projects-shown-as-multi-horizon-test
-  "Project with multiple values shown in Multi-Horizon section."
+  "Project with complete horizons and multiple values shown in Aligned section."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: multi-ph-1\n:PROJECT: MultiProj\n:L3_AREA: Area1; Area2\n:L4_GOAL: Goal1; Goal2\n:L5_VISION: Vision1\n:L6_PURPOSE: Purpose1\n:END:\n"))
   :mock nil
@@ -437,10 +439,29 @@
   :asserts (progn
              (should (get-buffer "*Pearl-GTD Horizon View*"))
              (with-current-buffer "*Pearl-GTD Horizon View*"
-               ;; Should appear in Multi-Horizon section
+               ;; Complete projects with multi-values should appear in Aligned, not Multi-Horizon
+               (goto-char (point-min))
+               (search-forward "** Aligned Projects")
+               (should (search-forward "MultiProj" nil t))))
+  :teardown (kill-buffer "*Pearl-GTD Horizon View*"))
+
+(pearl-gtd-test-define-story pearl-gtd-horizons-complete-multi-valued-in-aligned-section-test
+  "Complete L3-L6 project with multiple values appears in Aligned, not Multi-Horizon."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: complete-multi-1\n:PROJECT: CompleteMultiProj\n:L3_AREA: Work; Personal\n:L4_GOAL: Goal1; Goal2\n:L5_VISION: VisionA; VisionB\n:L6_PURPOSE: Purpose1\n:END:\n"))
+  :mock nil
+  :body (pearl-gtd-horizons-view)
+  :asserts (progn
+             (should (get-buffer "*Pearl-GTD Horizon View*"))
+             (with-current-buffer "*Pearl-GTD Horizon View*"
+               ;; Should be in Aligned section
+               (goto-char (point-min))
+               (search-forward "** Aligned Projects")
+               (should (search-forward "CompleteMultiProj" nil t))
+               ;; Should NOT be in Multi-Horizon section
                (goto-char (point-min))
                (search-forward "** Multi-Horizon Projects")
-               (should (search-forward "MultiProj" nil t))))
+               (should-not (search-forward "CompleteMultiProj" (save-excursion (search-forward "** No-Project Actions") (point)) t))))
   :teardown (kill-buffer "*Pearl-GTD Horizon View*"))
 
 (pearl-gtd-test-define-story pearl-gtd-horizons-whitespace-only-values-ignored-test
@@ -452,9 +473,9 @@
   :asserts (progn
              (should (get-buffer "*Pearl-GTD Horizon View*"))
              (with-current-buffer "*Pearl-GTD Horizon View*"
-               ;; Project has multi-value L3, so it's in Multi-Horizon section
+               ;; Complete project with multi-value L3 appears in Aligned section
                (goto-char (point-min))
-               (search-forward "** Multi-Horizon Projects")
+               (search-forward "** Aligned Projects")
                (search-forward "WSProj")
                ;; Should show only valid values (whitespace-only filtered out)
                (should (search-forward-regexp "ValidArea; AnotherArea" (line-end-position) t))

@@ -283,10 +283,10 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
           (push proj critical))
          ((and (not has-l6) (not has-l5) (not has-l4) has-l3)
           (push proj partial))
-         (multi-p
-          (push proj multi))
          ((and has-l6 has-l5 has-l4 has-l3)
           (push proj aligned))
+         (multi-p
+          (push proj multi))
          (t
           (push proj partial)))))
     (list (nreverse critical) (nreverse partial) (nreverse aligned) (nreverse multi))))
