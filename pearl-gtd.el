@@ -156,7 +156,7 @@ With \\[universal-argument] as prefix, prompts for view type
     
     ;; Auto-clear all pearl-gtd keymap variables
     (mapatoms (lambda (sym)
-                (when (and (string-match-p "^pearl-gtd-.*-view-mode-map$" (symbol-name sym))
+                (when (and (string-match-p "^pearl-gtd-.*-mode-map$" (symbol-name sym))
                            (boundp sym))
                   (makunbound sym))))
     
