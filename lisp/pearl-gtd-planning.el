@@ -173,10 +173,10 @@ Signal error if user aborts."
                        (interactive)
                        (setq-local brainstorm-abort t)
                        (exit-recursive-edit)))
-      (setq-local brainstorm-abort nil))
-
-    (pop-to-buffer buf)
-    (recursive-edit)
+      (setq-local brainstorm-abort nil)
+      ;; FIX: Ensure recursive-edit runs within this buffer's context
+      (pop-to-buffer (current-buffer))
+      (recursive-edit))
     (if (buffer-local-value 'brainstorm-abort buf)
         (signal 'quit nil)  ; User cancellation is quit, not error
       (with-current-buffer buf
