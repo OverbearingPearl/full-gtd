@@ -16,6 +16,7 @@
 ;;; Code:
 
 (require 'org)
+(require 'crm)  ;; completing-read-multiple
 (require 'pearl-gtd-init)
 (require 'pearl-gtd-domain)
 (require 'pearl-gtd-state)
@@ -195,7 +196,7 @@ Delegate to state layer for transactional file operations."
   `(pearl-gtd-state--with-entry-at-id ,id ,file ,@body))
 
 (defun pearl-gtd-core-read-date (prompt-type)
-  "Hybrid date input: letter=quick, number=free-form, RET=skip.
+  "Hybrid date input for PROMPT-TYPE: letter=quick, number=free-form, RET=skip.
 PROMPT-TYPE is \\='schedule or \\='deadline for display.
 Quick keys: t (today), T (tomorrow), w (week), h (hour, schedule only).
 Returns date string or nil if skipped.
@@ -257,6 +258,42 @@ Delegate to domain layer for pure computation."
 (defun pearl-gtd-core--escape-table-field (field)
   "Escape pipe characters in FIELD for org-table display."
   (replace-regexp-in-string "|" "\\\\vert{}" field))
+
+;;;; Unified property reading with completion
+
+(defun pearl-gtd-core-read-property-with-completion (prompt property-type &optional initial)
+  "Read property value with completion.
+PROMPT is the prompt string displayed to the user.
+PROPERTY-TYPE: context/project/delegate/l3/l4/l5/l6/principle.
+INITIAL is the optional initial value string.
+Project and horizons (L3-L6) support multiple values separated by semicolon."
+  (let* ((candidates (pcase property-type
+                       ('context (pearl-gtd-domain--collect-context-candidates))
+                       ('project (pearl-gtd-domain--collect-project-candidates))
+                       ('delegate (pearl-gtd-domain--collect-delegate-candidates))
+                       ('l3 (pearl-gtd-domain--collect-horizon-candidates "L3_AREA"))
+                       ('l4 (pearl-gtd-domain--collect-horizon-candidates "L4_GOAL"))
+                       ('l5 (pearl-gtd-domain--collect-horizon-candidates "L5_VISION"))
+                       ('l6 (pearl-gtd-domain--collect-horizon-candidates "L6_PURPOSE"))
+                       ('principle (pearl-gtd-domain--collect-horizon-candidates "L6_PRINCIPLE"))
+                       (_ (error "Unknown property type: %s" property-type))))
+         ;; Multi-value types: project and all horizon levels
+         (is-multi-value (member property-type '(project l3 l4 l5 l6 principle))))
+
+    (if is-multi-value
+        ;; Multi-value: use completing-read-multiple with semicolon separator
+        (let* ((crm-separator "[;；]\\s-*")  ;; Match both English and Chinese semicolons
+               ;; Convert initial string to list for crm
+               (initial-list (when initial
+                               (pearl-gtd-domain--split-values initial)))
+               ;; Read multiple values
+               (values (completing-read-multiple prompt candidates nil nil initial-list)))
+          ;; Join back to semicolon-separated string
+          (if values
+              (pearl-gtd-domain--join-values values)
+            ""))
+      ;; Single-value: keep original behavior
+      (string-trim (completing-read prompt candidates nil nil initial)))))
 
 (provide 'pearl-gtd-core)
 

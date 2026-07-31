@@ -8,7 +8,8 @@
 
 ;;; Commentary:
 
-;; Natural Planning Model workflow.
+;; Natural Planning Model workflow: Purpose -> Principle -> Vision
+;; -> Goal -> Area -> Brainstorm -> Organize -> Next Actions.
 ;; Coordinator pattern: this module orchestrates user interaction,
 ;; delegates business rule validation to pearl-gtd-domain,
 ;; and delegates all file operations to pearl-gtd-state.
@@ -77,16 +78,14 @@ Returns list of unique project names from entries where BRAINSTORM is \"t\"."
     (nreverse projects)))
 
 (defun pearl-gtd-planning--select-project ()
-  "Prompt user to create new project name with completion from brainstorm projects.
+  "Prompt user to create new project name.
 Return project name string after validation (non-empty and not existing).
 Supports spaces in project names."
-  (let ((proj-name "")
-        (brainstorm-projects (pearl-gtd-planning--collect-brainstorm-projects)))
+  (let ((proj-name ""))
     (while (or (string= proj-name "")
                (pearl-gtd-planning--project-exists-p proj-name))
-      (setq proj-name (string-trim (completing-read
-                          "Project name: <Unique identifier> (e.g., Website Redesign) [TAB for existing projects]: "
-                          brainstorm-projects nil nil)))
+      (setq proj-name (string-trim (read-string
+                          "Project name: <Unique identifier> (e.g., Website Redesign): ")))
       ;; Planning is for single project only, reject multi-project input
       (when (string-match-p "[;；]" proj-name)
         (message "Only single project name is allowed in planning mode")
@@ -120,12 +119,24 @@ Supports multiple values separated by semicolon (;)."
          (prompt (format "%s (L%d, %s): <Description> [RET %s] (e.g., %s; use ; to separate multiple): "
                          description level required-str
                          (if optional "to skip" "must fill")
-                         example)))
-    (let ((input (string-trim (read-string prompt))))
+                         example))
+         (property-type (pcase (list level description)
+                          (`(3 ,_) 'l3)
+                          (`(4 ,_) 'l4)
+                          (`(5 ,_) 'l5)
+                          (`(6 "Purpose") 'l6)
+                          (`(6 "Principle") 'principle)
+                          (`(7 ,_) 'principle)
+                          (_ nil))))
+    (let ((input (if property-type
+                     (pearl-gtd-core-read-property-with-completion prompt property-type "")
+                   (string-trim (read-string prompt)))))
       (while (and (not optional) (string= input ""))
         (message "This field is required, please enter a value.")
         (sit-for 1)
-        (setq input (string-trim (read-string prompt))))
+        (setq input (if property-type
+                        (pearl-gtd-core-read-property-with-completion prompt property-type "")
+                      (string-trim (read-string prompt)))))
       ;; Normalize multiple values if present
       (if (string-match-p "[;；]" input)
           (let ((values (pearl-gtd-core--split-values input)))
@@ -172,32 +183,32 @@ Signal error if user aborts."
                        (interactive)
                        (setq-local brainstorm-abort t)
                        (exit-recursive-edit)))
-      (setq-local brainstorm-abort nil))
-
-    (pop-to-buffer buf)
-    (unwind-protect
+      (setq-local brainstorm-abort nil)
+      ;; FIX: Ensure recursive-edit runs within this buffer's context
+      (pop-to-buffer (current-buffer))
+      (recursive-edit))
+    (if (buffer-local-value 'brainstorm-abort buf)
         (progn
-          (recursive-edit)
-          (if (buffer-local-value 'brainstorm-abort buf)
-              (error "Brainstorm cancelled")
-            (with-current-buffer buf
-              ;; Parse non-empty lines
-              (let ((lines (seq-filter (lambda (s) (not (string-blank-p s)))
-                                       (split-string (buffer-string) "\n"))))
-                ;; Write to inbox
-                (dolist (item lines)
-                  (let ((inbox-path (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
-                    (with-current-buffer (find-file-noselect inbox-path)
-                      (goto-char (point-max))
-                      (unless (bolp) (insert "\n"))
-                      (insert "* " item "\n")
-                      (org-set-property "PROJECT" project)
-                      (org-set-property "BRAINSTORM" "t")
-                      (org-set-property "CREATED" (format-time-string "%F %T"))
-                      (org-id-get-create)
-                      (save-buffer))))
-                lines))))
-      (kill-buffer buf))))
+          (kill-buffer buf)
+          (signal 'quit nil))  ; User cancellation is quit, not error
+      (with-current-buffer buf
+        ;; Parse non-empty lines
+        (let ((lines (seq-filter (lambda (s) (not (string-blank-p s)))
+                                 (split-string (buffer-string) "\n"))))
+          ;; Write to inbox
+          (dolist (item lines)
+            (let ((inbox-path (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+              (with-current-buffer (find-file-noselect inbox-path)
+                (goto-char (point-max))
+                (unless (bolp) (insert "\n"))
+                (insert "* " item "\n")
+                (org-set-property "PROJECT" project)
+                (org-set-property "BRAINSTORM" "t")
+                (org-set-property "CREATED" (format-time-string "%F %T"))
+                (org-id-get-create)
+                (save-buffer))))
+          lines)))
+    (kill-buffer buf)))
 
 (defun pearl-gtd-planning--has-brainstorm-items-p (project)
   "Check if PROJECT has brainstorm items in inbox (pure query)."
@@ -360,12 +371,11 @@ HORIZONS is an alist of horizon properties."
     (pop-to-buffer buffer)
     (goto-char (point-min))))
 
-(defun pearl-gtd-planning--start ()
-  "Start Natural Planning Model workflow.
-Coordinator pattern: delegates all business logic to domain layer,
-all state operations to state layer."
-  (let* (;; Step 1: Collect inputs (interaction layer)
-         (proj-name (pearl-gtd-planning--select-project))
+(defun pearl-gtd-planning--collect-inputs ()
+  "Collect all user inputs for Natural Planning Model.
+Returns plist with :proj-name, :purpose, :principle, :vision,
+:goal, :area, :default-context, and :horizons."
+  (let* ((proj-name (pearl-gtd-planning--select-project))
          (purpose (pearl-gtd-planning--ask-horizon 6 "Purpose" nil))
          (principle (pearl-gtd-planning--ask-horizon 6 "Principle" t))
          (vision (pearl-gtd-planning--ask-horizon 5 "Vision" nil))
@@ -377,6 +387,22 @@ all state operations to state layer."
                      ("L5_VISION" . ,vision)
                      ("L4_GOAL" . ,goal)
                      ("L3_AREA" . ,area))))
+    (list :proj-name proj-name :purpose purpose :principle principle
+          :vision vision :goal goal :area area
+          :default-context default-context :horizons horizons)))
+
+(defun pearl-gtd-planning--start ()
+  "Start Natural Planning Model workflow.
+Coordinator pattern: delegates all business logic to domain layer,
+all state operations to state layer."
+  (let* (;; Step 1: Collect inputs (interaction layer)
+         (inputs (pearl-gtd-planning--collect-inputs))
+         (proj-name (plist-get inputs :proj-name))
+         (purpose (plist-get inputs :purpose))
+         (vision (plist-get inputs :vision))
+         (goal (plist-get inputs :goal))
+         (default-context (plist-get inputs :default-context))
+         (horizons (plist-get inputs :horizons)))
 
     ;; Validate inputs (domain layer)
     (cl-destructuring-bind (valid-p . error-msg)

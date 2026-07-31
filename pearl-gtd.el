@@ -19,14 +19,19 @@
 ;; - Full GTD workflow with single-key inbox processing, optional clarify,
 ;;   and hybrid date input (t/T/w/h shortcuts or free-form)
 ;; - Natural Planning Model for project planning with forced completion
-;; - Six Horizons of Focus (L3-L6) with hierarchy constraints
+;; - Six Horizons of Focus (L3-L6) with hierarchy
+;;   constraints
 ;; - Daily and weekly review cycles with horizon columns
 ;; - Context-based filtering and delegation tracking
-;; - Standard GTD lists: Projects, Next Actions, Waiting For, Someday/Maybe, Reference
+;; - Standard GTD lists: Projects, Next Actions, Waiting For,
+;;   Someday/Maybe, Reference
+;; - Single-card execution: algorithmic prioritization by
+;;   urgency/horizons/context instead of list browsing
 ;;
-;; This package aims to implement the complete framework from the original
-;; book, including both horizontal (workflow) and vertical (horizons) focus
-;; management, which existing packages do not fully cover.
+;; This package aims to implement the complete framework from the
+;; original book, including both horizontal (workflow) and vertical
+;; (horizons) focus management, which existing packages do not fully
+;; cover.
 
 ;;; Code:
 
@@ -47,6 +52,7 @@
 (require 'pearl-gtd-state)
 (require 'pearl-gtd-inbox)
 (require 'pearl-gtd-core)
+(require 'pearl-gtd-ui)
 (require 'pearl-gtd-review)
 (require 'pearl-gtd-do)
 (require 'pearl-gtd-horizons)
@@ -78,25 +84,22 @@ Create the base directory and necessary files."
   (interactive)
   (pearl-gtd-review--weekly))
 
-(defun pearl-gtd-do-view-by-context ()
-  "View next actions filtered by a specific context."
-  (interactive)
-  (pearl-gtd-do--view-by-context))
+(defun pearl-gtd-do ()
+  "Start a Do session for engaging with next actions.
+Prompts for context, time budget, and energy level, then enters
+a single-card execution loop. The session continues until you
+choose to quit or modify conditions when no actions remain.
 
-(defun pearl-gtd-do-view-all-actions ()
-  "View all next actions regardless of context."
+With \\[universal-argument] as prefix, prompts for view type
+\(next/delegated/today) before asking for filters."
   (interactive)
-  (pearl-gtd-do--view-all-actions))
-
-(defun pearl-gtd-do-view-delegated ()
-  "View all delegated tasks."
-  (interactive)
-  (pearl-gtd-do--view-delegated))
-
-(defun pearl-gtd-do-view-today ()
-  "View actions scheduled for today."
-  (interactive)
-  (pearl-gtd-do--view-today))
+  (let ((view-type (if current-prefix-arg
+                       (intern (completing-read "View type: "
+                                                '("next" "delegated" "today")
+                                                nil t))
+                     'next)))
+    (let ((conditions (pearl-gtd-do--prompt-conditions)))
+      (apply #'pearl-gtd-do--start-session (cons view-type conditions)))))
 
 (defun pearl-gtd-horizons-view ()
   "Display horizon hierarchy view."
@@ -109,7 +112,7 @@ Create the base directory and necessary files."
   (pearl-gtd-planning--start))
 
 (defun pearl-gtd-run-tests ()
-  "Run all Pearl-GTD unit tests."
+  "Run all Pearl-GTD tests (unit tests and user story tests)."
   (interactive)
   (require 'ert)
   (ert-delete-all-tests)
@@ -121,10 +124,12 @@ Create the base directory and necessary files."
     (let ((test-file (expand-file-name "pearl-gtd-test.el" test-dir)))
       (when (file-exists-p test-file)
         (load-file test-file)))
+    ;; Then load all other test files (horizontal layer + vertical layer)
     (dolist (file (directory-files test-dir nil "pearl-gtd-.*-test\\.el$"))
-      (let ((full-path (expand-file-name file test-dir)))
-        (when (file-exists-p full-path)
-          (load-file full-path)))))
+      (unless (string= file "pearl-gtd-test.el")  ; Infrastructure already loaded above
+        (let ((full-path (expand-file-name file test-dir)))
+          (when (file-exists-p full-path)
+            (load-file full-path))))))
   ;; Use batch-compatible function to ensure output is visible in terminal
   (if noninteractive
       (ert-run-tests-batch-and-exit)
@@ -149,14 +154,21 @@ Create the base directory and necessary files."
       (condition-case nil
           (unload-feature 'pearl-gtd)
         (error nil)))
+    
+    ;; Auto-clear all pearl-gtd keymap variables
+    (mapatoms (lambda (sym)
+                (when (and (string-match-p "^pearl-gtd-.*-mode-map$" (symbol-name sym))
+                           (boundp sym))
+                  (makunbound sym))))
+    
     ;; Load pearl-gtd.el from root directory
     (let ((pearl-gtd-el (expand-file-name "pearl-gtd.el" root-dir)))
       (when (file-exists-p pearl-gtd-el)
         (load-file pearl-gtd-el)))
-    ;; Load .el source files from lisp directory, ignoring .elc
+    ;; Load .el source files from lisp directory, ignoring .elc and test files
     (dolist (file el-files)
       (when (and (string-match "^[^.]+\\.el$" file)
-                 (not (string-match "^test-" file)))
+                 (not (string-match "-test\\.el$" file)))
         (let ((el-path (expand-file-name file lisp-dir)))
           (load-file el-path))))
     (message "Modules reloaded.")))

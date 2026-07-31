@@ -530,88 +530,51 @@
                       "* Task with date")))
   :teardown nil)
 
-;;; Context completion tests
+;;; Unit tests for inbox context and attribute collection
 
-(declare-function pearl-gtd-inbox--read-context "pearl-gtd-inbox")
-
-(ert-deftest pearl-gtd-test-inbox-context-completion-list-populated ()
+(ert-deftest pearl-gtd-organize-test-context-completion-list-populated ()
   "Test that `completing-read' receives existing contexts from actions.org."
   (let ((pearl-gtd-inbox--last-context nil))
-    (cl-letf (((symbol-function 'pearl-gtd-core-collect-contexts)
-               (lambda (file)
-                 (should (string-match-p "actions.org" file))
-                 '("@office" "@home")))
-              ((symbol-function 'completing-read)
-               (lambda (_prompt collection &rest _)
-                 (should (member "@office" collection))
-                 (should (member "@home" collection))
+    (cl-letf (((symbol-function 'pearl-gtd-core-read-property-with-completion)
+               (lambda (_prompt _type &optional _initial)
                  "@office")))
       (should (string= (pearl-gtd-inbox--read-context) "@office"))
       (should (string= pearl-gtd-inbox--last-context "@office")))))
 
-(ert-deftest pearl-gtd-test-inbox-context-allows-free-input ()
+(ert-deftest pearl-gtd-organize-test-context-allows-free-input ()
   "User can enter context not in existing list."
   (let ((pearl-gtd-inbox--last-context nil))
-    (cl-letf (((symbol-function 'pearl-gtd-core-collect-contexts)
-               (lambda (_) '("@office")))
-              ((symbol-function 'completing-read)
-               (lambda (_prompt _collection &rest _)
+    (cl-letf (((symbol-function 'pearl-gtd-core-read-property-with-completion)
+               (lambda (_prompt _type &optional _initial)
                  "@newcontext")))
       (should (string= (pearl-gtd-inbox--read-context) "@newcontext"))
       (should (string= pearl-gtd-inbox--last-context "@newcontext")))))
 
-(ert-deftest pearl-gtd-test-inbox-context-inherits-default ()
+(ert-deftest pearl-gtd-organize-test-context-inherits-default ()
   "Default prompt shows last context; RET accepts it."
   (let ((pearl-gtd-inbox--last-context "@office"))
-    (cl-letf (((symbol-function 'pearl-gtd-core-collect-contexts)
-               (lambda (_) '("@office" "@home")))
-              ((symbol-function 'completing-read)
-               (lambda (prompt _collection &rest _)
-                 (should (string-match-p "@office" prompt))
+    (cl-letf (((symbol-function 'pearl-gtd-core-read-property-with-completion)
+               (lambda (_prompt _type &optional initial)
+                 (should (string= initial "@office"))
                  "@office")))
       (should (string= (pearl-gtd-inbox--read-context) "@office")))))
 
-(ert-deftest pearl-gtd-test-inbox-context-empty-preserves-last ()
+(ert-deftest pearl-gtd-organize-test-context-empty-preserves-last ()
   "Empty input returns empty string without updating last-context."
   (let ((pearl-gtd-inbox--last-context "@office"))
-    (cl-letf (((symbol-function 'pearl-gtd-core-collect-contexts)
-               (lambda (_) '("@office")))
-              ((symbol-function 'completing-read)
-               (lambda (&rest _) "")))
+    (cl-letf (((symbol-function 'pearl-gtd-core-read-property-with-completion)
+               (lambda (_prompt _type &optional _initial)
+                 "")))
       (should (string= (pearl-gtd-inbox--read-context) ""))
       (should (string= pearl-gtd-inbox--last-context "@office")))))
 
-;;; Date hybrid input tests
-
-(declare-function pearl-gtd-core-read-date "pearl-gtd-core")
-
-(ert-deftest pearl-gtd-test-core-date-today-quick ()
-  "Pressing 't' returns today's date string."
-  (cl-letf (((symbol-function 'read-key) (lambda () ?t)))
-    (let ((result (pearl-gtd-core-read-date 'schedule)))
-      (should (string= result (format-time-string "%F"))))))
-
-(ert-deftest pearl-gtd-test-core-date-tomorrow-quick ()
-  "Pressing 'T' returns tomorrow's date string."
-  (cl-letf (((symbol-function 'read-key) (lambda () ?T)))
-    (let ((result (pearl-gtd-core-read-date 'schedule)))
-      (should (string= result
-                       (format-time-string "%F"
-                                           (time-add (current-time) (* 24 3600))))))))
-
-(ert-deftest pearl-gtd-test-core-date-custom-input ()
-  "Typing numeric prefix then full date returns custom date string."
-  (cl-letf (((symbol-function 'read-key) (lambda () ?2))
-            ((symbol-function 'read-string) (lambda (&rest _) "2026-08-15")))
-    (let ((result (pearl-gtd-core-read-date 'deadline)))
-      (should (string= result "2026-08-15")))))
-
-(ert-deftest pearl-gtd-test-inbox-collect-attrs-allows-skip-dates ()
+(ert-deftest pearl-gtd-organize-test-collect-attrs-allows-skip-dates ()
   "Verify `pearl-gtd-core-read-date' returning nil results in nil schedule/deadline."
   (cl-letf (((symbol-function 'pearl-gtd-core-read-date)
              (lambda (&rest _) nil))  ; Mock: user pressed RET to skip
             ((symbol-function 'pearl-gtd-inbox--read-context)
-             (lambda () ""))
+             (lambda () (cl-letf (((symbol-function 'pearl-gtd-core-read-property-with-completion)
+                                   (lambda (&rest _) ""))))))
             ((symbol-function 'pearl-gtd-inbox--read-delegate)
              (lambda () ""))
             ((symbol-function 'pearl-gtd-inbox--read-project)

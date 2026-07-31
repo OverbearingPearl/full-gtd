@@ -17,6 +17,7 @@
 (require 'cl-lib)
 (require 'pearl-gtd-init)
 (require 'pearl-gtd-core)
+(require 'pearl-gtd-ui)
 
 (defvar-local pearl-gtd-review--current-view-type nil
   "Type of current review view: daily or weekly.")
@@ -117,9 +118,11 @@
   (pearl-gtd-core-with-entry-at-id id file
     (org-get-heading t t)))
 
-(defmacro pearl-gtd-review-define-property-editor (name property prompt &optional extra-cleanup)
+(defmacro pearl-gtd-review-define-property-editor (name property prompt property-type &optional extra-cleanup)
   "Define property editor function with NAME for PROPERTY.
 PROMPT is the user prompt string.
+PROPERTY-TYPE is a symbol for completion (context, project, delegate,
+l3, l4, l5, l6, principle).
 EXTRA-CLEANUP is a form to execute when removing the property
 \(e.g., also remove DELEGATED_DATE)."
   (let ((fn-name (intern (concat "pearl-gtd-review--edit-" name "-at-point")))
@@ -134,7 +137,10 @@ EXTRA-CLEANUP is a form to execute when removing the property
            (let* ((id (car entry))
                   (file (cdr entry))
                   (current-value (,getter id file ,property))
-                  (new-value (string-trim (read-string ,prompt (or current-value "")))))
+                  (new-value (if ',property-type
+                                (pearl-gtd-core-read-property-with-completion
+                                 ,prompt ',property-type (or current-value ""))
+                              (string-trim (read-string ,prompt (or current-value ""))))))
              (if (string= new-value "")
                  (progn
                    (,remover id file ,property)
@@ -142,9 +148,9 @@ EXTRA-CLEANUP is a form to execute when removing the property
                (,setter id file ,property new-value))
              (pearl-gtd-review--refresh-view)))))))
 
-(pearl-gtd-review-define-property-editor "context" "CONTEXT" "Context (RET=remove, supports spaces, e.g., @office, @home office): ")
+(pearl-gtd-review-define-property-editor "context" "CONTEXT" "Context (empty to remove, supports spaces, e.g., @office, @home office): " context)
 
-(pearl-gtd-review-define-property-editor "delegated" "DELEGATED" "Delegated to (RET=remove, supports full name, e.g., John Smith): "
+(pearl-gtd-review-define-property-editor "delegated" "DELEGATED" "Delegated to (empty to remove, supports full name, e.g., John Smith): " delegate
   (pearl-gtd-review--remove-property-by-id id file "DELEGATED_DATE"))
 
 (defun pearl-gtd-review--edit-scheduled-at-point ()
@@ -156,7 +162,7 @@ EXTRA-CLEANUP is a form to execute when removing the property
              (file (cdr entry))
              (current-scheduled (pearl-gtd-review--get-scheduled-by-id id file))
              (default-value (or current-scheduled ""))
-             (new-value (string-trim (read-string "Schedule date (RET=remove, e.g., 2026-12-25, 2026-12-25 14:30): " default-value))))
+             (new-value (string-trim (read-string "Schedule date (empty to remove, e.g., 2026-12-25, 2026-12-25 14:30): " default-value))))
         (pearl-gtd-core-with-entry-at-id id file
           (if (string= new-value "")
               (org-schedule '(4))
@@ -194,7 +200,7 @@ EXTRA-CLEANUP is a form to execute when removing the property
             (save-buffer))
           (pearl-gtd-review--refresh-view))))))
 
-(pearl-gtd-review-define-property-editor "project" "PROJECT" "Project (RET=remove, supports spaces, use ; for multiple, e.g., Website Redesign; Q1 Goals): "
+(pearl-gtd-review-define-property-editor "project" "PROJECT" "Project (empty to remove, supports spaces, use ; for multiple, e.g., Website Redesign; Q1 Goals): " project
   (progn
     (pearl-gtd-review--remove-property-by-id id file "L3_AREA")
     (pearl-gtd-review--remove-property-by-id id file "L4_GOAL")
@@ -222,7 +228,7 @@ EXTRA-CLEANUP is a form to execute when removing the property
     ('weekly (pearl-gtd-review--weekly))
     (_ (message "Cannot refresh this view"))))
 
-(defun pearl-gtd-review--insert-table-row (head id file &rest fields)
+(defun pearl-gtd-review--insert-table-row (head id file fields)
   "Insert a table row into the review buffer.
 HEAD is the entry headline string.
 ID is the unique identifier string, or nil for project rows.
@@ -230,27 +236,8 @@ FILE is the source file path string.
 FIELDS is a list of field values in order.
 
 For project rows (ID is nil), attach `pearl-gtd-project' property to HEAD.
-For task rows, attach `pearl-gtd-id' and `pearl-gtd-file' properties to HEAD.
-
-The number of fields determines the table format:
-- 1 field: Created (Inbox - Headline + Created)
-- 7 fields: Status, Scheduled, Deadline, Context, Delegated, Project (standard)
-- 6 fields: Status, Scheduled, Deadline, Context, Delegated, L3 (No Project)
-- 8 fields: Total, Todo, Done, Next Deadline, L3, L4, L5, L6 (Project rows)"
-  (let* ((headline-escaped (pearl-gtd-core--escape-table-field head)))
-    ;; Insert headline with properties
-    (insert "| ")
-    (let ((start (point)))
-      (insert headline-escaped)
-      (if (and (null id) head)
-          (put-text-property start (point) 'pearl-gtd-project head)
-        (progn
-          (put-text-property start (point) 'pearl-gtd-id id)
-          (put-text-property start (point) 'pearl-gtd-file file))))
-    ;; Insert fields
-    (dolist (field fields)
-      (insert " | " (or field "")))
-    (insert " |\n")))
+For task rows, attach `pearl-gtd-id' and `pearl-gtd-file' properties to HEAD."
+  (pearl-gtd-ui--insert-table-row head id file fields (null id)))
 
 (defun pearl-gtd-review--build-table-data (sections)
   "Build table data from SECTIONS.
@@ -294,9 +281,9 @@ META is an alist with keys :entry-map and :entry-index."
       (org-mode)
       (setq-local header-line-format
                   (pcase pearl-gtd-review--current-view-type
-                    ('daily "Daily Review | n/p/j/k: navigate | RET: jump | c/d/t/s/r/P: edit | C: complete | g: refresh | q: quit")
-                    ('weekly "Weekly Review | n/p/j/k: navigate | RET: jump | c/d/t/s/r/P: edit | C: complete | g: refresh | q: quit")
-                    (_ "Review | n/p/j/k: navigate | RET: jump | c/d/t/s/r/P: edit | C: complete | g: refresh | q: quit")))
+                    ('daily "Daily Review | n/p/j/k: move | RET: jump | c/d/t/s/r/P: property | C: complete | g: refresh | q: quit")
+                    ('weekly "Weekly Review | n/p/j/k: move | RET: jump | c/d/t/s/r/P/3-6: property | C: complete | g: refresh | q: quit")
+                    (_ "Review | n/p/j/k: move | RET: jump | c/d/t/s/r/P/3-6: property | C: complete | g: refresh | q: quit")))
       (setq pearl-gtd-review--entry-map entry-map)
       (if (null sections-data)
           (insert "(No entries to review)\n")
@@ -328,8 +315,8 @@ META is an alist with keys :entry-map and :entry-index."
                      ;; 7 columns: Headline, Status, Scheduled, Deadline, Context, Delegated, L3_AREA
                      (insert "| (No entries) | | | | | | |\n"))
                     ('project
-                     ;; 9 columns: Project, Total, Todo, Done, Next Deadline, L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE
-                     (insert "| (No entries) | | | | | | | | |\n"))
+                     ;; 8 columns: Project, Total, Todo, Done, L6_PURPOSE, L5_VISION, L4_GOAL, L3_AREA
+                     (insert "| (No entries) | | | | | | | |\n"))
                     ('inbox
                      ;; 2 columns: Headline, Created
                      (insert "| (No entries) | |\n"))
@@ -343,20 +330,9 @@ META is an alist with keys :entry-map and :entry-index."
               (dolist (entry entries)
                 (let ((head (nth 0 entry))
                       (id (nth 1 entry))
-                      (file (nth 2 entry))
+                      (file (or (nth 2 entry) "actions.org"))
                       (fields (nthcdr 3 entry)))
-                  (let ((headline-escaped (replace-regexp-in-string "|" "\\\\vert{}" head)))
-                    (insert "| ")
-                    (let ((start (point)))
-                      (insert headline-escaped)
-                      (if (and (null id) head)
-                          (put-text-property start (point) 'pearl-gtd-project head)
-                        (progn
-                          (put-text-property start (point) 'pearl-gtd-id id)
-                          (put-text-property start (point) 'pearl-gtd-file file))))
-                    (dolist (field fields)
-                      (insert " | " (or field "")))
-                    (insert " |\n"))))
+                  (pearl-gtd-review--insert-table-row head id file fields)))
               (org-table-align))
             (goto-char (point-max))
             (insert "\n"))))

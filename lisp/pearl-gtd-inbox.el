@@ -105,32 +105,22 @@ Returns alist: ((context . VAL) (schedule . VAL) (deadline . VAL)
 (defun pearl-gtd-inbox--read-context ()
   "Read context with completion from existing actions, allowing free input.
 Supports spaces in context names. Examples: @office, @home office, @phone."
-  (let* ((existing (pearl-gtd-core-collect-contexts
-                    (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
-         (default (or pearl-gtd-inbox--last-context ""))
-         (prompt (if (string= default "")
-                     "Context [RET none, TAB complete]: <@location/tool> (e.g., @office, @home office, @phone): "
-                   (format "Context [RET '%s', TAB complete]: <@location/tool> (e.g., @office, @home office): " default)))
-         (input (string-trim (completing-read prompt existing nil nil nil nil default))))
-    (unless (string= input "")
-      (setq pearl-gtd-inbox--last-context input))
-    input))
+  (let* ((default (or pearl-gtd-inbox--last-context ""))
+         (prompt (format "Context [RET %s, TAB complete]: " (if (string= default "") "none" (concat "keep '" default "'"))))
+         (input (pearl-gtd-core-read-property-with-completion prompt 'context default)))
+    (unless (string= input "") (setq pearl-gtd-inbox--last-context input))
+    (if (string= input "") "" input)))
 
 (defun pearl-gtd-inbox--read-project ()
   "Read project with completion from existing projects.
 Supports spaces in project names. Use ; to separate multiple projects.
 Examples: Website Redesign, Q1 Marketing; Q2 Planning."
-  (let* ((existing (pearl-gtd-review--collect-all-projects))
-         (input (completing-read "Project [RET none, TAB complete]: <Project name> (e.g., Website Redesign; Q1 Goals; Q2 Planning): " existing nil nil)))
-    ;; Normalize to handle semicolons
-    (pearl-gtd-core--normalize-project-input input)))
+  (pearl-gtd-core-read-property-with-completion "Project [RET none, TAB complete]: " 'project))
 
 (defun pearl-gtd-inbox--read-delegate ()
   "Read delegate with completion from existing delegates.
 Supports full names with spaces. Examples: John Smith, Alice Johnson."
-  (let* ((existing '())
-         (input (string-trim (completing-read "Delegated to [RET none, TAB complete]: <Person name> (e.g., John Smith, Alice Johnson): " existing nil nil))))
-    input))
+  (pearl-gtd-core-read-property-with-completion "Delegated to [RET none, TAB complete]: " 'delegate))
 
 (defvar-local pearl-gtd-inbox--current-highlight nil
   "Current highlight overlay in the staging buffer.")
@@ -469,6 +459,20 @@ the staging buffer."
                      current-headline current-remarks deadline)
                pearl-gtd-inbox--pending-moves))))))
 
+(defun pearl-gtd-inbox--apply-pending-moves (&optional brainstorm)
+  "Apply all pending moves to target files and cleanup inbox.
+If BRAINSTORM is non-nil, remove BRAINSTORM property before moving.
+Returns t if inbox file was deleted (empty after processing)."
+  (dolist (move pearl-gtd-inbox--pending-moves)
+    (pearl-gtd-inbox--do-move (nth 0 move) (nth 1 move) (nth 2 move)
+                              (nth 3 move) (nth 4 move) (nth 5 move)
+                              brainstorm))
+  (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+    (when (and (file-exists-p inbox-file)
+               (= 0 (file-attribute-size (file-attributes inbox-file))))
+      (delete-file inbox-file)
+      t)))
+
 (defun pearl-gtd-inbox--process (&optional brainstorm default-context default-project)
   "Process the inbox according to GTD clarify and organize steps.
 If BRAINSTORM is non-nil, only process entries with BRAINSTORM property
@@ -496,7 +500,7 @@ BRAINSTORM is non-nil."
                                                    (string= (org-entry-get nil "PROJECT") default-project))))))))
                 (setq pearl-gtd-inbox-stage-buffer-name (buffer-name staging-buffer))
                 (pop-to-buffer staging-buffer)
-                (condition-case _err
+                (condition-case _
                     (with-current-buffer staging-buffer
                       (org-mode)
                       (pearl-gtd-inbox--map-entries
@@ -508,17 +512,13 @@ BRAINSTORM is non-nil."
                         (delete-overlay pearl-gtd-inbox--current-highlight)
                         (setq pearl-gtd-inbox--current-highlight nil))
                       (setq pearl-gtd-inbox--pending-moves (nreverse pearl-gtd-inbox--pending-moves))
-                      (dolist (move pearl-gtd-inbox--pending-moves)
-                        (pearl-gtd-inbox--do-move (nth 0 move) (nth 1 move) (nth 2 move)
-                                                  (nth 3 move) (nth 4 move) (nth 5 move)
-                                                  brainstorm))
-                      (when (and (file-exists-p inbox-file)
-                                 (= 0 (file-attribute-size (file-attributes inbox-file))))
-                        (delete-file inbox-file))
+                      (when (pearl-gtd-inbox--apply-pending-moves brainstorm)
+                        (message "Inbox empty, deleted."))
                       (message "Inbox processing complete and changes applied per GTD workflow."))
                   (quit
                    (message "Inbox processing cancelled.")
-                   (kill-buffer staging-buffer)
+                   (when (buffer-live-p staging-buffer)
+                     (kill-buffer staging-buffer))
                    (signal 'quit nil))))
             (let ((buffer-name "*Pearl-GTD: Inbox*"))
               (get-buffer-create buffer-name)
