@@ -17,6 +17,7 @@
 (require 'cl-lib)
 (require 'pearl-gtd-init)
 (require 'pearl-gtd-core)
+(require 'pearl-gtd-ui)
 
 (defvar-local pearl-gtd-review--current-view-type nil
   "Type of current review view: daily or weekly.")
@@ -222,7 +223,7 @@ EXTRA-CLEANUP is a form to execute when removing the property
     ('weekly (pearl-gtd-review--weekly))
     (_ (message "Cannot refresh this view"))))
 
-(defun pearl-gtd-review--insert-table-row (head id file &rest fields)
+(defun pearl-gtd-review--insert-table-row (head id file fields)
   "Insert a table row into the review buffer.
 HEAD is the entry headline string.
 ID is the unique identifier string, or nil for project rows.
@@ -230,27 +231,8 @@ FILE is the source file path string.
 FIELDS is a list of field values in order.
 
 For project rows (ID is nil), attach `pearl-gtd-project' property to HEAD.
-For task rows, attach `pearl-gtd-id' and `pearl-gtd-file' properties to HEAD.
-
-The number of fields determines the table format:
-- 1 field: Created (Inbox - Headline + Created)
-- 7 fields: Status, Scheduled, Deadline, Context, Delegated, Project (standard)
-- 6 fields: Status, Scheduled, Deadline, Context, Delegated, L3 (No Project)
-- 8 fields: Total, Todo, Done, Next Deadline, L3, L4, L5, L6 (Project rows)"
-  (let* ((headline-escaped (pearl-gtd-core--escape-table-field head)))
-    ;; Insert headline with properties
-    (insert "| ")
-    (let ((start (point)))
-      (insert headline-escaped)
-      (if (and (null id) head)
-          (put-text-property start (point) 'pearl-gtd-project head)
-        (progn
-          (put-text-property start (point) 'pearl-gtd-id id)
-          (put-text-property start (point) 'pearl-gtd-file file))))
-    ;; Insert fields
-    (dolist (field fields)
-      (insert " | " (or field "")))
-    (insert " |\n")))
+For task rows, attach `pearl-gtd-id' and `pearl-gtd-file' properties to HEAD."
+  (pearl-gtd-ui--insert-table-row head id file fields (null id)))
 
 (defun pearl-gtd-review--build-table-data (sections)
   "Build table data from SECTIONS.
@@ -328,8 +310,8 @@ META is an alist with keys :entry-map and :entry-index."
                      ;; 7 columns: Headline, Status, Scheduled, Deadline, Context, Delegated, L3_AREA
                      (insert "| (No entries) | | | | | | |\n"))
                     ('project
-                     ;; 9 columns: Project, Total, Todo, Done, Next Deadline, L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE
-                     (insert "| (No entries) | | | | | | | | |\n"))
+                     ;; 8 columns: Project, Total, Todo, Done, L6_PURPOSE, L5_VISION, L4_GOAL, L3_AREA
+                     (insert "| (No entries) | | | | | | | |\n"))
                     ('inbox
                      ;; 2 columns: Headline, Created
                      (insert "| (No entries) | |\n"))
@@ -343,20 +325,9 @@ META is an alist with keys :entry-map and :entry-index."
               (dolist (entry entries)
                 (let ((head (nth 0 entry))
                       (id (nth 1 entry))
-                      (file (nth 2 entry))
+                      (file (or (nth 2 entry) "actions.org"))
                       (fields (nthcdr 3 entry)))
-                  (let ((headline-escaped (replace-regexp-in-string "|" "\\\\vert{}" head)))
-                    (insert "| ")
-                    (let ((start (point)))
-                      (insert headline-escaped)
-                      (if (and (null id) head)
-                          (put-text-property start (point) 'pearl-gtd-project head)
-                        (progn
-                          (put-text-property start (point) 'pearl-gtd-id id)
-                          (put-text-property start (point) 'pearl-gtd-file file))))
-                    (dolist (field fields)
-                      (insert " | " (or field "")))
-                    (insert " |\n"))))
+                  (pearl-gtd-review--insert-table-row head id file fields)))
               (org-table-align))
             (goto-char (point-max))
             (insert "\n"))))

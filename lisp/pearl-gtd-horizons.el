@@ -29,6 +29,7 @@
 (require 'pearl-gtd-review)
 (require 'pearl-gtd-domain)
 (require 'pearl-gtd-state)
+(require 'pearl-gtd-ui)
 
 (declare-function pearl-gtd-horizons-view "pearl-gtd")
 
@@ -216,6 +217,7 @@ Returns list of (PROJECT-NAME TOTAL TODO DONE L6 L5 L4 L3)."
                  (l4 (org-entry-get nil "L4_GOAL"))
                  (l5 (org-entry-get nil "L5_VISION"))
                  (l6 (org-entry-get nil "L6_PURPOSE")))
+             (message "DEBUG: Entry proj=%s l3=%s l4=%s l5=%s l6=%s" proj l3 l4 l5 l6)
              (when proj
                (dolist (p (pearl-gtd-core--split-values proj))
                  (let ((data (or (gethash p projects)
@@ -232,7 +234,9 @@ Returns list of (PROJECT-NAME TOTAL TODO DONE L6 L5 L4 L3)."
          nil nil)))
     ;; Convert hash to list
     (let (result)
-      (maphash (lambda (k v) (push (cons k v) result)) projects)
+      (maphash (lambda (k v)
+                 (message "DEBUG: Project %s data=%s" k v)
+                 (push (cons k v) result)) projects)
       result)))
 
 (defun pearl-gtd-horizons--collect-no-project-actions ()
@@ -292,6 +296,7 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
 
 (defun pearl-gtd-horizons--insert-project-row (proj)
   "Insert table row for PROJ."
+  (message "DEBUG: insert-project-row proj=%s" proj)
   (let* ((name (car proj))
          (total (nth 0 (cdr proj)))
          (todo (nth 1 (cdr proj)))
@@ -299,22 +304,19 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
          (l6 (or (nth 3 (cdr proj)) ""))
          (l5 (or (nth 4 (cdr proj)) ""))
          (l4 (or (nth 5 (cdr proj)) ""))
-         (l3 (or (nth 6 (cdr proj)) ""))
-         ;; Normalize display values
-         (l6-display (string-join (pearl-gtd-core--split-values l6) "; "))
-         (l5-display (string-join (pearl-gtd-core--split-values l5) "; "))
-         (l4-display (string-join (pearl-gtd-core--split-values l4) "; "))
-         (l3-display (string-join (pearl-gtd-core--split-values l3) "; ")))
-    (insert "| ")
-    (let ((start (point)))
-      (insert name)
-      (put-text-property start (point) 'pearl-gtd-project name))
-    (insert (format " | %s | %s | %s | %s | %s | %s | %s |\n"
-                    total todo done
-                    (if (string= l6-display "") " " l6-display)
-                    (if (string= l5-display "") " " l5-display)
-                    (if (string= l4-display "") " " l4-display)
-                    (if (string= l3-display "") " " l3-display)))))
+         (l3 (or (nth 6 (cdr proj)) "")))
+    (message "DEBUG: name=%s total=%s todo=%s done=%s l6=%s l5=%s l4=%s l3=%s"
+             name total todo done l6 l5 l4 l3)
+    (let ((l6-display (string-join (pearl-gtd-core--split-values l6) "; "))
+          (l5-display (string-join (pearl-gtd-core--split-values l5) "; "))
+          (l4-display (string-join (pearl-gtd-core--split-values l4) "; "))
+          (l3-display (string-join (pearl-gtd-core--split-values l3) "; ")))
+      (message "DEBUG: displays l6=%s l5=%s l4=%s l3=%s" l6-display l5-display l4-display l3-display)
+      (pearl-gtd-ui--insert-table-row name nil "actions.org"
+                                      (list total todo done l6-display l5-display l4-display l3-display)
+                                      t)
+      (message "DEBUG: After insert, line=%s"
+               (buffer-substring (line-beginning-position 0) (line-end-position 0))))))
 
 (defun pearl-gtd-horizons--insert-no-project-row (action)
   "Insert table row for no-project ACTION."
@@ -323,14 +325,9 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
          (context (nth 2 action))
          (l3 (or (nth 3 action) ""))
          (l3-display (string-join (pearl-gtd-core--split-values l3) "; ")))
-    (insert "| ")
-    (let ((start (point)))
-      (insert head)
-      (put-text-property start (point) 'pearl-gtd-action head))
-    (insert (format " | %s | %s | %s |\n"
-                    status
-                    (if (string= context "") " " context)
-                    (if (string= l3-display "") " " l3-display)))))
+    (pearl-gtd-ui--insert-table-row head nil "actions.org"
+                                    (list status context l3-display)
+                                    nil)))
 
 (defun pearl-gtd-horizons--view ()
   "Display horizon alignment matrix view."
@@ -390,6 +387,8 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
         (dolist (proj aligned)
           (pearl-gtd-horizons--insert-project-row proj)))
       (org-table-align)
+      (message "DEBUG: Aligned section after align:\n%s"
+               (buffer-substring (line-beginning-position 0) (point)))
       (insert "\n")
 
       ;; Multi-horizon

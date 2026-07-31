@@ -176,29 +176,27 @@ Signal error if user aborts."
       (setq-local brainstorm-abort nil))
 
     (pop-to-buffer buf)
-    (unwind-protect
-        (progn
-          (recursive-edit)
-          (if (buffer-local-value 'brainstorm-abort buf)
-              (error "Brainstorm cancelled")
-            (with-current-buffer buf
-              ;; Parse non-empty lines
-              (let ((lines (seq-filter (lambda (s) (not (string-blank-p s)))
-                                       (split-string (buffer-string) "\n"))))
-                ;; Write to inbox
-                (dolist (item lines)
-                  (let ((inbox-path (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
-                    (with-current-buffer (find-file-noselect inbox-path)
-                      (goto-char (point-max))
-                      (unless (bolp) (insert "\n"))
-                      (insert "* " item "\n")
-                      (org-set-property "PROJECT" project)
-                      (org-set-property "BRAINSTORM" "t")
-                      (org-set-property "CREATED" (format-time-string "%F %T"))
-                      (org-id-get-create)
-                      (save-buffer))))
-                lines))))
-      (kill-buffer buf))))
+    (recursive-edit)
+    (if (buffer-local-value 'brainstorm-abort buf)
+        (signal 'quit nil)  ; User cancellation is quit, not error
+      (with-current-buffer buf
+        ;; Parse non-empty lines
+        (let ((lines (seq-filter (lambda (s) (not (string-blank-p s)))
+                                 (split-string (buffer-string) "\n"))))
+          ;; Write to inbox
+          (dolist (item lines)
+            (let ((inbox-path (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+              (with-current-buffer (find-file-noselect inbox-path)
+                (goto-char (point-max))
+                (unless (bolp) (insert "\n"))
+                (insert "* " item "\n")
+                (org-set-property "PROJECT" project)
+                (org-set-property "BRAINSTORM" "t")
+                (org-set-property "CREATED" (format-time-string "%F %T"))
+                (org-id-get-create)
+                (save-buffer))))
+          lines)))
+    (kill-buffer buf)))
 
 (defun pearl-gtd-planning--has-brainstorm-items-p (project)
   "Check if PROJECT has brainstorm items in inbox (pure query)."

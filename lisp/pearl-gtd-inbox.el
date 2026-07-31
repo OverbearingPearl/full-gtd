@@ -496,7 +496,7 @@ BRAINSTORM is non-nil."
                                                    (string= (org-entry-get nil "PROJECT") default-project))))))))
                 (setq pearl-gtd-inbox-stage-buffer-name (buffer-name staging-buffer))
                 (pop-to-buffer staging-buffer)
-                (condition-case _err
+                (condition-case err
                     (with-current-buffer staging-buffer
                       (org-mode)
                       (pearl-gtd-inbox--map-entries
@@ -518,7 +518,8 @@ BRAINSTORM is non-nil."
                       (message "Inbox processing complete and changes applied per GTD workflow."))
                   (quit
                    (message "Inbox processing cancelled.")
-                   (kill-buffer staging-buffer)
+                   (when (buffer-live-p staging-buffer)
+                     (kill-buffer staging-buffer))
                    (signal 'quit nil))))
             (let ((buffer-name "*Pearl-GTD: Inbox*"))
               (get-buffer-create buffer-name)

@@ -52,6 +52,7 @@
 (require 'pearl-gtd-state)
 (require 'pearl-gtd-inbox)
 (require 'pearl-gtd-core)
+(require 'pearl-gtd-ui)
 (require 'pearl-gtd-review)
 (require 'pearl-gtd-do)
 (require 'pearl-gtd-horizons)
