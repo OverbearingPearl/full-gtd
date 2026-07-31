@@ -308,6 +308,114 @@
                       ":L6_PRINCIPLE: PrincipleValue")))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
 
+(pearl-gtd-test-define-story pearl-gtd-horizons-user-edits-project-with-mixed-horizon-values-test
+  "Editing project horizon when tasks have different existing values."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* TODO Task1\n:PROPERTIES:\n:ID: mixed-1\n:PROJECT: MixedProj\n:L3_AREA: OldArea1\n:END:\n* TODO Task2\n:PROPERTIES:\n:ID: mixed-2\n:PROJECT: MixedProj\n:L3_AREA: OldArea2\n:END:\n* TODO Task3\n:PROPERTIES:\n:ID: mixed-3\n:PROJECT: MixedProj\n:END:\n"))
+  :mock (((symbol-function 'read-string) (lambda (&rest _) "NewArea")))
+  :body (progn
+          (pearl-gtd-review-weekly)
+          (with-current-buffer "*Pearl-GTD Weekly Review*"
+            (goto-char (point-min))
+            (search-forward "** Projects - Active")
+            (search-forward "MixedProj")
+            (beginning-of-line)
+            (pearl-gtd-horizons--edit-area-at-point)))
+  :asserts (progn
+             ;; All three tasks should now have NewArea
+             (let ((file (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
+               (with-temp-buffer
+                 (insert-file-contents file)
+                 (let ((count 0))
+                   (while (re-search-forward ":L3_AREA: +NewArea" nil t)
+                     (cl-incf count))
+                   (should (= count 3))))
+               ;; No old values should remain
+               (should-not (car (pearl-gtd-test-file-contains-p file ":L3_AREA: +OldArea1")))
+               (should-not (car (pearl-gtd-test-file-contains-p file ":L3_AREA: +OldArea2")))))
+  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
+
+(pearl-gtd-test-define-story pearl-gtd-horizons-keybinding-triggers-project-edit-test
+  "Pressing '3' key in weekly review triggers project horizon edit."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: keybind-1\n:PROJECT: KeyProj\n:END:\n"))
+  :mock (((symbol-function 'read-string) (lambda (&rest _) "Work")))
+  :body (progn
+          (pearl-gtd-review-weekly)
+          (with-current-buffer "*Pearl-GTD Weekly Review*"
+            (goto-char (point-min))
+            (search-forward "** Projects - Active")
+            (search-forward "KeyProj")
+            (beginning-of-line)
+            ;; Simulate pressing '3' key
+            (call-interactively 'pearl-gtd-horizons--edit-area-at-point)))
+  :asserts (progn
+             (should (pearl-gtd-test-file-contains-p
+                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      ":L3_AREA: +Work")))
+  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
+
+(pearl-gtd-test-define-story pearl-gtd-horizons-multi-project-task-cascading-test
+  "Editing horizon for one project does not affect other projects sharing the same task."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* TODO SharedTask\n:PROPERTIES:\n:ID: multi-proj-1\n:PROJECT: ProjA; ProjB\n:L3_AREA: OldArea\n:END:\n"))
+  :mock (((symbol-function 'read-string) (lambda (&rest _) "NewArea")))
+  :body (progn
+          (pearl-gtd-review-weekly)
+          (with-current-buffer "*Pearl-GTD Weekly Review*"
+            (goto-char (point-min))
+            (search-forward "** Projects - Active")
+            (search-forward "ProjA")
+            (beginning-of-line)
+            (pearl-gtd-horizons--edit-area-at-point)))
+  :asserts (progn
+             ;; Task should now have both areas (OldArea for ProjB, NewArea for ProjA)
+             (let ((file (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
+               (with-temp-buffer
+                 (insert-file-contents file)
+                 (let ((areas nil))
+                   (while (re-search-forward ":L3_AREA: +\\([^\n]+\\)" nil t)
+                     (push (match-string 1) areas))
+                   ;; Should be exactly one property line (multiple values separated by semicolon)
+                   (should (= (length areas) 1))
+                   (let ((value (car areas)))
+                     ;; Verify both values present in the combined property
+                     (should (string-match-p "OldArea" value))
+                     (should (string-match-p "NewArea" value)))))))
+  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
+
+(pearl-gtd-test-define-story pearl-gtd-horizons-atomic-rollback-on-constraint-failure-test
+  "When hierarchy constraint fails, no partial horizon changes are applied."
+  :setup (pearl-gtd-init-initialize)
+  :files (("actions.org" "* TODO Task1\n:PROPERTIES:\n:ID: atomic-1\n:PROJECT: AtomicProj\n:L3_AREA: Area\n:END:\n* TODO Task2\n:PROPERTIES:\n:ID: atomic-2\n:PROJECT: AtomicProj\n:L3_AREA: Area\n:END:\n"))
+  :mock (((symbol-function 'read-string) (lambda (&rest _) "VisionValue")))
+  :body (progn
+          (pearl-gtd-review-weekly)
+          (with-current-buffer "*Pearl-GTD Weekly Review*"
+            (goto-char (point-min))
+            (search-forward "** Projects - Active")
+            (search-forward "AtomicProj")
+            (beginning-of-line)
+            (condition-case err
+                (progn
+                  (pearl-gtd-horizons--edit-vision-at-point)
+                  (setq pearl-gtd-test-caught-error nil))
+              (error (setq pearl-gtd-test-caught-error (error-message-string err))))))
+  :asserts (progn
+             (should (stringp pearl-gtd-test-caught-error))
+             (should (string-match-p "L4 Goal must be set first" pearl-gtd-test-caught-error))
+             ;; Verify no L5_VISION property was added to any task
+             (let ((file (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
+               (should-not (car (pearl-gtd-test-file-contains-p file ":L5_VISION:")))
+               ;; Also verify L3_AREA remains unchanged
+               (with-temp-buffer
+                 (insert-file-contents file)
+                 (let ((count 0))
+                   (while (re-search-forward ":L3_AREA: +Area" nil t)
+                     (cl-incf count))
+                   (should (= count 2))))))
+  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
+
 (pearl-gtd-test-define-story pearl-gtd-horizons-multiple-values-in-hierarchy-test
   "Entry with multiple horizon values appears under each node."
   :setup (pearl-gtd-init-initialize)

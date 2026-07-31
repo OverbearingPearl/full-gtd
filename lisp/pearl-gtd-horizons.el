@@ -51,19 +51,42 @@ PROPERTY should be one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE."
   "Set horizon PROPERTY to VALUE for all actions in PROJECT.
 PROPERTY should be one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE.
 Returns count of modified entries."
-  (let ((count 0))
+  (let ((count 0)
+        (project-horizons (make-hash-table :test 'equal)))
     (pearl-gtd-state--with-transaction '("actions.org")
       (pearl-gtd-state--with-file-buffer "actions.org"
+        ;; First pass: collect current horizons for all projects
+        (org-map-entries
+         (lambda ()
+           (let ((proj (org-entry-get nil "PROJECT")))
+             (when proj
+               (let ((projects (pearl-gtd-core--split-values proj))
+                     (horiz (org-entry-get nil property)))
+                 (when horiz
+                   (dolist (p projects)
+                     (unless (gethash p project-horizons)
+                       (puthash p horiz project-horizons))))))))
+         nil nil)
+        ;; Update target project's horizon to new value
+        (puthash project value project-horizons)
+        ;; Second pass: update all tasks in target project with combined horizons
         (org-map-entries
          (lambda ()
            (let ((proj (org-entry-get nil "PROJECT")))
              (when proj
                (let ((projects (pearl-gtd-core--split-values proj)))
                  (when (member project projects)
-                   (if (string= value "")
-                       (org-delete-property property)
-                     (org-entry-put nil property value))
-                   (cl-incf count))))))
+                   ;; Collect unique horizon values from all projects this task belongs to
+                   (let ((values nil))
+                     (dolist (p projects)
+                       (let ((v (gethash p project-horizons)))
+                         (when (and v (not (string= v "")))
+                           (unless (member v values)
+                             (push v values)))))
+                     (if values
+                         (org-entry-put nil property (pearl-gtd-core--join-values (reverse values)))
+                       (org-delete-property property))
+                     (cl-incf count)))))))
          nil nil)))
     count))
 
