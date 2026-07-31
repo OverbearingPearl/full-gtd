@@ -265,6 +265,7 @@ Delegate to domain layer for pure computation."
   "Read property value with completion.
 PROMPT is the prompt string displayed to the user.
 PROPERTY-TYPE: context/project/delegate/l3/l4/l5/l6/principle.
+INITIAL is the optional initial value string.
 Project and horizons (L3-L6) support multiple values separated by semicolon."
   (let* ((candidates (pcase property-type
                        ('context (pearl-gtd-domain--collect-context-candidates))
