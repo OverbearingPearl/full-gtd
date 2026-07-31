@@ -153,6 +153,13 @@ With \\[universal-argument] as prefix, prompts for view type
       (condition-case nil
           (unload-feature 'pearl-gtd)
         (error nil)))
+    
+    ;; Auto-clear all pearl-gtd keymap variables
+    (mapatoms (lambda (sym)
+                (when (and (string-match-p "^pearl-gtd-.*-view-mode-map$" (symbol-name sym))
+                           (boundp sym))
+                  (makunbound sym))))
+    
     ;; Load pearl-gtd.el from root directory
     (let ((pearl-gtd-el (expand-file-name "pearl-gtd.el" root-dir)))
       (when (file-exists-p pearl-gtd-el)
