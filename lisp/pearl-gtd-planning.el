@@ -178,7 +178,9 @@ Signal error if user aborts."
       (pop-to-buffer (current-buffer))
       (recursive-edit))
     (if (buffer-local-value 'brainstorm-abort buf)
-        (signal 'quit nil)  ; User cancellation is quit, not error
+        (progn
+          (kill-buffer buf)
+          (signal 'quit nil))  ; User cancellation is quit, not error
       (with-current-buffer buf
         ;; Parse non-empty lines
         (let ((lines (seq-filter (lambda (s) (not (string-blank-p s)))

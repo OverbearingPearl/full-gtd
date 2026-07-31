@@ -992,6 +992,30 @@
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
               (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
 
+(pearl-gtd-test-define-story pearl-gtd-planning-user-aborts-brainstorm-cleans-buffer-test
+  "User aborts brainstorm with C-c C-k, *Pearl-GTD Brainstorm* buffer must be killed."
+  :setup (pearl-gtd-init-initialize)
+  :files nil
+  :mock (((symbol-function 'completing-read)
+          (pearl-gtd-test-planning--make-completing-read-mock
+           '("AbortBrainstorm")))
+         ((symbol-function 'read-string)
+          (pearl-gtd-test-planning--make-read-string-mock
+           '("Purpose" "" "Vision" "Goal" "Area" "@ctx")))
+         ((symbol-function 'recursive-edit)
+          (lambda ()
+            ;; Simulate C-c C-k: set abort flag and return
+            ;; (as if exit-recursive-edit was called within recursive-edit)
+            (when-let ((buf (get-buffer "*Pearl-GTD Brainstorm*")))
+              (with-current-buffer buf
+                (setq-local brainstorm-abort t))))))
+  :body (condition-case nil
+            (pearl-gtd-planning--ask-brainstorm "AbortBrainstorm")
+          (quit :caught))
+  :asserts (progn
+             (should-not (get-buffer "*Pearl-GTD Brainstorm*")))
+  :teardown nil)
+
 (provide 'pearl-gtd-planning-test)
 
 ;;; pearl-gtd-planning-test.el ends here
