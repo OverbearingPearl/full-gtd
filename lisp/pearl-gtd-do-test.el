@@ -38,6 +38,23 @@
     (should (> score-match score-no-filter))
     (should (= score-mismatch score-no-filter))))
 
+(ert-deftest pearl-gtd-do-test-score-delegated-penalty ()
+  "Delegated actions receive -100 penalty."
+  (let* ((base (list :headline "Task" :deadline nil))
+         (delegated (plist-put (copy-sequence base) :delegated "Bob")))
+    (let ((score-base (pearl-gtd-do--score-action base))
+          (score-delegated (pearl-gtd-do--score-action delegated)))
+      (should (= (- score-delegated score-base) -100)))))
+
+(ert-deftest pearl-gtd-do-test-score-future-scheduled-penalty ()
+  "Future scheduled actions receive -50 penalty."
+  (let* ((next-week (format-time-string "<%F>" (time-add (current-time) (* 7 24 3600))))
+         (base (list :headline "Task" :deadline nil :scheduled nil))
+         (future (plist-put (copy-sequence base) :scheduled next-week)))
+    (let ((score-base (pearl-gtd-do--score-action base))
+          (score-future (pearl-gtd-do--score-action future)))
+      (should (= (- score-future score-base) -50)))))
+
 (ert-deftest pearl-gtd-do-test-sort-actions ()
   "Actions are sorted by score descending."
   (let* ((action-a (list :headline "A" :deadline nil))

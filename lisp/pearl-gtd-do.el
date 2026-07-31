@@ -82,7 +82,8 @@ Optional CONTEXT-FILTER boosts matching contexts."
         (l3 (plist-get action :l3))
         (l4 (plist-get action :l4))
         (l5 (plist-get action :l5))
-        (l6 (plist-get action :l6)))
+        (l6 (plist-get action :l6))
+        (delegated (plist-get action :delegated)))
     ;; Urgency: deadline
     (when deadline
       (let ((days (pearl-gtd-do--days-until deadline)))
@@ -121,6 +122,15 @@ Optional CONTEXT-FILTER boosts matching contexts."
       (let ((ctxs (pearl-gtd-do--split-contexts context)))
         (when (member context-filter ctxs)
           (setq score (+ score (cdr (assq 'context-match pearl-gtd-do--score-weights)))))))
+    ;; Penalties
+    ;; Delegated tasks: -100 points
+    (when (and delegated (not (string= delegated "")))
+      (setq score (- score 100)))
+    ;; Future scheduled tasks: -50 points
+    (when scheduled
+      (let ((days (pearl-gtd-do--days-until scheduled)))
+        (when (and days (> days 0))
+          (setq score (- score 50)))))
     score))
 
 ;;;; Action collection
