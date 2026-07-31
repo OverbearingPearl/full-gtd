@@ -121,7 +121,8 @@
 (defmacro pearl-gtd-review-define-property-editor (name property prompt property-type &optional extra-cleanup)
   "Define property editor function with NAME for PROPERTY.
 PROMPT is the user prompt string.
-PROPERTY-TYPE is a symbol for completion (context, project, delegate, l3, l4, l5, l6, principle).
+PROPERTY-TYPE is a symbol for completion (context, project, delegate,
+l3, l4, l5, l6, principle).
 EXTRA-CLEANUP is a form to execute when removing the property
 \(e.g., also remove DELEGATED_DATE)."
   (let ((fn-name (intern (concat "pearl-gtd-review--edit-" name "-at-point")))

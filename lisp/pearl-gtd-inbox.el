@@ -500,7 +500,7 @@ BRAINSTORM is non-nil."
                                                    (string= (org-entry-get nil "PROJECT") default-project))))))))
                 (setq pearl-gtd-inbox-stage-buffer-name (buffer-name staging-buffer))
                 (pop-to-buffer staging-buffer)
-                (condition-case err
+                (condition-case _
                     (with-current-buffer staging-buffer
                       (org-mode)
                       (pearl-gtd-inbox--map-entries

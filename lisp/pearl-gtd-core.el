@@ -196,7 +196,7 @@ Delegate to state layer for transactional file operations."
   `(pearl-gtd-state--with-entry-at-id ,id ,file ,@body))
 
 (defun pearl-gtd-core-read-date (prompt-type)
-  "Hybrid date input: letter=quick, number=free-form, RET=skip.
+  "Hybrid date input for PROMPT-TYPE: letter=quick, number=free-form, RET=skip.
 PROMPT-TYPE is \\='schedule or \\='deadline for display.
 Quick keys: t (today), T (tomorrow), w (week), h (hour, schedule only).
 Returns date string or nil if skipped.
