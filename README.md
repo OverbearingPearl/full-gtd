@@ -124,7 +124,7 @@ This package is for you if you've read the book and want your tool to match the 
 
 **Feeling lost:**
 
-6. `pearl-gtd-horizons-view` — Check if today's work aligns with L6 Purpose
+6. `pearl-gtd-horizons-view` — Check vertical alignment: see which projects lack higher-level horizons, and verify actions connect to purpose
 
 **Weekend:**
 
@@ -151,12 +151,19 @@ The workflow cannot be skipped; it ensures every project has a clear outcome and
 ### 3. Six Horizons of Focus
 Horizons are stored as Org properties (`L3_AREA` … `L6_PURPOSE`) and obey strict dependencies:
 
-- **L3 Area** – Ongoing responsibilities (e.g., “Health”, “Career”)
+- **L3 Area** – Ongoing responsibilities (e.g., "Health", "Career")
 - **L4 Goal** – 1‑2 year objectives
 - **L5 Vision** – 3‑5 year picture
 - **L6 Purpose & Principle** – Life purpose and guiding principles
 
-Horizons flow from high levels down: Purpose (L6) → Vision (L5) → Goals (L4) → Areas (L3) → Projects → Actions. The horizon view (`pearl‑gtd‑horizons‑view`) shows this full hierarchy.
+Horizons flow from high levels down: Purpose (L6) → Vision (L5) → Goals (L4) → Areas (L3) → Projects → Actions. The horizon view (`pearl‑gtd‑horizons‑view`) displays a **matrix alignment view**:
+
+- **Rows**: Projects grouped by alignment status (Critical/Partial/Aligned/Multi-Horizon)
+- **Columns**: L6 Purpose → L5 Vision → L4 Goal → L3 Area
+- **Empty cells**: Indicate gaps in vertical alignment
+- **No-project actions**: Shown separately with L3 Area only
+
+This matrix format makes it easy to spot "orphaned" projects (no horizon alignment) and incomplete vertical chains at a glance.
 
 ### 4. Review Cycles
 - **Daily Review** (`pearl‑gtd‑review‑daily`) – Today’s scheduled tasks, completed today, next actions, and inbox.
