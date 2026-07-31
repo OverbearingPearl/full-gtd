@@ -469,6 +469,20 @@ the staging buffer."
                      current-headline current-remarks deadline)
                pearl-gtd-inbox--pending-moves))))))
 
+(defun pearl-gtd-inbox--apply-pending-moves (&optional brainstorm)
+  "Apply all pending moves to target files and cleanup inbox.
+If BRAINSTORM is non-nil, remove BRAINSTORM property before moving.
+Returns t if inbox file was deleted (empty after processing)."
+  (dolist (move pearl-gtd-inbox--pending-moves)
+    (pearl-gtd-inbox--do-move (nth 0 move) (nth 1 move) (nth 2 move)
+                              (nth 3 move) (nth 4 move) (nth 5 move)
+                              brainstorm))
+  (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+    (when (and (file-exists-p inbox-file)
+               (= 0 (file-attribute-size (file-attributes inbox-file))))
+      (delete-file inbox-file)
+      t)))
+
 (defun pearl-gtd-inbox--process (&optional brainstorm default-context default-project)
   "Process the inbox according to GTD clarify and organize steps.
 If BRAINSTORM is non-nil, only process entries with BRAINSTORM property
@@ -508,13 +522,8 @@ BRAINSTORM is non-nil."
                         (delete-overlay pearl-gtd-inbox--current-highlight)
                         (setq pearl-gtd-inbox--current-highlight nil))
                       (setq pearl-gtd-inbox--pending-moves (nreverse pearl-gtd-inbox--pending-moves))
-                      (dolist (move pearl-gtd-inbox--pending-moves)
-                        (pearl-gtd-inbox--do-move (nth 0 move) (nth 1 move) (nth 2 move)
-                                                  (nth 3 move) (nth 4 move) (nth 5 move)
-                                                  brainstorm))
-                      (when (and (file-exists-p inbox-file)
-                                 (= 0 (file-attribute-size (file-attributes inbox-file))))
-                        (delete-file inbox-file))
+                      (when (pearl-gtd-inbox--apply-pending-moves brainstorm)
+                        (message "Inbox empty, deleted."))
                       (message "Inbox processing complete and changes applied per GTD workflow."))
                   (quit
                    (message "Inbox processing cancelled.")

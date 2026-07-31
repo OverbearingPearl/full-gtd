@@ -359,12 +359,11 @@ HORIZONS is an alist of horizon properties."
     (pop-to-buffer buffer)
     (goto-char (point-min))))
 
-(defun pearl-gtd-planning--start ()
-  "Start Natural Planning Model workflow.
-Coordinator pattern: delegates all business logic to domain layer,
-all state operations to state layer."
-  (let* (;; Step 1: Collect inputs (interaction layer)
-         (proj-name (pearl-gtd-planning--select-project))
+(defun pearl-gtd-planning--collect-inputs ()
+  "Collect all user inputs for Natural Planning Model.
+Returns plist with :proj-name, :purpose, :principle, :vision,
+:goal, :area, :default-context, and :horizons."
+  (let* ((proj-name (pearl-gtd-planning--select-project))
          (purpose (pearl-gtd-planning--ask-horizon 6 "Purpose" nil))
          (principle (pearl-gtd-planning--ask-horizon 6 "Principle" t))
          (vision (pearl-gtd-planning--ask-horizon 5 "Vision" nil))
@@ -376,6 +375,22 @@ all state operations to state layer."
                      ("L5_VISION" . ,vision)
                      ("L4_GOAL" . ,goal)
                      ("L3_AREA" . ,area))))
+    (list :proj-name proj-name :purpose purpose :principle principle
+          :vision vision :goal goal :area area
+          :default-context default-context :horizons horizons)))
+
+(defun pearl-gtd-planning--start ()
+  "Start Natural Planning Model workflow.
+Coordinator pattern: delegates all business logic to domain layer,
+all state operations to state layer."
+  (let* (;; Step 1: Collect inputs (interaction layer)
+         (inputs (pearl-gtd-planning--collect-inputs))
+         (proj-name (plist-get inputs :proj-name))
+         (purpose (plist-get inputs :purpose))
+         (vision (plist-get inputs :vision))
+         (goal (plist-get inputs :goal))
+         (default-context (plist-get inputs :default-context))
+         (horizons (plist-get inputs :horizons)))
 
     ;; Validate inputs (domain layer)
     (cl-destructuring-bind (valid-p . error-msg)
