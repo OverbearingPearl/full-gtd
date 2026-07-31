@@ -265,8 +265,7 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
         (aligned '())
         (multi '()))
     (dolist (proj projects)
-      (let* ((name (car proj))
-             (l6 (nth 3 (cdr proj)))
+      (let* ((l6 (nth 3 (cdr proj)))
              (l5 (nth 4 (cdr proj)))
              (l4 (nth 5 (cdr proj)))
              (l3 (nth 6 (cdr proj)))
@@ -292,7 +291,7 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
     (list (nreverse critical) (nreverse partial) (nreverse aligned) (nreverse multi))))
 
 (defun pearl-gtd-horizons--insert-project-row (proj)
-  "Insert table row for PROJECT."
+  "Insert table row for PROJ."
   (let* ((name (car proj))
          (total (nth 0 (cdr proj)))
          (todo (nth 1 (cdr proj)))
@@ -319,11 +318,11 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
 
 (defun pearl-gtd-horizons--insert-no-project-row (action)
   "Insert table row for no-project ACTION."
-  (let ((head (nth 0 action))
-        (status (nth 1 action))
-        (context (nth 2 action))
-        (l3 (or (nth 3 action) ""))
-        (l3-display (string-join (pearl-gtd-core--split-values (or (nth 3 action) "")) "; ")))
+  (let* ((head (nth 0 action))
+         (status (nth 1 action))
+         (context (nth 2 action))
+         (l3 (or (nth 3 action) ""))
+         (l3-display (string-join (pearl-gtd-core--split-values l3) "; ")))
     (insert "| ")
     (let ((start (point)))
       (insert head)
