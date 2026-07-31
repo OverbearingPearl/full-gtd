@@ -23,6 +23,7 @@
 ;; - Daily and weekly review cycles with horizon columns
 ;; - Context-based filtering and delegation tracking
 ;; - Standard GTD lists: Projects, Next Actions, Waiting For, Someday/Maybe, Reference
+;; - Single-card execution: algorithmic prioritization by urgency/horizons/context instead of list browsing
 ;;
 ;; This package aims to implement the complete framework from the original
 ;; book, including both horizontal (workflow) and vertical (horizons) focus

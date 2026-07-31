@@ -77,6 +77,8 @@ Existing Emacs GTD packages handle lists and agendas well, but omit two pillars 
 | Six Horizons of Focus      | ❌      | ✅       |
 | Daily/Weekly Review cycles | Partial | ✅       |
 
+Unlike traditional tools that show long lists for you to browse, Pearl-GTD uses **single-card push mode** during execution: it scores actions by urgency, horizon alignment, and context match, then pushes the single optimal task. You simply act or skip—no decision fatigue, no list paralysis.
+
 This package is for you if you've read the book and want your tool to match the theory.
 
 ## Quick Start
