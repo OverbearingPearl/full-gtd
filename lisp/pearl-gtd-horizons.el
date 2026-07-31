@@ -113,10 +113,15 @@ LEVEL is symbol: \\='area, \\='goal, \\='vision, \\='purpose, or \\='principle."
     (car (pearl-gtd-domain--check-hierarchy-constraint existing-horizons level))))
 
 (defun pearl-gtd-horizons--get-project-at-point ()
-  "Get project name from text property at or near point."
-  (or (get-text-property (point) 'pearl-gtd-project)
-      (and (> (point) (point-min))
-           (get-text-property (1- (point)) 'pearl-gtd-project))))
+  "Get project name from text property in current table row."
+  (save-excursion
+    (beginning-of-line)
+    (let ((end (line-end-position))
+          (project nil))
+      (while (and (not project) (< (point) end))
+        (setq project (get-text-property (point) 'pearl-gtd-project))
+        (forward-char 1))
+      project)))
 
 (defun pearl-gtd-horizons--edit-horizon-at-point (level &optional project)
   "Edit horizon LEVEL for PROJECT at point.
@@ -415,11 +420,42 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
     (pop-to-buffer buffer-name)
     (pearl-gtd-horizons-view-mode 1)))
 
+(defun pearl-gtd-horizons--data-row-boundaries ()
+  "Return cons cell (FIRST-DATA-ROW . LAST-DATA-ROW) positions."
+  (save-excursion
+    (goto-char (point-min))
+    (while (and (not (eobp))
+                (or (looking-at "|[-+]")
+                    (looking-at "| Project[ \t]*|")
+                    (looking-at "| Headline[ \t]*|")
+                    (not (looking-at "|"))))
+      (forward-line 1))
+    (let ((first-data (line-beginning-position)))
+      (goto-char (point-max))
+      (forward-line -1)
+      (while (and (not (bobp))
+                  (or (looking-at "|[-+]")
+                      (looking-at "| Project[ \t]*|")
+                      (looking-at "| Headline[ \t]*|")
+                      (not (looking-at "|"))
+                      (looking-at "^$")))
+        (forward-line -1))
+      (cons first-data (line-beginning-position)))))
+
+(pearl-gtd-core-define-table-navigators
+  "pearl-gtd-horizons"
+  #'pearl-gtd-horizons--data-row-boundaries
+  "| Project[ \t]*|")
+
 (defvar pearl-gtd-horizons-view-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "q") #'quit-window)
     (define-key map (kbd "RET") #'pearl-gtd-horizons--goto-project-at-point)
     (define-key map (kbd "g") #'pearl-gtd-horizons--view)
+    (define-key map (kbd "n") #'pearl-gtd-horizons--next-row)
+    (define-key map (kbd "p") #'pearl-gtd-horizons--previous-row)
+    (define-key map (kbd "j") #'pearl-gtd-horizons--next-row)
+    (define-key map (kbd "k") #'pearl-gtd-horizons--previous-row)
     (define-key map (kbd "3") #'pearl-gtd-horizons--edit-area-at-point)
     (define-key map (kbd "4") #'pearl-gtd-horizons--edit-goal-at-point)
     (define-key map (kbd "5") #'pearl-gtd-horizons--edit-vision-at-point)
