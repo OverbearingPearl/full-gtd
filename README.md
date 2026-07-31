@@ -179,10 +179,11 @@ Session commands:
 
 | Key | Action |
 |-----|--------|
-| `d` / `RET` | Mark current card done and push next |
+| `C` | Mark current card done and push next |
 | `s` | Skip (push next without state change) |
+| `z` | Snooze to tomorrow |
 | `r` | Rename current task |
-| `j` | Jump to source entry |
+| `RET` | Jump to source entry |
 | `c` | Change conditions (context/time/energy) |
 | `q` | Quit session |
 | `?` | Show command help |

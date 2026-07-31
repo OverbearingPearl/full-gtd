@@ -314,10 +314,11 @@ CONTEXT-FILTER is used for context-match bonus."
             (insert (format "| L3 Area    | %s |\n" l3)))
           (org-table-align)
           (insert "\n** Commands\n\n")
-          (insert "| [d/RET] | Done (mark complete) |\n")
+          (insert "| [C]     | Done (mark complete) |\n")
           (insert "| [s]     | Skip (next task)     |\n")
+          (insert "| [z]     | Snooze to tomorrow   |\n")
           (insert "| [r]     | Rename               |\n")
-          (insert "| [j]     | Jump to source       |\n")
+          (insert "| [RET]   | Jump to source       |\n")
           (insert "| [c]     | Change conditions    |\n")
           (insert "| [q]     | Quit session         |\n")
           (insert "| [?]     | Help                 |\n")
@@ -466,12 +467,11 @@ CONTEXT, TIME-BUDGET, and ENERGY are optional initial filters."
 
 (defvar pearl-gtd-do-session-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "d") #'pearl-gtd-do--session-done)
-    (define-key map (kbd "RET") #'pearl-gtd-do--session-done)
+    (define-key map (kbd "C") #'pearl-gtd-do--session-done)
     (define-key map (kbd "s") #'pearl-gtd-do--session-skip)
     (define-key map (kbd "z") #'pearl-gtd-do--session-snooze)
     (define-key map (kbd "r") #'pearl-gtd-do--session-rename)
-    (define-key map (kbd "j") #'pearl-gtd-do--session-jump)
+    (define-key map (kbd "RET") #'pearl-gtd-do--session-jump)
     (define-key map (kbd "c") #'pearl-gtd-do--session-change-conditions)
     (define-key map (kbd "q") #'pearl-gtd-do--session-quit)
     (define-key map (kbd "?") #'pearl-gtd-do--session-help)
@@ -549,7 +549,7 @@ CONTEXT, TIME-BUDGET, and ENERGY are optional initial filters."
 (defun pearl-gtd-do--session-help ()
   "Show help for Do session."
   (interactive)
-  (message "d/RET=done, s=skip, z=snooze, r=rename, j=jump, c=change conditions, q=quit"))
+  (message "Do | C: done | s: skip | z: snooze | r: rename | RET: jump | c: change | q: quit"))
 
 ;;;; Public entry points
 ;; The single entry point pearl-gtd-do is defined in pearl-gtd.el
