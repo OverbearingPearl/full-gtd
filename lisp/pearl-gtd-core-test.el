@@ -192,8 +192,6 @@
 
 ;;; Date hybrid input tests
 
-(declare-function pearl-gtd-core-read-date "pearl-gtd-core")
-
 (ert-deftest pearl-gtd-core-test-date-today-quick ()
   "Pressing 't' returns today's date string."
   (cl-letf (((symbol-function 'read-key) (lambda () ?t)))

@@ -22,15 +22,8 @@
 (require 'pearl-gtd-init)
 (require 'pearl-gtd-core)
 (require 'pearl-gtd-horizons)
+(require 'pearl-gtd-inbox)
 (require 'pearl-gtd-state)
-
-(declare-function pearl-gtd-core-read-date "pearl-gtd-core")
-(declare-function pearl-gtd-inbox--read-context "pearl-gtd-inbox")
-(declare-function pearl-gtd-inbox--read-delegate "pearl-gtd-inbox")
-(declare-function pearl-gtd-inbox--highlight-entry "pearl-gtd-inbox")
-(declare-function pearl-gtd-inbox--map-entries "pearl-gtd-inbox")
-(declare-function pearl-gtd-inbox--clarify-entry "pearl-gtd-inbox")
-(declare-function pearl-gtd-inbox--stage-change "pearl-gtd-inbox")
 
 (defvar pearl-gtd-planning--current-project nil
   "Current project name during planning session.")
