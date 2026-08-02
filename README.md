@@ -2,62 +2,62 @@
 
 A complete [Getting Things Done](https://gettingthingsdone.com/) implementation for Emacs org-mode, covering the full David Allen framework — including the Natural Planning Model and the Six Horizons of Focus.
 
-```
-                        PEARL-GTD: FIVE WORKFLOWS
+<pre>
+                  PEARL-GTD: FIVE WORKFLOWS
 
   ANYTIME
-  =======
-  +-------------------+            +-------------------------+
-  |      CAPTURE      |----------->|         PROCESS         |
-  | pearl-gtd-capture | inbox full | pearl-gtd-process-inbox |
-  +-------------------+            +-------------------------+
+  ═══════
+  ┌───────────────────┐            ┌─────────────────────────┐
+  │      CAPTURE      │───────────▶│         PROCESS         │
+  │ pearl-gtd-capture │ inbox full │ pearl-gtd-process-inbox │
+  └───────────────────┘            └─────────────────────────┘
 
 
   WHEN STARTING A PROJECT
-  =======================
-  +-----------------------------------------------------------------------+
-  |                                PLANNING                               |
-  |                        pearl-gtd-planning-start                       |
-  |                                                                       |
-  | Purpose&Principle -> Vision -> Brainstorm -> Organize -> Next Actions |
-  +-----------------------------------------------------------------------+
+  ═══════════════════════
+  ┌───────────────────────────────────────────────────────────────────┐
+  │                            PLANNING                               │
+  │                    pearl-gtd-planning-start                       │
+  │                                                                   │
+  │ Purpose&Principle → Vision → Brainstorm → Organize → Next Actions │
+  └───────────────────────────────────────────────────────────────────┘
 
 
   EVERY MORNING
-  =============
-  +-----------------------------------------------+
-  |                DAILY REVIEW                   |
-  |           pearl-gtd-review-daily              |
-  |                                               |
-  |   inbox -> calendar -> completed -> actions   |
-  +-----------------------------------------------+
+  ═════════════
+  ┌────────────────────────────────────────────┐
+  │               DAILY REVIEW                 │
+  │          pearl-gtd-review-daily            │
+  │                                            │
+  │   inbox → calendar → completed → actions   │
+  └────────────────────────────────────────────┘
 
 
   EVERY WEEKEND
-  ==============
-  +-------------------------------------------------------------------------+
-  |                            WEEKLY REVIEW                                |
-  |                       pearl-gtd-review-weekly                           |
-  |                                                                         |
-  | inbox -> overdue -> deadlines -> completed -> delegated -> next actions |
-  |       -> stuck projects -> active projects -> no-project actions        |
-  |       -> someday/maybe                                                  |
-  +-------------------------------------------------------------------------+
+  ══════════════
+  ┌────────────────────────────────────────────────────────────────────┐
+  │                         WEEKLY REVIEW                              │
+  │                    pearl-gtd-review-weekly                         │
+  │                                                                    │
+  │ inbox → overdue → deadlines → completed → delegated → next actions │
+  │       → stuck projects → active projects → no-project actions      │
+  │       → someday/maybe                                              │
+  └────────────────────────────────────────────────────────────────────┘
 
 
   WHEN WORKING / FEELING LOST
-  ===========================
-  +-------------------------------+    +-------------------------------+
-  |            ENGAGE             |    |           HORIZONS            |
-  |         pearl-gtd-do          |    |    pearl-gtd-horizons-view    |
-  |                               |    |                               |
-  |    single-card execution      |    |  L6 Purpose                   |
-  |    system pushes optimal task |    |    -> L5 Vision               |
-  |    based on your conditions   |    |      -> L4 Goals              |
-  |    (context, time, energy)    |    |        -> L3 Area             |
-  |                               |    |          -> Projects/Actions  |
-  +-------------------------------+    +-------------------------------+
-  ```
+  ═══════════════════════════
+  ┌─────────────────────────────┐    ┌──────────────────────────────┐
+  │           ENGAGE            │    │           HORIZONS           │
+  │        pearl-gtd-do         │    │   pearl-gtd-horizons-view    │
+  │                             │    │                              │
+  │  single-card execution      │    │  L6 Purpose                  │
+  │  system pushes optimal task │    │    → L5 Vision               │
+  │  based on your conditions   │    │      → L4 Goals              │
+  │  (context, time, energy)    │    │        → L3 Area             │
+  │                             │    │          → Projects/Actions  │
+  └─────────────────────────────┘    └──────────────────────────────┘
+</pre>
 
 ## Status
 
