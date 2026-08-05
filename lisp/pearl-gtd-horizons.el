@@ -493,7 +493,7 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "q") #'quit-window)
     (define-key map (kbd "RET") #'pearl-gtd-horizons--goto-project-at-point)
-    (define-key map (kbd "g") #'pearl-gtd-horizons--view)
+    (define-key map (kbd "g") #'pearl-gtd-horizons-view)
     (define-key map (kbd "n") #'pearl-gtd-horizons--next-row)
     (define-key map (kbd "p") #'pearl-gtd-horizons--previous-row)
     (define-key map (kbd "j") #'pearl-gtd-horizons--next-row)
