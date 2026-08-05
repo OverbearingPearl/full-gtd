@@ -32,10 +32,10 @@
   "Default context for next actions during current planning session.")
 
 (defun pearl-gtd-planning--project-exists-p (proj-name)
-  "Check if PROJ-NAME already exists in actions.org.
+  "Check if PROJ-NAME already exists in action.org.
 This also handles multi-project values separated by semicolons
 \(English and Chinese)."
-  (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
+  (let ((file-path (expand-file-name "action.org" pearl-gtd-init-base-directory)))
     (when (file-exists-p file-path)
       (with-temp-buffer
         (insert-file-contents file-path)
@@ -234,7 +234,7 @@ Returns count of next actions created (integer)."
   (let ((count 0))
     (pearl-gtd-inbox--process t default-context project)
     ;; Count next actions created for this project
-    (pearl-gtd-state--with-file-buffer "actions.org"
+    (pearl-gtd-state--with-file-buffer "action.org"
       (org-map-entries
        (lambda ()
          (let ((todo-p (pearl-gtd-core-entry-todo-p))
@@ -245,12 +245,12 @@ Returns count of next actions created (integer)."
     count))
 
 (defun pearl-gtd-planning--create-action (headline project context horizons)
-  "Create a new action in actions.org.
+  "Create a new action in action.org.
 HEADLINE is the task title.
 PROJECT is the project name.
 CONTEXT is the context tag (may be empty).
 HORIZONS is an alist of horizon properties."
-  (pearl-gtd-state--with-file-buffer "actions.org"
+  (pearl-gtd-state--with-file-buffer "action.org"
     (goto-char (point-max))
     (unless (bolp) (insert "\n"))
     (insert "* " (car org-not-done-keywords) " " (or headline "Unnamed action") "\n")
@@ -269,7 +269,7 @@ HORIZONS is an alist of horizon properties."
 (defun pearl-gtd-planning--apply-horizons-to-project (project horizons)
   "Apply HORIZONS to all actions in newly created PROJECT.
 HORIZONS is an alist of horizon properties."
-  (pearl-gtd-state--with-file-buffer "actions.org"
+  (pearl-gtd-state--with-file-buffer "action.org"
     (org-map-entries
      (lambda ()
        (let ((proj (org-entry-get nil "PROJECT")))
@@ -291,7 +291,7 @@ HORIZONS is an alist of horizon properties."
         (base pearl-gtd-init-base-directory))
 
     ;; Collect items from each file
-    (dolist (file '("actions.org" "reference.org" "someday.org"))
+    (dolist (file '("action.org" "reference.org" "someday.org"))
       (let ((file-path (expand-file-name file base)))
         (when (file-exists-p file-path)
           (with-temp-buffer
@@ -309,7 +309,7 @@ HORIZONS is an alist of horizon properties."
                                     :tags tags
                                     :file file)))
                      (cond
-                      ((string= file "actions.org") (push item actions))
+                      ((string= file "action.org") (push item actions))
                       ((string= file "reference.org") (push item references))
                       ((string= file "someday.org") (push item someday)))))))
              nil nil)))))
@@ -404,7 +404,7 @@ all state operations to state layer."
         (error "Planning validation failed: %s" error-msg)))
 
     ;; Execute workflow with transaction (state layer)
-    (pearl-gtd-state--with-transaction '("actions.org" "inbox.org")
+    (pearl-gtd-state--with-transaction '("action.org" "inbox.org")
       ;; Brainstorm phase
       (pearl-gtd-planning--ask-brainstorm proj-name)
 

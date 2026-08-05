@@ -37,17 +37,17 @@
   :asserts (progn
              (should (pearl-gtd-test-inbox-empty-p pearl-gtd-init-base-directory))
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "* TODO Buy gift for mom"))
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "Check Amazon first"))
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       ":errands:"))
              ;; Verify ID is preserved after processing
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       ":ID:")))
   :teardown nil)
 
@@ -85,7 +85,7 @@
   :body (pearl-gtd-process-inbox)
   :asserts (progn
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "* TODO Action task"))
              (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "reference.org" pearl-gtd-init-base-directory)
@@ -139,13 +139,13 @@
           (pearl-gtd-capture)
           (pearl-gtd-process-inbox))
   :asserts (progn
-             ;; Task moved to actions.org
+             ;; Task moved to action.org
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "* TODO Test task"))
-             ;; ID preserved in actions.org
+             ;; ID preserved in action.org
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       ":ID:"))
              ;; Inbox is empty
              (should (pearl-gtd-test-inbox-empty-p pearl-gtd-init-base-directory)))
@@ -154,7 +154,7 @@
 (pearl-gtd-test-define-story pearl-gtd-workflows-test-user-sees-duplicate-titles-get-different-ids
   "Same title in different files gets different IDs."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* TODO Existing task\n:PROPERTIES:\n:ID: existing-id-1\n:END:\n"))
+  :files (("action.org" "* TODO Existing task\n:PROPERTIES:\n:ID: existing-id-1\n:END:\n"))
   :mock (((symbol-function 'read-string)
           (lambda (prompt &rest _)
             (cond
@@ -199,9 +199,9 @@
           (pearl-gtd-process-inbox))
   :asserts (progn
              (should (pearl-gtd-test-inbox-empty-p pearl-gtd-init-base-directory))
-             ;; Should have two tasks in actions.org
+             ;; Should have two tasks in action.org
              (with-temp-buffer
-               (insert-file-contents (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+               (insert-file-contents (expand-file-name "action.org" pearl-gtd-init-base-directory))
                (goto-char (point-min))
                (should (search-forward "* TODO Task" nil t))
                (should (search-forward "* TODO Task" nil t))))
@@ -210,7 +210,7 @@
 (pearl-gtd-test-define-story pearl-gtd-workflows-test-duplicate-ids-in-file
   "Malformed file with duplicate IDs should still allow jumping to first match."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* TODO Task A\n:PROPERTIES:\n:ID: dup-id\n:END:\n* TODO Task B\n:PROPERTIES:\n:ID: dup-id\n:END:\n"))
+  :files (("action.org" "* TODO Task A\n:PROPERTIES:\n:ID: dup-id\n:END:\n* TODO Task B\n:PROPERTIES:\n:ID: dup-id\n:END:\n"))
   :mock (((symbol-function 'completing-read) (lambda (&rest _) ""))
          ((symbol-function 'read-string) (lambda (&rest _) "")))
   :body (progn
@@ -221,19 +221,19 @@
             (beginning-of-line)
             (pearl-gtd-do--session-jump)))
   :asserts (progn
-             (let ((buf (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory))))
+             (let ((buf (get-file-buffer (expand-file-name "action.org" pearl-gtd-init-base-directory))))
                (should buf)
                (with-current-buffer buf
                  (should (looking-at-p "\\*+ TODO Task")))))
   :teardown (progn
               (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD: Do Session*"))
-              (let ((buf (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory))))
+              (let ((buf (get-file-buffer (expand-file-name "action.org" pearl-gtd-init-base-directory))))
                 (when buf (kill-buffer buf)))))
 
 (pearl-gtd-test-define-story pearl-gtd-workflows-test-multi-project-action-inheritance
   "Action linked to multiple projects inherits horizons from all."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* TODO Shared action\n:PROPERTIES:\n:ID: shared-multi-1\n:PROJECT: Alpha; Beta\n:END:\n"))
+  :files (("action.org" "* TODO Shared action\n:PROPERTIES:\n:ID: shared-multi-1\n:PROJECT: Alpha; Beta\n:END:\n"))
   :mock (((symbol-function 'pearl-gtd-review--get-project-stats)
           (lambda (proj)
             ;; Return stats that mark both projects as active (have TODOs)
@@ -256,11 +256,11 @@
 (pearl-gtd-test-define-story pearl-gtd-workflows-test-multiple-contexts-on-single-action
   "Action can have multiple context tags."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* TODO Multi context task\n:PROPERTIES:\n:ID: multi-ctx-1\n:CONTEXT: office\n:END:\n"))
+  :files (("action.org" "* TODO Multi context task\n:PROPERTIES:\n:ID: multi-ctx-1\n:CONTEXT: office\n:END:\n"))
   :mock nil
   :body (progn
           ;; Add second context manually
-          (let ((file (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
+          (let ((file (expand-file-name "action.org" pearl-gtd-init-base-directory)))
             (with-current-buffer (find-file-noselect file)
               (goto-char (point-min))
               (re-search-forward "Multi context task")
@@ -288,7 +288,7 @@
   :body (pearl-gtd-process-inbox)
   :asserts (let ((content (with-temp-buffer
                             (insert-file-contents
-                             (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+                             (expand-file-name "action.org" pearl-gtd-init-base-directory))
                             (buffer-string))))
              ;; All values should be trimmed (allow for whitespace after colon)
              (should (string-match-p ":office:" content))

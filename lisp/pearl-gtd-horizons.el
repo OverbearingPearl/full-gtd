@@ -37,7 +37,7 @@
   "Get horizon PROPERTY value for PROJECT from any of its actions.
 PROPERTY should be one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE.
 Returns the first non-empty value found among project actions."
-  (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+  (let ((file-path (expand-file-name "action.org" pearl-gtd-init-base-directory))
         (value nil))
     (when (file-exists-p file-path)
       (with-temp-buffer
@@ -64,8 +64,8 @@ Returns count of modified entries.
 Handles multi-project tasks by preserving horizons from other projects."
   (let ((count 0)
         (project-horizons (make-hash-table :test 'equal)))
-    (pearl-gtd-state--with-transaction '("actions.org")
-      (pearl-gtd-state--with-file-buffer "actions.org"
+    (pearl-gtd-state--with-transaction '("action.org")
+      (pearl-gtd-state--with-file-buffer "action.org"
         ;; First pass: collect current horizons for all projects
         (org-map-entries
          (lambda ()
@@ -213,9 +213,9 @@ Prompts for Purpose first, then immediately prompts for Principle."
   (pearl-gtd-horizons--edit-horizon-at-point 'principle))
 
 (defun pearl-gtd-horizons--collect-all-projects ()
-  "Collect all unique project names from actions.org with their stats.
+  "Collect all unique project names from action.org with their stats.
 Returns list of (PROJECT-NAME TOTAL TODO DONE L6 L5 L4 L3)."
-  (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+  (let ((file-path (expand-file-name "action.org" pearl-gtd-init-base-directory))
         (projects (make-hash-table :test 'equal)))
     (when (file-exists-p file-path)
       (with-temp-buffer
@@ -253,7 +253,7 @@ Returns list of (PROJECT-NAME TOTAL TODO DONE L6 L5 L4 L3)."
 (defun pearl-gtd-horizons--collect-no-project-actions ()
   "Collect TODO actions without project, with L3 Area.
 Returns list of (HEADLINE STATUS CONTEXT L3)."
-  (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+  (let ((file-path (expand-file-name "action.org" pearl-gtd-init-base-directory))
         (actions '()))
     (when (file-exists-p file-path)
       (with-temp-buffer
@@ -319,7 +319,7 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
           (l5-display (string-join (pearl-gtd-core--split-values l5) "; "))
           (l4-display (string-join (pearl-gtd-core--split-values l4) "; "))
           (l3-display (string-join (pearl-gtd-core--split-values l3) "; ")))
-      (pearl-gtd-ui--insert-table-row name nil "actions.org"
+      (pearl-gtd-ui--insert-table-row name nil "action.org"
                                       (list total todo done l6-display l5-display l4-display l3-display)
                                       t))))
 
@@ -330,7 +330,7 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
          (context (nth 2 action))
          (l3 (or (nth 3 action) ""))
          (l3-display (string-join (pearl-gtd-core--split-values l3) "; ")))
-    (pearl-gtd-ui--insert-table-row head nil "actions.org"
+    (pearl-gtd-ui--insert-table-row head nil "action.org"
                                     (list status context l3-display)
                                     nil)))
 

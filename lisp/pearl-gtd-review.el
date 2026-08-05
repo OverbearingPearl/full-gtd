@@ -330,7 +330,7 @@ META is an alist with keys :entry-map and :entry-index."
               (dolist (entry entries)
                 (let ((head (nth 0 entry))
                       (id (nth 1 entry))
-                      (file (or (nth 2 entry) "actions.org"))
+                      (file (or (nth 2 entry) "action.org"))
                       (fields (nthcdr 3 entry)))
                   (pearl-gtd-review--insert-table-row head id file fields)))
               (org-table-align))
@@ -379,17 +379,17 @@ Returns list of entry lists suitable for table display."
              (<= deadline-days seven-days-later))))))
 
 (defun pearl-gtd-review--collect-upcoming-deadlines ()
-  "Collect entries with deadlines in next 7 days from actions.org."
+  "Collect entries with deadlines in next 7 days from action.org."
   (pearl-gtd-review--collect-entries-from-file
-   "actions.org"
+   "action.org"
    (list #'pearl-gtd-core-entry-todo-p
          #'pearl-gtd-review--entry-upcoming-deadline-p)
    nil))  ; no Created field
 
 (defun pearl-gtd-review--collect-all-projects ()
-  "Collect all unique project names from actions.org.
+  "Collect all unique project names from action.org.
 Supports semicolon separators (both English and Chinese)."
-  (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+  (let ((actions-file (expand-file-name "action.org" pearl-gtd-init-base-directory))
         (projects '()))
     (when (file-exists-p actions-file)
       (with-temp-buffer
@@ -405,10 +405,10 @@ Supports semicolon separators (both English and Chinese)."
     (nreverse projects)))
 
 (defun pearl-gtd-review--get-project-stats (proj-name)
-  "Get statistics for PROJ-NAME from actions.org.
+  "Get statistics for PROJ-NAME from action.org.
 PROJ-NAME is a string naming the project to analyze.
 Returns list (TOTAL TODO DONE NEXT-DEADLINE L3 L4 L5 L6)."
-  (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+  (let ((file-path (expand-file-name "action.org" pearl-gtd-init-base-directory))
         (total 0)
         (done 0)
         (todo 0)
@@ -460,7 +460,7 @@ Returns list of entries formatted for project table display."
   (let ((all-projects (pearl-gtd-review--collect-all-projects))
         (projects-with-todos '())
         (stuck-projects '()))
-    (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
+    (let ((file-path (expand-file-name "action.org" pearl-gtd-init-base-directory)))
       (when (file-exists-p file-path)
         (with-temp-buffer
           (insert-file-contents file-path)
@@ -476,7 +476,7 @@ Returns list of entries formatted for project table display."
     (dolist (proj all-projects)
       (unless (member proj projects-with-todos)
         (let ((stats (pearl-gtd-review--get-project-stats proj)))
-          (push (list proj nil "actions.org"
+          (push (list proj nil "action.org"
                       (nth 0 stats)  ; Total
                       (nth 1 stats)  ; Todo
                       (nth 2 stats)  ; Done
@@ -494,7 +494,7 @@ Returns list of entries formatted for project table display."
 Returns list of entries formatted for project table display."
   (let ((projects-with-todos '())
         (active-projects '()))
-    (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
+    (let ((file-path (expand-file-name "action.org" pearl-gtd-init-base-directory)))
       (when (file-exists-p file-path)
         (with-temp-buffer
           (insert-file-contents file-path)
@@ -509,7 +509,7 @@ Returns list of entries formatted for project table display."
            nil nil))))
     (dolist (proj projects-with-todos)
       (let ((stats (pearl-gtd-review--get-project-stats proj)))
-        (push (list proj nil "actions.org"
+        (push (list proj nil "action.org"
                     (nth 0 stats)  ; Total
                     (nth 1 stats)  ; Todo
                     (nth 2 stats)  ; Done
@@ -525,7 +525,7 @@ Returns list of entries formatted for project table display."
 (defun pearl-gtd-review--collect-no-project-actions ()
   "Collect TODO actions that don't belong to any project.
 Returns list of entry lists suitable for table display."
-  (let* ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+  (let* ((file-path (expand-file-name "action.org" pearl-gtd-init-base-directory))
          (entries (pearl-gtd-core-filter-entries file-path (list #'pearl-gtd-core-entry-todo-p))))
     (mapcar (lambda (e)
               (list (nth 0 e) (nth 7 e) (nth 8 e)
@@ -541,25 +541,25 @@ Returns list of entry lists suitable for table display."
   "Run daily review with sections: Today, Next Actions, and Inbox."
   (let* ((buffer-name "*Pearl-GTD Daily Review*")
          (today-entries (pearl-gtd-review--collect-entries-from-file
-                         "actions.org"
+                         "action.org"
                          (list #'pearl-gtd-core-entry-todo-p
                                #'pearl-gtd-core-entry-scheduled-today-p)
                          nil))  ; no Created field
          (next-entries (pearl-gtd-review--collect-entries-from-file
-                        "actions.org"
+                        "action.org"
                         (list (lambda ()
                                 (and (pearl-gtd-core-entry-todo-p)
                                      (not (pearl-gtd-core-entry-scheduled-today-p)))))
                         nil))  ; no Created field
          (inbox-entries (pearl-gtd-review--collect-entries-from-file "inbox.org" nil t))  ; include Created
          (completed-today-entries (pearl-gtd-review--collect-entries-from-file
-                                   "actions.org"
+                                   "action.org"
                                    (list #'pearl-gtd-core-entry-done-p
                                          #'pearl-gtd-core-entry-completed-today-p)
                                    nil))  ; no Created field
-         (sections (list (cons "actions.org - Today" today-entries)
-                         (cons "actions.org - Completed Today" completed-today-entries)
-                         (cons "actions.org - Next Actions" next-entries)
+         (sections (list (cons "action.org - Today" today-entries)
+                         (cons "action.org - Completed Today" completed-today-entries)
+                         (cons "action.org - Next Actions" next-entries)
                          (cons "inbox.org - Inbox" inbox-entries))))
     (pearl-gtd-review--create-table-buffer buffer-name sections)
     (with-current-buffer buffer-name
@@ -574,7 +574,7 @@ Returns list of entry lists suitable for table display."
          (inbox-entries (pearl-gtd-review--collect-entries-from-file "inbox.org" nil t))
          ;; 2. Overdue - urgent items (no Created)
          (overdue-entries (pearl-gtd-review--collect-entries-from-file
-                           "actions.org"
+                           "action.org"
                            (list #'pearl-gtd-core-entry-todo-p
                                  #'pearl-gtd-core-entry-overdue-p)
                            nil))
@@ -582,18 +582,18 @@ Returns list of entry lists suitable for table display."
          (upcoming-entries (pearl-gtd-review--collect-upcoming-deadlines))
          ;; 4. Completed - review accomplishments (no Created)
          (completed-entries (pearl-gtd-review--collect-entries-from-file
-                             "actions.org"
+                             "action.org"
                              (list #'pearl-gtd-core-entry-done-p)
                              nil))
          ;; 6. Delegated - check waiting for (no Created)
          (delegated-entries (pearl-gtd-review--collect-entries-from-file
-                             "actions.org"
+                             "action.org"
                              (list #'pearl-gtd-core-entry-todo-p
                                    #'pearl-gtd-core-entry-delegated-p)
                              nil))
          ;; 7. Next Actions (no Created)
          (next-entries (pearl-gtd-review--collect-entries-from-file
-                        "actions.org"
+                        "action.org"
                         (list (lambda ()
                                 (and (pearl-gtd-core-entry-todo-p)
                                      (not (pearl-gtd-core-entry-overdue-p))
@@ -610,14 +610,14 @@ Returns list of entry lists suitable for table display."
          (someday-entries (pearl-gtd-review--collect-entries-from-file "someday.org" nil nil))
          ;; Build sections in GTD review order
          (sections (list (cons "inbox.org - Inbox" inbox-entries)
-                         (cons "actions.org - Overdue" overdue-entries)
-                         (cons "actions.org - Upcoming Deadlines" upcoming-entries)
-                         (cons "actions.org - Completed" completed-entries)
-                         (cons "actions.org - Delegated" delegated-entries)
-                         (cons "actions.org - Next Actions" next-entries)
+                         (cons "action.org - Overdue" overdue-entries)
+                         (cons "action.org - Upcoming Deadlines" upcoming-entries)
+                         (cons "action.org - Completed" completed-entries)
+                         (cons "action.org - Delegated" delegated-entries)
+                         (cons "action.org - Next Actions" next-entries)
                          (cons "Projects - Stuck" (cons stuck-entries 'project))
                          (cons "Projects - Active" (cons active-entries 'project))
-                         (cons "actions.org - No Project" no-project-entries)
+                         (cons "action.org - No Project" no-project-entries)
                          (cons "someday.org - Someday" someday-entries))))
     (pearl-gtd-review--create-table-buffer buffer-name sections)
     (with-current-buffer buffer-name
@@ -626,10 +626,10 @@ Returns list of entry lists suitable for table display."
     (pearl-gtd-review-view-mode 1)))
 
 (defun pearl-gtd-review--collect-project-entries (proj-name)
-  "Collect all entries from actions.org belonging to PROJ-NAME.
+  "Collect all entries from action.org belonging to PROJ-NAME.
 PROJ-NAME is a string naming the project to search for.
 Returns list of entry lists suitable for `pearl-gtd-review--insert-table-row'."
-  (let* ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+  (let* ((file-path (expand-file-name "action.org" pearl-gtd-init-base-directory))
          (entries (pearl-gtd-core-filter-entries file-path nil)))
     (mapcar (lambda (e)
               (list (nth 0 e) (nth 7 e) (nth 8 e)
@@ -648,7 +648,7 @@ PROJ-NAME is a string naming the project to display.
 Creates and pops to buffer *Pearl-GTD Project: PROJ-NAME*."
   (let* ((buffer-name (format "*Pearl-GTD Project: %s*" proj-name))
          (entries (pearl-gtd-review--collect-project-entries proj-name))
-         (sections (list (cons (format "actions.org - %s" proj-name) (cons entries 'project-tasks)))))
+         (sections (list (cons (format "action.org - %s" proj-name) (cons entries 'project-tasks)))))
     (pearl-gtd-review--create-table-buffer buffer-name sections)
     (with-current-buffer buffer-name
       (setq pearl-gtd-review--current-view-type nil))

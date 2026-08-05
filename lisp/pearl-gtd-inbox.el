@@ -454,7 +454,7 @@ the staging buffer."
                                (concat tags-summary ",Deadline:" deadline))))
          (when buffer (pop-to-buffer buffer))
          (pearl-gtd-inbox--stage-change entry-ref 4 tags-summary)
-         (push (list headline "actions.org"
+         (push (list headline "action.org"
                      (pearl-gtd-inbox--fields-to-props attrs)
                      current-headline current-remarks deadline)
                pearl-gtd-inbox--pending-moves))))))
@@ -577,7 +577,7 @@ DEADLINE is the deadline date string (nil if not set)."
         (beginning-of-line)
         (when new-headline
           (org-edit-headline new-headline))
-        (when (and target-file (string= target-file "actions.org"))
+        (when (and target-file (string= target-file "action.org"))
           (org-todo (car org-not-done-keywords)))
         (when remarks
           (org-end-of-meta-data t)

@@ -45,10 +45,10 @@
   :body (pearl-gtd-process-inbox)
   :asserts (progn
            (should (pearl-gtd-test-file-contains-p
-                    (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                    (expand-file-name "action.org" pearl-gtd-init-base-directory)
                     "* TODO Task for office"))
            (should (pearl-gtd-test-file-contains-p
-                    (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                    (expand-file-name "action.org" pearl-gtd-init-base-directory)
                     ":office:")))
   :teardown nil)
 
@@ -84,16 +84,16 @@
   :body (pearl-gtd-process-inbox)
   :asserts (progn
            (should (pearl-gtd-test-file-contains-p
-                    (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                    (expand-file-name "action.org" pearl-gtd-init-base-directory)
                     "* TODO Prepare quarterly report"))
            (should (pearl-gtd-test-file-lacks-p
-                    (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                    (expand-file-name "action.org" pearl-gtd-init-base-directory)
                     "* Old vague name"))
            (should (pearl-gtd-test-file-contains-p
-                    (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                    (expand-file-name "action.org" pearl-gtd-init-base-directory)
                     ":office:"))
            (should (pearl-gtd-test-file-contains-p
-                    (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                    (expand-file-name "action.org" pearl-gtd-init-base-directory)
                     "SCHEDULED"))
            (should (pearl-gtd-test-inbox-empty-p pearl-gtd-init-base-directory)))
   :teardown nil)
@@ -186,16 +186,16 @@
   :body (pearl-gtd-process-inbox)
   :asserts (progn
            (should (pearl-gtd-test-file-contains-p
-                    (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                    (expand-file-name "action.org" pearl-gtd-init-base-directory)
                     "* TODO Shared task"))
            (should (pearl-gtd-test-file-contains-p
-                    (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                    (expand-file-name "action.org" pearl-gtd-init-base-directory)
                     ":PROJECT:\\s-*Alpha"))
            (should (pearl-gtd-test-file-contains-p
-                    (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                    (expand-file-name "action.org" pearl-gtd-init-base-directory)
                     "Beta"))
            (should (pearl-gtd-test-file-contains-p
-                    (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                    (expand-file-name "action.org" pearl-gtd-init-base-directory)
                     ":ID:"))
            (should (pearl-gtd-test-inbox-empty-p pearl-gtd-init-base-directory)))
   :teardown nil)
@@ -213,10 +213,10 @@
   :body (pearl-gtd-process-inbox)
   :asserts (progn
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "SCHEDULED: <2026-04-15"))
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "DEADLINE: <2026-04-15"))
              (should (pearl-gtd-test-inbox-empty-p pearl-gtd-init-base-directory)))
   :teardown nil)
@@ -234,10 +234,10 @@
   :body (pearl-gtd-process-inbox)
   :asserts (progn
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "SCHEDULED: <2026-04-15"))
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "DEADLINE: <2026-04-20"))
              (should (pearl-gtd-test-inbox-empty-p pearl-gtd-init-base-directory)))
   :teardown nil)
@@ -255,10 +255,10 @@
   :body (pearl-gtd-process-inbox)
   :asserts (progn
              (should (pearl-gtd-test-file-lacks-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "SCHEDULED"))
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "DEADLINE: <2026-04-25"))
              (should (pearl-gtd-test-inbox-empty-p pearl-gtd-init-base-directory)))
   :teardown nil)
@@ -276,10 +276,10 @@
   :body (pearl-gtd-process-inbox)
   :asserts (progn
              (should (pearl-gtd-test-file-lacks-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "SCHEDULED"))
              (should (pearl-gtd-test-file-lacks-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "DEADLINE"))
              (should (pearl-gtd-test-inbox-empty-p pearl-gtd-init-base-directory)))
   :teardown nil)
@@ -314,10 +314,10 @@
   :body (pearl-gtd-process-inbox)
   :asserts (progn
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "中文"))
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "😀")))
   :teardown nil)
 
@@ -333,7 +333,7 @@
               (delegate . "") (project . "")))))
   :body (pearl-gtd-process-inbox)
   :asserts (pearl-gtd-test-file-contains-p
-            (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+            (expand-file-name "action.org" pearl-gtd-init-base-directory)
             "2024-02-29")
   :teardown nil)
 
@@ -349,7 +349,7 @@
               (delegate . "") (project . "")))))
   :body (pearl-gtd-process-inbox)
   :asserts (pearl-gtd-test-file-contains-p
-            (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+            (expand-file-name "action.org" pearl-gtd-init-base-directory)
             "9999-12-31")
   :teardown nil)
 
@@ -367,7 +367,7 @@
             (pearl-gtd-process-inbox)
           (error nil))
   :asserts (progn
-             (should (file-exists-p (expand-file-name "actions.org" pearl-gtd-init-base-directory))))
+             (should (file-exists-p (expand-file-name "action.org" pearl-gtd-init-base-directory))))
   :teardown nil)
 
 (pearl-gtd-test-define-story pearl-gtd-organize-test-user-enters-project-with-comma
@@ -383,11 +383,11 @@
   :body (pearl-gtd-process-inbox)
   :asserts (progn
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       ":PROJECT: Company, Inc."))
              (let ((content (with-temp-buffer
                               (insert-file-contents
-                               (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+                               (expand-file-name "action.org" pearl-gtd-init-base-directory))
                               (buffer-string))))
                (should-not (string-match-p ":PROJECT: Company\n.*:PROJECT: Inc" content))))
   :teardown nil)
@@ -406,7 +406,7 @@
   :asserts (progn
              (let ((content (with-temp-buffer
                               (insert-file-contents
-                               (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+                               (expand-file-name "action.org" pearl-gtd-init-base-directory))
                               (buffer-string))))
                ;; All three projects should be stored (allow for whitespace after colon)
                (should (string-match-p ":PROJECT:[ \t]*Project A; Project B; Project C" content))
@@ -427,7 +427,7 @@
   :body (pearl-gtd-process-inbox)
   :asserts (let ((content (with-temp-buffer
                             (insert-file-contents
-                             (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+                             (expand-file-name "action.org" pearl-gtd-init-base-directory))
                             (buffer-string))))
              ;; Allow for whitespace after colon
              (should (string-match-p ":PROJECT:[ \t]*ProjA; ProjB" content)))
@@ -446,7 +446,7 @@
   :body (pearl-gtd-process-inbox)
   :asserts (let ((content (with-temp-buffer
                             (insert-file-contents
-                             (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+                             (expand-file-name "action.org" pearl-gtd-init-base-directory))
                             (buffer-string))))
              ;; Context should be trimmed (tag format)
              (should (string-match-p ":office:" content))
@@ -466,7 +466,7 @@
   :body (pearl-gtd-process-inbox)
   :asserts (let ((content (with-temp-buffer
                             (insert-file-contents
-                             (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+                             (expand-file-name "action.org" pearl-gtd-init-base-directory))
                             (buffer-string))))
              ;; Should not have PROJECT property with non-empty value
              (should-not (string-match-p ":PROJECT:[ \t]*[^ \t\n\r]" content)))
@@ -499,12 +499,12 @@
   :body (pearl-gtd-process-inbox)
   :asserts (progn
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       ":PROJECT:"))
              ;; Verify the long project name is preserved (allow for extra space after colon)
              (let ((content (with-temp-buffer
                               (insert-file-contents
-                               (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+                               (expand-file-name "action.org" pearl-gtd-init-base-directory))
                               (buffer-string))))
                (should (string-match-p (format ":PROJECT:[ \t]*%s" (make-string 500 ?A)) content))))
   :teardown nil)
@@ -533,7 +533,7 @@
 ;;; Unit tests for inbox context and attribute collection
 
 (ert-deftest pearl-gtd-organize-test-context-completion-list-populated ()
-  "Test that `completing-read' receives existing contexts from actions.org."
+  "Test that `completing-read' receives existing contexts from action.org."
   (let ((pearl-gtd-inbox--last-context nil))
     (cl-letf (((symbol-function 'pearl-gtd-core-read-property-with-completion)
                (lambda (_prompt _type &optional _initial)

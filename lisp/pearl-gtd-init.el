@@ -21,7 +21,7 @@ Create the base directory and necessary files."
   (let ((dir pearl-gtd-init-base-directory))
     (unless (file-directory-p dir)
       (make-directory dir))
-    (dolist (file '("inbox.org" "reference.org" "someday.org" "actions.org"))
+    (dolist (file '("inbox.org" "reference.org" "someday.org" "action.org"))
       (let ((file-path (expand-file-name file dir)))
         (unless (file-exists-p file-path)
           (write-region "" nil file-path))))

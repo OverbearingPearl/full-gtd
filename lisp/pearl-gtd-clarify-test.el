@@ -69,13 +69,13 @@
   :body (pearl-gtd-process-inbox)
   :asserts (progn
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "* TODO Clear action"))
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "Important notes"))
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       ":office:")))
   :teardown nil)
 

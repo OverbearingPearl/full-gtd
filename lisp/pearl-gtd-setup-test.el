@@ -21,7 +21,7 @@
              (should (file-exists-p (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
              (should (file-exists-p (expand-file-name "reference.org" pearl-gtd-init-base-directory)))
              (should (file-exists-p (expand-file-name "someday.org" pearl-gtd-init-base-directory)))
-             (should (file-exists-p (expand-file-name "actions.org" pearl-gtd-init-base-directory))))
+             (should (file-exists-p (expand-file-name "action.org" pearl-gtd-init-base-directory))))
   :teardown nil)
 
 (pearl-gtd-test-define-story pearl-gtd-setup-test-user-reinitializes-without-losing-data

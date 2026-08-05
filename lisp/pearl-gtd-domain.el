@@ -105,11 +105,11 @@ Returns t if no next actions exist."
 ;;;; Completion candidates collection
 
 (defun pearl-gtd-domain--collect-unique-properties (property)
-  "Collect all unique values for PROPERTY from actions.org.
+  "Collect all unique values for PROPERTY from action.org.
 PROPERTY is a string like \"CONTEXT\", \"PROJECT\", \"DELEGATED\",
 \"L3_AREA\", etc.
 Returns list of strings."
-  (let ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+  (let ((file-path (expand-file-name "action.org" pearl-gtd-init-base-directory))
         (values '()))
     (when (file-exists-p file-path)
       (with-temp-buffer

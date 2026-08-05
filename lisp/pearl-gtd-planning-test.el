@@ -69,44 +69,44 @@
                 (insert "Optimize mobile view\n"))))))
   :body (pearl-gtd-planning-start)
   :asserts (progn
-             ;; Verify project actions created in actions.org
+             ;; Verify project actions created in action.org
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "Redesign homepage"))
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "Optimize mobile view"))
              ;; Verify TODO state
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "TODO Redesign homepage"))
              ;; Verify Project property
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       ":PROJECT: NewWebsite"))
              ;; Verify Horizon properties applied (L3-L6)
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       ":L6_PURPOSE: Improve user experience"))
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       ":L6_PRINCIPLE: Keep it simple"))
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       ":L5_VISION: Industry leader"))
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       ":L4_GOAL: Launch in Q2"))
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       ":L3_AREA: Product Development"))
              ;; Verify BOTH actions use default context :design: (no longer per-item)
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       ":design:"))
              ;; Verify BRAINSTORM property is removed after organizing
              (should-not (car (pearl-gtd-test-file-contains-p
-                               (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                               (expand-file-name "action.org" pearl-gtd-init-base-directory)
                                ":BRAINSTORM:")))
              ;; Verify inbox is clean
              (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
@@ -164,25 +164,25 @@
   :asserts (progn
              ;; Verify L6_PURPOSE exists
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       ":L6_PURPOSE: Just do it"))
              ;; Verify L6_PRINCIPLE does NOT exist
              (let ((result (pearl-gtd-test-file-contains-p
-                            (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                            (expand-file-name "action.org" pearl-gtd-init-base-directory)
                             ":L6_PRINCIPLE:")))
                (should-not (car result)))
              ;; Verify L3_AREA does NOT exist
              (let ((result (pearl-gtd-test-file-contains-p
-                            (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                            (expand-file-name "action.org" pearl-gtd-init-base-directory)
                             ":L3_AREA:")))
                (should-not (car result)))
              ;; Verify L5_VISION exists
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       ":L5_VISION: A vision"))
              ;; But Goal must exist
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       ":L4_GOAL: Ship it")))
   :teardown (progn
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
@@ -236,12 +236,12 @@
              (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "someday.org" pearl-gtd-init-base-directory)
                       "Idea 2"))
-             ;; Verify Idea 3 went to actions.org as TODO with default context
+             ;; Verify Idea 3 went to action.org as TODO with default context
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "TODO Idea 3"))
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       ":office:"))
              ;; Verify no items remain in inbox
              (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
@@ -288,17 +288,17 @@
   :asserts (progn
              ;; Verify the forced action exists
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "Forced next action"))
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "TODO Forced next action"))
-             ;; Verify discarded ideas are NOT in actions.org
+             ;; Verify discarded ideas are NOT in action.org
              (let ((result1 (pearl-gtd-test-file-contains-p
-                             (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                             (expand-file-name "action.org" pearl-gtd-init-base-directory)
                              "Bad idea 1"))
                    (result2 (pearl-gtd-test-file-contains-p
-                             (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                             (expand-file-name "action.org" pearl-gtd-init-base-directory)
                              "Bad idea 2")))
                (should-not (car result1))
                (should-not (car result2)))
@@ -348,17 +348,17 @@
   :asserts (progn
              ;; Verify the valid values were eventually accepted and written
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       ":L6_PURPOSE: Valid Purpose"))
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       ":L5_VISION: Valid Vision"))
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       ":L4_GOAL: Valid Goal"))
              ;; Verify L3_AREA does NOT exist
              (let ((result (pearl-gtd-test-file-contains-p
-                            (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                            (expand-file-name "action.org" pearl-gtd-init-base-directory)
                             ":L3_AREA:")))
                (should-not (car result))))
   :teardown (progn
@@ -394,9 +394,9 @@
                 (insert "Trash me\n"))))))
   :body (pearl-gtd-planning-start)
   :asserts (progn
-             ;; Verify NOT in actions.org
+             ;; Verify NOT in action.org
              (let ((result (pearl-gtd-test-file-contains-p
-                            (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                            (expand-file-name "action.org" pearl-gtd-init-base-directory)
                             "Trash me")))
                (should-not (car result)))
              ;; Verify NOT in reference.org
@@ -411,7 +411,7 @@
                (should-not (car result)))
              ;; But forced next action should exist (since trashed item doesn't count)
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "TODO Forced next action")))
   :teardown (progn
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
@@ -449,10 +449,10 @@
   :body (pearl-gtd-planning-start)
   :asserts (progn
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "Action without context"))
              ;; Should not have empty context tag or malformed tags
-             (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
+             (let ((actions-file (expand-file-name "action.org" pearl-gtd-init-base-directory)))
                (when (file-exists-p actions-file)
                  (let ((content (with-temp-buffer
                                   (insert-file-contents actions-file)
@@ -470,13 +470,13 @@
   "Planning must reject existing project names and force new name."
   :setup (progn
            (pearl-gtd-init-initialize)
-           (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
+           (let ((actions-file (expand-file-name "action.org" pearl-gtd-init-base-directory)))
              (with-temp-file actions-file
                (insert "* TODO Existing task\n:PROPERTIES:\n:PROJECT: ExistingProject\n:END:\n"))
              (unless (with-temp-buffer
                        (insert-file-contents actions-file)
                        (string-match-p "ExistingProject" (buffer-string)))
-               (error "Setup failed: ExistingProject not found in actions.org"))))
+               (error "Setup failed: ExistingProject not found in action.org"))))
   :files nil
   :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
           (let ((inputs '("Purpose" "" "Vision" "Goal" "Area"))
@@ -509,12 +509,12 @@
   :asserts (progn
              ;; Verify new project was created
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       ":PROJECT: NewUniqueProject"))
              ;; Verify ExistingProject still exists
              (should (= 1 (with-temp-buffer
                             (insert-file-contents
-                             (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+                             (expand-file-name "action.org" pearl-gtd-init-base-directory))
                             (goto-char (point-min))
                             (how-many "ExistingProject")))))
   :teardown (progn
@@ -555,7 +555,7 @@
   :body (pearl-gtd-planning-start)
   :asserts (let ((content (with-temp-buffer
                             (insert-file-contents
-                             (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+                             (expand-file-name "action.org" pearl-gtd-init-base-directory))
                             (buffer-string))))
              (should (string-match-p ":L6_PURPOSE:\\s-*Test Purpose" content))
              (should (string-match-p ":L5_VISION:\\s-*Test Vision" content))
@@ -644,13 +644,13 @@
   :body (pearl-gtd-planning-start)
   :asserts (progn
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "* TODO Clarified idea"))
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "Important notes"))
              (should-not (pearl-gtd-test-file-contains-p-bool
-                          (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                          (expand-file-name "action.org" pearl-gtd-init-base-directory)
                           "Raw idea")))
   :teardown (progn
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
@@ -695,7 +695,7 @@
   :asserts (progn
              ;; Verify new project's item was processed (moved to actions)
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "New project idea"))
              ;; Verify old project's item remains in inbox
              (should (pearl-gtd-test-file-contains-p
@@ -785,17 +785,17 @@
   :asserts (progn
              ;; Verify all items (existing + new) were processed to actions
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "Existing idea 1"))
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "Existing idea 2"))
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "New project idea"))
              ;; Verify project association
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       ":PROJECT: ExistingBrainstormProject")))
   :teardown (progn
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
@@ -837,7 +837,7 @@
   :body (pearl-gtd-planning-start)
   :asserts (progn
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "Fresh idea")))
   :teardown (progn
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
@@ -892,11 +892,11 @@
   :asserts (progn
              ;; Verify project name with space is preserved
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       ":PROJECT: Website Redesign"))
              ;; Verify action is created
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "Action item")))
   :teardown (progn
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
@@ -938,7 +938,7 @@
   :asserts (progn
              ;; Verify multiple purposes stored as semicolon-separated
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       ":L6_PURPOSE: Purpose1; Purpose2"))
              ;; Verify summary displays comma-separated
              (let ((summary-buffer (get-buffer "*Pearl-GTD Planning Summary*")))
@@ -987,7 +987,7 @@
   :body (pearl-gtd-planning-start)
   :asserts (let ((content (with-temp-buffer
                             (insert-file-contents
-                             (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+                             (expand-file-name "action.org" pearl-gtd-init-base-directory))
                             (buffer-string))))
              ;; Project name should be trimmed (allow for extra space after colon)
              (should (string-match-p ":PROJECT:[ \t]*Project Name" content))
@@ -1032,7 +1032,7 @@
   :asserts (progn
              ;; Verify multiple purposes stored correctly
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       ":L6_PURPOSE: Purpose1; Purpose2; Purpose3")))
   :teardown (progn
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
@@ -1074,7 +1074,7 @@
              ;; Whitespace-only entries should not be captured
              (should-not (string-match-p ":BRAINSTORM: t" content))
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "Forced action")))
   :teardown (progn
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
@@ -1085,7 +1085,7 @@
   :setup (progn
            (pearl-gtd-init-initialize)
            ;; Pre-create a project with space in name
-           (let ((actions-file (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
+           (let ((actions-file (expand-file-name "action.org" pearl-gtd-init-base-directory)))
              (with-temp-file actions-file
                (insert "* TODO Existing task\n:PROPERTIES:\n:PROJECT: Existing Project\n:ID: existing-1\n:END:\n"))))
   :files nil
@@ -1130,7 +1130,7 @@
   :asserts (progn
              ;; Verify new project was created (after first was rejected)
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       ":PROJECT: New Project Name")))
   :teardown (progn
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))

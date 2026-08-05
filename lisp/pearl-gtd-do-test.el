@@ -68,7 +68,7 @@
 (pearl-gtd-test-define-story pearl-gtd-do-test-session-starts-with-highest-priority
   "Session presents the highest priority action first."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* TODO Low priority\n:PROPERTIES:\n:ID: low-1\n:END:\n* TODO High priority\nDEADLINE: <2026-01-20 Mon>\n:PROPERTIES:\n:ID: high-1\n:END:\n"))
+  :files (("action.org" "* TODO Low priority\n:PROPERTIES:\n:ID: low-1\n:END:\n* TODO High priority\nDEADLINE: <2026-01-20 Mon>\n:PROPERTIES:\n:ID: high-1\n:END:\n"))
   :mock (((symbol-function 'completing-read) (lambda (&rest _) ""))
          ((symbol-function 'read-string) (lambda (&rest _) "")))
   :body (pearl-gtd-do)
@@ -82,7 +82,7 @@
 (pearl-gtd-test-define-story pearl-gtd-do-test-session-completes-action
   "Done command marks action complete and advances."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* TODO First task\n:PROPERTIES:\n:ID: first-1\n:END:\n* TODO Second task\n:PROPERTIES:\n:ID: second-1\n:END:\n"))
+  :files (("action.org" "* TODO First task\n:PROPERTIES:\n:ID: first-1\n:END:\n* TODO Second task\n:PROPERTIES:\n:ID: second-1\n:END:\n"))
   :mock (((symbol-function 'completing-read) (lambda (&rest _) ""))
          ((symbol-function 'read-string) (lambda (&rest _) "")))
   :body (progn
@@ -91,7 +91,7 @@
             (pearl-gtd-do--session-done)))
   :asserts (progn
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "* DONE First task"))
              (with-current-buffer "*Pearl-GTD: Do Session*"
                (goto-char (point-min))
@@ -101,7 +101,7 @@
 (pearl-gtd-test-define-story pearl-gtd-do-test-session-snoozes-action
   "Snooze command reschedules action to tomorrow and advances."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* TODO Snooze me\n:PROPERTIES:\n:ID: snooze-1\n:END:\n* TODO Next task\n:PROPERTIES:\n:ID: next-1\n:END:\n"))
+  :files (("action.org" "* TODO Snooze me\n:PROPERTIES:\n:ID: snooze-1\n:END:\n* TODO Next task\n:PROPERTIES:\n:ID: next-1\n:END:\n"))
   :mock (((symbol-function 'completing-read) (lambda (&rest _) ""))
          ((symbol-function 'read-string) (lambda (&rest _) "")))
   :body (progn
@@ -111,7 +111,7 @@
   :asserts (progn
              (let ((tomorrow (format-time-string "%F" (time-add (current-time) (* 24 3600)))))
                (should (pearl-gtd-test-file-contains-p
-                        (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                        (expand-file-name "action.org" pearl-gtd-init-base-directory)
                         (format "SCHEDULED: <%s" tomorrow))))
              (with-current-buffer "*Pearl-GTD: Do Session*"
                (goto-char (point-min))
@@ -121,7 +121,7 @@
 (pearl-gtd-test-define-story pearl-gtd-do-test-session-context-filter
   "Context filter shows only matching actions."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* TODO Office task :office:\n:PROPERTIES:\n:ID: office-1\n:END:\n* TODO Home task :home:\n:PROPERTIES:\n:ID: home-1\n:END:\n"))
+  :files (("action.org" "* TODO Office task :office:\n:PROPERTIES:\n:ID: office-1\n:END:\n* TODO Home task :home:\n:PROPERTIES:\n:ID: home-1\n:END:\n"))
   :mock nil
   :body (pearl-gtd-do--start-session 'next "office" nil nil)
   :asserts (progn
@@ -135,7 +135,7 @@
 (pearl-gtd-test-define-story pearl-gtd-do-test-session-empty-actions
   "Empty actions file shows session complete."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" ""))
+  :files (("action.org" ""))
   :mock (((symbol-function 'completing-read) (lambda (&rest _) ""))
          ((symbol-function 'read-string) (lambda (&rest _) "")))
   :body (pearl-gtd-do)
@@ -149,7 +149,7 @@
 (pearl-gtd-test-define-story pearl-gtd-do-test-session-delegated-view
   "Delegated session shows delegated TODO tasks."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* TODO Delegated task\n:PROPERTIES:\n:ID: del-1\n:DELEGATED: John\n:END:\n* TODO Own task\n:PROPERTIES:\n:ID: own-1\n:END:\n* DONE Delegated done\n:PROPERTIES:\n:ID: del-done-1\n:DELEGATED: Jane\n:END:\n"))
+  :files (("action.org" "* TODO Delegated task\n:PROPERTIES:\n:ID: del-1\n:DELEGATED: John\n:END:\n* TODO Own task\n:PROPERTIES:\n:ID: own-1\n:END:\n* DONE Delegated done\n:PROPERTIES:\n:ID: del-done-1\n:DELEGATED: Jane\n:END:\n"))
   :mock (((symbol-function 'completing-read) (lambda (prompt &rest _)
                                                 (if (string-match-p "View type" prompt)
                                                     "delegated"
@@ -169,7 +169,7 @@
 (pearl-gtd-test-define-story pearl-gtd-do-test-session-today-view
   "Today session shows tasks scheduled for today."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" (format "* TODO Today task\nSCHEDULED: <%s>\n:PROPERTIES:\n:ID: today-1\n:END:\n* TODO Later task\nSCHEDULED: <%s>\n:PROPERTIES:\n:ID: later-1\n:END:\n"
+  :files (("action.org" (format "* TODO Today task\nSCHEDULED: <%s>\n:PROPERTIES:\n:ID: today-1\n:END:\n* TODO Later task\nSCHEDULED: <%s>\n:PROPERTIES:\n:ID: later-1\n:END:\n"
                                   (format-time-string "%F %a")
                                   (format-time-string "%F %a" (time-add (current-time) (* 24 3600))))))
   :mock (((symbol-function 'completing-read) (lambda (prompt &rest _)
@@ -189,7 +189,7 @@
 (pearl-gtd-test-define-story pearl-gtd-do-test-session-rename-action
   "Rename command updates task headline."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* TODO Old name\n:PROPERTIES:\n:ID: rename-1\n:END:\n"))
+  :files (("action.org" "* TODO Old name\n:PROPERTIES:\n:ID: rename-1\n:END:\n"))
   :mock (((symbol-function 'completing-read) (lambda (&rest _) ""))
          ((symbol-function 'read-string) (lambda (&rest args)
                                            (if (string-match-p "New task name" (car args))
@@ -201,10 +201,10 @@
             (pearl-gtd-do--session-rename)))
   :asserts (progn
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "* TODO New name"))
              (should-not (pearl-gtd-test-file-contains-p-bool
-                          (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                          (expand-file-name "action.org" pearl-gtd-init-base-directory)
                           "* TODO Old name")))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD: Do Session*")))
 
@@ -214,7 +214,7 @@
 (pearl-gtd-test-define-story pearl-gtd-do-test-session-change-conditions
   "Change conditions refreshes session with new filters."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* TODO Office task :office:\n:PROPERTIES:\n:ID: ctx-office-1\n:END:\n* TODO Home task :home:\n:PROPERTIES:\n:ID: ctx-home-1\n:END:\n"))
+  :files (("action.org" "* TODO Office task :office:\n:PROPERTIES:\n:ID: ctx-office-1\n:END:\n* TODO Home task :home:\n:PROPERTIES:\n:ID: ctx-home-1\n:END:\n"))
   :mock (((symbol-function 'completing-read) (lambda (&rest args)
                                                 (cond ((string-match-p "Context" (car args)) "@home")
                                                       (t ""))))
@@ -232,7 +232,7 @@
 (pearl-gtd-test-define-story pearl-gtd-do-test-session-jump-to-source
   "Jump command opens source file at task."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* TODO Jump target\n:PROPERTIES:\n:ID: jump-1\n:END:\n"))
+  :files (("action.org" "* TODO Jump target\n:PROPERTIES:\n:ID: jump-1\n:END:\n"))
   :mock (((symbol-function 'completing-read) (lambda (&rest _) ""))
          ((symbol-function 'read-string) (lambda (&rest _) "")))
   :body (progn
@@ -240,19 +240,19 @@
           (with-current-buffer "*Pearl-GTD: Do Session*"
             (pearl-gtd-do--session-jump)))
   :asserts (progn
-             (let ((buf (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory))))
+             (let ((buf (get-file-buffer (expand-file-name "action.org" pearl-gtd-init-base-directory))))
                (should buf)
                (with-current-buffer buf
                  (should (looking-at-p "\\*+ TODO Jump target")))))
   :teardown (progn
               (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD: Do Session*"))
-              (let ((buf (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory))))
+              (let ((buf (get-file-buffer (expand-file-name "action.org" pearl-gtd-init-base-directory))))
                 (when buf (kill-buffer buf)))))
 
 (pearl-gtd-test-define-story pearl-gtd-do-test-session-backlog-count
   "Backlog count is displayed and decrements on done but not skip."
   :setup (pearl-gtd-init-initialize)
-  :files (("actions.org" "* TODO First task\n:PROPERTIES:\n:ID: first-1\n:END:\n* TODO Second task\n:PROPERTIES:\n:ID: second-1\n:END:\n* TODO Third task\n:PROPERTIES:\n:ID: third-1\n:END:\n"))
+  :files (("action.org" "* TODO First task\n:PROPERTIES:\n:ID: first-1\n:END:\n* TODO Second task\n:PROPERTIES:\n:ID: second-1\n:END:\n* TODO Third task\n:PROPERTIES:\n:ID: third-1\n:END:\n"))
   :mock (((symbol-function 'completing-read) (lambda (&rest _) ""))
          ((symbol-function 'read-string) (lambda (&rest _) "")))
   :body (progn
@@ -275,11 +275,11 @@
              (should (get-buffer "*Pearl-GTD: Do Session*"))
              ;; Verify first task is still TODO (skipped)
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "* TODO First task"))
              ;; Verify second task is DONE
              (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "actions.org" pearl-gtd-init-base-directory)
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "* DONE Second task")))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD: Do Session*")))
 

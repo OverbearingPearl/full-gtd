@@ -150,9 +150,9 @@ CONTEXT-STRING uses @ prefixes like \"@office,@home\"."
                         (mapcar #'string-trim (split-string context-string ","))))))
 
 (defun pearl-gtd-do--collect-actions (predicates)
-  "Collect TODO actions from actions.org matching PREDICATES.
+  "Collect TODO actions from action.org matching PREDICATES.
 Returns list of action plists."
-  (let* ((file-path (expand-file-name "actions.org" pearl-gtd-init-base-directory))
+  (let* ((file-path (expand-file-name "action.org" pearl-gtd-init-base-directory))
          (file-name (file-name-nondirectory file-path))
          (actions '()))
     (when (file-exists-p file-path)
@@ -432,9 +432,9 @@ ENERGY is the energy level string, or nil for any."
 ;;;; Session startup
 
 (defun pearl-gtd-do--collect-contexts ()
-  "Collect all unique context tags from actions.org."
+  "Collect all unique context tags from action.org."
   (pearl-gtd-core-collect-contexts
-   (expand-file-name "actions.org" pearl-gtd-init-base-directory)))
+   (expand-file-name "action.org" pearl-gtd-init-base-directory)))
 
 (defun pearl-gtd-do--start-session (&optional view-type context time-budget energy)
   "Start a Do session.
