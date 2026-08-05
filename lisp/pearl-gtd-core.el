@@ -96,24 +96,23 @@ Nil values indicate unset properties."
                     (l4 (org-entry-get nil "L4_GOAL"))
                     (l5 (org-entry-get nil "L5_VISION"))
                     (l6 (org-entry-get nil "L6_PURPOSE")))
-               ;; Attach ID as text property to headline for precise navigation
                (when id
                  (put-text-property 0 (length head) 'pearl-gtd-id id head))
                (push (list head
-                          (mapconcat (lambda (c) (concat "@" c)) tags ",")
-                          todo-state
-                          scheduled
-                          delegated
-                          project
-                          created
-                          id
-                          file-name
-                          deadline
-                          context
-                          l3
-                          l4
-                          l5
-                          l6)
+                           (mapconcat (lambda (c) (concat "@" c)) tags ",")
+                           todo-state
+                           scheduled
+                           delegated
+                           project
+                           created
+                           id
+                           file-name
+                           deadline
+                           context
+                           l3
+                           l4
+                           l5
+                           l6)
                      entries))))
          nil nil)))
     (nreverse entries)))
@@ -137,8 +136,6 @@ Nil values indicate unset properties."
 
 ;;;; Table rendering core
 
-;; No generic table renderer; each caller should inline its own rendering.
-
 ;;;; Macro for table navigation
 
 (defmacro pearl-gtd-core-define-table-navigators (prefix boundaries-func &optional header-regexp)
@@ -153,9 +150,9 @@ HEADER-REGEXP matches header lines to skip (default: \"| Headline\")."
     `(progn
        (defun ,skip-fn ()
          "Return non-nil if current line should be skipped during navigation."
-         (or (looking-at "|[-+]")     ; separator line
-             (looking-at ,header-re)  ; header line
-             (not (looking-at "|")))) ; non-table line
+         (or (looking-at "|[-+]")
+             (looking-at ,header-re)
+             (not (looking-at "|"))))
 
        (defun ,next-fn ()
          "Move to next data row in the table."
@@ -277,22 +274,18 @@ Project and horizons (L3-L6) support multiple values separated by semicolon."
                        ('l6 (pearl-gtd-domain--collect-horizon-candidates "L6_PURPOSE"))
                        ('principle (pearl-gtd-domain--collect-horizon-candidates "L6_PRINCIPLE"))
                        (_ (error "Unknown property type: %s" property-type))))
-         ;; Multi-value types: project and all horizon levels
          (is-multi-value (member property-type '(project l3 l4 l5 l6 principle))))
 
     (if is-multi-value
-        ;; Multi-value: use completing-read-multiple with semicolon separator
-        (let* ((crm-separator "[;；]\\s-*")  ;; Match both English and Chinese semicolons
-               ;; Convert initial string to list for crm
-               (initial-list (when initial
-                               (pearl-gtd-domain--split-values initial)))
-               ;; Read multiple values
-               (values (completing-read-multiple prompt candidates nil nil initial-list)))
-          ;; Join back to semicolon-separated string
+        (let* ((crm-separator "[;；]\\s-*")
+               (initial-input
+                (when initial
+                  (pearl-gtd-domain--join-values
+                   (pearl-gtd-domain--split-values initial))))
+               (values (completing-read-multiple prompt candidates nil nil initial-input)))
           (if values
               (pearl-gtd-domain--join-values values)
             ""))
-      ;; Single-value: keep original behavior
       (string-trim (completing-read prompt candidates nil nil initial)))))
 
 (provide 'pearl-gtd-core)

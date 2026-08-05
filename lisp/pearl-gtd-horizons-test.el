@@ -19,13 +19,11 @@
   :asserts (progn
              (should (get-buffer "*Pearl-GTD Horizon View*"))
              (with-current-buffer "*Pearl-GTD Horizon View*"
-               ;; Verify matrix table headers
                (goto-char (point-min))
                (search-forward "** Aligned Projects")
                (forward-line 1)
                (beginning-of-line)
                (should (search-forward-regexp "|\\s-*Project\\s-*|\\s-*Total\\s-*|\\s-*Todo\\s-*|\\s-*Done\\s-*|\\s-*L6 Purpose\\s-*|\\s-*L6 Principle\\s-*|\\s-*L5 Vision\\s-*|\\s-*L4 Goal\\s-*|\\s-*L3 Area\\s-*|" nil t))
-               ;; Verify project row has all horizon values
                (goto-char (point-min))
                (search-forward "TestProject")
                (beginning-of-line)
@@ -41,11 +39,9 @@
   :asserts (progn
              (should (get-buffer "*Pearl-GTD Horizon View*"))
              (with-current-buffer "*Pearl-GTD Horizon View*"
-               ;; Verify Critical section exists with NoHorizonProject
                (goto-char (point-min))
                (search-forward "** Critical: Projects Without Any Horizon")
                (should (search-forward "NoHorizonProject" nil t))
-               ;; Verify HasHorizonProject is NOT in Critical
                (goto-char (point-min))
                (search-forward "** Aligned Projects")
                (should (search-forward "HasHorizonProject" nil t))))
@@ -63,7 +59,6 @@
                (goto-char (point-min))
                (search-forward "** Partial: Projects Missing Higher Horizons")
                (should (search-forward "PartialProject" nil t))
-               ;; Verify L3 is shown but L4-L6 are empty
                (beginning-of-line)
                (should (search-forward-regexp "|\\s-*PartialProject\\s-*|.*|\\s-*Work\\s-*|" (line-end-position) t))))
   :teardown (kill-buffer "*Pearl-GTD Horizon View*"))
@@ -81,10 +76,8 @@
                (search-forward "** No-Project Actions")
                (forward-line 1)
                (beginning-of-line)
-               ;; Verify only L3 column, no L4-L6
                (should (search-forward-regexp "|\\s-*Headline\\s-*|\\s-*Status\\s-*|\\s-*Context\\s-*|\\s-*L3 Area\\s-*|" nil t))
                (should-not (search-forward-regexp "L4\\|L5\\|L6" (line-end-position) t))
-               ;; Verify action appears
                (goto-char (point-min))
                (search-forward "** No-Project Actions")
                (should (search-forward "No project task" nil t))))
@@ -102,7 +95,6 @@
                (goto-char (point-min))
                (search-forward "** Multi-Horizon Projects")
                (should (search-forward "MultiProject" nil t))
-               ;; Verify semicolon-separated values displayed for incomplete project
                (beginning-of-line)
                (should (search-forward-regexp "Work; Personal" (line-end-position) t))))
   :teardown (kill-buffer "*Pearl-GTD Horizon View*"))
@@ -175,7 +167,6 @@
             (search-forward "TestProject")
             (pearl-gtd-horizons--edit-area-at-point)))
   :asserts (progn
-             ;; Both tasks should have L3 set
              (let ((file (expand-file-name "action.org" pearl-gtd-init-base-directory)))
                (with-temp-buffer
                  (insert-file-contents file)
@@ -308,7 +299,6 @@
             (search-forward "MixedProj")
             (pearl-gtd-horizons--edit-area-at-point)))
   :asserts (progn
-             ;; All three tasks should now have NewArea
              (let ((file (expand-file-name "action.org" pearl-gtd-init-base-directory)))
                (with-temp-buffer
                  (insert-file-contents file)
@@ -316,7 +306,6 @@
                    (while (re-search-forward ":L3_AREA: +NewArea" nil t)
                      (cl-incf count))
                    (should (= count 3))))
-               ;; No old values should remain
                (should-not (car (pearl-gtd-test-file-contains-p file ":L3_AREA: +OldArea1")))
                (should-not (car (pearl-gtd-test-file-contains-p file ":L3_AREA: +OldArea2")))))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Horizon View*")))
@@ -334,17 +323,14 @@
             (search-forward "ProjA")
             (pearl-gtd-horizons--edit-area-at-point)))
   :asserts (progn
-             ;; Task should now have both areas (OldArea for ProjB, NewArea for ProjA)
              (let ((file (expand-file-name "action.org" pearl-gtd-init-base-directory)))
                (with-temp-buffer
                  (insert-file-contents file)
                  (let ((areas nil))
                    (while (re-search-forward ":L3_AREA: +\\([^\n]+\\)" nil t)
                      (push (match-string 1) areas))
-                   ;; Should be exactly one property line (multiple values separated by semicolon)
                    (should (= (length areas) 1))
                    (let ((value (car areas)))
-                     ;; Verify both values present in the combined property
                      (should (string-match-p "OldArea" value))
                      (should (string-match-p "NewArea" value)))))))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Horizon View*")))
@@ -368,10 +354,8 @@
   :asserts (progn
              (should (stringp pearl-gtd-test-caught-error))
              (should (string-match-p "L4 Goal must be set first" pearl-gtd-test-caught-error))
-             ;; Verify no L5_VISION property was added to any task
              (let ((file (expand-file-name "action.org" pearl-gtd-init-base-directory)))
                (should-not (car (pearl-gtd-test-file-contains-p file ":L5_VISION:")))
-               ;; Also verify L3_AREA remains unchanged
                (with-temp-buffer
                  (insert-file-contents file)
                  (let ((count 0))
@@ -389,12 +373,10 @@
   :asserts (progn
              (should (get-buffer "*Pearl-GTD Horizon View*"))
              (with-current-buffer "*Pearl-GTD Horizon View*"
-               ;; Complete project with multi-values appears in Aligned section
                (goto-char (point-min))
                (search-forward "** Aligned Projects")
                (search-forward "MultiHorizonProj")
                (beginning-of-line)
-               ;; Verify semicolon-separated values in cells
                (should (search-forward-regexp "PurposeA; PurposeB" (line-end-position) t))
                (should (search-forward-regexp "VisionA; VisionB" (line-end-position) t))
                (should (search-forward-regexp "GoalA; GoalB" (line-end-position) t))
@@ -402,25 +384,25 @@
   :teardown (kill-buffer "*Pearl-GTD Horizon View*"))
 
 (pearl-gtd-test-define-story pearl-gtd-horizons-test-user-edits-multiple-values
-  "Editing horizon shows joined values and saves split values."
+  "Editing L3 preserves and extends all existing values through crm."
   :setup (pearl-gtd-init-initialize)
-  :files (("action.org" "* TODO EditTask\n:PROPERTIES:\n:ID: edit-multi-1\n:PROJECT: EditProj\n:L5_VISION: VisionValue\n:L6_PURPOSE: Old1; Old2\n:END:\n"))
-  :mock (((symbol-function 'read-string)
-          (lambda (prompt &optional initial _history)
-            (should (string= initial "Old1; Old2"))
-            "Old1; Old2; New3"))
-         ((symbol-function 'pearl-gtd-core-read-property-with-completion) (lambda (&rest _) "Old1; Old2; New3")))
+  :files (("action.org" "* TODO EditTask\n:PROPERTIES:\n:ID: edit-multi-1\n:PROJECT: EditProj\n:L3_AREA: 学习成长; 工作事业; 自我实现\n:END:\n"))
+  :mock (((symbol-function 'completing-read-multiple)
+          (lambda (_prompt _candidates &optional _predicate _require-match initial-input &rest _)
+            (should (stringp initial-input))
+            (should (string= initial-input "学习成长; 工作事业; 自我实现"))
+            '("学习成长" "工作事业" "自我实现" "健康生活"))))
   :body (progn
           (pearl-gtd-horizons-view)
           (with-current-buffer "*Pearl-GTD Horizon View*"
             (goto-char (point-min))
             (search-forward "EditProj")
             (beginning-of-line)
-            (pearl-gtd-horizons--edit-purpose-at-point)))
+            (pearl-gtd-horizons--edit-area-at-point)))
   :asserts (progn
              (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "action.org" pearl-gtd-init-base-directory)
-                      ":L6_PURPOSE: Old1; Old2; New3")))
+                      ":L3_AREA: 学习成长; 工作事业; 自我实现; 健康生活")))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Horizon View*")))
 
 (pearl-gtd-test-define-story pearl-gtd-horizons-test-mixed-separators-normalized-in-view
@@ -432,12 +414,10 @@
   :asserts (progn
              (should (get-buffer "*Pearl-GTD Horizon View*"))
              (with-current-buffer "*Pearl-GTD Horizon View*"
-               ;; Complete project with mixed separators appears in Aligned section
                (goto-char (point-min))
                (search-forward "** Aligned Projects")
                (search-forward "MixProj")
                (beginning-of-line)
-               ;; Should show normalized semicolon format
                (should (search-forward-regexp "P1; P2; P3; P4" (line-end-position) t))))
   :teardown (kill-buffer "*Pearl-GTD Horizon View*"))
 
@@ -450,7 +430,6 @@
   :asserts (progn
              (should (get-buffer "*Pearl-GTD Horizon View*"))
              (with-current-buffer "*Pearl-GTD Horizon View*"
-               ;; Complete projects with multi-values should appear in Aligned, not Multi-Horizon
                (goto-char (point-min))
                (search-forward "** Aligned Projects")
                (should (search-forward "MultiProj" nil t))))
@@ -465,11 +444,9 @@
   :asserts (progn
              (should (get-buffer "*Pearl-GTD Horizon View*"))
              (with-current-buffer "*Pearl-GTD Horizon View*"
-               ;; Should be in Aligned section
                (goto-char (point-min))
                (search-forward "** Aligned Projects")
                (should (search-forward "CompleteMultiProj" nil t))
-               ;; Should NOT be in Multi-Horizon section
                (goto-char (point-min))
                (search-forward "** Multi-Horizon Projects")
                (should-not (search-forward "CompleteMultiProj" (save-excursion (search-forward "** No-Project Actions") (point)) t))))
@@ -484,11 +461,9 @@
   :asserts (progn
              (should (get-buffer "*Pearl-GTD Horizon View*"))
              (with-current-buffer "*Pearl-GTD Horizon View*"
-               ;; Complete project with multi-value L3 appears in Aligned section
                (goto-char (point-min))
                (search-forward "** Aligned Projects")
                (search-forward "WSProj")
-               ;; Should show only valid values (whitespace-only filtered out)
                (should (search-forward-regexp "ValidArea; AnotherArea" (line-end-position) t))
                (should-not (search-forward-regexp "   ;" (line-end-position) t))))
   :teardown (kill-buffer "*Pearl-GTD Horizon View*"))
@@ -502,11 +477,9 @@
   :asserts (progn
              (should (get-buffer "*Pearl-GTD Horizon View*"))
              (with-current-buffer "*Pearl-GTD Horizon View*"
-               ;; Should be in Partial section (has L3 but missing L4-L6)
                (goto-char (point-min))
                (search-forward "** Partial: Projects Missing Higher Horizons")
                (should (search-forward "PartialProj" nil t))
-               ;; Verify L3 shown but higher levels empty
                (beginning-of-line)
                (should (search-forward-regexp "|\\s-*PartialProj\\s-*|.*|\\s-*WorkArea\\s-*|" (line-end-position) t))))
   :teardown (kill-buffer "*Pearl-GTD Horizon View*"))

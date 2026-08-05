@@ -134,51 +134,51 @@
 (ert-deftest pearl-gtd-core-test-read-property-project-multi-value ()
   "Project type uses completing-read-multiple and joins with semicolon."
   (cl-letf (((symbol-function 'completing-read-multiple)
-             (lambda (prompt collection &rest _)
+             (lambda (_prompt _collection &rest _)
                '("ProjA" "ProjB" "ProjC")))
             ((symbol-function 'pearl-gtd-domain--collect-project-candidates)
              (lambda () '("ProjA" "ProjB" "ProjC"))))
-    (let ((result (pearl-gtd-core-read-property-with-completion 
+    (let ((result (pearl-gtd-core-read-property-with-completion
                    "Project: " 'project)))
-      ;; Should join with English semicolon and space
       (should (string= result "ProjA; ProjB; ProjC")))))
 
 (ert-deftest pearl-gtd-core-test-read-property-context-single-value ()
   "Context type uses single completing-read, not crm."
   (cl-letf (((symbol-function 'completing-read)
-             (lambda (prompt collection &rest _) "@office"))
+             (lambda (_prompt _collection &rest _) "@office"))
             ((symbol-function 'completing-read-multiple)
              (lambda (&rest _) (error "Should not use crm for context")))
             ((symbol-function 'pearl-gtd-domain--collect-context-candidates)
              (lambda () '("@office" "@home"))))
-    (let ((result (pearl-gtd-core-read-property-with-completion 
+    (let ((result (pearl-gtd-core-read-property-with-completion
                    "Context: " 'context)))
       (should (string= result "@office")))))
 
 (ert-deftest pearl-gtd-core-test-read-property-horizon-l3-multi-value ()
   "L3 Area supports multiple values like Project."
   (cl-letf (((symbol-function 'completing-read-multiple)
-             (lambda (prompt collection &rest _)
+             (lambda (_prompt _collection &rest _)
                '("Area1" "Area2")))
             ((symbol-function 'pearl-gtd-domain--collect-horizon-candidates)
              (lambda (_) '("Area1" "Area2" "Area3"))))
-    (let ((result (pearl-gtd-core-read-property-with-completion 
+    (let ((result (pearl-gtd-core-read-property-with-completion
                    "Area: " 'l3)))
       (should (string= result "Area1; Area2")))))
 
-(ert-deftest pearl-gtd-core-test-read-property-initial-multi-value-split ()
-  "Initial value string is split for crm and rejoined correctly."
+(ert-deftest pearl-gtd-core-test-read-property-initial-multi-value-string ()
+  "Multi-value initial input is a normalized string accepted by crm."
   (cl-letf (((symbol-function 'completing-read-multiple)
-             (lambda (prompt collection &rest args)
-               ;; Verify initial was converted to list (6th arg, index 5, or index 2 in args)
-               (let ((initial (nth 2 args)))
-                 (should (listp initial))
-                 (should (equal initial '("Old1" "Old2"))))
+             (lambda (_prompt _collection &optional _predicate _require-match initial-input &rest _)
+               (should (stringp initial-input))
+               (should (string= initial-input "Old1; Old2"))
                '("Old1" "Old2" "New3")))
             ((symbol-function 'pearl-gtd-domain--collect-project-candidates)
              (lambda () '("Old1" "Old2" "New3"))))
-    (pearl-gtd-core-read-property-with-completion 
-     "Project: " 'project "Old1; Old2")))
+    (should
+     (string=
+      (pearl-gtd-core-read-property-with-completion
+       "Project: " 'project " Old1；Old2 ")
+      "Old1; Old2; New3"))))
 
 (ert-deftest pearl-gtd-core-test-read-property-empty-crm-returns-empty-string ()
   "Empty completing-read-multiple returns empty string (not nil)."
@@ -186,7 +186,7 @@
              (lambda (&rest _) nil))
             ((symbol-function 'pearl-gtd-domain--collect-project-candidates)
              (lambda () '("ProjA"))))
-    (let ((result (pearl-gtd-core-read-property-with-completion 
+    (let ((result (pearl-gtd-core-read-property-with-completion
                    "Project: " 'project)))
       (should (string= result "")))))
 
