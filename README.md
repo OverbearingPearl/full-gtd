@@ -165,13 +165,13 @@ Horizons flow from high levels down: Purpose (L6) → Vision (L5) → Goals (L4)
 
 This matrix format makes it easy to spot "orphaned" projects (no horizon alignment) and incomplete vertical chains at a glance.
 
-Navigation in the horizon view uses the same keys as review mode: `n`/`p` or `j`/`k` to move between rows, `RET` to view project tasks, `g` to refresh, `q` to quit. Press `3`–`6` to edit the corresponding horizon level (L3–L6) for the project at point.
+Navigation in the horizon view uses the same keys as review mode: `n`/`p` or `j`/`k` to move between rows, `RET` to view project tasks, `g` to refresh, `q` to quit. Press `3`–`6` to edit the corresponding horizon level (L3–L6) for the project at point. Press `a` to archive the project with the same rules as in Review (all actions DONE, no shared projects).
 
 ### 4. Review Cycles
 - **Daily Review** (`pearl‑gtd‑review‑daily`) – Today’s scheduled tasks, completed today, next actions, and inbox.
 - **Weekly Review** (`pearl‑gtd‑review‑weekly`) – Comprehensive 10‑section review: inbox, overdue, upcoming deadlines, completed, delegated, next actions, stuck/active projects, no‑project actions, and someday/maybe.
 
-Both reviews use a unified table interface with keyboard shortcuts for navigation, editing properties, marking tasks complete, and jumping to source entries. Shortcuts: `c` (context), `d` (delegated), `t` (scheduled), `s` (deadline), `r` (rename), `P` (project), `C` (complete), and `3`-`6` (horizons L3-L6, where `6` edits both Purpose and Principle sequentially).
+Both reviews use a unified table interface with keyboard shortcuts for navigation, editing properties, marking tasks complete, and jumping to source entries. Shortcuts: `c` (context), `d` (delegated), `t` (scheduled), `s` (deadline), `r` (rename), `P` (project), `C` (complete), `a` (archive project), and `3`-`6` (horizons L3-L6, where `6` edits both Purpose and Principle sequentially). Archiving (`a`) moves a project to `archive.org` only when all its actions are DONE and no action belongs to other projects.
 
 ### 5. Do/Work Phase
 The Do phase uses **single-card execution** (`pearl-gtd-do`). Instead of browsing a long list, you tell the system your current conditions—**context** (e.g., @office, @home), **available time** (minutes), and **energy level** (high/normal/low)—and it **pushes the single most optimal task** based on a scoring algorithm:

@@ -10,6 +10,8 @@
 
 ;; This file handles the "Review" phase of GTD.
 ;; Provides unified daily and weekly views with multiple sections.
+;; In table views, press `a' to archive a project (see
+;; `pearl-gtd-review--archive-project').
 
 ;;; Code:
 
@@ -47,6 +49,8 @@
     (define-key map (kbd "4") #'pearl-gtd-horizons--edit-goal-at-point)
     (define-key map (kbd "5") #'pearl-gtd-horizons--edit-vision-at-point)
     (define-key map (kbd "6") #'pearl-gtd-horizons--edit-purpose-at-point)
+    ;; Archive project
+    (define-key map (kbd "a") #'pearl-gtd-review--archive-project-at-point)
     map))
 
 (define-minor-mode pearl-gtd-review-view-mode
@@ -90,6 +94,17 @@
       (when (and id file)
         (cons id file)))))
 
+(defun pearl-gtd-review--get-project-at-point ()
+  "Return project name at point, if any."
+  (save-excursion
+    (beginning-of-line)
+    (let ((end (line-end-position))
+          (project nil))
+      (while (and (not project) (< (point) end))
+        (setq project (get-text-property (point) 'pearl-gtd-project))
+        (forward-char 1))
+      project)))
+
 (defun pearl-gtd-review--get-property-by-id (id file property)
   "Get PROPERTY value of entry with ID in FILE."
   (pearl-gtd-core-with-entry-at-id id file
@@ -129,6 +144,86 @@
 Entries without PROJECT property should be deleted."
   (let ((project (pearl-gtd-review--get-property-by-id id file "PROJECT")))
     (or (null project) (string= project ""))))
+
+(defun pearl-gtd-review--archive-project (project)
+  "Archive PROJECT from action.org to archive.org.
+Archiving is allowed only when all actions of PROJECT are DONE and no
+action belongs to any other project alongside PROJECT."
+  (let ((action-file (expand-file-name "action.org" pearl-gtd-init-base-directory))
+        (archive-file (expand-file-name "archive.org" pearl-gtd-init-base-directory)))
+    (unless (file-exists-p action-file)
+      (error "action.org not found"))
+    (let ((archive-buffer (find-file-noselect archive-file)))
+      ;; Ensure archive.org has an Org-mode project heading for PROJECT.
+      (with-current-buffer archive-buffer
+        (org-mode)
+        (goto-char (point-min))
+        (if (re-search-forward (format "^\\* %s[ \t]*$" (regexp-quote project)) nil t)
+            ;; Project heading exists: move to the end of its subtree.
+            (progn
+              (let ((end (save-excursion (org-end-of-subtree))))
+                (goto-char end)
+                (when (and (not (bolp)) (not (looking-back "\n")))
+                  (insert "\n"))))
+          ;; Project heading does not exist: create it at the end.
+          (goto-char (point-max))
+          (unless (bolp) (insert "\n"))
+          (insert (format "* %s\n" project))))
+      ;; Process action.org.
+      (pearl-gtd-state--with-file-buffer action-file
+        (let ((positions '())
+              (blocked nil))
+          ;; First pass: validate and collect all matching entries.
+          (org-map-entries
+           (lambda ()
+             (let ((proj (org-entry-get nil "PROJECT"))
+                   (todo-state (org-get-todo-state)))
+               (when (and proj (not (string= proj "")))
+                 (let ((projects (pearl-gtd-core--split-values proj)))
+                   (when (member project projects)
+                     ;; Must be exclusive to this project.
+                     (unless (and (= (length projects) 1)
+                                  (string= (car projects) project))
+                       (setq blocked t))
+                     ;; If it is a TODO item, it must already be DONE.
+                     (when todo-state
+                       (unless (member todo-state org-done-keywords)
+                         (setq blocked t)))
+                     (push (point) positions))))))
+           nil nil)
+          (when blocked
+            (error "Project %s cannot be archived: it has uncompleted actions or actions shared with other projects" project))
+          (unless positions
+            (error "No actions found for project %s" project))
+          ;; Second pass: cut subtrees from bottom to top and paste them
+          ;; under the project heading in archive.org.
+          (dolist (pos positions)
+            (goto-char pos)
+            (org-cut-subtree)
+            (with-current-buffer archive-buffer
+              ;; Move to correct paste location.
+              (goto-char (point-min))
+              (re-search-forward (format "^\\* %s[ \t]*$" (regexp-quote project)) nil t)
+              (org-end-of-subtree)
+              (when (and (not (bolp)) (not (looking-back "\n")))
+                (insert "\n"))
+              (org-paste-subtree 2)
+              (set-buffer-modified-p t)))
+          (save-buffer)))
+      ;; Save archive.org.
+      (with-current-buffer archive-buffer
+        (save-buffer)
+        (set-buffer-modified-p nil)))
+    (message "Project %s archived to archive.org" project)))
+
+(defun pearl-gtd-review--archive-project-at-point ()
+  "Archive project at point from review view."
+  (interactive)
+  (let ((project (pearl-gtd-review--get-project-at-point)))
+    (unless project
+      (error "No project at point"))
+    (pearl-gtd-review--archive-project project)
+    (pearl-gtd-review--refresh-view)))
 
 (defmacro pearl-gtd-review-define-property-editor (name property prompt property-type &optional extra-cleanup)
   "Define property editor function with NAME for PROPERTY.
@@ -297,9 +392,9 @@ META is an alist with keys :entry-map and :entry-index."
       (org-mode)
       (setq-local header-line-format
                   (pcase pearl-gtd-review--current-view-type
-                    ('daily "Daily Review | n/p/j/k: move | RET: jump | c/d/t/s/r/P: property | C: complete | g: refresh | q: quit")
-                    ('weekly "Weekly Review | n/p/j/k: move | RET: jump | c/d/t/s/r/P/3-6: property | C: complete | g: refresh | q: quit")
-                    (_ "Review | n/p/j/k: move | RET: jump | c/d/t/s/r/P/3-6: property | C: complete | g: refresh | q: quit")))
+                    ('daily "Daily Review | n/p/j/k: move | RET: jump | c/d/t/s/r/P: property | C: complete | a: archive | g: refresh | q: quit")
+                    ('weekly "Weekly Review | n/p/j/k: move | RET: jump | c/d/t/s/r/P/3-6: property | C: complete | a: archive | g: refresh | q: quit")
+                    (_ "Review | n/p/j/k: move | RET: jump | c/d/t/s/r/P/3-6: property | C: complete | a: archive | g: refresh | q: quit")))
       (setq pearl-gtd-review--entry-map entry-map)
       (if (null sections-data)
           (insert "(No entries to review)\n")

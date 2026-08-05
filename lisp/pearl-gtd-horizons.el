@@ -19,6 +19,8 @@
 ;; - Columns: L6 Purpose, L5 Vision, L4 Goal, L3 Area
 ;; - Empty cells indicate gaps in vertical alignment
 ;; - No-project actions shown separately (L3 Area only)
+;;
+;; In the matrix view, press `a' to archive a completed project.
 
 ;;; Code:
 
@@ -214,6 +216,15 @@ Prompts for Purpose first, then immediately prompts for Principle."
   (interactive)
   (pearl-gtd-horizons--edit-horizon-at-point 'principle))
 
+(defun pearl-gtd-horizons--archive-project-at-point ()
+  "Archive project at point from horizon view."
+  (interactive)
+  (let ((project (pearl-gtd-horizons--get-project-at-point)))
+    (unless project
+      (error "No project at point"))
+    (pearl-gtd-review--archive-project project)
+    (pearl-gtd-horizons--view)))
+
 (defun pearl-gtd-horizons--collect-all-projects ()
   "Collect all unique project names from action.org with their stats.
 Returns list of (PROJECT-NAME TOTAL TODO DONE L6-PURPOSE L6-PRINCIPLE L5 L4 L3)."
@@ -393,7 +404,7 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
         (erase-buffer)
         (org-mode)
         (setq-local header-line-format
-                    "Horizon View | 3=L3, 4=L4, 5=L5, 6=L6 | RET=project actions | g=refresh | q=quit")
+                    "Horizon View | 3=L3, 4=L4, 5=L5, 6=L6 | a=archive | RET=project actions | g=refresh | q=quit")
 
         (insert "#+TITLE: Horizon Alignment View\n\n")
 
@@ -502,6 +513,7 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
     (define-key map (kbd "4") #'pearl-gtd-horizons--edit-goal-at-point)
     (define-key map (kbd "5") #'pearl-gtd-horizons--edit-vision-at-point)
     (define-key map (kbd "6") #'pearl-gtd-horizons--edit-purpose-at-point)
+    (define-key map (kbd "a") #'pearl-gtd-horizons--archive-project-at-point)
     map))
 
 (define-minor-mode pearl-gtd-horizons-view-mode

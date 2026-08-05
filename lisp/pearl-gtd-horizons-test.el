@@ -484,6 +484,71 @@
                (should (search-forward-regexp "|\\s-*PartialProj\\s-*|.*|\\s-*WorkArea\\s-*|" (line-end-position) t))))
   :teardown (kill-buffer "*Pearl-GTD Horizon View*"))
 
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-user-archives-project-from-view
+  "User can archive project from horizon view."
+  :setup (pearl-gtd-init-initialize)
+  :files (("action.org" "* DONE Task 1\n:PROPERTIES:\n:ID: h-ar-1\n:PROJECT: ArchHorizonProj\n:END:\n* DONE Task 2\n:PROPERTIES:\n:ID: h-ar-2\n:PROJECT: ArchHorizonProj\n:END:\n"))
+  :mock nil
+  :body (progn
+          (pearl-gtd-horizons-view)
+          (with-current-buffer "*Pearl-GTD Horizon View*"
+            (goto-char (point-min))
+            (search-forward "ArchHorizonProj")
+            (beginning-of-line)
+            (pearl-gtd-horizons--archive-project-at-point)))
+  :asserts (progn
+             (should-not (car (pearl-gtd-test-file-contains-p
+                               (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                               ":PROJECT: ArchHorizonProj")))
+             (should (file-exists-p (expand-file-name "archive.org" pearl-gtd-init-base-directory)))
+             (let ((content (with-temp-buffer
+                            (insert-file-contents (expand-file-name "archive.org" pearl-gtd-init-base-directory))
+                            (buffer-string))))
+               (should (string-match-p "\\* ArchHorizonProj" content))
+               (should (string-match-p "Task 1" content))
+               (should (string-match-p "Task 2" content))))
+  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Horizon View*")))
+
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-user-cannot-archive-project-with-todo-actions
+  "Archiving fails in horizon view when project has TODO actions."
+  :setup (pearl-gtd-init-initialize)
+  :files (("action.org" "* DONE Task 1\n:PROPERTIES:\n:ID: h-todo-1\n:PROJECT: MixedHorizonProj\n:END:\n* TODO Task 2\n:PROPERTIES:\n:ID: h-todo-2\n:PROJECT: MixedHorizonProj\n:END:\n"))
+  :mock nil
+  :body (progn
+          (pearl-gtd-horizons-view)
+          (with-current-buffer "*Pearl-GTD Horizon View*"
+            (goto-char (point-min))
+            (search-forward "MixedHorizonProj")
+            (beginning-of-line)
+            (should-error (pearl-gtd-horizons--archive-project-at-point)
+                          :type 'error)))
+  :asserts (progn
+             (should (pearl-gtd-test-file-contains-p-bool
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                      ":PROJECT: MixedHorizonProj"))
+             (should-not (file-exists-p (expand-file-name "archive.org" pearl-gtd-init-base-directory))))
+  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Horizon View*")))
+
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-user-cannot-archive-project-with-shared-actions
+  "Archiving fails in horizon view when a task belongs to multiple projects."
+  :setup (pearl-gtd-init-initialize)
+  :files (("action.org" "* DONE Task 1\n:PROPERTIES:\n:ID: h-shared-1\n:PROJECT: SharedHorizonProj; OtherProj\n:END:\n* DONE Task 2\n:PROPERTIES:\n:ID: h-shared-2\n:PROJECT: SharedHorizonProj\n:END:\n"))
+  :mock nil
+  :body (progn
+          (pearl-gtd-horizons-view)
+          (with-current-buffer "*Pearl-GTD Horizon View*"
+            (goto-char (point-min))
+            (search-forward "SharedHorizonProj")
+            (beginning-of-line)
+            (should-error (pearl-gtd-horizons--archive-project-at-point)
+                          :type 'error)))
+  :asserts (progn
+             (should (pearl-gtd-test-file-contains-p-bool
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                      "SharedHorizonProj"))
+             (should-not (file-exists-p (expand-file-name "archive.org" pearl-gtd-init-base-directory))))
+  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Horizon View*")))
+
 (provide 'pearl-gtd-horizons-test)
 
 ;;; pearl-gtd-horizons-test.el ends here

@@ -564,6 +564,57 @@
                       "* TODO Project task")))
   :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
 
+(pearl-gtd-test-define-story pearl-gtd-review-test-user-archives-completed-project
+  "User can archive a project when all actions are DONE and none are shared."
+  :setup (pearl-gtd-init-initialize)
+  :files (("action.org" "* DONE Task 1\n:PROPERTIES:\n:ID: ar-1\n:PROJECT: ArchProj\n:END:\n* DONE Task 2\n:PROPERTIES:\n:ID: ar-2\n:PROJECT: ArchProj\n:END:\n"))
+  :mock nil
+  :body (pearl-gtd-review--archive-project "ArchProj")
+  :asserts (progn
+             ;; action.org no longer contains ArchProj entries
+             (let ((result (pearl-gtd-test-file-contains-p
+                            (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                            ":PROJECT: ArchProj")))
+               (should-not (car result)))
+             ;; archive.org exists with project heading and task entries
+             (should (file-exists-p (expand-file-name "archive.org" pearl-gtd-init-base-directory)))
+             (let ((content (with-temp-buffer
+                              (insert-file-contents (expand-file-name "archive.org" pearl-gtd-init-base-directory))
+                              (buffer-string))))
+               (should (string-match-p "\\* ArchProj" content))
+               (should (string-match-p "Task 1" content))
+               (should (string-match-p "Task 2" content))))
+  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Daily Review*" "*Pearl-GTD Weekly Review*")))
+
+(pearl-gtd-test-define-story pearl-gtd-review-test-user-cannot-archive-project-with-todo-actions
+  "Archiving fails when project still has non-DONE actions."
+  :setup (pearl-gtd-init-initialize)
+  :files (("action.org" "* DONE Task 1\n:PROPERTIES:\n:ID: todo-ar-1\n:PROJECT: MixedProj\n:END:\n* TODO Task 2\n:PROPERTIES:\n:ID: todo-ar-2\n:PROJECT: MixedProj\n:END:\n"))
+  :mock nil
+  :body (should-error (pearl-gtd-review--archive-project "MixedProj")
+                      :type 'error)
+  :asserts (progn
+             ;; action.org still has both entries
+             (should (pearl-gtd-test-file-contains-p-bool
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                      ":PROJECT: MixedProj"))
+             (should-not (file-exists-p (expand-file-name "archive.org" pearl-gtd-init-base-directory))))
+  :teardown nil)
+
+(pearl-gtd-test-define-story pearl-gtd-review-test-user-cannot-archive-project-with-actions-in-other-projects
+  "Archiving fails when a task belongs to multiple projects."
+  :setup (pearl-gtd-init-initialize)
+  :files (("action.org" "* DONE Task 1\n:PROPERTIES:\n:ID: multi-ar-1\n:PROJECT: ProjA; ProjB\n:END:\n* DONE Task 2\n:PROPERTIES:\n:ID: multi-ar-2\n:PROJECT: ProjA\n:END:\n"))
+  :mock nil
+  :body (should-error (pearl-gtd-review--archive-project "ProjA")
+                      :type 'error)
+  :asserts (progn
+             (should (pearl-gtd-test-file-contains-p-bool
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                      "ProjA"))
+             (should-not (file-exists-p (expand-file-name "archive.org" pearl-gtd-init-base-directory))))
+  :teardown nil)
+
 (provide 'pearl-gtd-review-test)
 
 ;;; pearl-gtd-review-test.el ends here
