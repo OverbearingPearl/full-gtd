@@ -20,7 +20,7 @@
 ;; - Empty cells indicate gaps in vertical alignment
 ;; - No-project actions shown separately (L3 Area only)
 ;;
-;; In the matrix view, press `a' to archive a completed project.
+;; In the matrix view, press `A' to archive a completed project.
 
 ;;; Code:
 
@@ -404,7 +404,7 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
         (erase-buffer)
         (org-mode)
         (setq-local header-line-format
-                    "Horizon View | 3=L3, 4=L4, 5=L5, 6=L6 | a=archive | RET=project actions | g=refresh | q=quit")
+                    "Horizon View | 3=L3, 4=L4, 5=L5, 6=L6 | A=archive | RET=project actions | g=refresh | q=quit")
 
         (insert "#+TITLE: Horizon Alignment View\n\n")
 
@@ -513,7 +513,7 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
     (define-key map (kbd "4") #'pearl-gtd-horizons--edit-goal-at-point)
     (define-key map (kbd "5") #'pearl-gtd-horizons--edit-vision-at-point)
     (define-key map (kbd "6") #'pearl-gtd-horizons--edit-purpose-at-point)
-    (define-key map (kbd "a") #'pearl-gtd-horizons--archive-project-at-point)
+    (define-key map (kbd "A") #'pearl-gtd-horizons--archive-project-at-point)
     map))
 
 (define-minor-mode pearl-gtd-horizons-view-mode

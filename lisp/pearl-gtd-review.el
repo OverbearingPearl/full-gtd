@@ -10,7 +10,7 @@
 
 ;; This file handles the "Review" phase of GTD.
 ;; Provides unified daily and weekly views with multiple sections.
-;; In table views, press `a' to archive a project (see
+;; In table views, press `A' to archive a project (see
 ;; `pearl-gtd-review--archive-project').
 
 ;;; Code:
@@ -50,7 +50,7 @@
     (define-key map (kbd "5") #'pearl-gtd-horizons--edit-vision-at-point)
     (define-key map (kbd "6") #'pearl-gtd-horizons--edit-purpose-at-point)
     ;; Archive project
-    (define-key map (kbd "a") #'pearl-gtd-review--archive-project-at-point)
+    (define-key map (kbd "A") #'pearl-gtd-review--archive-project-at-point)
     map))
 
 (define-minor-mode pearl-gtd-review-view-mode
@@ -392,9 +392,9 @@ META is an alist with keys :entry-map and :entry-index."
       (org-mode)
       (setq-local header-line-format
                   (pcase pearl-gtd-review--current-view-type
-                    ('daily "Daily Review | n/p/j/k: move | RET: jump | c/d/t/s/r/P: property | C: complete | a: archive | g: refresh | q: quit")
-                    ('weekly "Weekly Review | n/p/j/k: move | RET: jump | c/d/t/s/r/P/3-6: property | C: complete | a: archive | g: refresh | q: quit")
-                    (_ "Review | n/p/j/k: move | RET: jump | c/d/t/s/r/P/3-6: property | C: complete | a: archive | g: refresh | q: quit")))
+                    ('daily "Daily Review | n/p/j/k: move | RET: jump | c/d/t/s/r/P: property | C: complete | A: archive | g: refresh | q: quit")
+                    ('weekly "Weekly Review | n/p/j/k: move | RET: jump | c/d/t/s/r/P/3-6: property | C: complete | A: archive | g: refresh | q: quit")
+                    (_ "Review | n/p/j/k: move | RET: jump | c/d/t/s/r/P/3-6: property | C: complete | A: archive | g: refresh | q: quit")))
       (setq pearl-gtd-review--entry-map entry-map)
       (if (null sections-data)
           (insert "(No entries to review)\n")
