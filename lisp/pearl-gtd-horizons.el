@@ -203,9 +203,10 @@ Supports multiple values separated by semicolon."
   "Edit L6 Purpose and Principle horizons for project at point.
 Prompts for Purpose first, then immediately prompts for Principle."
   (interactive)
-  (pearl-gtd-horizons--edit-horizon-at-point 'purpose)
-  ;; After setting purpose, immediately prompt for principle (same horizon level)
-  (pearl-gtd-horizons--edit-horizon-at-point 'principle))
+  (let ((project (pearl-gtd-horizons--get-project-at-point)))
+    (when project
+      (pearl-gtd-horizons--edit-horizon-at-point 'purpose project)
+      (pearl-gtd-horizons--edit-horizon-at-point 'principle project))))
 
 (defun pearl-gtd-horizons--edit-principle-at-point ()
   "Edit L6 Principle horizon for project at point."
