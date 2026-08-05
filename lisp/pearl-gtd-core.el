@@ -51,7 +51,7 @@ CONTEXTS is a list of normalized context strings (without @ prefix)."
   "Return non-nil if current entry was closed today."
   (let* ((closed (org-entry-get nil "CLOSED")))
     (and closed
-         (string-match-p (format-time-string "\\[%F" (current-time) t) closed))))
+         (string-match-p (format-time-string "\\[%F" (current-time)) closed))))
 
 (defun pearl-gtd-core-entry-delegated-p ()
   "Return non-nil if current entry is delegated."
