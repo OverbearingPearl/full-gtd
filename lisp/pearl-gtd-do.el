@@ -338,18 +338,39 @@ CONTEXT-FILTER is used for context-match bonus."
   (when pearl-gtd-do--session-actions
     (setq pearl-gtd-do--session-actions (cdr pearl-gtd-do--session-actions))))
 
+(defun pearl-gtd-do--should-delete-on-completion-p (action)
+  "Return non-nil if ACTION should be deleted when completed.
+Actions without PROJECT property should be deleted."
+  (let ((project (plist-get action :project)))
+    (or (null project) (string= project ""))))
+
+(defun pearl-gtd-do--delete-entry (action)
+  "Delete entry for ACTION from its file."
+  (let ((id (plist-get action :id))
+        (file (plist-get action :file)))
+    (pearl-gtd-core-with-entry-at-id id file
+      (org-cut-subtree)
+      (save-buffer))))
+
 (defun pearl-gtd-do--complete-current ()
-  "Mark current action as done."
+  "Mark current action as done. Delete if it has no PROJECT property."
   (let ((action (pearl-gtd-do--current-action)))
     (when action
-      (let ((id (plist-get action :id))
-            (file (plist-get action :file)))
-        (when (numberp pearl-gtd-do--session-total-count)
-          (setq pearl-gtd-do--session-total-count (1- pearl-gtd-do--session-total-count)))
-        (pearl-gtd-core-with-entry-at-id id file
-          (let ((org-log-done 'time)) (org-todo 'done)))
-        (pearl-gtd-do--remove-current-action)
-        (message "Task completed")))))
+      (if (pearl-gtd-do--should-delete-on-completion-p action)
+          (progn
+            (pearl-gtd-do--delete-entry action)
+            (when (numberp pearl-gtd-do--session-total-count)
+              (setq pearl-gtd-do--session-total-count (1- pearl-gtd-do--session-total-count)))
+            (pearl-gtd-do--remove-current-action)
+            (message "Task deleted (no project)"))
+        (let ((id (plist-get action :id))
+              (file (plist-get action :file)))
+          (when (numberp pearl-gtd-do--session-total-count)
+            (setq pearl-gtd-do--session-total-count (1- pearl-gtd-do--session-total-count)))
+          (pearl-gtd-core-with-entry-at-id id file
+            (let ((org-log-done 'time)) (org-todo 'done)))
+          (pearl-gtd-do--remove-current-action)
+          (message "Task completed"))))))
 
 (defun pearl-gtd-do--snooze-current ()
   "Reschedule current action to tomorrow."
@@ -486,7 +507,7 @@ CONTEXT, TIME-BUDGET, and ENERGY are optional initial filters."
   :interactive nil)
 
 (defun pearl-gtd-do--session-done ()
-  "Mark current card as done and advance."
+  "Mark current card as done and advance. Delete if no project."
   (interactive)
   (pearl-gtd-do--complete-current)
   (if pearl-gtd-do--session-actions

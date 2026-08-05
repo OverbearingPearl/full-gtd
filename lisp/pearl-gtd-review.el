@@ -118,6 +118,18 @@
   (pearl-gtd-core-with-entry-at-id id file
     (org-get-heading t t)))
 
+(defun pearl-gtd-review--delete-entry-by-id (id file)
+  "Delete entry with ID from FILE."
+  (pearl-gtd-core-with-entry-at-id id file
+    (org-cut-subtree)
+    (save-buffer)))
+
+(defun pearl-gtd-review--should-delete-on-completion-p (id file)
+  "Return non-nil if entry with ID in FILE should be deleted when completed.
+Entries without PROJECT property should be deleted."
+  (let ((project (pearl-gtd-review--get-property-by-id id file "PROJECT")))
+    (or (null project) (string= project ""))))
+
 (defmacro pearl-gtd-review-define-property-editor (name property prompt property-type &optional extra-cleanup)
   "Define property editor function with NAME for PROPERTY.
 PROMPT is the user prompt string.
@@ -208,16 +220,20 @@ EXTRA-CLEANUP is a form to execute when removing the property
     (pearl-gtd-review--remove-property-by-id id file "L6_PURPOSE")))
 
 (defun pearl-gtd-review--complete-task-at-point ()
-  "Mark task at point as done."
+  "Mark task at point as done. Delete task if it has no PROJECT property."
   (interactive)
   (let ((entry (pearl-gtd-review--get-entry-at-point)))
     (when entry
       (let ((id (car entry))
             (file (cdr entry)))
-        (pearl-gtd-core-with-entry-at-id id file
-          (let ((org-log-done 'time))
-            (org-todo 'done))
-          (save-buffer))
+        (if (pearl-gtd-review--should-delete-on-completion-p id file)
+            (progn
+              (pearl-gtd-review--delete-entry-by-id id file)
+              (message "Task deleted (no project)"))
+          (pearl-gtd-core-with-entry-at-id id file
+            (let ((org-log-done 'time))
+              (org-todo 'done))
+            (save-buffer)))
         (pearl-gtd-review--refresh-view)))))
 
 (defun pearl-gtd-review--refresh-view ()

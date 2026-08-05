@@ -540,6 +540,30 @@
              (should-not (search-forward "Old name" nil t)))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
 
+(pearl-gtd-test-define-story pearl-gtd-review-test-user-completes-no-project-task-deletes
+  "Completing a task without project property should delete it."
+  :setup (pearl-gtd-init-initialize)
+  :files (("action.org" "* TODO No project task\n:PROPERTIES:\n:ID: no-proj-1\n:END:\n* TODO Project task\n:PROPERTIES:\n:ID: proj-1\n:PROJECT: Test\n:END:\n"))
+  :mock nil
+  :body (progn
+          (pearl-gtd-review-weekly)
+          (with-current-buffer "*Pearl-GTD Weekly Review*"
+            (goto-char (point-min))
+            (search-forward "** action.org - No Project")
+            (search-forward "No project task")
+            (beginning-of-line)
+            (pearl-gtd-review--complete-task-at-point)))
+  :asserts (progn
+             ;; Verify no-project task is deleted
+             (should-not (pearl-gtd-test-file-contains-p-bool
+                          (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                          "* TODO No project task"))
+             ;; Verify project task remains
+             (should (pearl-gtd-test-file-contains-p-bool
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                      "* TODO Project task")))
+  :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
+
 (provide 'pearl-gtd-review-test)
 
 ;;; pearl-gtd-review-test.el ends here

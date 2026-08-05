@@ -208,9 +208,6 @@
                           "* TODO Old name")))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD: Do Session*")))
 
-;; Note: Navigation test removed - single-card push mode doesn't support manual next/previous.
-;; The system automatically pushes the optimal task based on scoring and filters.
-
 (pearl-gtd-test-define-story pearl-gtd-do-test-session-change-conditions
   "Change conditions refreshes session with new filters."
   :setup (pearl-gtd-init-initialize)
@@ -282,6 +279,36 @@
                       (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       "* DONE Second task")))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD: Do Session*")))
+
+(pearl-gtd-test-define-story pearl-gtd-do-test-session-completes-no-project-task-deletes
+  "Done command on no-project task should delete it."
+  :setup (pearl-gtd-init-initialize)
+  :files (("action.org" (format "* TODO No project task\nDEADLINE: <%s>\n:PROPERTIES:\n:ID: no-proj-1\n:END:\n* TODO Project task\n:PROPERTIES:\n:ID: proj-1\n:PROJECT: Test\n:END:\n"
+                                (format-time-string "%F %a"
+                                                    (time-add (current-time) (* 24 3600))))))
+  :mock (((symbol-function 'completing-read) (lambda (&rest _) ""))
+         ((symbol-function 'read-string) (lambda (&rest _) "")))
+  :body (progn
+          (pearl-gtd-do)
+          (with-current-buffer "*Pearl-GTD: Do Session*"
+            (pearl-gtd-do--session-done)))
+  :asserts (progn
+             ;; Verify no-project task is deleted
+             (should-not (pearl-gtd-test-file-contains-p-bool
+                          (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                          "* TODO No project task"))
+             ;; Verify project task remains
+             (should (pearl-gtd-test-file-contains-p-bool
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                      "* TODO Project task"))
+             ;; Session should advance to next task
+             (with-current-buffer "*Pearl-GTD: Do Session*"
+               (goto-char (point-min))
+               (should (search-forward "* Project task" nil t))))
+  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD: Do Session*")))
+
+;; Note: Navigation test removed - single-card push mode doesn't support manual next/previous.
+;; The system automatically pushes the optimal task based on scoring and filters.
 
 (ert-deftest pearl-gtd-do-test-time-completions ()
   "Time input should offer preset options."
