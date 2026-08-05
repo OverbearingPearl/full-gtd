@@ -65,7 +65,7 @@
 
 ;;;; Story tests for session workflow
 
-(pearl-gtd-test-define-story pearl-gtd-do-session-starts-with-highest-priority-test
+(pearl-gtd-test-define-story pearl-gtd-do-test-session-starts-with-highest-priority
   "Session presents the highest priority action first."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Low priority\n:PROPERTIES:\n:ID: low-1\n:END:\n* TODO High priority\nDEADLINE: <2026-01-20 Mon>\n:PROPERTIES:\n:ID: high-1\n:END:\n"))
@@ -79,7 +79,7 @@
                (should (search-forward "* High priority" nil t))))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD: Do Session*")))
 
-(pearl-gtd-test-define-story pearl-gtd-do-session-completes-action-test
+(pearl-gtd-test-define-story pearl-gtd-do-test-session-completes-action
   "Done command marks action complete and advances."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO First task\n:PROPERTIES:\n:ID: first-1\n:END:\n* TODO Second task\n:PROPERTIES:\n:ID: second-1\n:END:\n"))
@@ -98,7 +98,7 @@
                (should (search-forward "* Second task" nil t))))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD: Do Session*")))
 
-(pearl-gtd-test-define-story pearl-gtd-do-session-snoozes-action-test
+(pearl-gtd-test-define-story pearl-gtd-do-test-session-snoozes-action
   "Snooze command reschedules action to tomorrow and advances."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Snooze me\n:PROPERTIES:\n:ID: snooze-1\n:END:\n* TODO Next task\n:PROPERTIES:\n:ID: next-1\n:END:\n"))
@@ -118,7 +118,7 @@
                (should (search-forward "* Next task" nil t))))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD: Do Session*")))
 
-(pearl-gtd-test-define-story pearl-gtd-do-session-context-filter-test
+(pearl-gtd-test-define-story pearl-gtd-do-test-session-context-filter
   "Context filter shows only matching actions."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Office task :office:\n:PROPERTIES:\n:ID: office-1\n:END:\n* TODO Home task :home:\n:PROPERTIES:\n:ID: home-1\n:END:\n"))
@@ -132,7 +132,7 @@
                (should-not (search-forward "* Home task" nil t))))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD: Do Session*")))
 
-(pearl-gtd-test-define-story pearl-gtd-do-session-empty-actions-test
+(pearl-gtd-test-define-story pearl-gtd-do-test-session-empty-actions
   "Empty actions file shows session complete."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" ""))
@@ -146,7 +146,7 @@
                (should (search-forward "Session Complete" nil t))))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD: Do Session*")))
 
-(pearl-gtd-test-define-story pearl-gtd-do-session-delegated-view-test
+(pearl-gtd-test-define-story pearl-gtd-do-test-session-delegated-view
   "Delegated session shows delegated TODO tasks."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Delegated task\n:PROPERTIES:\n:ID: del-1\n:DELEGATED: John\n:END:\n* TODO Own task\n:PROPERTIES:\n:ID: own-1\n:END:\n* DONE Delegated done\n:PROPERTIES:\n:ID: del-done-1\n:DELEGATED: Jane\n:END:\n"))
@@ -166,7 +166,7 @@
                (should-not (search-forward "* Delegated done" nil t))))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD: Delegated Session*")))
 
-(pearl-gtd-test-define-story pearl-gtd-do-session-today-view-test
+(pearl-gtd-test-define-story pearl-gtd-do-test-session-today-view
   "Today session shows tasks scheduled for today."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" (format "* TODO Today task\nSCHEDULED: <%s>\n:PROPERTIES:\n:ID: today-1\n:END:\n* TODO Later task\nSCHEDULED: <%s>\n:PROPERTIES:\n:ID: later-1\n:END:\n"
@@ -186,7 +186,7 @@
                (should-not (search-forward "* Later task" nil t))))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD: Today Session*")))
 
-(pearl-gtd-test-define-story pearl-gtd-do-session-rename-action-test
+(pearl-gtd-test-define-story pearl-gtd-do-test-session-rename-action
   "Rename command updates task headline."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Old name\n:PROPERTIES:\n:ID: rename-1\n:END:\n"))
@@ -211,7 +211,7 @@
 ;; Note: Navigation test removed - single-card push mode doesn't support manual next/previous.
 ;; The system automatically pushes the optimal task based on scoring and filters.
 
-(pearl-gtd-test-define-story pearl-gtd-do-session-change-conditions-test
+(pearl-gtd-test-define-story pearl-gtd-do-test-session-change-conditions
   "Change conditions refreshes session with new filters."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Office task :office:\n:PROPERTIES:\n:ID: ctx-office-1\n:END:\n* TODO Home task :home:\n:PROPERTIES:\n:ID: ctx-home-1\n:END:\n"))
@@ -229,7 +229,7 @@
              (should-not (search-forward "* Office task" nil t)))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD: Do Session*")))
 
-(pearl-gtd-test-define-story pearl-gtd-do-session-jump-to-source-test
+(pearl-gtd-test-define-story pearl-gtd-do-test-session-jump-to-source
   "Jump command opens source file at task."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Jump target\n:PROPERTIES:\n:ID: jump-1\n:END:\n"))
@@ -249,7 +249,7 @@
               (let ((buf (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory))))
                 (when buf (kill-buffer buf)))))
 
-(pearl-gtd-test-define-story pearl-gtd-do-session-backlog-count-test
+(pearl-gtd-test-define-story pearl-gtd-do-test-session-backlog-count
   "Backlog count is displayed and decrements on done but not skip."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO First task\n:PROPERTIES:\n:ID: first-1\n:END:\n* TODO Second task\n:PROPERTIES:\n:ID: second-1\n:END:\n* TODO Third task\n:PROPERTIES:\n:ID: third-1\n:END:\n"))

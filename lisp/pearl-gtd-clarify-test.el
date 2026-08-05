@@ -13,7 +13,7 @@
 (require 'pearl-gtd)
 (require 'pearl-gtd-test)
 
-(pearl-gtd-test-define-story pearl-gtd-clarify-user-skips-clarify-entirely-test
+(pearl-gtd-test-define-story pearl-gtd-clarify-test-user-skips-clarify-entirely
   "User processes to reference without clarifying."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Raw task\n:PROPERTIES:\n:ID: c1\n:END:\n"))
@@ -28,7 +28,7 @@
              (should (pearl-gtd-test-inbox-empty-p pearl-gtd-init-base-directory)))
   :teardown nil)
 
-(pearl-gtd-test-define-story pearl-gtd-clarify-user-clarifies-then-trash-test
+(pearl-gtd-test-define-story pearl-gtd-clarify-test-user-clarifies-then-trash
   "User clarifies title and remarks, then trashes."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Bad idea\n:PROPERTIES:\n:ID: c2\n:END:\n"))
@@ -51,7 +51,7 @@
                           "Worse idea")))
   :teardown nil)
 
-(pearl-gtd-test-define-story pearl-gtd-clarify-user-clarifies-then-action-test
+(pearl-gtd-test-define-story pearl-gtd-clarify-test-user-clarifies-then-action
   "User clarifies then sends to action."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Vague task\n:PROPERTIES:\n:ID: c3\n:END:\n"))
@@ -79,7 +79,7 @@
                       ":office:")))
   :teardown nil)
 
-(pearl-gtd-test-define-story pearl-gtd-clarify-user-quits-during-clarify-test
+(pearl-gtd-test-define-story pearl-gtd-clarify-test-user-quits-during-clarify
   "User quits (C-g) during clarify input."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Task to clarify\n:PROPERTIES:\n:ID: c4\n:END:\n"))
@@ -96,7 +96,7 @@
                       "* Task to clarify")))  ; Still in inbox
   :teardown nil)
 
-(pearl-gtd-test-define-story pearl-gtd-clarify-user-quits-during-destination-test
+(pearl-gtd-test-define-story pearl-gtd-clarify-test-user-quits-during-destination
   "User quits at destination selection prompt."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Task to route\n:PROPERTIES:\n:ID: c5\n:END:\n"))

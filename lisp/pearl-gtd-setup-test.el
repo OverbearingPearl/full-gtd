@@ -10,7 +10,7 @@
 (require 'pearl-gtd-init)
 (require 'pearl-gtd-test)
 
-(pearl-gtd-test-define-story pearl-gtd-setup-user-initializes-gtd-system-for-first-time-test
+(pearl-gtd-test-define-story pearl-gtd-setup-test-user-initializes-gtd-system-for-first-time
   "User runs M-x pearl-gtd-init-initialize for the first time."
   :setup nil
   :files nil
@@ -24,7 +24,7 @@
              (should (file-exists-p (expand-file-name "actions.org" pearl-gtd-init-base-directory))))
   :teardown nil)
 
-(pearl-gtd-test-define-story pearl-gtd-setup-user-reinitializes-without-losing-data-test
+(pearl-gtd-test-define-story pearl-gtd-setup-test-user-reinitializes-without-losing-data
   "User reinitializes system, existing files are preserved."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Existing task\n"))
@@ -36,7 +36,7 @@
                       "* Existing task")))
   :teardown nil)
 
-(pearl-gtd-test-define-story pearl-gtd-setup-user-initializes-with-existing-files-test
+(pearl-gtd-test-define-story pearl-gtd-setup-test-user-initializes-with-existing-files
   "User initializes system with existing files."
   :setup nil
   :files (("inbox.org" "* Existing task\n"))
@@ -49,7 +49,7 @@
                       "* Existing task")))
   :teardown nil)
 
-(pearl-gtd-test-define-story pearl-gtd-setup-user-initializes-with-two-existing-files-test
+(pearl-gtd-test-define-story pearl-gtd-setup-test-user-initializes-with-two-existing-files
   "User initializes system with two existing files preserved."
   :setup nil
   :files (("inbox.org" "* Task one\n* Task two\n")

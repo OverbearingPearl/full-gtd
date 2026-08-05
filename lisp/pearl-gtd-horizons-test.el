@@ -10,7 +10,7 @@
 (require 'pearl-gtd)
 (require 'pearl-gtd-test)
 
-(pearl-gtd-test-define-story pearl-gtd-horizons-view-shows-project-matrix-test
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-view-shows-project-matrix
   "Horizon view shows projects in matrix with L6-L3 columns."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Project task\n:PROPERTIES:\n:ID: p-1\n:PROJECT: TestProject\n:L3_AREA: Work\n:L4_GOAL: Goal1\n:L5_VISION: Vision1\n:L6_PURPOSE: Purpose1\n:END:\n"))
@@ -32,7 +32,7 @@
                (should (search-forward-regexp "|\\s-*TestProject\\s-*|\\s-*1\\s-*|\\s-*1\\s-*|\\s-*0\\s-*|\\s-*Purpose1\\s-*|\\s-*Vision1\\s-*|\\s-*Goal1\\s-*|\\s-*Work\\s-*|" (line-end-position) t))))
   :teardown (kill-buffer "*Pearl-GTD Horizon View*"))
 
-(pearl-gtd-test-define-story pearl-gtd-horizons-view-shows-critical-gaps-test
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-view-shows-critical-gaps
   "Projects without any horizon appear in Critical section."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task1\n:PROPERTIES:\n:ID: gap-1\n:PROJECT: NoHorizonProject\n:END:\n* TODO Task2\n:PROPERTIES:\n:ID: gap-2\n:PROJECT: HasHorizonProject\n:L3_AREA: Work\n:L4_GOAL: Goal1\n:L5_VISION: Vision1\n:L6_PURPOSE: Purpose1\n:END:\n"))
@@ -51,7 +51,7 @@
                (should (search-forward "HasHorizonProject" nil t))))
   :teardown (kill-buffer "*Pearl-GTD Horizon View*"))
 
-(pearl-gtd-test-define-story pearl-gtd-horizons-view-shows-partial-alignment-test
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-view-shows-partial-alignment
   "Projects with only L3 appear in Partial section."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: partial-1\n:PROJECT: PartialProject\n:L3_AREA: Work\n:END:\n"))
@@ -68,7 +68,7 @@
                (should (search-forward-regexp "|\\s-*PartialProject\\s-*|.*|\\s-*Work\\s-*|" (line-end-position) t))))
   :teardown (kill-buffer "*Pearl-GTD Horizon View*"))
 
-(pearl-gtd-test-define-story pearl-gtd-horizons-view-shows-no-project-actions-test
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-view-shows-no-project-actions
   "No-project actions shown in separate table with L3 only."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO No project task\n:PROPERTIES:\n:ID: np-1\n:L3_AREA: Personal\n:END:\n"))
@@ -90,7 +90,7 @@
                (should (search-forward "No project task" nil t))))
   :teardown (kill-buffer "*Pearl-GTD Horizon View*"))
 
-(pearl-gtd-test-define-story pearl-gtd-horizons-view-shows-multi-horizon-projects-test
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-view-shows-multi-horizon-projects
   "Projects with incomplete horizons and multiple values shown in dedicated section."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: multi-1\n:PROJECT: MultiProject\n:L3_AREA: Work; Personal\n:L4_GOAL: Goal1; Goal2\n:END:\n"))
@@ -107,7 +107,7 @@
                (should (search-forward-regexp "Work; Personal" (line-end-position) t))))
   :teardown (kill-buffer "*Pearl-GTD Horizon View*"))
 
-(pearl-gtd-test-define-story pearl-gtd-horizons-view-edits-l6-at-point-test
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-view-edits-l6-at-point
   "Press 6 to edit L6 Purpose in horizon view."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: edit-l6-1\n:PROJECT: EditProject\n:L3_AREA: Work\n:L4_GOAL: Goal1\n:L5_VISION: Vision1\n:L6_PURPOSE: OldPurpose\n:END:\n"))
@@ -126,7 +126,7 @@
                       ":L6_PURPOSE: NewPurpose")))
   :teardown (kill-buffer "*Pearl-GTD Horizon View*"))
 
-(pearl-gtd-test-define-story pearl-gtd-horizons-view-jumps-to-project-actions-test
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-view-jumps-to-project-actions
   "Press RET on project row to view its actions."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task A\n:PROPERTIES:\n:ID: jump-1\n:PROJECT: JumpProject\n:L3_AREA: Work\n:END:\n* TODO Task B\n:PROPERTIES:\n:ID: jump-2\n:PROJECT: JumpProject\n:END:\n"))
@@ -147,7 +147,7 @@
               (when (get-buffer "*Pearl-GTD Project: JumpProject*")
                 (kill-buffer "*Pearl-GTD Project: JumpProject*"))))
 
-(pearl-gtd-test-define-story pearl-gtd-horizons-view-shows-health-dashboard-test
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-view-shows-health-dashboard
   "Top of view shows health statistics."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO T1\n:PROPERTIES:\n:ID: h-1\n:PROJECT: P1\n:END:\n* TODO T2\n:PROPERTIES:\n:ID: h-2\n:PROJECT: P2\n:L3_AREA: Work\n:END:\n* TODO T3\n:PROPERTIES:\n:ID: h-3\n:PROJECT: P3\n:L3_AREA: Work\n:L4_GOAL: G1\n:L5_VISION: V1\n:L6_PURPOSE: Purpose1\n:END:\n"))
@@ -162,7 +162,7 @@
              (should (search-forward-regexp "1 Aligned" nil t)))
   :teardown (kill-buffer "*Pearl-GTD Horizon View*"))
 
-(pearl-gtd-test-define-story pearl-gtd-horizons-edit-applies-to-all-project-actions-test
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-edit-applies-to-all-project-actions
   "Editing horizon in view applies to all actions of that project."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task 1\n:PROPERTIES:\n:ID: t1\n:PROJECT: TestProject\n:END:\n* TODO Task 2\n:PROPERTIES:\n:ID: t2\n:PROJECT: TestProject\n:END:\n"))
@@ -185,7 +185,7 @@
                    (should (= count 2))))))
   :teardown (kill-buffer "*Pearl-GTD Horizon View*"))
 
-(pearl-gtd-test-define-story pearl-gtd-horizons-clearing-l3-removes-from-all-actions-test
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-clearing-l3-removes-from-all-actions
   "Clearing L3 from project removes it from all project actions."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task 1\n:PROPERTIES:\n:ID: cascade-1\n:PROJECT: TestProj\n:L3_AREA: Work\n:END:\n"))
@@ -204,7 +204,7 @@
              (should-not (string-match-p ":L3_AREA:" content)))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Horizon View*")))
 
-(pearl-gtd-test-define-story pearl-gtd-horizons-constraint-rejects-vision-without-goal-test
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-constraint-rejects-vision-without-goal
   "User is blocked when attempting to set Vision (L5) without Goal (L4)."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: constraint-1\n:PROJECT: ConstraintProj\n:L3_AREA: Area\n:END:\n"))
@@ -228,7 +228,7 @@
                                ":L5_VISION:"))))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Horizon View*")))
 
-(pearl-gtd-test-define-story pearl-gtd-horizons-constraint-rejects-purpose-without-vision-test
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-constraint-rejects-purpose-without-vision
   "User is blocked when attempting to set Purpose (L6) without Vision (L5)."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: constraint-2\n:PROJECT: ConstraintProj2\n:L3_AREA: Area\n:L4_GOAL: Goal\n:END:\n"))
@@ -252,7 +252,7 @@
                                ":L6_PURPOSE:"))))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Horizon View*")))
 
-(pearl-gtd-test-define-story pearl-gtd-horizons-constraint-rejects-principle-without-purpose-test
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-constraint-rejects-principle-without-purpose
   "User is blocked when attempting to set L6 Principle without L6 Purpose."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: constraint-3\n:PROJECT: ConstraintProj3\n:L3_AREA: Area\n:L4_GOAL: Goal\n:L5_VISION: Vision\n:END:\n"))
@@ -276,7 +276,7 @@
                                ":L6_PRINCIPLE:"))))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Horizon View*")))
 
-(pearl-gtd-test-define-story pearl-gtd-horizons-principle-allows-multiple-purposes-test
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-principle-allows-multiple-purposes
   "Setting Principle passes when any Purpose exists in multi-value."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: multi-purpose-1\n:PROJECT: MultiPurposeProj\n:L3_AREA: Area\n:L4_GOAL: Goal\n:L5_VISION: Vision\n:L6_PURPOSE: P1; P2\n:END:\n"))
@@ -295,7 +295,7 @@
                       ":L6_PRINCIPLE: PrincipleValue")))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Horizon View*")))
 
-(pearl-gtd-test-define-story pearl-gtd-horizons-user-edits-project-with-mixed-horizon-values-test
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-user-edits-project-with-mixed-horizon-values
   "Editing project horizon when tasks have different existing values."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task1\n:PROPERTIES:\n:ID: mixed-1\n:PROJECT: MixedProj\n:L3_AREA: OldArea1\n:END:\n* TODO Task2\n:PROPERTIES:\n:ID: mixed-2\n:PROJECT: MixedProj\n:L3_AREA: OldArea2\n:END:\n* TODO Task3\n:PROPERTIES:\n:ID: mixed-3\n:PROJECT: MixedProj\n:END:\n"))
@@ -321,7 +321,7 @@
                (should-not (car (pearl-gtd-test-file-contains-p file ":L3_AREA: +OldArea2")))))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Horizon View*")))
 
-(pearl-gtd-test-define-story pearl-gtd-horizons-multi-project-task-cascading-test
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-multi-project-task-cascading
   "Editing horizon for one project does not affect other projects sharing the same task."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO SharedTask\n:PROPERTIES:\n:ID: multi-proj-1\n:PROJECT: ProjA; ProjB\n:L3_AREA: OldArea\n:END:\n"))
@@ -349,7 +349,7 @@
                      (should (string-match-p "NewArea" value)))))))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Horizon View*")))
 
-(pearl-gtd-test-define-story pearl-gtd-horizons-atomic-rollback-on-constraint-failure-test
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-atomic-rollback-on-constraint-failure
   "When hierarchy constraint fails, no partial horizon changes are applied."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task1\n:PROPERTIES:\n:ID: atomic-1\n:PROJECT: AtomicProj\n:L3_AREA: Area\n:END:\n* TODO Task2\n:PROPERTIES:\n:ID: atomic-2\n:PROJECT: AtomicProj\n:L3_AREA: Area\n:END:\n"))
@@ -380,7 +380,7 @@
                    (should (= count 2))))))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Horizon View*")))
 
-(pearl-gtd-test-define-story pearl-gtd-horizons-multiple-values-shown-in-cell-test
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-multiple-values-shown-in-cell
   "Multiple horizon values shown semicolon-separated in matrix cell."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: multi-horizon-1\n:PROJECT: MultiHorizonProj\n:L6_PURPOSE: PurposeA; PurposeB\n:L5_VISION: VisionA; VisionB\n:L4_GOAL: GoalA; GoalB\n:L3_AREA: AreaA; AreaB\n:END:\n"))
@@ -401,7 +401,7 @@
                (should (search-forward-regexp "AreaA; AreaB" (line-end-position) t))))
   :teardown (kill-buffer "*Pearl-GTD Horizon View*"))
 
-(pearl-gtd-test-define-story pearl-gtd-horizons-user-edits-multiple-values-test
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-user-edits-multiple-values
   "Editing horizon shows joined values and saves split values."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO EditTask\n:PROPERTIES:\n:ID: edit-multi-1\n:PROJECT: EditProj\n:L5_VISION: VisionValue\n:L6_PURPOSE: Old1; Old2\n:END:\n"))
@@ -423,7 +423,7 @@
                       ":L6_PURPOSE: Old1; Old2; New3")))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Horizon View*")))
 
-(pearl-gtd-test-define-story pearl-gtd-horizons-mixed-separators-normalized-in-view-test
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-mixed-separators-normalized-in-view
   "Horizon values with mixed semicolons normalized for display."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: mix-sep-1\n:PROJECT: MixProj\n:L3_AREA: AreaVal\n:L4_GOAL: GoalVal\n:L5_VISION: VisionValue\n:L6_PURPOSE: P1; P2 ； P3\t;\tP4\n:END:\n"))
@@ -441,7 +441,7 @@
                (should (search-forward-regexp "P1; P2; P3; P4" (line-end-position) t))))
   :teardown (kill-buffer "*Pearl-GTD Horizon View*"))
 
-(pearl-gtd-test-define-story pearl-gtd-horizons-multiple-projects-shown-as-multi-horizon-test
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-multiple-projects-shown-as-multi-horizon
   "Project with complete horizons and multiple values shown in Aligned section."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: multi-ph-1\n:PROJECT: MultiProj\n:L3_AREA: Area1; Area2\n:L4_GOAL: Goal1; Goal2\n:L5_VISION: Vision1\n:L6_PURPOSE: Purpose1\n:END:\n"))
@@ -456,7 +456,7 @@
                (should (search-forward "MultiProj" nil t))))
   :teardown (kill-buffer "*Pearl-GTD Horizon View*"))
 
-(pearl-gtd-test-define-story pearl-gtd-horizons-complete-multi-valued-in-aligned-section-test
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-complete-multi-valued-in-aligned-section
   "Complete L3-L6 project with multiple values appears in Aligned, not Multi-Horizon."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: complete-multi-1\n:PROJECT: CompleteMultiProj\n:L3_AREA: Work; Personal\n:L4_GOAL: Goal1; Goal2\n:L5_VISION: VisionA; VisionB\n:L6_PURPOSE: Purpose1\n:END:\n"))
@@ -475,7 +475,7 @@
                (should-not (search-forward "CompleteMultiProj" (save-excursion (search-forward "** No-Project Actions") (point)) t))))
   :teardown (kill-buffer "*Pearl-GTD Horizon View*"))
 
-(pearl-gtd-test-define-story pearl-gtd-horizons-whitespace-only-values-ignored-test
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-whitespace-only-values-ignored
   "Horizon values that are whitespace-only should be ignored in display."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task\n:PROPERTIES:\n:ID: ws-val-1\n:PROJECT: WSProj\n:L3_AREA: ValidArea;   ; \t ;AnotherArea\n:L4_GOAL: GoalVal\n:L5_VISION: VisionVal\n:L6_PURPOSE: PurposeVal\n:END:\n"))
@@ -493,7 +493,7 @@
                (should-not (search-forward-regexp "   ;" (line-end-position) t))))
   :teardown (kill-buffer "*Pearl-GTD Horizon View*"))
 
-(pearl-gtd-test-define-story pearl-gtd-horizons-empty-horizon-shown-as-partial-test
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-empty-horizon-shown-as-partial
   "Project with some empty horizons shown in Partial section."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task1\n:PROPERTIES:\n:ID: empty-inherit-1\n:PROJECT: PartialProj\n:L3_AREA: WorkArea\n:L4_GOAL: \n:L5_VISION: \n:L6_PURPOSE: \n:END:\n"))

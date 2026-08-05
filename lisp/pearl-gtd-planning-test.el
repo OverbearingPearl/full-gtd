@@ -31,7 +31,7 @@
             (funcall next prompt)
           next)))))
 
-(pearl-gtd-test-define-story pearl-gtd-planning-user-completes-full-workflow-test
+(pearl-gtd-test-define-story pearl-gtd-planning-test-user-completes-full-workflow
   "User completes natural planning with all fields filled, creating project with horizons and actions."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -127,7 +127,7 @@
               (when (get-buffer "*Pearl-GTD Planning Summary*")
                 (kill-buffer "*Pearl-GTD Planning Summary*"))))
 
-(pearl-gtd-test-define-story pearl-gtd-planning-user-skips-optional-fields-test
+(pearl-gtd-test-define-story pearl-gtd-planning-test-user-skips-optional-fields
   "Principle and Area can be empty, others are mandatory."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -191,7 +191,7 @@
               (when (get-buffer "*Pearl-GTD Brainstorm Organize*")
                 (kill-buffer "*Pearl-GTD Brainstorm Organize*"))))
 
-(pearl-gtd-test-define-story pearl-gtd-planning-user-forced-to-organize-all-items-test
+(pearl-gtd-test-define-story pearl-gtd-planning-test-user-forced-to-organize-all-items
   "User must organize all brainstorm items before proceeding, no skipping allowed."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -254,7 +254,7 @@
               (when (get-buffer "*Pearl-GTD Planning Summary*")
                 (kill-buffer "*Pearl-GTD Planning Summary*"))))
 
-(pearl-gtd-test-define-story pearl-gtd-planning-user-forced-to-create-next-action-test
+(pearl-gtd-test-define-story pearl-gtd-planning-test-user-forced-to-create-next-action
   "If all brainstorm items go to Trash/Ref/Someday, user is forced to create one Next Action."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -311,7 +311,7 @@
               (when (get-buffer "*Pearl-GTD Planning Summary*")
                 (kill-buffer "*Pearl-GTD Planning Summary*"))))
 
-(pearl-gtd-test-define-story pearl-gtd-planning-user-provides-required-fields-test
+(pearl-gtd-test-define-story pearl-gtd-planning-test-user-provides-required-fields
   "Purpose, Vision, and Goal cannot be empty; code loops until valid input."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -366,7 +366,7 @@
               (when (get-buffer "*Pearl-GTD Planning Summary*")
                 (kill-buffer "*Pearl-GTD Planning Summary*"))))
 
-(pearl-gtd-test-define-story pearl-gtd-planning-user-trashes-item-removes-completely-test
+(pearl-gtd-test-define-story pearl-gtd-planning-test-user-trashes-item-removes-completely
   "Trash destination removes item completely without creating file entry."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -418,7 +418,7 @@
               (when (get-buffer "*Pearl-GTD Planning Summary*")
                 (kill-buffer "*Pearl-GTD Planning Summary*"))))
 
-(pearl-gtd-test-define-story pearl-gtd-planning-user-skips-context-for-action-test
+(pearl-gtd-test-define-story pearl-gtd-planning-test-user-skips-context-for-action
   "Context can be skipped for Next Action (empty string)."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -466,7 +466,7 @@
               (when (get-buffer "*Pearl-GTD Brainstorm Organize*")
                 (kill-buffer "*Pearl-GTD Brainstorm Organize*"))))
 
-(pearl-gtd-test-define-story pearl-gtd-planning-user-rejected-for-duplicate-project-test
+(pearl-gtd-test-define-story pearl-gtd-planning-test-user-rejected-for-duplicate-project
   "Planning must reject existing project names and force new name."
   :setup (progn
            (pearl-gtd-init-initialize)
@@ -522,7 +522,7 @@
               (when (get-buffer "*Pearl-GTD Planning Summary*")
                 (kill-buffer "*Pearl-GTD Planning Summary*"))))
 
-(pearl-gtd-test-define-story pearl-gtd-planning-user-creates-project-without-brainstorm-test
+(pearl-gtd-test-define-story pearl-gtd-planning-test-user-creates-project-without-brainstorm
   "Natural planning with no brainstorm items should still create project."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -566,7 +566,7 @@
               (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))
               (when (get-buffer "*Pearl-GTD: Inbox*") (kill-buffer "*Pearl-GTD: Inbox*"))))
 
-(pearl-gtd-test-define-story pearl-gtd-planning-user-quits-during-organize-test
+(pearl-gtd-test-define-story pearl-gtd-planning-test-user-quits-during-organize
   "User quits (C-g) during organize phase, staging buffer should be cleaned."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -607,7 +607,7 @@
               (when (get-buffer "*Pearl-GTD Brainstorm*") (kill-buffer "*Pearl-GTD Brainstorm*"))
               (when (get-buffer "*Pearl-GTD Brainstorm Organize*") (kill-buffer "*Pearl-GTD Brainstorm Organize*"))))
 
-(pearl-gtd-test-define-story pearl-gtd-planning-user-clarifies-brainstorm-item-test
+(pearl-gtd-test-define-story pearl-gtd-planning-test-user-clarifies-brainstorm-item
   "User clarifies a brainstorm item before organizing to next action."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -658,7 +658,7 @@
               (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))
               (when (get-buffer "*Pearl-GTD Brainstorm Organize*") (kill-buffer "*Pearl-GTD Brainstorm Organize*"))))
 
-(pearl-gtd-test-define-story pearl-gtd-planning-isolates-other-project-brainstorms-test
+(pearl-gtd-test-define-story pearl-gtd-planning-test-isolates-other-project-brainstorms
   "Brainstorm items from other projects remain untouched during organize."
   :setup (progn
            (pearl-gtd-init-initialize)
@@ -710,7 +710,7 @@
               (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))
               (when (get-buffer "*Pearl-GTD Brainstorm Organize*") (kill-buffer "*Pearl-GTD Brainstorm Organize*"))))
 
-(pearl-gtd-test-define-story pearl-gtd-planning-collects-brainstorm-projects-from-inbox-test
+(pearl-gtd-test-define-story pearl-gtd-planning-test-collects-brainstorm-projects-from-inbox
   "Collects unique project names from inbox entries with BRAINSTORM property."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Brainstorm item 1\n:PROPERTIES:\n:ID: bs-1\n:BRAINSTORM: t\n:PROJECT: AlphaProject\n:END:\n* Brainstorm item 2\n:PROPERTIES:\n:ID: bs-2\n:BRAINSTORM: t\n:PROJECT: BetaProject\n:END:\n* Not brainstorm\n:PROPERTIES:\n:ID: bs-3\n:PROJECT: GammaProject\n:END:\n"))
@@ -722,7 +722,7 @@
   :asserts t
   :teardown nil)
 
-(pearl-gtd-test-define-story pearl-gtd-planning-brainstorm-projects-deduplicated-test
+(pearl-gtd-test-define-story pearl-gtd-planning-test-brainstorm-projects-deduplicated
   "Brainstorm projects with same name are deduplicated in completion list."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Item 1\n:PROPERTIES:\n:ID: bs-1\n:BRAINSTORM: t\n:PROJECT: SharedProject\n:END:\n* Item 2\n:PROPERTIES:\n:ID: bs-2\n:BRAINSTORM: t\n:PROJECT: SharedProject\n:END:\n* Item 3\n:PROPERTIES:\n:ID: bs-3\n:BRAINSTORM: t\n:PROJECT: MultiA;MultiB\n:END:\n"))
@@ -735,7 +735,7 @@
   :asserts t
   :teardown nil)
 
-(pearl-gtd-test-define-story pearl-gtd-planning-user-selects-brainstorm-project-from-completion-test
+(pearl-gtd-test-define-story pearl-gtd-planning-test-user-selects-brainstorm-project-from-completion
   "User selects an existing brainstorm project from completion list, existing items pre-populated."
   :setup (progn
            (pearl-gtd-init-initialize)
@@ -803,7 +803,7 @@
               (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))
               (when (get-buffer "*Pearl-GTD: Inbox*") (kill-buffer "*Pearl-GTD: Inbox*"))))
 
-(pearl-gtd-test-define-story pearl-gtd-planning-new-project-no-preload-test
+(pearl-gtd-test-define-story pearl-gtd-planning-test-new-project-no-preload
   "New project without existing brainstorm items starts with empty buffer."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -844,7 +844,7 @@
               (when (get-buffer "*Pearl-GTD Brainstorm*") (kill-buffer "*Pearl-GTD Brainstorm*"))
               (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
 
-(pearl-gtd-test-define-story pearl-gtd-planning-empty-inbox-no-brainstorm-projects-test
+(pearl-gtd-test-define-story pearl-gtd-planning-test-empty-inbox-no-brainstorm-projects
   "Empty inbox returns empty list of brainstorm projects."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" ""))
@@ -854,7 +854,7 @@
   :asserts t
   :teardown nil)
 
-(pearl-gtd-test-define-story pearl-gtd-planning-proj-name-with-space-test
+(pearl-gtd-test-define-story pearl-gtd-planning-test-proj-name-with-space
   "Project name containing spaces should be handled correctly."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -902,7 +902,7 @@
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
               (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
 
-(pearl-gtd-test-define-story pearl-gtd-planning-user-sets-multiple-purposes-test
+(pearl-gtd-test-define-story pearl-gtd-planning-test-user-sets-multiple-purposes
   "User can set multiple purposes separated by semicolon."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -949,7 +949,7 @@
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
               (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
 
-(pearl-gtd-test-define-story pearl-gtd-planning-project-with-spaces-around-name-test
+(pearl-gtd-test-define-story pearl-gtd-planning-test-project-with-spaces-around-name
   "Project name with leading/trailing spaces should be trimmed."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -996,7 +996,7 @@
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
               (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
 
-(pearl-gtd-test-define-story pearl-gtd-planning-multiple-purposes-with-mixed-separators-test
+(pearl-gtd-test-define-story pearl-gtd-planning-test-multiple-purposes-with-mixed-separators
   "Multiple purposes with mixed separators and whitespace."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -1038,7 +1038,7 @@
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
               (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
 
-(pearl-gtd-test-define-story pearl-gtd-planning-empty-brainstorm-after-trim-test
+(pearl-gtd-test-define-story pearl-gtd-planning-test-empty-brainstorm-after-trim
   "Brainstorm items that are whitespace-only after trim should be ignored."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -1080,7 +1080,7 @@
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
               (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
 
-(pearl-gtd-test-define-story pearl-gtd-planning-existing-project-with-space-detected-test
+(pearl-gtd-test-define-story pearl-gtd-planning-test-existing-project-with-space-detected
   "Existing project with space in name should be detected correctly."
   :setup (progn
            (pearl-gtd-init-initialize)
@@ -1136,7 +1136,7 @@
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
               (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
 
-(pearl-gtd-test-define-story pearl-gtd-planning-user-aborts-brainstorm-cleans-buffer-test
+(pearl-gtd-test-define-story pearl-gtd-planning-test-user-aborts-brainstorm-cleans-buffer
   "User aborts brainstorm with C-c C-k, *Pearl-GTD Brainstorm* buffer must be killed."
   :setup (pearl-gtd-init-initialize)
   :files nil

@@ -10,7 +10,7 @@
 (require 'pearl-gtd)
 (require 'pearl-gtd-test)
 
-(pearl-gtd-test-define-story pearl-gtd-workflows-user-processes-full-gtd-pipeline-test
+(pearl-gtd-test-define-story pearl-gtd-workflows-test-user-processes-full-gtd-pipeline
   "User captures, clarifies, organizes, and completes processing."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -51,7 +51,7 @@
                       ":ID:")))
   :teardown nil)
 
-(pearl-gtd-test-define-story pearl-gtd-workflows-user-interrupts-processing-test
+(pearl-gtd-test-define-story pearl-gtd-workflows-test-user-interrupts-processing
   "User interrupts processing midway."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Task to interrupt\n"))
@@ -68,7 +68,7 @@
            (should (eq (car pearl-gtd-test-caught-error) 'quit)))
   :teardown nil)
 
-(pearl-gtd-test-define-story pearl-gtd-workflows-user-processes-mixed-destinations-test
+(pearl-gtd-test-define-story pearl-gtd-workflows-test-user-processes-mixed-destinations
   "User processes entries with mixed destinations."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Action task\n* Reference task\n"))
@@ -92,7 +92,7 @@
                       "* Reference task")))
   :teardown nil)
 
-(pearl-gtd-test-define-story pearl-gtd-workflows-user-captures-and-processes-two-items-test
+(pearl-gtd-test-define-story pearl-gtd-workflows-test-user-captures-and-processes-two-items
   "User captures two items then processes both."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -120,7 +120,7 @@
                       "* Second capture")))
   :teardown nil)
 
-(pearl-gtd-test-define-story pearl-gtd-workflows-user-sees-id-preserved-after-processing-test
+(pearl-gtd-test-define-story pearl-gtd-workflows-test-user-sees-id-preserved-after-processing
   "ID is preserved when task is moved from inbox to actions."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -151,7 +151,7 @@
              (should (pearl-gtd-test-inbox-empty-p pearl-gtd-init-base-directory)))
   :teardown nil)
 
-(pearl-gtd-test-define-story pearl-gtd-workflows-user-sees-duplicate-titles-get-different-ids-test
+(pearl-gtd-test-define-story pearl-gtd-workflows-test-user-sees-duplicate-titles-get-different-ids
   "Same title in different files gets different IDs."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Existing task\n:PROPERTIES:\n:ID: existing-id-1\n:END:\n"))
@@ -175,7 +175,7 @@
                  (should-not (search-forward "existing-id-1" nil t)))))
   :teardown nil)
 
-(pearl-gtd-test-define-story pearl-gtd-workflows-user-processes-duplicate-titles-test
+(pearl-gtd-test-define-story pearl-gtd-workflows-test-user-processes-duplicate-titles
   "User captures two tasks with same title, both processed correctly."
   :setup (pearl-gtd-init-initialize)
   :files nil
@@ -207,7 +207,7 @@
                (should (search-forward "* TODO Task" nil t))))
   :teardown nil)
 
-(pearl-gtd-test-define-story pearl-gtd-workflows-duplicate-ids-in-file-test
+(pearl-gtd-test-define-story pearl-gtd-workflows-test-duplicate-ids-in-file
   "Malformed file with duplicate IDs should still allow jumping to first match."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Task A\n:PROPERTIES:\n:ID: dup-id\n:END:\n* TODO Task B\n:PROPERTIES:\n:ID: dup-id\n:END:\n"))
@@ -230,7 +230,7 @@
               (let ((buf (get-file-buffer (expand-file-name "actions.org" pearl-gtd-init-base-directory))))
                 (when buf (kill-buffer buf)))))
 
-(pearl-gtd-test-define-story pearl-gtd-workflows-multi-project-action-inheritance-test
+(pearl-gtd-test-define-story pearl-gtd-workflows-test-multi-project-action-inheritance
   "Action linked to multiple projects inherits horizons from all."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Shared action\n:PROPERTIES:\n:ID: shared-multi-1\n:PROJECT: Alpha; Beta\n:END:\n"))
@@ -253,7 +253,7 @@
                  (should (search-forward "Beta" nil t)))))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
 
-(pearl-gtd-test-define-story pearl-gtd-workflows-multiple-contexts-on-single-action-test
+(pearl-gtd-test-define-story pearl-gtd-workflows-test-multiple-contexts-on-single-action
   "Action can have multiple context tags."
   :setup (pearl-gtd-init-initialize)
   :files (("actions.org" "* TODO Multi context task\n:PROPERTIES:\n:ID: multi-ctx-1\n:CONTEXT: office\n:END:\n"))
@@ -275,7 +275,7 @@
                (should (search-forward "@phone" nil t))))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD: All Actions*")))
 
-(pearl-gtd-test-define-story pearl-gtd-workflows-extreme-whitespace-in-fields-test
+(pearl-gtd-test-define-story pearl-gtd-workflows-test-extreme-whitespace-in-fields
   "Extreme whitespace in various fields should be handled."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "*    Task with lots of spaces    \n:PROPERTIES:\n:ID: ws-extreme-1\n:END:\n"))
@@ -298,7 +298,7 @@
              (should-not (string-match-p ":  @office  :" content)))
   :teardown nil)
 
-(pearl-gtd-test-define-story pearl-gtd-workflows-large-number-entries-test
+(pearl-gtd-test-define-story pearl-gtd-workflows-test-large-number-entries
   "System should handle 100+ entries without significant slowdown."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" (concat "* Task 1\n:PROPERTIES:\n:ID: perf-1\n:END:\n"
