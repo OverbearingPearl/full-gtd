@@ -82,7 +82,7 @@
 (pearl-gtd-test-define-story pearl-gtd-do-test-session-completes-action
   "Done command marks action complete and advances."
   :setup (pearl-gtd-init-initialize)
-  :files (("action.org" "* TODO First task\n:PROPERTIES:\n:ID: first-1\n:END:\n* TODO Second task\n:PROPERTIES:\n:ID: second-1\n:END:\n"))
+  :files (("action.org" "* TODO First task\n:PROPERTIES:\n:ID: first-1\n:PROJECT: Test\n:END:\n* TODO Second task\n:PROPERTIES:\n:ID: second-1\n:PROJECT: Test\n:END:\n"))
   :mock (((symbol-function 'completing-read) (lambda (&rest _) ""))
          ((symbol-function 'read-string) (lambda (&rest _) "")))
   :body (progn
@@ -249,7 +249,7 @@
 (pearl-gtd-test-define-story pearl-gtd-do-test-session-backlog-count
   "Backlog count is displayed and decrements on done but not skip."
   :setup (pearl-gtd-init-initialize)
-  :files (("action.org" "* TODO First task\n:PROPERTIES:\n:ID: first-1\n:END:\n* TODO Second task\n:PROPERTIES:\n:ID: second-1\n:END:\n* TODO Third task\n:PROPERTIES:\n:ID: third-1\n:END:\n"))
+  :files (("action.org" "* TODO First task\n:PROPERTIES:\n:ID: first-1\n:PROJECT: Test\n:END:\n* TODO Second task\n:PROPERTIES:\n:ID: second-1\n:PROJECT: Test\n:END:\n* TODO Third task\n:PROPERTIES:\n:ID: third-1\n:PROJECT: Test\n:END:\n"))
   :mock (((symbol-function 'completing-read) (lambda (&rest _) ""))
          ((symbol-function 'read-string) (lambda (&rest _) "")))
   :body (progn
@@ -307,8 +307,36 @@
                (should (search-forward "* Project task" nil t))))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD: Do Session*")))
 
+(pearl-gtd-test-define-story pearl-gtd-do-test-session-deletes-task-when-project-removed-after-start
+  "Done deletes a task whose PROJECT is removed after the session starts.
+This verifies deletion decision reads PROJECT from the source entry (not from cached session plist)."
+  :setup (pearl-gtd-init-initialize)
+  :files (("action.org"
+           (format "* TODO Task losing project\nDEADLINE: <%s>\n:PROPERTIES:\n:ID: stale-project-1\n:PROJECT: Test\n:END:\n* TODO Remaining project task\n:PROPERTIES:\n:ID: remaining-project-1\n:PROJECT: Test\n:END:\n"
+                   (format-time-string "%F %a"
+                                       (time-add (current-time) (* 24 3600))))))
+  :mock (((symbol-function 'completing-read) (lambda (&rest _) ""))
+         ((symbol-function 'read-string) (lambda (&rest _) "")))
+  :body (progn
+          (pearl-gtd-do)
+          ;; Remove PROJECT from the currently targeted entry after session start.
+          (pearl-gtd-core-with-entry-at-id "stale-project-1" "action.org"
+            (org-delete-property "PROJECT")
+            (save-buffer))
+          (with-current-buffer "*Pearl-GTD: Do Session*"
+            (pearl-gtd-do--session-done)))
+  :asserts (progn
+             ;; Verify it is deleted because PROJECT is now missing in the source entry.
+             (should-not
+              (pearl-gtd-test-file-contains-p-bool
+               (expand-file-name "action.org" pearl-gtd-init-base-directory)
+               "Task losing project"))
+             (with-current-buffer "*Pearl-GTD: Do Session*"
+               (goto-char (point-min))
+               (should (search-forward "* Remaining project task" nil t))))
+  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD: Do Session*")))
+
 ;; Note: Navigation test removed - single-card push mode doesn't support manual next/previous.
-;; The system automatically pushes the optimal task based on scoring and filters.
 
 (ert-deftest pearl-gtd-do-test-time-completions ()
   "Time input should offer preset options."

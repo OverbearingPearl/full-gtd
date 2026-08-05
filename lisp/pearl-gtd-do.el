@@ -340,8 +340,11 @@ CONTEXT-FILTER is used for context-match bonus."
 
 (defun pearl-gtd-do--should-delete-on-completion-p (action)
   "Return non-nil if ACTION should be deleted when completed.
-Actions without PROJECT property should be deleted."
-  (let ((project (plist-get action :project)))
+Actions whose source entry lacks a PROJECT property should be deleted."
+  (let* ((id (plist-get action :id))
+         (file (plist-get action :file))
+         (project (pearl-gtd-core-with-entry-at-id id file
+                     (org-entry-get nil "PROJECT"))))
     (or (null project) (string= project ""))))
 
 (defun pearl-gtd-do--delete-entry (action)
