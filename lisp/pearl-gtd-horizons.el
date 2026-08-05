@@ -35,7 +35,7 @@
 
 (defun pearl-gtd-horizons--get-project-horizon (project property)
   "Get horizon PROPERTY value for PROJECT from any of its actions.
-PROPERTY should be one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE.
+PROPERTY should be one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE, L6_PRINCIPLE.
 Returns the first non-empty value found among project actions."
   (let ((file-path (expand-file-name "action.org" pearl-gtd-init-base-directory))
         (value nil))
@@ -59,7 +59,7 @@ Returns the first non-empty value found among project actions."
 
 (defun pearl-gtd-horizons--set-project-horizon (project property value)
   "Set horizon PROPERTY to VALUE for all actions in PROJECT.
-PROPERTY should be one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE.
+PROPERTY should be one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE, L6_PRINCIPLE.
 Returns count of modified entries.
 Handles multi-project tasks by preserving horizons from other projects."
   (let ((count 0)
@@ -110,7 +110,8 @@ LEVEL is symbol: \\='area, \\='goal, \\='vision, \\='purpose, or \\='principle."
          (list (cons 'L3_AREA (pearl-gtd-horizons--get-project-horizon project "L3_AREA"))
                (cons 'L4_GOAL (pearl-gtd-horizons--get-project-horizon project "L4_GOAL"))
                (cons 'L5_VISION (pearl-gtd-horizons--get-project-horizon project "L5_VISION"))
-               (cons 'L6_PURPOSE (pearl-gtd-horizons--get-project-horizon project "L6_PURPOSE")))))
+               (cons 'L6_PURPOSE (pearl-gtd-horizons--get-project-horizon project "L6_PURPOSE"))
+               (cons 'L6_PRINCIPLE (pearl-gtd-horizons--get-project-horizon project "L6_PRINCIPLE")))))
     (car (pearl-gtd-domain--check-hierarchy-constraint existing-horizons level))))
 
 (defun pearl-gtd-horizons--get-project-at-point ()
@@ -215,7 +216,7 @@ Prompts for Purpose first, then immediately prompts for Principle."
 
 (defun pearl-gtd-horizons--collect-all-projects ()
   "Collect all unique project names from action.org with their stats.
-Returns list of (PROJECT-NAME TOTAL TODO DONE L6 L5 L4 L3)."
+Returns list of (PROJECT-NAME TOTAL TODO DONE L6-PURPOSE L6-PRINCIPLE L5 L4 L3)."
   (let ((file-path (expand-file-name "action.org" pearl-gtd-init-base-directory))
         (projects (make-hash-table :test 'equal)))
     (when (file-exists-p file-path)
@@ -229,20 +230,22 @@ Returns list of (PROJECT-NAME TOTAL TODO DONE L6 L5 L4 L3)."
                  (l3 (org-entry-get nil "L3_AREA"))
                  (l4 (org-entry-get nil "L4_GOAL"))
                  (l5 (org-entry-get nil "L5_VISION"))
-                 (l6 (org-entry-get nil "L6_PURPOSE")))
+                 (l6-purpose (org-entry-get nil "L6_PURPOSE"))
+                 (l6-principle (org-entry-get nil "L6_PRINCIPLE")))
              (when proj
                (dolist (p (pearl-gtd-core--split-values proj))
                  (let ((data (or (gethash p projects)
-                                 (puthash p (list 0 0 0 nil nil nil nil) projects))))
+                                 (puthash p (list 0 0 0 nil nil nil nil nil) projects))))
                    (cl-incf (nth 0 data))  ; Total
                    (cond
                     ((member todo-state org-done-keywords) (cl-incf (nth 2 data)))
                     ((member todo-state org-not-done-keywords) (cl-incf (nth 1 data))))
                    ;; Store first non-empty horizon value
-                   (unless (nth 3 data) (setf (nth 3 data) (and l6 (not (string= l6 "")) l6)))
-                   (unless (nth 4 data) (setf (nth 4 data) (and l5 (not (string= l5 "")) l5)))
-                   (unless (nth 5 data) (setf (nth 5 data) (and l4 (not (string= l4 "")) l4)))
-                   (unless (nth 6 data) (setf (nth 6 data) (and l3 (not (string= l3 "")) l3))))))))
+                   (unless (nth 3 data) (setf (nth 3 data) (and l6-purpose (not (string= l6-purpose "")) l6-purpose)))
+                   (unless (nth 4 data) (setf (nth 4 data) (and l6-principle (not (string= l6-principle "")) l6-principle)))
+                   (unless (nth 5 data) (setf (nth 5 data) (and l5 (not (string= l5 "")) l5)))
+                   (unless (nth 6 data) (setf (nth 6 data) (and l4 (not (string= l4 "")) l4)))
+                   (unless (nth 7 data) (setf (nth 7 data) (and l3 (not (string= l3 "")) l3))))))))
          nil nil)))
     ;; Convert hash to list
     (let (result)
@@ -281,24 +284,27 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
         (aligned '())
         (multi '()))
     (dolist (proj projects)
-      (let* ((l6 (nth 3 (cdr proj)))
-             (l5 (nth 4 (cdr proj)))
-             (l4 (nth 5 (cdr proj)))
-             (l3 (nth 6 (cdr proj)))
-             (has-l6 (and l6 (not (string= l6 ""))))
+      (let* ((l6-purpose (nth 3 (cdr proj)))
+             (l6-principle (nth 4 (cdr proj)))
+             (l5 (nth 5 (cdr proj)))
+             (l4 (nth 6 (cdr proj)))
+             (l3 (nth 7 (cdr proj)))
+             (has-l6-purpose (and l6-purpose (not (string= l6-purpose ""))))
+             (has-l6-principle (and l6-principle (not (string= l6-principle ""))))
              (has-l5 (and l5 (not (string= l5 ""))))
              (has-l4 (and l4 (not (string= l4 ""))))
              (has-l3 (and l3 (not (string= l3 ""))))
-             (multi-p (or (and l6 (string-match-p "[;；]" l6))
+             (multi-p (or (and l6-purpose (string-match-p "[;；]" l6-purpose))
+                         (and l6-principle (string-match-p "[;；]" l6-principle))
                          (and l5 (string-match-p "[;；]" l5))
                          (and l4 (string-match-p "[;；]" l4))
                          (and l3 (string-match-p "[;；]" l3)))))
         (cond
-         ((and (not has-l6) (not has-l5) (not has-l4) (not has-l3))
+         ((and (not has-l6-purpose) (not has-l6-principle) (not has-l5) (not has-l4) (not has-l3))
           (push proj critical))
-         ((and (not has-l6) (not has-l5) (not has-l4) has-l3)
+         ((and (not has-l6-purpose) (not has-l6-principle) (not has-l5) (not has-l4) has-l3)
           (push proj partial))
-         ((and has-l6 has-l5 has-l4 has-l3)
+         ((and has-l6-purpose has-l5 has-l4 has-l3)
           (push proj aligned))
          (multi-p
           (push proj multi))
@@ -312,16 +318,18 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
          (total (nth 0 (cdr proj)))
          (todo (nth 1 (cdr proj)))
          (done (nth 2 (cdr proj)))
-         (l6 (or (nth 3 (cdr proj)) ""))
-         (l5 (or (nth 4 (cdr proj)) ""))
-         (l4 (or (nth 5 (cdr proj)) ""))
-         (l3 (or (nth 6 (cdr proj)) "")))
-    (let ((l6-display (string-join (pearl-gtd-core--split-values l6) "; "))
+         (l6-purpose (or (nth 3 (cdr proj)) ""))
+         (l6-principle (or (nth 4 (cdr proj)) ""))
+         (l5 (or (nth 5 (cdr proj)) ""))
+         (l4 (or (nth 6 (cdr proj)) ""))
+         (l3 (or (nth 7 (cdr proj)) "")))
+    (let ((l6-purpose-display (string-join (pearl-gtd-core--split-values l6-purpose) "; "))
+          (l6-principle-display (string-join (pearl-gtd-core--split-values l6-principle) "; "))
           (l5-display (string-join (pearl-gtd-core--split-values l5) "; "))
           (l4-display (string-join (pearl-gtd-core--split-values l4) "; "))
           (l3-display (string-join (pearl-gtd-core--split-values l3) "; ")))
       (pearl-gtd-ui--insert-table-row name nil "action.org"
-                                      (list total todo done l6-display l5-display l4-display l3-display)
+                                      (list total todo done l6-purpose-display l6-principle-display l5-display l4-display l3-display)
                                       t))))
 
 (defun pearl-gtd-horizons--insert-no-project-row (action)
@@ -357,12 +365,14 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
              (dolist (proj projects)
                (let* ((data (cdr proj))
                       (action-count (nth 0 data))
-                      (l6 (nth 3 data))
-                      (l5 (nth 4 data))
-                      (l4 (nth 5 data))
-                      (l3 (nth 6 data))
+                      (l6-purpose (nth 3 data))
+                      (l6-principle (nth 4 data))
+                      (l5 (nth 5 data))
+                      (l4 (nth 6 data))
+                      (l3 (nth 7 data))
                       (proj-score 0))
-                 (when (and l6 (not (string= l6 ""))) (setq proj-score (+ proj-score 40)))
+                 (when (and l6-purpose (not (string= l6-purpose ""))) (setq proj-score (+ proj-score 20)))
+                 (when (and l6-principle (not (string= l6-principle ""))) (setq proj-score (+ proj-score 20)))
                  (when (and l5 (not (string= l5 ""))) (setq proj-score (+ proj-score 30)))
                  (when (and l4 (not (string= l4 ""))) (setq proj-score (+ proj-score 20)))
                  (when (and l3 (not (string= l3 ""))) (setq proj-score (+ proj-score 10)))
@@ -394,10 +404,10 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
 
         ;; Critical: No horizon
         (insert "** Critical: Projects Without Any Horizon\n")
-        (insert "| Project | Total | Todo | Done | L6 Purpose | L5 Vision | L4 Goal | L3 Area |\n")
-        (insert "|---------+-------+------+------+------------+-----------+---------+---------|\n")
+        (insert "| Project | Total | Todo | Done | L6 Purpose | L6 Principle | L5 Vision | L4 Goal | L3 Area |\n")
+        (insert "|---------+-------+------+------+------------+--------------+-----------+---------+---------|\n")
         (if (null critical)
-            (insert "| (No entries) | | | | | | | |\n")
+            (insert "| (No entries) | | | | | | | | |\n")
           (dolist (proj critical)
             (pearl-gtd-horizons--insert-project-row proj)))
         (org-table-align)
@@ -405,10 +415,10 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
 
         ;; Partial: L3 only
         (insert "** Partial: Projects Missing Higher Horizons\n")
-        (insert "| Project | Total | Todo | Done | L6 Purpose | L5 Vision | L4 Goal | L3 Area |\n")
-        (insert "|---------+-------+------+------+------------+-----------+---------+---------|\n")
+        (insert "| Project | Total | Todo | Done | L6 Purpose | L6 Principle | L5 Vision | L4 Goal | L3 Area |\n")
+        (insert "|---------+-------+------+------+------------+--------------+-----------+---------+---------|\n")
         (if (null partial)
-            (insert "| (No entries) | | | | | | | |\n")
+            (insert "| (No entries) | | | | | | | | |\n")
           (dolist (proj partial)
             (pearl-gtd-horizons--insert-project-row proj)))
         (org-table-align)
@@ -416,10 +426,10 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
 
         ;; Aligned: Complete
         (insert "** Aligned Projects\n")
-        (insert "| Project | Total | Todo | Done | L6 Purpose | L5 Vision | L4 Goal | L3 Area |\n")
-        (insert "|---------+-------+------+------+------------+-----------+---------+---------|\n")
+        (insert "| Project | Total | Todo | Done | L6 Purpose | L6 Principle | L5 Vision | L4 Goal | L3 Area |\n")
+        (insert "|---------+-------+------+------+------------+--------------+-----------+---------+---------|\n")
         (if (null aligned)
-            (insert "| (No entries) | | | | | | | |\n")
+            (insert "| (No entries) | | | | | | | | |\n")
           (dolist (proj aligned)
             (pearl-gtd-horizons--insert-project-row proj)))
         (org-table-align)
@@ -427,10 +437,10 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
 
         ;; Multi-horizon
         (insert "** Multi-Horizon Projects\n")
-        (insert "| Project | Total | Todo | Done | L6 Purpose | L5 Vision | L4 Goal | L3 Area |\n")
-        (insert "|---------+-------+------+------+------------+-----------+---------+---------|\n")
+        (insert "| Project | Total | Todo | Done | L6 Purpose | L6 Principle | L5 Vision | L4 Goal | L3 Area |\n")
+        (insert "|---------+-------+------+------+------------+--------------+-----------+---------+---------|\n")
         (if (null multi)
-            (insert "| (No entries) | | | | | | | |\n")
+            (insert "| (No entries) | | | | | | | | |\n")
           (dolist (proj multi)
             (pearl-gtd-horizons--insert-project-row proj)))
         (org-table-align)

@@ -24,12 +24,12 @@
                (search-forward "** Aligned Projects")
                (forward-line 1)
                (beginning-of-line)
-               (should (search-forward-regexp "|\\s-*Project\\s-*|\\s-*Total\\s-*|\\s-*Todo\\s-*|\\s-*Done\\s-*|\\s-*L6 Purpose\\s-*|\\s-*L5 Vision\\s-*|\\s-*L4 Goal\\s-*|\\s-*L3 Area\\s-*|" nil t))
+               (should (search-forward-regexp "|\\s-*Project\\s-*|\\s-*Total\\s-*|\\s-*Todo\\s-*|\\s-*Done\\s-*|\\s-*L6 Purpose\\s-*|\\s-*L6 Principle\\s-*|\\s-*L5 Vision\\s-*|\\s-*L4 Goal\\s-*|\\s-*L3 Area\\s-*|" nil t))
                ;; Verify project row has all horizon values
                (goto-char (point-min))
                (search-forward "TestProject")
                (beginning-of-line)
-               (should (search-forward-regexp "|\\s-*TestProject\\s-*|\\s-*1\\s-*|\\s-*1\\s-*|\\s-*0\\s-*|\\s-*Purpose1\\s-*|\\s-*Vision1\\s-*|\\s-*Goal1\\s-*|\\s-*Work\\s-*|" (line-end-position) t))))
+               (should (search-forward-regexp "|\\s-*TestProject\\s-*|\\s-*1\\s-*|\\s-*1\\s-*|\\s-*0\\s-*|\\s-*Purpose1\\s-*|\\s-*\\s-*|\\s-*Vision1\\s-*|\\s-*Goal1\\s-*|\\s-*Work\\s-*|" (line-end-position) t))))
   :teardown (kill-buffer "*Pearl-GTD Horizon View*"))
 
 (pearl-gtd-test-define-story pearl-gtd-horizons-test-view-shows-critical-gaps
