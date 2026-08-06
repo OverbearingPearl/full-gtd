@@ -315,7 +315,7 @@ action belongs to any other project alongside PROJECT."
             (progn
               (let ((end (save-excursion (org-end-of-subtree))))
                 (goto-char end)
-                (when (and (not (bolp)) (not (looking-back "\n")))
+                (when (and (not (bolp)) (not (looking-back "\n" (line-beginning-position))))
                   (insert "\n"))))
           ;; Project heading does not exist: create it at the end.
           (goto-char (point-max))
@@ -357,7 +357,7 @@ action belongs to any other project alongside PROJECT."
               (goto-char (point-min))
               (re-search-forward (format "^\\* %s[ \t]*$" (regexp-quote project)) nil t)
               (org-end-of-subtree)
-              (when (and (not (bolp)) (not (looking-back "\n")))
+              (when (and (not (bolp)) (not (looking-back "\n" (line-beginning-position))))
                 (insert "\n"))
               (org-paste-subtree 2)
               (set-buffer-modified-p t)))

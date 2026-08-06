@@ -10,7 +10,7 @@
 
 ;; This file handles the Horizon system for GTD (L3 Area through L6 Purpose/Principles).
 ;; Hierarchy: L6 Purpose -> L5 Vision -> L4 Goal -> L3 Area -> Projects -> Actions.
-;; L6 contains both Purpose and Principle (edited together via key `6` in review mode);
+;; L6 contains both Purpose and Principle (edited together via key 6 in review mode);
 ;; Principle requires Purpose to be set first.
 ;; Provides horizon alignment matrix view for reviewing vertical alignment.
 ;;
@@ -61,7 +61,8 @@ Returns the first non-empty value found among project actions."
 
 (defun pearl-gtd-horizons--set-project-horizon (project property value)
   "Set horizon PROPERTY to VALUE for all actions in PROJECT.
-PROPERTY should be one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE, L6_PRINCIPLE.
+PROPERTY should be one of:
+L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE, L6_PRINCIPLE.
 Returns count of modified entries.
 Handles multi-project tasks by preserving horizons from other projects."
   (let ((count 0)
