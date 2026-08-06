@@ -304,7 +304,7 @@ action belongs to any other project alongside PROJECT."
   (let ((action-file (expand-file-name "action.org" pearl-gtd-init-base-directory))
         (archive-file (expand-file-name "archive.org" pearl-gtd-init-base-directory)))
     (unless (file-exists-p action-file)
-      (error "action.org not found"))
+      (error "File action.org not found"))
     (let ((archive-buffer (find-file-noselect archive-file)))
       ;; Ensure archive.org has an Org-mode project heading for PROJECT.
       (with-current-buffer archive-buffer

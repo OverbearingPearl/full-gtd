@@ -10,7 +10,7 @@
 
 ;; This file handles the Horizon system for GTD (L3 Area through L6 Purpose/Principles).
 ;; Hierarchy: L6 Purpose -> L5 Vision -> L4 Goal -> L3 Area -> Projects -> Actions.
-;; L6 contains both Purpose and Principle (edited together via key 6 in review mode);
+;; L6 contains both Purpose and Principle (edited together via key '6' in review mode);
 ;; Principle requires Purpose to be set first.
 ;; Provides horizon alignment matrix view for reviewing vertical alignment.
 ;;
@@ -20,7 +20,7 @@
 ;; - Empty cells indicate gaps in vertical alignment
 ;; - No-project actions shown separately (L3 Area only)
 ;;
-;; In the matrix view, press `A' to archive a completed project.
+;; In the matrix view, press 'A' to archive a completed project.
 
 ;;; Code:
 
@@ -37,7 +37,8 @@
 
 (defun pearl-gtd-horizons--get-project-horizon (project property)
   "Get horizon PROPERTY value for PROJECT from any of its actions.
-PROPERTY should be one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE, L6_PRINCIPLE.
+PROPERTY should be one of:
+L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE, L6_PRINCIPLE.
 Returns the first non-empty value found among project actions."
   (let ((file-path (expand-file-name "action.org" pearl-gtd-init-base-directory))
         (value nil))
