@@ -278,17 +278,15 @@ EXTRA-CLEANUP is a form to execute when removing the property
         (pearl-gtd-review--refresh-view)))))
 
 (defun pearl-gtd-review--set-deadline-at-point ()
-  "Set deadline for task at point with reminder."
+  "Set deadline for task at point."
   (interactive)
   (let ((entry (pearl-gtd-review--get-entry-at-point)))
     (when entry
       (let* ((id (car entry))
              (file (cdr entry))
-             (deadline (string-trim (read-string "Deadline (e.g., 2026-12-25, 2026-12-25 14:30): ")))
-             (reminder (string-trim (read-string "Reminder days before (e.g., 3, 0 for none): " "0"))))
+             (deadline (string-trim (read-string "Deadline (e.g., 2026-12-25, 2026-12-25 14:30): "))))
         (pearl-gtd-core-with-entry-at-id id file
           (org-deadline nil deadline)
-          (org-set-property "REMINDER_DAYS" reminder)
           (save-buffer))
         (pearl-gtd-review--refresh-view)))))
 

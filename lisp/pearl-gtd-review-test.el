@@ -273,10 +273,8 @@
   :files (("action.org" "* TODO Task for deadline\n:PROPERTIES:\n:ID: dl-1\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n"))
   :mock (((symbol-function 'read-string)
           (lambda (prompt &rest _)
-            (cond
-             ((string-match "Deadline" prompt) "2026-05-20")
-             ((string-match "Reminder" prompt) "2")
-             (t "")))))
+            (when (string-match "Deadline" prompt)
+              "2026-05-20"))))
   :body (progn
           (pearl-gtd-review-weekly)
           (with-current-buffer "*Pearl-GTD Weekly Review*"
@@ -288,10 +286,7 @@
   :asserts (progn
              (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "action.org" pearl-gtd-init-base-directory)
-                      "DEADLINE: <2026-05-20"))
-             (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
-                      ":REMINDER_DAYS: 2")))
+                      "DEADLINE: <2026-05-20")))
   :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
 
 (pearl-gtd-test-define-story pearl-gtd-review-test-user-edits-task-in-review-window
