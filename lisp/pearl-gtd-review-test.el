@@ -751,6 +751,14 @@
                           "existing-action-1")))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
 
+(pearl-gtd-test-define-story pearl-gtd-review-test-context-candidates-from-org-tags
+  "Context completion candidates should be collected from Org tags, not properties."
+  :setup (pearl-gtd-init-initialize)
+  :files (("action.org" "* TODO Existing action :office:\n:PROPERTIES:\n:ID: ctx-cand-1\n:END:\n"))
+  :body (should (member "@office" (pearl-gtd-domain--collect-context-candidates)))
+  :asserts t
+  :teardown nil)
+
 (provide 'pearl-gtd-review-test)
 
 ;;; pearl-gtd-review-test.el ends here
