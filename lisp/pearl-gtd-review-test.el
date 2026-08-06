@@ -146,7 +146,7 @@
 (pearl-gtd-test-define-story pearl-gtd-review-test-user-edits-context-with-default
   "Press 'c' to edit context with current value as default."
   :setup (pearl-gtd-init-initialize)
-  :files (("action.org" (concat "* TODO Task with context\nSCHEDULED: <" (format-time-string "%F %a") ">\n:PROPERTIES:\n:ID: edit-ctx-1\n:CONTEXT: home\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n")))
+  :files (("action.org" (concat "* TODO Task with context :home:\nSCHEDULED: <" (format-time-string "%F %a") ">\n:PROPERTIES:\n:ID: edit-ctx-1\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n")))
   :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
           (lambda (_prompt _type &optional initial)
             (should (string-match-p "home" initial))
@@ -164,13 +164,13 @@
   :asserts (progn
              (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "action.org" pearl-gtd-init-base-directory)
-                      ":CONTEXT:\\s-*office")))
+                      ":office:")))
   :teardown (kill-buffer "*Pearl-GTD Daily Review*"))
 
 (pearl-gtd-test-define-story pearl-gtd-review-test-user-removes-context-by-empty-input
   "Press 'c' and delete all to remove context property."
   :setup (pearl-gtd-init-initialize)
-  :files (("action.org" (concat "* TODO Task to clear\nSCHEDULED: <" (format-time-string "%F %a") ">\n:PROPERTIES:\n:ID: edit-ctx-2\n:CONTEXT: home\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n")))
+  :files (("action.org" (concat "* TODO Task to clear :home:\nSCHEDULED: <" (format-time-string "%F %a") ">\n:PROPERTIES:\n:ID: edit-ctx-2\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n")))
   :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
           (lambda (_prompt _type &optional initial)
             (should (string= initial "home"))
@@ -187,7 +187,7 @@
             (pearl-gtd-review--edit-context-at-point)))
   :asserts (let ((result (pearl-gtd-test-file-contains-p
                           (expand-file-name "action.org" pearl-gtd-init-base-directory)
-                          ":CONTEXT:")))
+                          ":home:")))
              (should-not (car result)))
   :teardown (kill-buffer "*Pearl-GTD Daily Review*"))
 
@@ -471,7 +471,7 @@
 (pearl-gtd-test-define-story pearl-gtd-review-test-weekly-no-project-table-no-project-column
   "No Project table should not have Project column and should be after Project sections."
   :setup (pearl-gtd-init-initialize)
-  :files (("action.org" "* TODO No project task 1\n:PROPERTIES:\n:ID: np-1\n:CREATED: 2026-01-15\n:END:\n* TODO No project task 2\nSCHEDULED: <2026-01-20 Fri>\n:PROPERTIES:\n:ID: np-2\n:CONTEXT: home\n:CREATED: 2026-01-16\n:END:\n* TODO Project task\n:PROPERTIES:\n:ID: p-1\n:PROJECT: TestProject\n:CREATED: 2026-01-17\n:END:\n"))
+  :files (("action.org" "* TODO No project task 1\n:PROPERTIES:\n:ID: np-1\n:CREATED: 2026-01-15\n:END:\n* TODO No project task 2 :home:\nSCHEDULED: <2026-01-20 Fri>\n:PROPERTIES:\n:ID: np-2\n:CREATED: 2026-01-16\n:END:\n* TODO Project task\n:PROPERTIES:\n:ID: p-1\n:PROJECT: TestProject\n:CREATED: 2026-01-17\n:END:\n"))
   :mock (((symbol-function 'current-time) (lambda () (encode-time 0 0 0 15 1 2026))))
   :body (pearl-gtd-review-weekly)
   :asserts (progn
@@ -613,7 +613,7 @@
 (pearl-gtd-test-define-story pearl-gtd-review-test-user-activates-someday-entry
   "Activating a Someday entry re-confirms properties and moves it atomically."
   :setup (pearl-gtd-init-initialize)
-  :files (("someday.org" "* Someday task\n:PROPERTIES:\n:ID: someday-activate-1\n:CONTEXT: home\n:DELEGATED: Alice\n:PROJECT: Old Project\n:END:\nNotes for later.\n")
+  :files (("someday.org" "* Someday task :home:\n:PROPERTIES:\n:ID: someday-activate-1\n:DELEGATED: Alice\n:PROJECT: Old Project\n:END:\nNotes for later.\n")
           ("action.org" ""))
   :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
           (let ((calls 0))
@@ -664,7 +664,7 @@
                       ":ID:[ \t]+someday-activate-1"))
              (should (pearl-gtd-test-file-contains-p-bool
                       (expand-file-name "action.org" pearl-gtd-init-base-directory)
-                      ":CONTEXT:[ \t]+office"))
+                      ":office:"))
              (should (pearl-gtd-test-file-contains-p-bool
                       (expand-file-name "action.org" pearl-gtd-init-base-directory)
                       ":DELEGATED: Bob"))
@@ -686,7 +686,7 @@
 (pearl-gtd-test-define-story pearl-gtd-review-test-user-activation-empty-removes-properties
   "Empty activation values remove all confirmable properties."
   :setup (pearl-gtd-init-initialize)
-  :files (("someday.org" "* Someday task\n:PROPERTIES:\n:ID: someday-activate-2\n:CONTEXT: home\n:DELEGATED: Alice\n:PROJECT: Old Project\n:END:\n"))
+  :files (("someday.org" "* Someday task :home:\n:PROPERTIES:\n:ID: someday-activate-2\n:DELEGATED: Alice\n:PROJECT: Old Project\n:END:\n"))
   :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
           (lambda (&rest _) ""))
          ((symbol-function 'read-string)
@@ -713,7 +713,7 @@
                       "someday-activate-2"))
              (should-not (pearl-gtd-test-file-contains-p-bool
                           (expand-file-name "action.org" pearl-gtd-init-base-directory)
-                          ":CONTEXT:"))
+                          ":home:"))
              (should-not (pearl-gtd-test-file-contains-p-bool
                           (expand-file-name "action.org" pearl-gtd-init-base-directory)
                           ":DELEGATED:"))

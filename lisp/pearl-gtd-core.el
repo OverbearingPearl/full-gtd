@@ -91,7 +91,7 @@ Nil values indicate unset properties."
                     (delegated (org-entry-get nil "DELEGATED"))
                     (project (org-entry-get nil "PROJECT"))
                     (created (org-entry-get nil "CREATED"))
-                    (context (org-entry-get nil "CONTEXT"))
+                    (context (mapconcat (lambda (c) (concat "@" c)) tags ","))
                     (l3 (org-entry-get nil "L3_AREA"))
                     (l4 (org-entry-get nil "L4_GOAL"))
                     (l5 (org-entry-get nil "L5_VISION"))

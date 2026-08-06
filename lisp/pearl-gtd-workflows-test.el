@@ -256,7 +256,7 @@
 (pearl-gtd-test-define-story pearl-gtd-workflows-test-multiple-contexts-on-single-action
   "Action can have multiple context tags."
   :setup (pearl-gtd-init-initialize)
-  :files (("action.org" "* TODO Multi context task\n:PROPERTIES:\n:ID: multi-ctx-1\n:CONTEXT: office\n:END:\n"))
+  :files (("action.org" "* TODO Multi context task :office:\n:PROPERTIES:\n:ID: multi-ctx-1\n:END:\n"))
   :mock nil
   :body (progn
           ;; Add second context manually

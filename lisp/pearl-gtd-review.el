@@ -148,6 +148,11 @@ identifies project rows."
   (pearl-gtd-core-with-entry-at-id id file
     (org-delete-property property)))
 
+(defun pearl-gtd-review--get-context-by-id (id file)
+  "Return context tag (without @) for entry with ID in FILE, or nil."
+  (pearl-gtd-core-with-entry-at-id id file
+    (car (org-get-tags))))
+
 (defun pearl-gtd-review--get-scheduled-by-id (id file)
   "Get scheduled date string for entry with ID in FILE."
   (pearl-gtd-core-with-entry-at-id id file
@@ -200,8 +205,8 @@ identifies project rows."
         (delegate (alist-get 'delegate attributes))
         (project (alist-get 'project attributes)))
     (if (string-empty-p context)
-        (org-delete-property "CONTEXT")
-      (org-entry-put nil "CONTEXT" context))
+        (org-set-tags '())
+      (org-set-tags (list context)))
     (if (string-empty-p delegate)
         (org-delete-property "DELEGATED")
       (org-entry-put nil "DELEGATED" delegate))
@@ -230,10 +235,7 @@ identifies project rows."
         (unless same-file-p
           (error "Only someday entries can be activated")))
       (let* ((id (car entry))
-             (context (progn
-                        (let ((value (pearl-gtd-review--get-property-by-id
-                                      id entry-file "CONTEXT")))
-                          value)))
+             (context (pearl-gtd-review--get-context-by-id id entry-file))
              (schedule (progn
                          (let ((value (pearl-gtd-review--get-scheduled-by-id
                                        id entry-file)))
@@ -407,7 +409,23 @@ EXTRA-CLEANUP is a form to execute when removing the property
                (,setter id file ,property new-value))
              (pearl-gtd-review--refresh-view)))))))
 
-(pearl-gtd-review-define-property-editor "context" "CONTEXT" "Context (empty to remove, supports spaces, e.g., @office, @home office): " context)
+(defun pearl-gtd-review--edit-context-at-point ()
+  "Edit context tag with current value as default.  Empty input removes it."
+  (interactive)
+  (let ((entry (pearl-gtd-review--get-entry-at-point)))
+    (when entry
+      (let* ((id (car entry))
+             (file (cdr entry))
+             (current-context (pearl-gtd-review--get-context-by-id id file))
+             (new-context (pearl-gtd-core-read-property-with-completion
+                           "Context (empty to remove, supports spaces, e.g., @office, @home office): "
+                           'context (or current-context ""))))
+        (pearl-gtd-core-with-entry-at-id id file
+          (if (string= new-context "")
+              (org-set-tags '())
+            (org-set-tags (list new-context)))
+          (save-buffer))
+        (pearl-gtd-review--refresh-view)))))
 
 (pearl-gtd-review-define-property-editor "delegated" "DELEGATED" "Delegated to (empty to remove, supports full name, e.g., John Smith): " delegate
   (pearl-gtd-review--remove-property-by-id id file "DELEGATED_DATE"))
