@@ -19,6 +19,7 @@
 (require 'cl-lib)
 (require 'pearl-gtd-init)
 (require 'pearl-gtd-core)
+(require 'pearl-gtd-state)
 (require 'pearl-gtd-ui)
 
 (defvar-local pearl-gtd-review--current-view-type nil
@@ -49,6 +50,8 @@
     (define-key map (kbd "4") #'pearl-gtd-horizons--edit-goal-at-point)
     (define-key map (kbd "5") #'pearl-gtd-horizons--edit-vision-at-point)
     (define-key map (kbd "6") #'pearl-gtd-horizons--edit-purpose-at-point)
+    ;; Activate someday
+    (define-key map (kbd "a") #'pearl-gtd-review--activate-someday-at-point)
     ;; Archive project
     (define-key map (kbd "A") #'pearl-gtd-review--archive-project-at-point)
     map))
@@ -87,12 +90,37 @@
     (let ((end (line-end-position))
           (id nil)
           (file nil))
-      (while (and (not id) (< (point) end))
-        (setq id (get-text-property (point) 'pearl-gtd-id))
-        (setq file (get-text-property (point) 'pearl-gtd-file))
+      (while (and (< (point) end)
+                  (or (null id) (null file)))
+        (unless id
+          (setq id (get-text-property (point) 'pearl-gtd-id)))
+        (unless file
+          (setq file (get-text-property (point) 'pearl-gtd-file)))
         (forward-char 1))
       (when (and id file)
         (cons id file)))))
+
+(defun pearl-gtd-review--put-row-metadata (marker id file project)
+  "Attach row metadata after Org table alignment.
+MARKER identifies an aligned data row.  ID and FILE identify task rows; PROJECT
+identifies project rows."
+  (when (marker-position marker)
+    (goto-char marker)
+    (beginning-of-line)
+    (when (looking-at "|[ \t]*")
+      (goto-char (match-end 0))
+      (let ((start (point)))
+        (when (search-forward "|" (line-end-position) t)
+          (let ((end (progn
+                       (skip-chars-backward " \t")
+                       (point))))
+            (when (< start end)
+              (if id
+                  (progn
+                    (put-text-property start end 'pearl-gtd-id id)
+                    (put-text-property start end 'pearl-gtd-file file))
+                (put-text-property start end 'pearl-gtd-project project))))))))
+  (set-marker marker nil))
 
 (defun pearl-gtd-review--get-project-at-point ()
   "Return project name at point, if any."
@@ -127,6 +155,130 @@
       (when s
         (string-match "<\\([0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\)" s)
         (match-string 1 s)))))
+
+(defun pearl-gtd-review--get-deadline-by-id (id file)
+  "Get deadline date string for entry with ID in FILE."
+  (pearl-gtd-core-with-entry-at-id id file
+    (let ((deadline (org-entry-get nil "DEADLINE")))
+      (when (and deadline
+                 (string-match "<\\([0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\)" deadline))
+        (match-string 1 deadline)))))
+
+(defun pearl-gtd-review--collect-activation-attributes (attributes)
+  "Read confirmed activation attributes using ATTRIBUTES as defaults."
+  (let* ((context (string-trim
+                   (pearl-gtd-core-read-property-with-completion
+                    "Context (empty to remove): " 'context
+                    (or (alist-get 'context attributes) ""))))
+         (schedule (string-trim
+                    (read-string "Schedule (empty to remove): "
+                                 (or (alist-get 'schedule attributes) ""))))
+         (deadline (string-trim
+                    (read-string "Deadline (empty to remove): "
+                                 (or (alist-get 'deadline attributes) ""))))
+         (delegate (string-trim
+                    (pearl-gtd-core-read-property-with-completion
+                     "Delegated to (empty to remove): " 'delegate
+                     (or (alist-get 'delegate attributes) ""))))
+         (project-input (string-trim
+                         (pearl-gtd-core-read-property-with-completion
+                          "Project (empty to remove): " 'project
+                          (or (alist-get 'project attributes) ""))))
+         (project (and (not (string-empty-p project-input))
+                       (pearl-gtd-core--normalize-project-input project-input))))
+    `((context . ,context)
+      (schedule . ,schedule)
+      (deadline . ,deadline)
+      (delegate . ,delegate)
+      (project . ,(or project "")))))
+
+(defun pearl-gtd-review--apply-activation-attributes (attributes)
+  "Apply confirmed activation ATTRIBUTES to the current Org entry."
+  (let ((context (alist-get 'context attributes))
+        (schedule (alist-get 'schedule attributes))
+        (deadline (alist-get 'deadline attributes))
+        (delegate (alist-get 'delegate attributes))
+        (project (alist-get 'project attributes)))
+    (if (string-empty-p context)
+        (org-delete-property "CONTEXT")
+      (org-entry-put nil "CONTEXT" context))
+    (if (string-empty-p delegate)
+        (org-delete-property "DELEGATED")
+      (org-entry-put nil "DELEGATED" delegate))
+    (if (string-empty-p project)
+        (org-delete-property "PROJECT")
+      (org-entry-put nil "PROJECT" project))
+    (if (string-empty-p schedule)
+        (org-schedule '(4) nil)
+      (org-schedule nil schedule))
+    (if (string-empty-p deadline)
+        (org-deadline '(4) nil)
+      (org-deadline nil deadline))
+    (org-todo (car org-not-done-keywords))))
+
+(defun pearl-gtd-review--activate-someday-at-point ()
+  "Activate the Someday entry at point as a TODO action."
+  (interactive)
+  (let ((entry (pearl-gtd-review--get-entry-at-point)))
+    (unless entry
+      (error "No entry at point"))
+    (let ((someday-file (expand-file-name "someday.org"
+                                          pearl-gtd-init-base-directory))
+          (entry-file (expand-file-name (cdr entry)
+                                        pearl-gtd-init-base-directory)))
+      (let ((same-file-p (file-equal-p someday-file entry-file)))
+        (unless same-file-p
+          (error "Only someday entries can be activated")))
+      (let* ((id (car entry))
+             (context (progn
+                        (let ((value (pearl-gtd-review--get-property-by-id
+                                      id entry-file "CONTEXT")))
+                          value)))
+             (schedule (progn
+                         (let ((value (pearl-gtd-review--get-scheduled-by-id
+                                       id entry-file)))
+                           value)))
+             (deadline (progn
+                         (let ((value (pearl-gtd-review--get-deadline-by-id
+                                       id entry-file)))
+                           value)))
+             (delegate (progn
+                         (let ((value (pearl-gtd-review--get-property-by-id
+                                       id entry-file "DELEGATED")))
+                           value)))
+             (project (progn
+                        (let ((value (pearl-gtd-review--get-property-by-id
+                                      id entry-file "PROJECT")))
+                          value)))
+             (attributes `((context . ,context)
+                           (schedule . ,schedule)
+                           (deadline . ,deadline)
+                           (delegate . ,delegate)
+                           (project . ,project)))
+             (confirmed
+              (progn
+                (let ((value
+                       (pearl-gtd-review--collect-activation-attributes
+                        attributes)))
+                  value))))
+        (pearl-gtd-state--with-transaction '("someday.org" "action.org")
+          (pearl-gtd-core-with-entry-at-id id entry-file
+            (pearl-gtd-review--apply-activation-attributes confirmed)
+            (org-mark-subtree)
+            (let ((subtree (buffer-substring-no-properties
+                            (region-beginning) (region-end))))
+              (delete-region (region-beginning) (region-end))
+              (save-buffer)
+              (pearl-gtd-state--with-file-buffer "action.org"
+                (goto-char (point-max))
+                (unless (bolp)
+                  (insert "\n"))
+                (insert subtree)
+                (unless (bolp)
+                  (insert "\n"))
+                (save-buffer)))))
+        (message "Activated someday entry in action.org")
+        (pearl-gtd-review--refresh-view)))))
 
 (defun pearl-gtd-review--get-headline-by-id (id file)
   "Get headline of entry with ID in FILE."
@@ -272,7 +424,7 @@ EXTRA-CLEANUP is a form to execute when removing the property
              (new-value (string-trim (read-string "Schedule date (empty to remove, e.g., 2026-12-25, 2026-12-25 14:30): " default-value))))
         (pearl-gtd-core-with-entry-at-id id file
           (if (string= new-value "")
-              (org-schedule '(4))
+              (org-schedule '(4) nil)
             (org-schedule nil new-value))
           (save-buffer))
         (pearl-gtd-review--refresh-view)))))
@@ -391,7 +543,7 @@ META is an alist with keys :entry-map and :entry-index."
       (setq-local header-line-format
                   (pcase pearl-gtd-review--current-view-type
                     ('daily "Daily Review | n/p/j/k: move | RET: jump | c/d/t/s/r/P: property | C: complete | A: archive | g: refresh | q: quit")
-                    ('weekly "Weekly Review | n/p/j/k: move | RET: jump | c/d/t/s/r/P/3-6: property | C: complete | A: archive | g: refresh | q: quit")
+                    ('weekly "Weekly Review | n/p/j/k: move | RET: jump | c/d/t/s/r/P/3-6: property | C: complete | a: activate someday | A: archive | g: refresh | q: quit")
                     (_ "Review | n/p/j/k: move | RET: jump | c/d/t/s/r/P/3-6: property | C: complete | A: archive | g: refresh | q: quit")))
       (setq pearl-gtd-review--entry-map entry-map)
       (if (null sections-data)
@@ -399,7 +551,9 @@ META is an alist with keys :entry-map and :entry-index."
         (dolist (section sections-data)
           (let ((title (nth 0 section))
                 (type (nth 1 section))
-                (entries (nth 2 section)))
+                (entries (nth 2 section))
+                (table-marker (copy-marker (point)))
+                (row-metadata '()))
             (insert (format "** %s\n" title))
             (pcase type
               ('project
@@ -441,8 +595,19 @@ META is an alist with keys :entry-map and :entry-index."
                       (id (nth 1 entry))
                       (file (or (nth 2 entry) "action.org"))
                       (fields (nthcdr 3 entry)))
-                  (pearl-gtd-review--insert-table-row head id file fields)))
-              (org-table-align))
+                  (pearl-gtd-review--insert-table-row head id file fields)
+                  (push (list id file (and (null id) head))
+                        row-metadata)))
+              (org-table-align)
+              (save-excursion
+                (goto-char table-marker)
+                (forward-line 2)
+                (dolist (metadata (nreverse row-metadata))
+                  (let ((row-marker (copy-marker (point))))
+                    (forward-line 1)
+                    (apply #'pearl-gtd-review--put-row-metadata
+                           row-marker metadata))))
+              (set-marker table-marker nil))
             (goto-char (point-max))
             (insert "\n"))))
       (setq buffer-read-only t)

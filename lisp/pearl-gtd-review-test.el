@@ -212,7 +212,7 @@
   :asserts (progn
              (should (pearl-gtd-test-file-contains-p
                       (expand-file-name "action.org" pearl-gtd-init-base-directory)
-                      ":DELEGATED: Bob"))
+                      ":DELEGATED:[ \t]+Bob"))
              (let ((result (pearl-gtd-test-file-contains-p
                             (expand-file-name "action.org" pearl-gtd-init-base-directory)
                             ":DELEGATED: John")))
@@ -609,6 +609,147 @@
                       "ProjA"))
              (should-not (file-exists-p (expand-file-name "archive.org" pearl-gtd-init-base-directory))))
   :teardown nil)
+
+(pearl-gtd-test-define-story pearl-gtd-review-test-user-activates-someday-entry
+  "Activating a Someday entry re-confirms properties and moves it atomically."
+  :setup (pearl-gtd-init-initialize)
+  :files (("someday.org" "* Someday task\n:PROPERTIES:\n:ID: someday-activate-1\n:CONTEXT: home\n:DELEGATED: Alice\n:PROJECT: Old Project\n:END:\nNotes for later.\n")
+          ("action.org" ""))
+  :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
+          (let ((calls 0))
+            (lambda (_prompt type initial)
+              (setq calls (1+ calls))
+              (pcase calls
+                (1 (should (eq type 'context))
+                   (should (string= initial "home"))
+                   "office")
+                (2 (should (eq type 'delegate))
+                   (should (string= initial "Alice"))
+                   "Bob")
+                (3 (should (eq type 'project))
+                   (should (string= initial "Old Project"))
+                   "New Project")))))
+         ((symbol-function 'read-string)
+          (let ((calls 0))
+            (lambda (_prompt &optional initial)
+              (setq calls (1+ calls))
+              (pcase calls
+                (1 (should (string= initial "2026-01-20")) "2026-02-20")
+                (2 (should (string= initial "2026-01-25")) "2026-02-25"))))))
+  :body (progn
+          (pearl-gtd-core-with-entry-at-id "someday-activate-1" "someday.org"
+            (org-schedule nil "2026-01-20")
+            (org-deadline nil "2026-01-25"))
+          (pearl-gtd-review-weekly)
+          (with-current-buffer "*Pearl-GTD Weekly Review*"
+            (goto-char (point-min))
+            (search-forward "** someday.org - Someday")
+            (search-forward "Someday task")
+            (beginning-of-line)
+            (should (equal (pearl-gtd-review--get-entry-at-point)
+                           '("someday-activate-1" . "someday.org")))
+            (pearl-gtd-review--activate-someday-at-point)))
+  :asserts (progn
+             (should-not (pearl-gtd-test-file-contains-p-bool
+                          (expand-file-name "someday.org" pearl-gtd-init-base-directory)
+                          "someday-activate-1"))
+             (should (pearl-gtd-test-file-contains-p-bool
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                      "* TODO Someday task"))
+             (should (pearl-gtd-test-file-contains-p-bool
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                      "Notes for later."))
+             (should (pearl-gtd-test-file-contains-p-bool
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                      ":ID:[ \t]+someday-activate-1"))
+             (should (pearl-gtd-test-file-contains-p-bool
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                      ":CONTEXT:[ \t]+office"))
+             (should (pearl-gtd-test-file-contains-p-bool
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                      ":DELEGATED: Bob"))
+             (should (pearl-gtd-test-file-contains-p-bool
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                      ":PROJECT:[ \t]+New Project"))
+             (should (pearl-gtd-test-file-contains-p-bool
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                      "SCHEDULED: <2026-02-20"))
+             (should (pearl-gtd-test-file-contains-p-bool
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                      "DEADLINE: <2026-02-25"))
+             (with-current-buffer "*Pearl-GTD Weekly Review*"
+               (goto-char (point-min))
+               (search-forward "** someday.org - Someday")
+               (should-not (search-forward "Someday task" nil t))))
+  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
+
+(pearl-gtd-test-define-story pearl-gtd-review-test-user-activation-empty-removes-properties
+  "Empty activation values remove all confirmable properties."
+  :setup (pearl-gtd-init-initialize)
+  :files (("someday.org" "* Someday task\n:PROPERTIES:\n:ID: someday-activate-2\n:CONTEXT: home\n:DELEGATED: Alice\n:PROJECT: Old Project\n:END:\n"))
+  :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
+          (lambda (&rest _) ""))
+         ((symbol-function 'read-string)
+          (lambda (&rest _) "")))
+  :body (progn
+          (pearl-gtd-core-with-entry-at-id "someday-activate-2" "someday.org"
+            (org-schedule nil "2026-01-20")
+            (org-deadline nil "2026-01-25"))
+          (pearl-gtd-review-weekly)
+          (with-current-buffer "*Pearl-GTD Weekly Review*"
+            (goto-char (point-min))
+            (search-forward "** someday.org - Someday")
+            (search-forward "Someday task")
+            (beginning-of-line)
+            (should (equal (pearl-gtd-review--get-entry-at-point)
+                           '("someday-activate-2" . "someday.org")))
+            (pearl-gtd-review--activate-someday-at-point)))
+  :asserts (progn
+             (should (pearl-gtd-test-file-contains-p-bool
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                      "* TODO Someday task"))
+             (should (pearl-gtd-test-file-contains-p-bool
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                      "someday-activate-2"))
+             (should-not (pearl-gtd-test-file-contains-p-bool
+                          (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                          ":CONTEXT:"))
+             (should-not (pearl-gtd-test-file-contains-p-bool
+                          (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                          ":DELEGATED:"))
+             (should-not (pearl-gtd-test-file-contains-p-bool
+                          (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                          ":PROJECT:"))
+             (should-not (pearl-gtd-test-file-contains-p-bool
+                          (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                          "SCHEDULED:"))
+             (should-not (pearl-gtd-test-file-contains-p-bool
+                          (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                          "DEADLINE:")))
+  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
+
+(pearl-gtd-test-define-story pearl-gtd-review-test-user-rejects-action-activation
+  "Activating a non-Someday action signals an error without modifying files."
+  :setup (pearl-gtd-init-initialize)
+  :files (("action.org" "* TODO Existing action\n:PROPERTIES:\n:ID: existing-action-1\n:END:\n"))
+  :mock nil
+  :body (progn
+          (pearl-gtd-review-weekly)
+          (with-current-buffer "*Pearl-GTD Weekly Review*"
+            (goto-char (point-min))
+            (search-forward "Existing action")
+            (beginning-of-line)
+            (should-error
+             (pearl-gtd-review--activate-someday-at-point)
+             :type 'error)))
+  :asserts (progn
+             (should (pearl-gtd-test-file-contains-p-bool
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                      "existing-action-1"))
+             (should-not (pearl-gtd-test-file-contains-p-bool
+                          (expand-file-name "someday.org" pearl-gtd-init-base-directory)
+                          "existing-action-1")))
+  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
 
 (provide 'pearl-gtd-review-test)
 
