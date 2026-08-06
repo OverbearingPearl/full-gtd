@@ -10,8 +10,6 @@
 
 ;; This file handles the "Review" phase of GTD.
 ;; Provides unified daily and weekly views with multiple sections.
-;; In table views, press `A' to archive a project (see
-;; `pearl-gtd-review--archive-project').
 
 ;;; Code:
 
