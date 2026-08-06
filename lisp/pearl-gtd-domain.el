@@ -126,9 +126,22 @@ Returns list of strings."
     (sort values #'string<)))
 
 (defun pearl-gtd-domain--collect-context-candidates ()
-  "Collect context candidates (with @ prefix)."
-  (mapcar (lambda (c) (concat "@" c))
-          (pearl-gtd-domain--collect-unique-properties "CONTEXT")))
+  "Collect context candidates (with @ prefix) from Org tags."
+  (let ((contexts '())
+        (files '("action.org" "someday.org" "reference.org" "inbox.org")))
+    (dolist (file files)
+      (let ((path (expand-file-name file pearl-gtd-init-base-directory)))
+        (when (file-exists-p path)
+          (with-temp-buffer
+            (insert-file-contents path)
+            (org-mode)
+            (org-map-entries
+             (lambda ()
+               (dolist (tag (org-get-tags))
+                 (unless (member tag '("DONE" "TODO"))
+                   (cl-pushnew tag contexts :test #'string=))))
+             nil nil)))))
+    (mapcar (lambda (c) (concat "@" c)) contexts)))
 
 (defun pearl-gtd-domain--collect-project-candidates ()
   "Collect project candidates."
