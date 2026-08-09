@@ -54,8 +54,6 @@ Decrements when actions are completed, unchanged when skipped.")
     (deadline-3d . 30)
     (deadline-7d . 15)
     (scheduled-today . 20)
-    (age-day . 1)
-    (age-max . 30)
     (l6-purpose . 20)
     (l5-vision . 15)
     (l4-goal . 10)
@@ -78,7 +76,6 @@ Optional CONTEXT-FILTER boosts matching contexts."
   (let ((score 0)
         (deadline (plist-get action :deadline))
         (scheduled (plist-get action :scheduled))
-        (created (plist-get action :created))
         (context (plist-get action :context))
         (project (plist-get action :project))
         (l3 (plist-get action :l3))
@@ -99,14 +96,6 @@ Optional CONTEXT-FILTER boosts matching contexts."
     (when (and scheduled
                (string-match-p (format-time-string "<%F" (current-time)) scheduled))
       (setq score (+ score (cdr (assq 'scheduled-today pearl-gtd-do--score-weights)))))
-    ;; Urgency: age
-    (when created
-      (let* ((created-time (ignore-errors (date-to-time created)))
-             (days (when created-time
-                     (/ (- (float-time (current-time)) (float-time created-time)) 86400.0))))
-        (when days
-          (setq score (+ score (min (* days (cdr (assq 'age-day pearl-gtd-do--score-weights)))
-                                    (cdr (assq 'age-max pearl-gtd-do--score-weights))))))))
     ;; Importance: horizons
     (when (and l6 (not (string= l6 "")))
       (setq score (+ score (cdr (assq 'l6-purpose pearl-gtd-do--score-weights)))))
@@ -200,11 +189,24 @@ CONTEXT-FILTER is a normalized context string (without @)."
 
 (defun pearl-gtd-do--sort-actions (actions context-filter)
   "Sort ACTIONS by priority score, highest first.
-CONTEXT-FILTER is used for context-match bonus."
+CONTEXT-FILTER is used for context-match bonus.
+When scores are equal, earlier CREATED timestamps sort first."
   (sort (copy-sequence actions)
         (lambda (a b)
-          (> (pearl-gtd-do--score-action a context-filter)
-             (pearl-gtd-do--score-action b context-filter)))))
+          (let ((score-a (pearl-gtd-do--score-action a context-filter))
+                (score-b (pearl-gtd-do--score-action b context-filter)))
+            (if (= score-a score-b)
+                (let ((created-a (plist-get a :created))
+                      (created-b (plist-get b :created)))
+                  (cond
+                   ((and created-a created-b)
+                    (string< created-a created-b))
+                   (created-a
+                    t)
+                   (created-b
+                    nil)
+                   (t nil)))
+              (> score-a score-b))))))
 
 ;;;; Session UI
 
