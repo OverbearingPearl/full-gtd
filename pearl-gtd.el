@@ -39,14 +39,13 @@
 (declare-function ert-delete-all-tests "ert")
 (declare-function ert-run-tests-batch-and-exit "ert")
 
-(defvar pearl-gtd-directory nil
-  "Root directory of Pearl-GTD.")
-
 (eval-and-compile
-  (when load-file-name
-    (setq pearl-gtd-directory (file-name-directory load-file-name)))
-  (when pearl-gtd-directory
-    (add-to-list 'load-path (expand-file-name "lisp" pearl-gtd-directory))))
+  (defvar pearl-gtd--package-root
+    (or (and load-file-name (file-name-directory load-file-name))
+        default-directory)
+    "Root directory of Pearl-GTD package source.")
+  (when pearl-gtd--package-root
+    (add-to-list 'load-path (expand-file-name "lisp" pearl-gtd--package-root))))
 
 (require 'pearl-gtd-init)
 (require 'pearl-gtd-state)
@@ -119,7 +118,7 @@ With \\[universal-argument] as prefix, prompts for view type
   ;; Reload all modules first to ensure latest code is used
   (pearl-gtd-reload-modules)
   ;; Load test files automatically from the lisp directory
-  (let ((test-dir (expand-file-name "lisp" pearl-gtd-directory)))
+  (let ((test-dir (expand-file-name "lisp" pearl-gtd--package-root)))
     ;; First load the test infrastructure
     (let ((test-file (expand-file-name "pearl-gtd-test.el" test-dir)))
       (when (file-exists-p test-file)
@@ -138,8 +137,8 @@ With \\[universal-argument] as prefix, prompts for view type
 (defun pearl-gtd-reload-modules ()
   "Reload Pearl-GTD modules for updated code."
   (interactive)
-  (let* ((root-dir pearl-gtd-directory)
-         (lisp-dir (expand-file-name "lisp" pearl-gtd-directory))
+  (let* ((root-dir pearl-gtd--package-root)
+         (lisp-dir (expand-file-name "lisp" pearl-gtd--package-root))
          (el-files (directory-files lisp-dir nil "\\.el$")))
     ;; Unload all features first
     (dolist (file el-files)

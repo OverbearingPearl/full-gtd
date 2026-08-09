@@ -21,7 +21,6 @@
 (require 'org)
 (require 'pearl-gtd-init)
 (require 'pearl-gtd-core)
-(require 'pearl-gtd-horizons)
 (require 'pearl-gtd-inbox)
 (require 'pearl-gtd-state)
 
