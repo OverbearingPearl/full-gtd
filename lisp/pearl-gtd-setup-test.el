@@ -7,7 +7,7 @@
 ;;; Code:
 
 (require 'ert)
-(require 'pearl-gtd-init)
+(require 'pearl-gtd)
 (require 'pearl-gtd-test)
 
 (pearl-gtd-test-define-story pearl-gtd-setup-test-user-initializes-gtd-system-for-first-time

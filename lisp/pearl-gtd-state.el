@@ -16,6 +16,7 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'org)
 (require 'pearl-gtd-init)
 
 (defmacro pearl-gtd-state--with-file-buffer (file-path &rest body)

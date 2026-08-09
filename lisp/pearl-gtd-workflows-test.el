@@ -235,7 +235,7 @@
   :setup (pearl-gtd-init-initialize)
   :files (("action.org" "* TODO Shared action\n:PROPERTIES:\n:ID: shared-multi-1\n:PROJECT: Alpha; Beta\n:END:\n"))
   :mock (((symbol-function 'pearl-gtd-review--get-project-stats)
-          (lambda (proj)
+          (lambda (_proj)
             ;; Return stats that mark both projects as active (have TODOs)
             '("1" "1" "0" "" "" "" "" ""))))
   :body (pearl-gtd-review-weekly)
