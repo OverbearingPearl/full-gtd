@@ -21,7 +21,9 @@
 (require 'pearl-gtd-ui)
 
 (defvar-local pearl-gtd-review--current-view-type nil
-  "Type of current review view: daily or weekly.")
+  "Type of current review view: daily, weekly, or project.")
+(defvar-local pearl-gtd-review--current-project nil
+  "Project name of the current project sub-view, if any.")
 
 (defvar-local pearl-gtd-review--entry-map nil
   "Vector mapping row numbers to (ID . FILE) cons cells.")
@@ -503,6 +505,7 @@ EXTRA-CLEANUP is a form to execute when removing the property
   (pcase pearl-gtd-review--current-view-type
     ('daily (pearl-gtd-review--daily))
     ('weekly (pearl-gtd-review--weekly))
+    ('project (pearl-gtd-review--show-project-tasks pearl-gtd-review--current-project))
     (_ (message "Cannot refresh this view"))))
 
 (defun pearl-gtd-review--insert-table-row (head id file fields)
@@ -941,7 +944,8 @@ Creates and pops to buffer *Pearl-GTD Project: PROJ-NAME*."
          (sections (list (cons (format "action.org - %s" proj-name) (cons entries 'project-tasks)))))
     (pearl-gtd-review--create-table-buffer buffer-name sections)
     (with-current-buffer buffer-name
-      (setq pearl-gtd-review--current-view-type nil))
+      (setq pearl-gtd-review--current-view-type 'project)
+      (setq pearl-gtd-review--current-project proj-name))
     (pop-to-buffer buffer-name)
     (pearl-gtd-review-view-mode 1)))
 
@@ -949,7 +953,7 @@ Creates and pops to buffer *Pearl-GTD Project: PROJ-NAME*."
   "Quit window, or return to weekly review if in project sub-view."
   (interactive)
   (if (and (boundp 'pearl-gtd-review--current-view-type)
-           (null pearl-gtd-review--current-view-type))
+           (memq pearl-gtd-review--current-view-type '(nil project)))
       (progn
         (kill-buffer)
         (when (get-buffer "*Pearl-GTD Weekly Review*")
