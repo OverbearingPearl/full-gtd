@@ -16,6 +16,8 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'org)
+(require 'pearl-gtd-init)
 
 ;;;; Data normalization (migrated from pearl-gtd-core)
 

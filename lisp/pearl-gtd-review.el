@@ -20,6 +20,11 @@
 (require 'pearl-gtd-state)
 (require 'pearl-gtd-ui)
 
+(declare-function pearl-gtd-horizons--edit-area-at-point "pearl-gtd-horizons")
+(declare-function pearl-gtd-horizons--edit-goal-at-point "pearl-gtd-horizons")
+(declare-function pearl-gtd-horizons--edit-vision-at-point "pearl-gtd-horizons")
+(declare-function pearl-gtd-horizons--edit-purpose-at-point "pearl-gtd-horizons")
+
 (defvar-local pearl-gtd-review--current-view-type nil
   "Type of current review view: daily, weekly, or project.")
 (defvar-local pearl-gtd-review--current-project nil

@@ -28,10 +28,12 @@
 (require 'cl-lib)
 (require 'pearl-gtd-init)
 (require 'pearl-gtd-core)
-(require 'pearl-gtd-review)
 (require 'pearl-gtd-domain)
 (require 'pearl-gtd-state)
 (require 'pearl-gtd-ui)
+
+(declare-function pearl-gtd-review--archive-project "pearl-gtd-review")
+(declare-function pearl-gtd-review--show-project-tasks "pearl-gtd-review")
 
 (declare-function pearl-gtd-horizons-view "pearl-gtd")
 

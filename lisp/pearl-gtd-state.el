@@ -16,6 +16,7 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'pearl-gtd-init)
 
 (defmacro pearl-gtd-state--with-file-buffer (file-path &rest body)
   "Execute BODY in buffer of FILE-PATH (expanded relative to base dir).

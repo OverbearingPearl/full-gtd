@@ -18,7 +18,6 @@
 (require 'org)
 (require 'org-id)
 (require 'pearl-gtd-core)
-(require 'pearl-gtd-review)
 
 (defface pearl-gtd-inbox--highlight
   '((t :inherit highlight))

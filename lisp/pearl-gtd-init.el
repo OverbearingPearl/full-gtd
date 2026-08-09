@@ -12,8 +12,14 @@
 
 ;;; Code:
 
-(defvar pearl-gtd-init-base-directory (expand-file-name "~/.pearl-gtd/")
-  "Base directory for Pearl-GTD.")
+(defgroup pearl-gtd nil
+  "Pearl-GTD user data settings."
+  :group 'files)
+
+(defcustom pearl-gtd-init-base-directory (expand-file-name "~/.pearl-gtd/")
+  "Base directory for Pearl-GTD user org files."
+  :type 'directory
+  :group 'pearl-gtd)
 
 (defun pearl-gtd-init--initialize ()
   "Initialize the Pearl-GTD system.
