@@ -338,7 +338,7 @@ HORIZONS is an alist of horizon properties."
       (if actions
           (dolist (a (nreverse actions))
             (insert (format "- %s %s %s\n"
-                           (or (plist-get a :todo) "TODO")
+                           (or (plist-get a :todo) (pearl-gtd-core--default-todo-keyword))
                            (plist-get a :headline)
                            (if (plist-get a :tags)
                                (format ":%s:" (string-join (plist-get a :tags) ":"))

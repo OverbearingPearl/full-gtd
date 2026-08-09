@@ -295,7 +295,7 @@ When scores are equal, earlier CREATED timestamps sort first."
           (org-table-align)
           (insert "\n** Task Details\n")
           (insert (format "| Score     | %d |\n" (round score)))
-          (insert (format "| Status    | %s |\n" (or status "TODO")))
+          (insert (format "| Status    | %s |\n" (or status (pearl-gtd-core--default-todo-keyword))))
           (when (and project (not (string= project "")))
             (insert (format "| Project   | %s |\n" project)))
           (when (and context (not (string= context "")))

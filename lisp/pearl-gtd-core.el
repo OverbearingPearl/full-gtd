@@ -62,6 +62,10 @@ CONTEXTS is a list of normalized context strings (without @ prefix)."
   (let ((scheduled (org-entry-get nil "SCHEDULED")))
     (and scheduled (time-less-p (org-time-string-to-time scheduled) (current-time)))))
 
+(defun pearl-gtd-core--default-todo-keyword ()
+  "Return the first not-done TODO keyword, or \"TODO\" if none."
+  (or (car org-not-done-keywords) "TODO"))
+
 ;;;; Filters
 
 (defun pearl-gtd-core-filter-entries (file-path predicates)
@@ -128,7 +132,7 @@ Nil values indicate unset properties."
         (org-mode)
         (org-map-entries
          (lambda ()
-           (when (string= (org-get-todo-state) "TODO")
+           (when (member (org-get-todo-state) org-not-done-keywords)
              (dolist (tag (org-get-tags))
                (cl-pushnew tag contexts :test #'string=))))
          nil nil)))

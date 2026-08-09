@@ -140,7 +140,7 @@ Returns list of strings."
             (org-map-entries
              (lambda ()
                (dolist (tag (org-get-tags))
-                 (unless (member tag '("DONE" "TODO"))
+                 (unless (member tag org-todo-keywords-1)
                    (cl-pushnew tag contexts :test #'string=))))
              nil nil)))))
     (mapcar (lambda (c) (concat "@" c)) contexts)))
