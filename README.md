@@ -83,9 +83,15 @@ This package is for you if you've read the book and want your tool to match the 
 
 ## Quick Start
 
+By default, data is stored in `~/.pearl-gtd/`. You can customize this with `pearl-gtd-init-base-directory`, e.g. `(setq pearl-gtd-init-base-directory "~/org/gtd/")`. Before first use, run `M-x pearl-gtd-init-initialize` to create the directory and skeleton files. When using `use-package`, you can call that function automatically in `:config`.
+
 ```elisp
 (use-package pearl-gtd
   :ensure t
+  :custom
+  (pearl-gtd-init-base-directory "~/.pearl-gtd/")
+  :config
+  (pearl-gtd-init-initialize)
   :bind (("C-c g c" . pearl-gtd-capture)
          ("C-c g i" . pearl-gtd-process-inbox)
          ("C-c g p" . pearl-gtd-planning-start)
@@ -238,20 +244,7 @@ Then install:
 M‑x package‑install RET pearl‑gtd RET
 ```
 
-Or with `use‑package`:
-
-```elisp
-(use-package pearl-gtd
-  :ensure t
-  :bind (("C-c g c" . pearl-gtd-capture)
-         ("C-c g i" . pearl-gtd-process-inbox)
-         ("C-c g p" . pearl-gtd-planning-start)
-         ("C-c g r" . pearl-gtd-review-weekly)
-         ("C-c g d" . pearl-gtd-review-daily)
-         ("C-c g e" . pearl-gtd-do)
-         ("C-c g h" . pearl-gtd-horizons-view))
-  :config (package-initialize))
-```
+For configuration, see [Quick Start](#quick-start).
 
 ### Manual installation
 
