@@ -34,6 +34,7 @@
 (require 'pearl-gtd-ui)
 
 (declare-function pearl-gtd-horizons-view "pearl-gtd")
+(declare-function pearl-gtd-horizons-view-mode "pearl-gtd-horizons.el")
 
 (defun pearl-gtd-horizons--get-project-horizon (project property)
   "Get horizon PROPERTY value for PROJECT from any of its actions.

@@ -20,6 +20,8 @@
 (require 'pearl-gtd-init)
 (require 'pearl-gtd-core)
 
+(declare-function pearl-gtd-do-session-mode "pearl-gtd-do.el")
+
 ;;;; Session state
 
 (defvar-local pearl-gtd-do--session-actions nil
@@ -244,6 +246,8 @@ CONTEXT-FILTER is used for context-match bonus."
       (setq-local pearl-gtd-do--session-time-budget saved-time-budget)
       (setq-local pearl-gtd-do--session-total-count saved-total-count)
       (setq-local pearl-gtd-do--session-view-type saved-view-type)
+      ;; org-mode resets buffer-local variables; re-enable session minor mode.
+      (pearl-gtd-do-session-mode 1)
       (let* ((actions pearl-gtd-do--session-actions)
              (action (when actions (car actions))))
       (if (null action)

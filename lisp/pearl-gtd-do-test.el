@@ -118,6 +118,24 @@
                (should (search-forward "* Next task" nil t))))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD: Do Session*")))
 
+(pearl-gtd-test-define-story pearl-gtd-do-test-session-skip-keeps-mode-active
+  "Skip command keeps minor mode active for subsequent keyboard shortcuts."
+  :setup (pearl-gtd-init-initialize)
+  :files (("action.org" "* TODO First task\n:PROPERTIES:\n:ID: first-1\n:END:\n* TODO Second task\n:PROPERTIES:\n:ID: second-1\n:END:\n"))
+  :mock (((symbol-function 'completing-read) (lambda (&rest _) ""))
+         ((symbol-function 'read-string) (lambda (&rest _) "")))
+  :body (progn
+          (pearl-gtd-do)
+          (with-current-buffer "*Pearl-GTD: Do Session*"
+            (pearl-gtd-do--session-skip)
+            (should pearl-gtd-do-session-mode)
+            (should (eq (lookup-key pearl-gtd-do-session-mode-map (kbd "s"))
+                        #'pearl-gtd-do--session-skip))))
+  :asserts (with-current-buffer "*Pearl-GTD: Do Session*"
+             (goto-char (point-min))
+             (should (search-forward "* Second task" nil t)))
+  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD: Do Session*")))
+
 (pearl-gtd-test-define-story pearl-gtd-do-test-session-context-filter
   "Context filter shows only matching actions."
   :setup (pearl-gtd-init-initialize)
