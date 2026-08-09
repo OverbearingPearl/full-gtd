@@ -20,8 +20,6 @@
 (require 'pearl-gtd-init)
 (require 'pearl-gtd-core)
 
-(declare-function pearl-gtd-do-session-mode "pearl-gtd-do.el")
-
 ;;;; Session state
 
 (defvar-local pearl-gtd-do--session-actions nil
