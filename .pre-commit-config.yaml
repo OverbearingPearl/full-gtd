@@ -1,0 +1,10 @@
+repos:
+  - repo: local
+    hooks:
+      - id: emacs-check
+        name: Emacs package lint and byte compile
+        entry: bash -c '/opt/homebrew/bin/emacs -Q --batch --directory . --directory ./lisp --eval "(setq load-prefer-newer t)" --eval "(package-initialize)" --eval "(require (quote package-lint))" --eval "(require (quote checkdoc))" --eval "(byte-compile-file \"$1\")" --eval "(package-lint-current-buffer)" --eval "(checkdoc-current-buffer)" 2>&1 | grep -E "(Warning:|Error:)" && exit 1 || exit 0' bash
+        language: system
+        files: \.el$
+        pass_filenames: true
+        verbose: true
