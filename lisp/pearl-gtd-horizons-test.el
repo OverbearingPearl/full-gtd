@@ -549,6 +549,31 @@
              (should-not (file-exists-p (expand-file-name "archive.org" pearl-gtd-init-base-directory))))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Horizon View*")))
 
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-user-renames-after-jumping-to-project
+  "Renaming a task in a project sub-view reached from Horizons RET should refresh correctly."
+  :setup (pearl-gtd-init-initialize)
+  :files (("action.org" "* TODO Task A\n:PROPERTIES:\n:ID: jump-1\n:PROJECT: JumpProject\n:L3_AREA: Work\n:END:\n* TODO Task B\n:PROPERTIES:\n:ID: jump-2\n:PROJECT: JumpProject\n:END:\n"))
+  :mock (((symbol-function 'read-string) (lambda (&rest _) "New name")))
+  :body (progn
+          (pearl-gtd-horizons-view)
+          (with-current-buffer "*Pearl-GTD Horizon View*"
+            (goto-char (point-min))
+            (search-forward "JumpProject")
+            (pearl-gtd-horizons--goto-project-at-point))
+          (should (get-buffer "*Pearl-GTD Project: JumpProject*"))
+          (with-current-buffer "*Pearl-GTD Project: JumpProject*"
+            (goto-char (point-min))
+            (search-forward "Task A")
+            (beginning-of-line)
+            (pearl-gtd-review--rename-task-at-point))
+          (with-current-buffer "*Pearl-GTD Project: JumpProject*"
+            (goto-char (point-min))
+            (should (search-forward "New name" nil t))))
+  :teardown (progn
+              (kill-buffer "*Pearl-GTD Horizon View*")
+              (when (get-buffer "*Pearl-GTD Project: JumpProject*")
+                (kill-buffer "*Pearl-GTD Project: JumpProject*"))))
+
 (provide 'pearl-gtd-horizons-test)
 
 ;;; pearl-gtd-horizons-test.el ends here
