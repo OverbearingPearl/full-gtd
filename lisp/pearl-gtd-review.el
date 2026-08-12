@@ -24,6 +24,7 @@
 (declare-function pearl-gtd-horizons--edit-goal-at-point "pearl-gtd-horizons")
 (declare-function pearl-gtd-horizons--edit-vision-at-point "pearl-gtd-horizons")
 (declare-function pearl-gtd-horizons--edit-purpose-at-point "pearl-gtd-horizons")
+(declare-function pearl-gtd-horizons--sync-entry-horizons "pearl-gtd-horizons")
 
 (defvar-local pearl-gtd-review--current-view-type nil
   "Type of current review view: daily, weekly, or project.")
@@ -146,12 +147,18 @@ identifies project rows."
 (defun pearl-gtd-review--set-property-by-id (id file property value)
   "Set PROPERTY to VALUE for entry with ID in FILE."
   (pearl-gtd-core-with-entry-at-id id file
-    (org-entry-put nil property value)))
+    (org-entry-put nil property value)
+    (when (and (string= property "PROJECT")
+               (string= file "action.org"))
+      (pearl-gtd-horizons--sync-entry-horizons))))
 
 (defun pearl-gtd-review--remove-property-by-id (id file property)
   "Remove PROPERTY from entry with ID in FILE."
   (pearl-gtd-core-with-entry-at-id id file
-    (org-delete-property property)))
+    (org-delete-property property)
+    (when (and (string= property "PROJECT")
+               (string= file "action.org"))
+      (pearl-gtd-horizons--sync-entry-horizons))))
 
 (defun pearl-gtd-review--get-context-by-id (id file)
   "Return context tag (without @) for entry with ID in FILE, or nil."
@@ -271,6 +278,7 @@ identifies project rows."
         (pearl-gtd-state--with-transaction '("someday.org" "action.org")
           (pearl-gtd-core-with-entry-at-id id entry-file
             (pearl-gtd-review--apply-activation-attributes confirmed)
+            (pearl-gtd-horizons--sync-entry-horizons)
             (org-mark-subtree)
             (let ((subtree (buffer-substring-no-properties
                             (region-beginning) (region-end))))
@@ -396,7 +404,9 @@ EXTRA-CLEANUP is a form to execute when removing the property
         (setter (intern (concat "pearl-gtd-review--set-property-by-id")))
         (remover (intern (concat "pearl-gtd-review--remove-property-by-id"))))
     `(defun ,fn-name ()
-       ,(format "Edit %s with current value as default. Empty input removes it." property)
+       ,(format "Edit %s with current value as default.
+If input is empty, remove the property."
+                property)
        (interactive)
        (let ((entry (pearl-gtd-review--get-entry-at-point)))
          (when entry
@@ -415,7 +425,8 @@ EXTRA-CLEANUP is a form to execute when removing the property
              (pearl-gtd-review--refresh-view)))))))
 
 (defun pearl-gtd-review--edit-context-at-point ()
-  "Edit context tag with current value as default.  Empty input removes it."
+  "Edit context tag with current value as default.
+If input is empty, remove the property."
   (interactive)
   (let ((entry (pearl-gtd-review--get-entry-at-point)))
     (when entry
@@ -432,11 +443,16 @@ EXTRA-CLEANUP is a form to execute when removing the property
           (save-buffer))
         (pearl-gtd-review--refresh-view)))))
 
-(pearl-gtd-review-define-property-editor "delegated" "DELEGATED" "Delegated to (empty to remove, supports full name, e.g., John Smith): " delegate
-  (pearl-gtd-review--remove-property-by-id id file "DELEGATED_DATE"))
+(pearl-gtd-review-define-property-editor
+   "delegated" "DELEGATED"
+   (concat "Delegated to (empty to remove, supports full name, "
+           "e.g., John Smith): ")
+   delegate
+   (pearl-gtd-review--remove-property-by-id id file "DELEGATED_DATE"))
 
 (defun pearl-gtd-review--edit-scheduled-at-point ()
-  "Edit scheduled date with current value as default.  Empty input removes it."
+  "Edit scheduled date with current value as default.
+If input is empty, remove it."
   (interactive)
   (let ((entry (pearl-gtd-review--get-entry-at-point)))
     (when entry
@@ -480,15 +496,20 @@ EXTRA-CLEANUP is a form to execute when removing the property
             (save-buffer))
           (pearl-gtd-review--refresh-view))))))
 
-(pearl-gtd-review-define-property-editor "project" "PROJECT" "Project (empty to remove, supports spaces, use ; for multiple, e.g., Website Redesign; Q1 Goals): " project
-  (progn
+(pearl-gtd-review-define-property-editor
+   "project" "PROJECT"
+   (concat "Project (empty to remove, supports spaces, use ; "
+           "for multiple, e.g., Website Redesign; Q1 Goals): ")
+   project
+   (progn
     (pearl-gtd-review--remove-property-by-id id file "L3_AREA")
     (pearl-gtd-review--remove-property-by-id id file "L4_GOAL")
     (pearl-gtd-review--remove-property-by-id id file "L5_VISION")
     (pearl-gtd-review--remove-property-by-id id file "L6_PURPOSE")))
 
 (defun pearl-gtd-review--complete-task-at-point ()
-  "Mark task at point as done. Delete task if it has no PROJECT property."
+  "Mark task at point as done.
+Delete task if it has no PROJECT property."
   (interactive)
   (let ((entry (pearl-gtd-review--get-entry-at-point)))
     (when entry
@@ -559,7 +580,10 @@ META is an alist with keys :entry-map and :entry-index."
 
 (defun pearl-gtd-review--render-table (buffer sections-data meta)
   "Render SECTIONS-DATA into BUFFER using META."
-  (let ((entry-map (cdr (assq :entry-map meta))))
+  (let* ((entry-map (cdr (assq :entry-map meta)))
+         (anchor (when (buffer-live-p buffer)
+                   (with-current-buffer buffer
+                     (pearl-gtd-ui--anchor-at-point)))))
     (with-current-buffer buffer
       (setq buffer-read-only nil)
       (erase-buffer)
@@ -636,6 +660,7 @@ META is an alist with keys :entry-map and :entry-index."
             (insert "\n"))))
       (setq buffer-read-only t)
       (goto-char (point-min))
+      (pearl-gtd-ui--restore-point-anchor anchor)
       (current-buffer))))
 
 (defun pearl-gtd-review--create-table-buffer (buffer-name sections)

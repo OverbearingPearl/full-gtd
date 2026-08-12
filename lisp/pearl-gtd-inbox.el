@@ -19,6 +19,8 @@
 (require 'org-id)
 (require 'pearl-gtd-core)
 
+(declare-function pearl-gtd-horizons--sync-entry-horizons "pearl-gtd-horizons")
+
 (defface pearl-gtd-inbox--highlight
   '((t :inherit highlight))
   "Face for highlighting the current entry."
@@ -103,7 +105,7 @@ Returns alist: ((context . VAL) (schedule . VAL) (deadline . VAL)
 
 (defun pearl-gtd-inbox--read-context ()
   "Read context with completion from existing actions, allowing free input.
-Supports spaces in context names. Examples: @office, @home office, @phone."
+Supports spaces in context names.  Examples: @office, @home office, @phone."
   (let* ((default (or pearl-gtd-inbox--last-context ""))
          (prompt (format "Context [RET %s, TAB complete]: " (if (string= default "") "none" (concat "keep '" default "'"))))
          (input (pearl-gtd-core-read-property-with-completion prompt 'context default)))
@@ -112,13 +114,13 @@ Supports spaces in context names. Examples: @office, @home office, @phone."
 
 (defun pearl-gtd-inbox--read-project ()
   "Read project with completion from existing projects.
-Supports spaces in project names. Use ; to separate multiple projects.
+Supports spaces in project names.  Use ; to separate multiple projects.
 Examples: Website Redesign, Q1 Marketing; Q2 Planning."
   (pearl-gtd-core-read-property-with-completion "Project [RET none, TAB complete]: " 'project))
 
 (defun pearl-gtd-inbox--read-delegate ()
   "Read delegate with completion from existing delegates.
-Supports full names with spaces. Examples: John Smith, Alice Johnson."
+Supports full names with spaces.  Examples: John Smith, Alice Johnson."
   (pearl-gtd-core-read-property-with-completion "Delegated to [RET none, TAB complete]: " 'delegate))
 
 (defvar-local pearl-gtd-inbox--current-highlight nil
@@ -280,7 +282,7 @@ NEW-VALUE is the string to insert."
       (pearl-gtd-inbox--stage-change-impl row col new-value))))
 
 (defun pearl-gtd-inbox--reapply-marks (buffer)
-  "Reapply marks to BUFFER after table alignment.
+  "Reapply mark to BUFFER after table alignment.
 BUFFER is the staging buffer to update."
   (with-current-buffer buffer
     (dolist (row pearl-gtd-inbox--marked-deleted-rows)
@@ -459,7 +461,7 @@ the staging buffer."
                pearl-gtd-inbox--pending-moves))))))
 
 (defun pearl-gtd-inbox--apply-pending-moves (&optional brainstorm)
-  "Apply all pending moves to target files and cleanup inbox.
+  "Apply all pending move operations to target files and cleanup inbox.
 If BRAINSTORM is non-nil, remove BRAINSTORM property before moving.
 Returns t if inbox file was deleted (empty after processing)."
   (dolist (move pearl-gtd-inbox--pending-moves)
@@ -473,7 +475,7 @@ Returns t if inbox file was deleted (empty after processing)."
       t)))
 
 (defun pearl-gtd-inbox--process (&optional brainstorm default-context default-project)
-  "Process the inbox according to GTD clarify and organize steps.
+  "Process the inbox according to GTD clarify and organize procedure.
 If BRAINSTORM is non-nil, only process entries with BRAINSTORM property
 set to \"t\".  DEFAULT-CONTEXT and DEFAULT-PROJECT are used when
 BRAINSTORM is non-nil."
@@ -577,7 +579,9 @@ DEADLINE is the deadline date string (nil if not set)."
         (when new-headline
           (org-edit-headline new-headline))
         (when (and target-file (string= target-file "action.org"))
-          (org-todo (car org-not-done-keywords)))
+          (org-todo (car org-not-done-keywords))
+          (org-id-get-create)
+          (pearl-gtd-horizons--sync-entry-horizons))
         (when remarks
           (org-end-of-meta-data t)
           (unless (bolp)

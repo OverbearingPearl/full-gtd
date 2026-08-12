@@ -11,7 +11,7 @@
 (require 'pearl-gtd-test)
 
 (ert-deftest pearl-gtd-state-test-with-file-buffer-creates-and-saves ()
-  "with-file-buffer creates file and saves modifications."
+  "With-file-buffer creates file and saves modifications."
   (let ((pearl-gtd-init-base-directory (make-temp-file "pearl-gtd-test-" t)))
     (unwind-protect
         (progn
@@ -78,7 +78,7 @@
       (delete-directory pearl-gtd-init-base-directory t))))
 
 (ert-deftest pearl-gtd-state-test-entry-at-id-found ()
-  "with-entry-at-id navigates to correct entry."
+  "With-entry-at-id navigates to correct entry."
   (let ((pearl-gtd-init-base-directory (make-temp-file "pearl-gtd-test-" t)))
     (unwind-protect
         (progn
@@ -92,7 +92,7 @@
       (delete-directory pearl-gtd-init-base-directory t))))
 
 (ert-deftest pearl-gtd-state-test-entry-at-id-missing ()
-  "with-entry-at-id signals error when ID not found."
+  "With-entry-at-id signals error when ID not found."
   (let ((pearl-gtd-init-base-directory (make-temp-file "pearl-gtd-test-" t)))
     (unwind-protect
         (progn

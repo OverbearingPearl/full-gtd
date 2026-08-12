@@ -4,7 +4,7 @@
 ;; Author: OverbearingPearl <OverbearingPearl@outlook.com>
 ;; Assisted-by: Kimi:kimi-k2.5, DeepSeek:deepseek-v3.2, Claude:claude-sonnet-4.6
 ;; URL: https://github.com/OverbearingPearl/pearl-gtd
-;; Version: 0.1.10
+;; Version: 0.1.11
 ;; Package-Requires: ((emacs "27.1") (org "9.3"))
 ;; Keywords: outlines, tools, convenience, org, todo, gtd, calendar
 ;; SPDX-License-Identifier: MIT
@@ -86,7 +86,7 @@ Create the base directory and necessary files."
 (defun pearl-gtd-do ()
   "Start a Do session for engaging with next actions.
 Prompts for context, time budget, and energy level, then enters
-a single-card execution loop. The session continues until you
+a single-card execution loop.  The session continues until you
 choose to quit or modify conditions when no actions remain.
 
 With \\[universal-argument] as prefix, prompts for view type
@@ -111,7 +111,7 @@ With \\[universal-argument] as prefix, prompts for view type
   (pearl-gtd-planning--start))
 
 (defun pearl-gtd-run-tests ()
-  "Run all Pearl-GTD tests (unit tests and user story tests)."
+  "Run all Pearl-GTD test suites (unit and user story)."
   (interactive)
   (require 'ert)
   (ert-delete-all-tests)

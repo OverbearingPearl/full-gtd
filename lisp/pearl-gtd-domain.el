@@ -24,7 +24,7 @@
 (defun pearl-gtd-domain--split-values (value-string)
   "Split VALUE-STRING using semicolon separator.
 Supports both English (;) and Chinese (；) semicolons.
-Trim whitespace from each value. Filter empty values.
+Trim whitespace from each value.  Filter empty values.
 Returns list of strings or nil."
   (when value-string
     (let ((normalized (replace-regexp-in-string "；" ";" value-string)))
@@ -41,7 +41,7 @@ Returns string."
 
 (defun pearl-gtd-domain--normalize-project-input (input)
   "Normalize project input: convert Chinese semicolons to English.
-Trim whitespace from each value. Returns nil if empty.
+Trim whitespace from each value.  Returns nil if empty.
 INPUT must be string or nil."
   (when input
     (cl-assert (stringp input) t "Internal: normalize-project-input requires string")
@@ -160,6 +160,61 @@ L6_PRINCIPLE."
   (cl-assert (member level '("L3_AREA" "L4_GOAL" "L5_VISION" "L6_PURPOSE" "L6_PRINCIPLE" "PRINCIPLE"))
              t "Internal: invalid horizon level %s" level)
   (pearl-gtd-domain--collect-unique-properties level))
+
+(defun pearl-gtd-domain--compute-project-horizon (project level entries)
+  "Compute PROJECT's horizon for LEVEL across ENTRIES.
+ENTRIES is a list of (PROJECTS . HORIZONS) where PROJECTS is a list
+of project names and HORIZONS is an alist mapping property names to
+raw value strings.  Returns a list of deduplicated values, or nil if
+no other action in PROJECT has LEVEL set.  Actions without LEVEL are
+ignored."
+  (cl-assert (stringp project) t "Internal: project must be string")
+  (cl-assert (stringp level) t "Internal: level must be string")
+  (let ((intersection :unset))
+    (dolist (entry entries)
+      (when (member project (car entry))
+        (let* ((raw-value (cdr (assoc level (cdr entry))))
+               (values (when (and raw-value (not (string= raw-value "")))
+                         (delete-dups (pearl-gtd-domain--split-values raw-value)))))
+          (when values
+            (setq intersection
+                  (if (eq intersection :unset)
+                      values
+                    (cl-intersection intersection values :test #'string=)))))))
+    (unless (eq intersection :unset)
+      intersection)))
+
+(defun pearl-gtd-domain--combine-project-horizons (project-horizons)
+  "Combine PROJECT-HORIZONS lists into a single deduplicated list.
+Empty/nil inputs are ignored.  Returns nil if all inputs are empty."
+  (let ((result '()))
+    (dolist (horizons project-horizons)
+      (dolist (value horizons)
+        (cl-pushnew value result :test #'string=)))
+    (nreverse result)))
+
+(defun pearl-gtd-domain--compute-entry-horizons (projects entries)
+  "Compute horizons for an entry belonging to PROJECTS.
+For each of L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE, L6_PRINCIPLE:
+single project → intersection of that project's other actions;
+multiple projects → union of per-project horizons.
+ENTRIES is a list of (PROJECTS . HORIZONS) entries used for horizon
+computation.
+Returns an alist of (PROPERTY . JOINED-VALUE) for non-empty levels.
+PROJECTS may be nil (entry has no project), in which case all levels
+are omitted from the result."
+  (let ((result '()))
+    (dolist (level '("L3_AREA" "L4_GOAL" "L5_VISION" "L6_PURPOSE" "L6_PRINCIPLE"))
+      (let* ((per-project
+              (mapcar (lambda (proj)
+                        (pearl-gtd-domain--compute-project-horizon
+                         proj level entries))
+                      projects))
+             (combined (pearl-gtd-domain--combine-project-horizons per-project)))
+        (when combined
+          (push (cons level (pearl-gtd-domain--join-values combined))
+                result))))
+    (nreverse result)))
 
 (provide 'pearl-gtd-domain)
 

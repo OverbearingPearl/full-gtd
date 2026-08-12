@@ -94,14 +94,20 @@ Handles multi-project tasks by preserving horizons from other projects."
                (let ((projects (pearl-gtd-core--split-values proj)))
                  (when (member project projects)
                    ;; Collect unique horizon values from all projects this task belongs to
-                   (let ((values nil))
+                   (let ((all-values nil)
+                         (values nil))
                      (dolist (p projects)
                        (let ((v (gethash p project-horizons)))
                          (when (and v (not (string= v "")))
-                           (unless (member v values)
-                             (push v values)))))
+                           (setq all-values
+                                 (nconc all-values (pearl-gtd-core--split-values v))))))
+                     ;; Deduplicate preserving insertion order
+                     (dolist (v all-values)
+                       (unless (member v values)
+                         (push v values)))
+                     (setq values (nreverse values))
                      (if values
-                         (org-entry-put nil property (pearl-gtd-core--join-values (reverse values)))
+                         (org-entry-put nil property (pearl-gtd-core--join-values values))
                        (org-delete-property property))
                      (cl-incf count)))))))
          nil nil)))
@@ -361,6 +367,9 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
 (defun pearl-gtd-horizons--view ()
   "Display horizon alignment matrix view."
   (let* ((buffer-name "*Pearl-GTD Horizon View*")
+         (anchor (when (get-buffer buffer-name)
+                   (with-current-buffer (get-buffer buffer-name)
+                     (pearl-gtd-ui--anchor-at-point))))
          (projects (pearl-gtd-horizons--collect-all-projects))
          (classified (pearl-gtd-horizons--classify-projects projects))
          (critical (nth 0 classified))
@@ -472,8 +481,9 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
         (org-table-align)
         (insert "\n")
 
-        (setq buffer-read-only t)
-        (goto-char (point-min)))
+          (setq buffer-read-only t)
+          (goto-char (point-min))
+          (pearl-gtd-ui--restore-point-anchor anchor))
       (pop-to-buffer buffer-name)
       (pearl-gtd-horizons-view-mode 1))))
 
@@ -535,6 +545,58 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
       (pearl-gtd-review--show-project-tasks project))))
 
 ;; Horizon editing keybindings are now in pearl-gtd-horizons-view-mode-map
+
+(defun pearl-gtd-horizons--sync-entry-horizons ()
+  "Synchronize current entry's horizons with its project(s).
+Current entry must be an Org entry with an ID, located in any Org buffer
+\(typically action.org, inbox.org during processing, or someday.org during
+activation).  Reads other actions from action.org, computes the
+project-level horizon for each level via the domain layer, and updates
+the current entry's L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE, and
+L6_PRINCIPLE accordingly.
+
+Single project → intersection of that project's other actions' values
+\(actions lacking the level are ignored).  Multiple projects → union of
+per-project horizons.  No derivable value removes the property.
+
+Project membership is read from the current entry at call time, so call
+this after PROJECT is set/removed but before moving the entry."
+  (let* ((current-id (org-entry-get nil "ID"))
+         (project-value (org-entry-get nil "PROJECT"))
+         (action-file (expand-file-name "action.org" pearl-gtd-init-base-directory))
+         (other-entries '()))
+    (unless current-id
+      (error "Internal: cannot sync horizons for entry without ID"))
+    (org-back-to-heading)
+    (let ((projects (pearl-gtd-core--split-values (or project-value ""))))
+      (if (null projects)
+          ;; No project: clear all horizon properties without scanning.
+          (dolist (level '("L3_AREA" "L4_GOAL" "L5_VISION" "L6_PURPOSE" "L6_PRINCIPLE"))
+            (org-delete-property level))
+        (when (file-exists-p action-file)
+          (with-temp-buffer
+            (insert-file-contents action-file)
+            (org-mode)
+            (org-map-entries
+             (lambda ()
+               (let ((id (org-entry-get nil "ID"))
+                     (proj (org-entry-get nil "PROJECT")))
+                 (when (and id (not (string= id current-id)))
+                   (push (cons (pearl-gtd-core--split-values (or proj ""))
+                               (list (cons "L3_AREA" (org-entry-get nil "L3_AREA"))
+                                     (cons "L4_GOAL" (org-entry-get nil "L4_GOAL"))
+                                     (cons "L5_VISION" (org-entry-get nil "L5_VISION"))
+                                     (cons "L6_PURPOSE" (org-entry-get nil "L6_PURPOSE"))
+                                     (cons "L6_PRINCIPLE" (org-entry-get nil "L6_PRINCIPLE"))))
+                         other-entries))))
+             nil nil)))
+        (let ((computed (pearl-gtd-domain--compute-entry-horizons
+                         projects other-entries)))
+          (dolist (level '("L3_AREA" "L4_GOAL" "L5_VISION" "L6_PURPOSE" "L6_PRINCIPLE"))
+            (let ((value (cdr (assoc level computed))))
+              (if value
+                  (org-entry-put nil level value)
+                (org-delete-property level)))))))))
 
 (provide 'pearl-gtd-horizons)
 

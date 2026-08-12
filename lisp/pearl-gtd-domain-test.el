@@ -106,6 +106,100 @@
                  '((L6_PURPOSE . "Purpose")) 'principle)))
     (should (car result))))
 
+;;;; Horizon computation tests
+
+(ert-deftest pearl-gtd-domain-test-compute-project-horizon-intersection ()
+  "Intersection of values across actions in the same project."
+  (let ((entries
+         (list (cons '("ProjA") '(("L3_AREA" . "Area1; Area2")
+                                  ("L4_GOAL" . "Goal1")))
+               (cons '("ProjA" "ProjB") '(("L3_AREA" . "Area2; Area3")
+                                          ("L4_GOAL" . "Goal1; Goal2"))))))
+    ;; ProjA: Area1;Area2 ∩ Area2;Area3 = Area2
+    (should (equal (pearl-gtd-domain--compute-project-horizon "ProjA" "L3_AREA" entries)
+                   '("Area2")))
+    ;; ProjA: Goal1 ∩ Goal1;Goal2 = Goal1
+    (should (equal (pearl-gtd-domain--compute-project-horizon "ProjA" "L4_GOAL" entries)
+                   '("Goal1")))
+    ;; ProjB: only second entry has ProjB, values = Area2;Area3
+    (should (equal (pearl-gtd-domain--compute-project-horizon "ProjB" "L3_AREA" entries)
+                   '("Area2" "Area3")))))
+
+(ert-deftest pearl-gtd-domain-test-compute-project-horizon-ignores-missing-level ()
+  "Actions without the level or with empty value are ignored."
+  (let ((entries (list (cons '("ProjA") '(("L3_AREA" . "Area1; Area2")))
+                       (cons '("ProjA") '(("L3_AREA" . "")))
+                       (cons '("ProjA") '(("L3_AREA" . nil))))))
+    (should (equal (pearl-gtd-domain--compute-project-horizon "ProjA" "L3_AREA" entries)
+                   '("Area1" "Area2")))))
+
+(ert-deftest pearl-gtd-domain-test-compute-project-horizon-no-intersection ()
+  "Disjoint values yield nil."
+  (let ((entries (list (cons '("ProjA") '(("L3_AREA" . "Area1")))
+                       (cons '("ProjA") '(("L3_AREA" . "Area2"))))))
+    (should (null (pearl-gtd-domain--compute-project-horizon "ProjA" "L3_AREA" entries)))))
+
+(ert-deftest pearl-gtd-domain-test-compute-project-horizon-no-actions ()
+  "No entries or no matching project yields nil."
+  (should (null (pearl-gtd-domain--compute-project-horizon "ProjA" "L3_AREA" '())))
+  (should (null (pearl-gtd-domain--compute-project-horizon
+                 "ProjA" "L3_AREA"
+                 (list (cons '("ProjB") '(("L3_AREA" . "Area1"))))))))
+
+(ert-deftest pearl-gtd-domain-test-combine-project-horizons-union ()
+  "Union deduplicates and ignores nil inputs."
+  (should (equal (pearl-gtd-domain--combine-project-horizons
+                  '(("Area1" "Area2") ("Area2" "Area3")))
+                 '("Area1" "Area2" "Area3")))
+  (should (equal (pearl-gtd-domain--combine-project-horizons
+                  '(nil ("Area2") ("Area3")))
+                 '("Area2" "Area3"))))
+
+(ert-deftest pearl-gtd-domain-test-combine-project-horizons-empty ()
+  "All-empty inputs yield nil."
+  (should (null (pearl-gtd-domain--combine-project-horizons '(nil nil))))
+  (should (null (pearl-gtd-domain--combine-project-horizons '()))))
+
+(ert-deftest pearl-gtd-domain-test-compute-entry-horizons-single-project ()
+  "Single project: intersection across all five levels."
+  (let* ((entries '((("ProjA")
+                     ("L3_AREA" . "Area1; Area2")
+                     ("L4_GOAL" . "Goal1")
+                     ("L5_VISION" . "Vision1")
+                     ("L6_PURPOSE" . "Purpose1")
+                     ("L6_PRINCIPLE" . "Principle1"))
+                    (("ProjA")
+                     ("L3_AREA" . "Area2; Area3")
+                     ("L4_GOAL" . "Goal1; Goal2")
+                     ("L5_VISION" . "Vision1; Vision2")
+                     ("L6_PURPOSE" . "Purpose2")
+                     ("L6_PRINCIPLE" . "Principle1; Principle2"))))
+         (result (pearl-gtd-domain--compute-entry-horizons '("ProjA") entries)))
+    (should (equal (cdr (assoc "L3_AREA" result)) "Area2"))
+    (should (equal (cdr (assoc "L4_GOAL" result)) "Goal1"))
+    (should (equal (cdr (assoc "L5_VISION" result)) "Vision1"))
+    (should (null (assoc "L6_PURPOSE" result)))
+    (should (equal (cdr (assoc "L6_PRINCIPLE" result)) "Principle1"))))
+
+(ert-deftest pearl-gtd-domain-test-compute-entry-horizons-multi-project-union ()
+  "Multiple projects: union of per-project intersections."
+  (let* ((entries '((("ProjA") ("L3_AREA" . "Area1; Area2") ("L4_GOAL" . "GoalA"))
+                    (("ProjB") ("L3_AREA" . "Area2; Area3") ("L4_GOAL" . "GoalB"))))
+         (result (pearl-gtd-domain--compute-entry-horizons '("ProjA" "ProjB") entries)))
+    (should (equal (cdr (assoc "L3_AREA" result)) "Area1; Area2; Area3"))
+    (should (equal (cdr (assoc "L4_GOAL" result)) "GoalA; GoalB"))))
+
+(ert-deftest pearl-gtd-domain-test-compute-entry-horizons-no-project ()
+  "No project yields empty alist."
+  (let ((entries '((("ProjA") ("L3_AREA" . "Area1")))))
+    (should (null (pearl-gtd-domain--compute-entry-horizons nil entries)))))
+
+(ert-deftest pearl-gtd-domain-test-compute-entry-horizons-only-action ()
+  "Entry is the only action in its project → all levels empty."
+  (let* ((entries '((("OtherProj") ("L3_AREA" . "AreaX"))))
+         (result (pearl-gtd-domain--compute-entry-horizons '("ProjA") entries)))
+    (should (null result))))
+
 (provide 'pearl-gtd-domain-test)
 
 ;;; pearl-gtd-domain-test.el ends here

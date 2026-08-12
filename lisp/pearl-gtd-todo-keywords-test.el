@@ -22,7 +22,7 @@
     (should (string= (pearl-gtd-core--default-todo-keyword) "TODO"))))
 
 (ert-deftest pearl-gtd-todo-keywords-test-collect-contexts-custom ()
-  "collect-contexts respects custom NOT_DONE keywords."
+  "Collect-contexts respects custom NOT_DONE keywords."
   (let* ((org-todo-keywords '((sequence "TODO" "DOING" "DONE")))
          (pearl-gtd-init-base-directory (make-temp-file "pearl-gtd-test-" t)))
     (unwind-protect
@@ -38,7 +38,7 @@
       (delete-directory pearl-gtd-init-base-directory t))))
 
 (ert-deftest pearl-gtd-todo-keywords-test-context-candidates-filter-todo ()
-  "domain-context-candidates excludes custom todo keywords from tags."
+  "Domain-context-candidates excludes custom todo keywords from tags."
   (let* ((org-todo-keywords '((sequence "TODO" "DOING" "DONE")))
          (pearl-gtd-init-base-directory (make-temp-file "pearl-gtd-test-" t)))
     (unwind-protect

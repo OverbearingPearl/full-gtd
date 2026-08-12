@@ -234,7 +234,7 @@ Signals \\='quit if user presses \\`C-g\\'."
 (defun pearl-gtd-core--split-values (value-string)
   "Split VALUE-STRING using semicolon separator.
 Supports both English (;) and Chinese (；) semicolons.
-Trim whitespace from each value. Filter empty values.
+Trim whitespace from each value.  Filter empty values.
 Example: \"Project A; Project B；Project C\"
   -> (\"Project A\" \"Project B\" \"Project C\")
 Delegate to domain layer for pure computation."
@@ -249,7 +249,7 @@ Delegate to domain layer for pure computation."
 
 (defun pearl-gtd-core--normalize-project-input (input)
   "Normalize project input: convert Chinese semicolons to English.
-Trim whitespace from each value. Returns nil if empty.
+Trim whitespace from each value.  Returns nil if empty.
 INPUT is the input string to normalize.
 Example: \"Project A；Project B；Project C\"
   -> \"Project A; Project B; Project C\"
