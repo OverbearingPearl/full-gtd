@@ -360,7 +360,7 @@ Actions whose source entry lacks a PROJECT property should be deleted."
       (save-buffer))))
 
 (defun pearl-gtd-do--complete-current ()
-  "Mark current action as done. Delete if it has no PROJECT property."
+  "Mark current action as done.  Delete if it has no PROJECT property."
   (let ((action (pearl-gtd-do--current-action)))
     (when action
       (if (pearl-gtd-do--should-delete-on-completion-p action)
@@ -514,7 +514,7 @@ CONTEXT, TIME-BUDGET, and ENERGY are optional initial filters."
   :interactive nil)
 
 (defun pearl-gtd-do--session-done ()
-  "Mark current card as done and advance. Delete if no project."
+  "Mark current card as done and advance.  Delete if no project."
   (interactive)
   (pearl-gtd-do--complete-current)
   (if pearl-gtd-do--session-actions

@@ -132,7 +132,7 @@
 ;;; Multi-value property completion tests
 
 (ert-deftest pearl-gtd-core-test-read-property-project-multi-value ()
-  "Project type uses completing-read-multiple and joins with semicolon."
+  "Project type uses \`completing-read-multiple' and joins with semicolon."
   (cl-letf (((symbol-function 'completing-read-multiple)
              (lambda (_prompt _collection &rest _)
                '("ProjA" "ProjB" "ProjC")))
@@ -143,7 +143,7 @@
       (should (string= result "ProjA; ProjB; ProjC")))))
 
 (ert-deftest pearl-gtd-core-test-read-property-context-single-value ()
-  "Context type uses single completing-read, not crm."
+  "Context type uses single \`completing-read', not crm."
   (cl-letf (((symbol-function 'completing-read)
              (lambda (_prompt _collection &rest _) "@office"))
             ((symbol-function 'completing-read-multiple)
@@ -181,7 +181,7 @@
       "Old1; Old2; New3"))))
 
 (ert-deftest pearl-gtd-core-test-read-property-empty-crm-returns-empty-string ()
-  "Empty completing-read-multiple returns empty string (not nil)."
+  "Empty \`completing-read-multiple' returns empty string (not nil)."
   (cl-letf (((symbol-function 'completing-read-multiple)
              (lambda (&rest _) nil))
             ((symbol-function 'pearl-gtd-domain--collect-project-candidates)

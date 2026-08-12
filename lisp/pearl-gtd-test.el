@@ -14,11 +14,9 @@
   "Variable to store caught errors during tests.")
 
 (defun pearl-gtd-test-file-contains-p (file pattern)
-  "Assert that FILE contains PATTERN.
-FILE is the file path to check.
-PATTERN is the regex pattern to search for.
-Returns a list (found-p file-content) where found-p is t/nil,
-and file-content is the entire file content as a string."
+  "Check FILE for PATTERN and return (FOUND CONTENT).
+FOUND is non-nil if PATTERN found; CONTENT is the file content as string.
+FILE is the file path; PATTERN is the regex pattern to search for."
   (if (not (file-exists-p file))
       (list nil (format "File does not exist: %s" file))
     (with-temp-buffer
@@ -31,7 +29,7 @@ and file-content is the entire file content as a string."
         (list found content)))))
 
 (defun pearl-gtd-test-file-contains-p-bool (file pattern)
-  "Return t if FILE contains PATTERN, nil otherwise.
+  "Check FILE for PATTERN and return t if present, nil otherwise.
 FILE is the file path to check.
 PATTERN is the regex pattern to search for."
   (car (pearl-gtd-test-file-contains-p file pattern)))

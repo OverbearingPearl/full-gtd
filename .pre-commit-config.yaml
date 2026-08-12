@@ -3,7 +3,7 @@ repos:
     hooks:
       - id: emacs-check
         name: Emacs package lint and byte compile
-        entry: bash -c '/opt/homebrew/bin/emacs -Q --batch --directory . --directory ./lisp --eval "(setq load-prefer-newer t)" --eval "(package-initialize)" --eval "(require (quote package-lint))" --eval "(require (quote checkdoc))" --eval "(byte-compile-file \"$1\")" --eval "(package-lint-current-buffer)" --eval "(checkdoc-current-buffer)" 2>&1 | grep -E "(Warning:|Error:)" && exit 1 || exit 0' bash
+        entry: bash -c 'for f in "$@"; do /opt/homebrew/bin/emacs -Q --batch --directory . --directory ./lisp --eval "(setq load-prefer-newer t)" --eval "(package-initialize)" --eval "(require (quote package-lint))" --eval "(require (quote checkdoc))" --eval "(progn (find-file \"$f\") (package-lint-current-buffer) (checkdoc-file buffer-file-name) (byte-compile-file buffer-file-name))" 2>&1; done | grep -E "(Warning:|Error:|\.el:[0-9]+:)" && exit 1 || exit 0' bash
         language: system
         files: \.el$
         pass_filenames: true

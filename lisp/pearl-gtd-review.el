@@ -404,7 +404,9 @@ EXTRA-CLEANUP is a form to execute when removing the property
         (setter (intern (concat "pearl-gtd-review--set-property-by-id")))
         (remover (intern (concat "pearl-gtd-review--remove-property-by-id"))))
     `(defun ,fn-name ()
-       ,(format "Edit %s with current value as default. Empty input removes it." property)
+       ,(format "Edit %s with current value as default.
+If input is empty, remove the property."
+                property)
        (interactive)
        (let ((entry (pearl-gtd-review--get-entry-at-point)))
          (when entry
@@ -423,7 +425,8 @@ EXTRA-CLEANUP is a form to execute when removing the property
              (pearl-gtd-review--refresh-view)))))))
 
 (defun pearl-gtd-review--edit-context-at-point ()
-  "Edit context tag with current value as default.  Empty input removes it."
+  "Edit context tag with current value as default.
+If input is empty, remove the property."
   (interactive)
   (let ((entry (pearl-gtd-review--get-entry-at-point)))
     (when entry
@@ -440,11 +443,16 @@ EXTRA-CLEANUP is a form to execute when removing the property
           (save-buffer))
         (pearl-gtd-review--refresh-view)))))
 
-(pearl-gtd-review-define-property-editor "delegated" "DELEGATED" "Delegated to (empty to remove, supports full name, e.g., John Smith): " delegate
-  (pearl-gtd-review--remove-property-by-id id file "DELEGATED_DATE"))
+(pearl-gtd-review-define-property-editor
+   "delegated" "DELEGATED"
+   (concat "Delegated to (empty to remove, supports full name, "
+           "e.g., John Smith): ")
+   delegate
+   (pearl-gtd-review--remove-property-by-id id file "DELEGATED_DATE"))
 
 (defun pearl-gtd-review--edit-scheduled-at-point ()
-  "Edit scheduled date with current value as default.  Empty input removes it."
+  "Edit scheduled date with current value as default.
+If input is empty, remove it."
   (interactive)
   (let ((entry (pearl-gtd-review--get-entry-at-point)))
     (when entry
@@ -488,15 +496,20 @@ EXTRA-CLEANUP is a form to execute when removing the property
             (save-buffer))
           (pearl-gtd-review--refresh-view))))))
 
-(pearl-gtd-review-define-property-editor "project" "PROJECT" "Project (empty to remove, supports spaces, use ; for multiple, e.g., Website Redesign; Q1 Goals): " project
-  (progn
+(pearl-gtd-review-define-property-editor
+   "project" "PROJECT"
+   (concat "Project (empty to remove, supports spaces, use ; "
+           "for multiple, e.g., Website Redesign; Q1 Goals): ")
+   project
+   (progn
     (pearl-gtd-review--remove-property-by-id id file "L3_AREA")
     (pearl-gtd-review--remove-property-by-id id file "L4_GOAL")
     (pearl-gtd-review--remove-property-by-id id file "L5_VISION")
     (pearl-gtd-review--remove-property-by-id id file "L6_PURPOSE")))
 
 (defun pearl-gtd-review--complete-task-at-point ()
-  "Mark task at point as done. Delete task if it has no PROJECT property."
+  "Mark task at point as done.
+Delete task if it has no PROJECT property."
   (interactive)
   (let ((entry (pearl-gtd-review--get-entry-at-point)))
     (when entry
