@@ -19,6 +19,8 @@
 (require 'org-id)
 (require 'pearl-gtd-core)
 
+(declare-function pearl-gtd-horizons--sync-entry-horizons "pearl-gtd-horizons")
+
 (defface pearl-gtd-inbox--highlight
   '((t :inherit highlight))
   "Face for highlighting the current entry."
@@ -577,7 +579,9 @@ DEADLINE is the deadline date string (nil if not set)."
         (when new-headline
           (org-edit-headline new-headline))
         (when (and target-file (string= target-file "action.org"))
-          (org-todo (car org-not-done-keywords)))
+          (org-todo (car org-not-done-keywords))
+          (org-id-get-create)
+          (pearl-gtd-horizons--sync-entry-horizons))
         (when remarks
           (org-end-of-meta-data t)
           (unless (bolp)

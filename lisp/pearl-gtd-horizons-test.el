@@ -574,6 +574,87 @@
               (when (get-buffer "*Pearl-GTD Project: JumpProject*")
                 (kill-buffer "*Pearl-GTD Project: JumpProject*"))))
 
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-sync-project-change-single
+  "Action becomes part of single project; horizons become intersection of that project."
+  :setup (pearl-gtd-init-initialize)
+  :files (("action.org" "* TODO Existing 1\n:PROPERTIES:\n:ID: ex-1\n:PROJECT: ProjA\n:L3_AREA: Area1; Area2\n:L4_GOAL: Goal1\n:END:\n* TODO Existing 2\n:PROPERTIES:\n:ID: ex-2\n:PROJECT: ProjA\n:L3_AREA: Area2; Area3\n:L4_GOAL: Goal1; Goal2\n:END:\n"))
+  :mock nil
+  :body (with-temp-buffer
+          (org-mode)
+          (insert "* TODO New action\n:PROPERTIES:\n:ID: new-1\n:PROJECT: ProjA\n:END:\n")
+          (goto-char (point-min))
+          (pearl-gtd-horizons--sync-entry-horizons)
+          (should (string= (org-entry-get nil "L3_AREA") "Area2"))
+          (should (string= (org-entry-get nil "L4_GOAL") "Goal1"))
+          (should (null (org-entry-get nil "L5_VISION"))))
+  :asserts t
+  :teardown nil)
+
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-sync-project-change-multi
+  "Action becomes part of multiple projects; horizons become union of per-project horizons."
+  :setup (pearl-gtd-init-initialize)
+  :files (("action.org" "* TODO Existing A\n:PROPERTIES:\n:ID: ex-a\n:PROJECT: ProjA\n:L3_AREA: Area1; Area2\n:END:\n* TODO Existing B\n:PROPERTIES:\n:ID: ex-b\n:PROJECT: ProjB\n:L3_AREA: Area2; Area3\n:END:\n"))
+  :mock nil
+  :body (with-temp-buffer
+          (org-mode)
+          (insert "* TODO New action\n:PROPERTIES:\n:ID: new-m\n:PROJECT: ProjA; ProjB\n:END:\n")
+          (goto-char (point-min))
+          (pearl-gtd-horizons--sync-entry-horizons)
+          (should (string= (org-entry-get nil "L3_AREA") "Area1; Area2; Area3")))
+  :asserts t
+  :teardown nil)
+
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-sync-clears-when-only-action
+  "Action is the only action in project → horizons cleared."
+  :setup (pearl-gtd-init-initialize)
+  :files (("action.org" "* TODO Other project\n:PROPERTIES:\n:ID: other-1\n:PROJECT: OtherProj\n:L3_AREA: AreaX\n:END:\n"))
+  :mock nil
+  :body (with-temp-buffer
+          (org-mode)
+          (insert "* TODO New action\n:PROPERTIES:\n:ID: only-1\n:PROJECT: ProjA\n:L3_AREA: OldArea\n:L4_GOAL: OldGoal\n:END:\n")
+          (goto-char (point-min))
+          (pearl-gtd-horizons--sync-entry-horizons)
+          (should (null (org-entry-get nil "L3_AREA")))
+          (should (null (org-entry-get nil "L4_GOAL"))))
+  :asserts t
+  :teardown nil)
+
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-sync-clears-when-no-project
+  "Action without project → horizons cleared."
+  :setup (pearl-gtd-init-initialize)
+  :files (("action.org" "* TODO Existing\n:PROPERTIES:\n:ID: ex-np\n:PROJECT: ProjA\n:L3_AREA: Area1\n:END:\n"))
+  :mock nil
+  :body (with-temp-buffer
+          (org-mode)
+          (insert "* TODO No project\n:PROPERTIES:\n:ID: np-1\n:L3_AREA: OldArea\n:END:\n")
+          (goto-char (point-min))
+          (pearl-gtd-horizons--sync-entry-horizons)
+          (should (null (org-entry-get nil "L3_AREA"))))
+  :asserts t
+  :teardown nil)
+
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-set-horizon-unions-multiple-project-values
+  "显式编辑共享任务的 horizon 时应值级并集去重。"
+  :setup (pearl-gtd-init-initialize)
+  :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: union-1\n:PROJECT: ProjA; ProjB\n:L3_AREA: AreaA; AreaB\n:END:\n"))
+  :mock (((symbol-function 'read-string) (lambda (&rest _) "AreaC"))
+         ((symbol-function 'pearl-gtd-core-read-property-with-completion) (lambda (&rest _) "AreaC")))
+  :body (progn
+          (pearl-gtd-horizons-view)
+          (with-current-buffer "*Pearl-GTD Horizon View*"
+            (goto-char (point-min))
+            (search-forward "ProjA")
+            (beginning-of-line)
+            (pearl-gtd-horizons--edit-area-at-point)))
+  :asserts (progn
+             (should (pearl-gtd-test-file-contains-p
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                      ":L3_AREA: AreaC; AreaA; AreaB"))
+             (should-not (pearl-gtd-test-file-contains-p-bool
+                          (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                          "AreaA; AreaA")))
+  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Horizon View*")))
+
 (provide 'pearl-gtd-horizons-test)
 
 ;;; pearl-gtd-horizons-test.el ends here

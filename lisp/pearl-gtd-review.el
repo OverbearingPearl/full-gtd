@@ -24,6 +24,7 @@
 (declare-function pearl-gtd-horizons--edit-goal-at-point "pearl-gtd-horizons")
 (declare-function pearl-gtd-horizons--edit-vision-at-point "pearl-gtd-horizons")
 (declare-function pearl-gtd-horizons--edit-purpose-at-point "pearl-gtd-horizons")
+(declare-function pearl-gtd-horizons--sync-entry-horizons "pearl-gtd-horizons")
 
 (defvar-local pearl-gtd-review--current-view-type nil
   "Type of current review view: daily, weekly, or project.")
@@ -146,12 +147,18 @@ identifies project rows."
 (defun pearl-gtd-review--set-property-by-id (id file property value)
   "Set PROPERTY to VALUE for entry with ID in FILE."
   (pearl-gtd-core-with-entry-at-id id file
-    (org-entry-put nil property value)))
+    (org-entry-put nil property value)
+    (when (and (string= property "PROJECT")
+               (string= file "action.org"))
+      (pearl-gtd-horizons--sync-entry-horizons))))
 
 (defun pearl-gtd-review--remove-property-by-id (id file property)
   "Remove PROPERTY from entry with ID in FILE."
   (pearl-gtd-core-with-entry-at-id id file
-    (org-delete-property property)))
+    (org-delete-property property)
+    (when (and (string= property "PROJECT")
+               (string= file "action.org"))
+      (pearl-gtd-horizons--sync-entry-horizons))))
 
 (defun pearl-gtd-review--get-context-by-id (id file)
   "Return context tag (without @) for entry with ID in FILE, or nil."
@@ -271,6 +278,7 @@ identifies project rows."
         (pearl-gtd-state--with-transaction '("someday.org" "action.org")
           (pearl-gtd-core-with-entry-at-id id entry-file
             (pearl-gtd-review--apply-activation-attributes confirmed)
+            (pearl-gtd-horizons--sync-entry-horizons)
             (org-mark-subtree)
             (let ((subtree (buffer-substring-no-properties
                             (region-beginning) (region-end))))

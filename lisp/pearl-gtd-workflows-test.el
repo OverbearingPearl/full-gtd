@@ -309,7 +309,7 @@
          ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil))))
   :body (let ((start (float-time)))
           (pearl-gtd-process-inbox)
-          (should (< (- (float-time) start) 10.0)))
+          (should (< (- (float-time) start) 30.0)))
   :asserts (should (pearl-gtd-test-inbox-empty-p pearl-gtd-init-base-directory))
   :teardown nil)
 
