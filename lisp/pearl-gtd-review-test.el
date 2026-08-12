@@ -759,6 +759,44 @@
   :asserts t
   :teardown nil)
 
+(pearl-gtd-test-define-story pearl-gtd-review-test-cursor-kept-on-task-row-after-property-edit
+  "Editing a property in weekly review keeps cursor on the same task row."
+  :setup (pearl-gtd-init-initialize)
+  :files (("action.org" "* TODO Task one\n:PROPERTIES:\n:ID: cursor-edit-1\n:PROJECT: Test\n:END:\n* TODO Task two\n:PROPERTIES:\n:ID: cursor-edit-2\n:PROJECT: Test\n:END:\n"))
+  :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
+          (lambda (_prompt _type &optional _initial) "office")))
+  :body (progn
+          (pearl-gtd-review-weekly)
+          (with-current-buffer "*Pearl-GTD Weekly Review*"
+            (goto-char (point-min))
+            (search-forward "Task one")
+            (beginning-of-line)
+            (pearl-gtd-review--edit-context-at-point)))
+  :asserts (with-current-buffer "*Pearl-GTD Weekly Review*"
+             (beginning-of-line)
+             (should (string-match-p "Task one"
+                                     (buffer-substring (line-beginning-position) (line-end-position)))))
+  :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
+
+(pearl-gtd-test-define-story pearl-gtd-review-test-cursor-moves-to-next-task-after-delete
+  "Deleting a no-project task in review moves cursor to the next task row."
+  :setup (pearl-gtd-init-initialize)
+  :files (("action.org" "* TODO Task one\n:PROPERTIES:\n:ID: cursor-del-1\n:END:\n* TODO Task two\n:PROPERTIES:\n:ID: cursor-del-2\n:END:\n"))
+  :mock nil
+  :body (progn
+          (pearl-gtd-review-weekly)
+          (with-current-buffer "*Pearl-GTD Weekly Review*"
+            (goto-char (point-min))
+            (search-forward "** action.org - No Project")
+            (search-forward "Task one")
+            (beginning-of-line)
+            (pearl-gtd-review--complete-task-at-point)))
+  :asserts (with-current-buffer "*Pearl-GTD Weekly Review*"
+             (beginning-of-line)
+             (should (string-match-p "Task two"
+                                     (buffer-substring (line-beginning-position) (line-end-position)))))
+  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
+
 (provide 'pearl-gtd-review-test)
 
 ;;; pearl-gtd-review-test.el ends here

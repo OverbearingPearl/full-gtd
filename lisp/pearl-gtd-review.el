@@ -580,7 +580,10 @@ META is an alist with keys :entry-map and :entry-index."
 
 (defun pearl-gtd-review--render-table (buffer sections-data meta)
   "Render SECTIONS-DATA into BUFFER using META."
-  (let ((entry-map (cdr (assq :entry-map meta))))
+  (let* ((entry-map (cdr (assq :entry-map meta)))
+         (anchor (when (buffer-live-p buffer)
+                   (with-current-buffer buffer
+                     (pearl-gtd-ui--anchor-at-point)))))
     (with-current-buffer buffer
       (setq buffer-read-only nil)
       (erase-buffer)
@@ -657,6 +660,7 @@ META is an alist with keys :entry-map and :entry-index."
             (insert "\n"))))
       (setq buffer-read-only t)
       (goto-char (point-min))
+      (pearl-gtd-ui--restore-point-anchor anchor)
       (current-buffer))))
 
 (defun pearl-gtd-review--create-table-buffer (buffer-name sections)

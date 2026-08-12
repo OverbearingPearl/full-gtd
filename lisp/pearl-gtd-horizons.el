@@ -367,6 +367,9 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
 (defun pearl-gtd-horizons--view ()
   "Display horizon alignment matrix view."
   (let* ((buffer-name "*Pearl-GTD Horizon View*")
+         (anchor (when (get-buffer buffer-name)
+                   (with-current-buffer (get-buffer buffer-name)
+                     (pearl-gtd-ui--anchor-at-point))))
          (projects (pearl-gtd-horizons--collect-all-projects))
          (classified (pearl-gtd-horizons--classify-projects projects))
          (critical (nth 0 classified))
@@ -478,8 +481,9 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
         (org-table-align)
         (insert "\n")
 
-        (setq buffer-read-only t)
-        (goto-char (point-min)))
+          (setq buffer-read-only t)
+          (goto-char (point-min))
+          (pearl-gtd-ui--restore-point-anchor anchor))
       (pop-to-buffer buffer-name)
       (pearl-gtd-horizons-view-mode 1))))
 

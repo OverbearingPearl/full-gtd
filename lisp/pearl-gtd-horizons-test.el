@@ -655,6 +655,25 @@
                           "AreaA; AreaA")))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Horizon View*")))
 
+(pearl-gtd-test-define-story pearl-gtd-horizons-test-cursor-kept-on-project-row-after-edit
+  "Editing a horizon in horizon view keeps cursor on the same project row."
+  :setup (pearl-gtd-init-initialize)
+  :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: cursor-horizon-1\n:PROJECT: TestProj\n:L3_AREA: Work\n:END:\n"))
+  :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
+          (lambda (&rest _) "Personal")))
+  :body (progn
+          (pearl-gtd-horizons-view)
+          (with-current-buffer "*Pearl-GTD Horizon View*"
+            (goto-char (point-min))
+            (search-forward "TestProj")
+            (beginning-of-line)
+            (pearl-gtd-horizons--edit-area-at-point)))
+  :asserts (with-current-buffer "*Pearl-GTD Horizon View*"
+             (beginning-of-line)
+             (should (string-match-p "TestProj"
+                                     (buffer-substring (line-beginning-position) (line-end-position)))))
+  :teardown (kill-buffer "*Pearl-GTD Horizon View*"))
+
 (provide 'pearl-gtd-horizons-test)
 
 ;;; pearl-gtd-horizons-test.el ends here
