@@ -373,7 +373,10 @@ Returns plist with :proj-name, :purpose, :principle, :vision,
          (vision (pearl-gtd-planning--ask-horizon 5 "Vision" nil))
          (goal (pearl-gtd-planning--ask-horizon 4 "Goal" nil))
          (area (pearl-gtd-planning--ask-horizon 3 "Area" t))
-         (default-context (read-string "Default context [RET for none]: "))
+         (default-context
+           (let ((input (pearl-gtd-core-read-property-with-completion
+                         "Default context [RET none, TAB complete]: " 'context "")))
+             (if (string= input "") "" input)))
          (horizons `(("L6_PURPOSE" . ,purpose)
                      ("L6_PRINCIPLE" . ,principle)
                      ("L5_VISION" . ,vision)

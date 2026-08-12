@@ -41,6 +41,7 @@
                           "Industry leader"            ; Vision (L5)
                           "Launch in Q2"               ; Goal (L4)
                           "Product Development"        ; Area (L3)
+                          "@design"                    ; Context
                           ))
                 (idx 0))
             (lambda (&rest _)
@@ -137,6 +138,7 @@
                           "A vision"        ; Vision (now required)
                           "Ship it"         ; Goal
                           ""                ; Area (empty - optional)
+                          ""                ; Context
                           ))
                 (idx 0))
             (lambda (&rest _)
@@ -196,7 +198,7 @@
   :setup (pearl-gtd-init-initialize)
   :files nil
   :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
-          (let ((inputs '("Purpose" "" "Vision" "Goal" "Area"))
+          (let ((inputs '("Purpose" "" "Vision" "Goal" "Area" "@office"))
                 (idx 0))
             (lambda (&rest _)
               (let ((val (nth idx inputs)))
@@ -259,7 +261,7 @@
   :setup (pearl-gtd-init-initialize)
   :files nil
   :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
-          (let ((inputs '("Purpose" "" "Vision" "Goal" "Area"))
+          (let ((inputs '("Purpose" "" "Vision" "Goal" "Area" ""))
                 (idx 0))
             (lambda (&rest _)
               (let ((val (nth idx inputs)))
@@ -322,6 +324,7 @@
                           "Valid Vision"   ; Vision (required)
                           "Valid Goal"     ; Goal (required)
                           ""               ; Area (optional)
+                          "@ctx"           ; Context
                           ))
                 (idx 0))
             (lambda (&rest _)
@@ -371,7 +374,7 @@
   :setup (pearl-gtd-init-initialize)
   :files nil
   :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
-          (let ((inputs '("P" "" "V" "G" "A"))
+          (let ((inputs '("P" "" "V" "G" "A" ""))
                 (idx 0))
             (lambda (&rest _)
               (let ((val (nth idx inputs)))
@@ -423,7 +426,7 @@
   :setup (pearl-gtd-init-initialize)
   :files nil
   :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
-          (let ((inputs '("P" "" "V" "G" "A"))
+          (let ((inputs '("P" "" "V" "G" "A" ""))
                 (idx 0))
             (lambda (&rest _)
               (let ((val (nth idx inputs)))
@@ -479,7 +482,7 @@
                (error "Setup failed: ExistingProject not found in action.org"))))
   :files nil
   :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
-          (let ((inputs '("Purpose" "" "Vision" "Goal" "Area"))
+          (let ((inputs '("Purpose" "" "Vision" "Goal" "Area" "@ctx"))
                 (idx 0))
             (lambda (&rest _)
               (let ((val (nth idx inputs)))
@@ -532,6 +535,7 @@
                           "Test Vision"      ; L5 (now required)
                           "Test Goal"        ; L4
                           "Test Area"        ; L3
+                          "@office"          ; Context
                           ))
                 (idx 0))
             (lambda (&rest _)
@@ -571,7 +575,7 @@
   :setup (pearl-gtd-init-initialize)
   :files nil
   :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
-          (let ((inputs '("P" "" "V" "G" "A"))
+          (let ((inputs '("P" "" "V" "G" "A" "@office"))
                 (idx 0))
             (lambda (&rest _)
               (let ((val (nth idx inputs)))
@@ -612,7 +616,7 @@
   :setup (pearl-gtd-init-initialize)
   :files nil
   :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
-          (let ((inputs '("Purpose" "" "Vision" "Goal" "Area"))
+          (let ((inputs '("Purpose" "" "Vision" "Goal" "Area" "@office"))
                 (idx 0))
             (lambda (&rest _)
               (let ((val (nth idx inputs)))
@@ -668,7 +672,7 @@
                (insert "* Old brainstorm idea\n:PROPERTIES:\n:PROJECT: OldProject\n:BRAINSTORM: t\n:END:\n"))))
   :files nil
   :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
-          (let ((inputs '("Purpose" "" "Vision" "Goal" "Area"))
+          (let ((inputs '("Purpose" "" "Vision" "Goal" "Area" "@ctx"))
                 (idx 0))
             (lambda (&rest _)
               (let ((val (nth idx inputs)))
@@ -748,7 +752,7 @@
                (insert "* Other project idea\n:PROPERTIES:\n:ID: bs-3\n:BRAINSTORM: t\n:PROJECT: OtherProject\n:END:\n"))))
   :files nil
   :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
-          (let ((inputs '("Purpose" "" "Vision" "Goal" "Area"))
+          (let ((inputs '("Purpose" "" "Vision" "Goal" "Area" "@ctx"))
                 (idx 0))
             (lambda (&rest _)
               (let ((val (nth idx inputs)))
@@ -808,7 +812,7 @@
   :setup (pearl-gtd-init-initialize)
   :files nil
   :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
-          (let ((inputs '("Purpose" "" "Vision" "Goal" "Area"))
+          (let ((inputs '("Purpose" "" "Vision" "Goal" "Area" "@ctx"))
                 (idx 0))
             (lambda (&rest _)
               (let ((val (nth idx inputs)))
@@ -859,7 +863,7 @@
   :setup (pearl-gtd-init-initialize)
   :files nil
   :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
-          (let ((inputs '("Purpose" "" "Vision" "Goal" "Area"))
+          (let ((inputs '("Purpose" "" "Vision" "Goal" "Area" "@ctx"))
                 (idx 0))
             (lambda (&rest _)
               (let ((val (nth idx inputs)))
@@ -912,6 +916,7 @@
                           "Vision"              ; Vision
                           "Goal"                ; Goal
                           "Area"                ; Area
+                          "@ctx"                ; Context
                           ))
                 (idx 0))
             (lambda (&rest _)
@@ -954,7 +959,7 @@
   :setup (pearl-gtd-init-initialize)
   :files nil
   :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
-          (let ((inputs '("Purpose" "" "Vision" "Goal" "Area"))
+          (let ((inputs '("Purpose" "" "Vision" "Goal" "Area" "@ctx"))
                 (idx 0))
             (lambda (&rest _)
               (let ((val (nth idx inputs)))
@@ -1006,6 +1011,7 @@
                           "Vision"                           ; Vision
                           "Goal"                             ; Goal
                           "Area"                             ; Area
+                          "@ctx"                             ; Context
                           ))
                 (idx 0))
             (lambda (&rest _)
@@ -1044,7 +1050,7 @@
   :files nil
   :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
           ;; Provide more inputs to prevent nil returns causing infinite loops
-          (let ((inputs '("Purpose" "" "Vision" "Goal" "Area" "ForcedPurpose" "" "ForcedVision" "ForcedGoal" "ForcedArea"))
+          (let ((inputs '("Purpose" "" "Vision" "Goal" "Area" "@ctx" "ForcedPurpose" "" "ForcedVision" "ForcedGoal" "ForcedArea"))
                 (idx 0))
             (lambda (&rest _)
               (let ((val (nth idx inputs)))
@@ -1090,7 +1096,7 @@
                (insert "* TODO Existing task\n:PROPERTIES:\n:PROJECT: Existing Project\n:ID: existing-1\n:END:\n"))))
   :files nil
   :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
-          (let ((inputs '("Purpose" "" "Vision" "Goal" "Area"))
+          (let ((inputs '("Purpose" "" "Vision" "Goal" "Area" "@ctx"))
                 (idx 0))
             (lambda (&rest _)
               (let ((val (nth idx inputs)))
