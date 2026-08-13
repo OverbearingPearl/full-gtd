@@ -450,7 +450,7 @@ If input is empty, remove the property."
 
 (defun pearl-gtd-review--edit-scheduled-at-point ()
   "Edit scheduled date at point (bound to `s' in review mode).
-Uses pearl-gtd-core-read-date quick keys.
+Uses `pearl-gtd-core-read-date' quick keys.
 If user presses RET, remove the scheduled date."
   (interactive)
   (let ((entry (pearl-gtd-review--get-entry-at-point)))
@@ -472,7 +472,7 @@ If user presses RET, remove the scheduled date."
 
 (defun pearl-gtd-review--set-deadline-at-point ()
   "Set deadline for task at point (bound to `d' in review mode).
-Uses pearl-gtd-core-read-date quick keys.
+Uses `pearl-gtd-core-read-date' quick keys.
 If user presses RET, remove the deadline."
   (interactive)
   (let ((entry (pearl-gtd-review--get-entry-at-point)))

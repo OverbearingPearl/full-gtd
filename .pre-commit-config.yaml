@@ -3,7 +3,78 @@ repos:
     hooks:
       - id: emacs-check
         name: Emacs package lint and byte compile
-        entry: bash -c 'for f in "$@"; do /opt/homebrew/bin/emacs -Q --batch --directory . --directory ./lisp --eval "(setq load-prefer-newer t)" --eval "(package-initialize)" --eval "(require (quote package-lint))" --eval "(require (quote checkdoc))" --eval "(progn (find-file \"$f\") (package-lint-current-buffer) (checkdoc-file buffer-file-name) (byte-compile-file buffer-file-name))" 2>&1; done | grep -E "(Warning:|Error:|\.el:[0-9]+:)" && exit 1 || exit 0' bash
+        entry: >-
+          emacs -Q --batch --directory . --directory ./lisp
+          --eval "(package-initialize)"
+          --eval "(progn
+                    (require 'checkdoc)
+                    (require 'package-lint)
+                    (require 'pearl-gtd)
+                    (setq checkdoc-autofix-flag 'never
+                          p/errors '())
+                    (advice-add 'checkdoc-create-error :before
+                                (lambda (&rest args)
+                                  (let* ((msg (car args))
+                                         (pos (or (and (numberp (nth 1 args)) (nth 1 args))
+                                                  (and (numberp (nth 2 args)) (nth 2 args))))
+                                         (line (and pos (line-number-at-pos pos)))
+                                         (full (if line
+                                                   (format \"%s (line %d)\" msg line)
+                                                 msg)))
+                                    (push full p/errors))))
+                    (defun p/buf-str (name)
+                      (let ((buf (get-buffer name)))
+                        (if buf (with-current-buffer buf (buffer-string)) \"\")))
+                    (defun p/indent (s)
+                      (mapconcat (lambda (line) (concat \"    \" line))
+                                 (split-string s \"\n\" t) \"\n\"))
+                    (defun p/check-file (file)
+                      (let ((buf (find-file file))
+                            (failed nil))
+                        (dolist (b '(\"*Warnings*\" \"*Compile-Log*\" \"*Messages*\"))
+                          (when (get-buffer b) (with-current-buffer b (erase-buffer))))
+                        (setq p/errors '())
+                        (princ (format \"===== %s =====\n\" file))
+                        ;; checkdoc
+                        (ignore-errors (checkdoc-current-buffer t))
+                        (let ((checkdoc-count (length p/errors)))
+                          (if (> checkdoc-count 0)
+                              (progn
+                                (princ (format \"  checkdoc: %s issue(s)\n\" checkdoc-count))
+                                (dolist (e (nreverse p/errors))
+                                  (princ (format \"    %s\n\" e)))
+                                (setq failed t))
+                            (princ \"  checkdoc: OK\n\")))
+                        ;; package-lint
+                        (ignore-errors (package-lint-current-buffer))
+                        (let ((pl (string-trim (p/buf-str \"*Warnings*\"))))
+                          (if (string-empty-p pl)
+                              (princ \"  package-lint: OK\n\")
+                            (progn
+                              (setq failed t)
+                              (princ \"  package-lint: warning(s)\n\")
+                              (princ (p/indent pl))
+                              (princ \"\n\"))))
+                        ;; byte-compile
+                        (let ((bc (string-trim (p/buf-str \"*Compile-Log*\"))))
+                          (if (string-empty-p bc)
+                              (princ \"  byte-compile: OK\n\")
+                            (progn
+                              (setq failed t)
+                              (princ \"  byte-compile: warning(s)/error(s)\n\")
+                              (princ (p/indent bc))
+                              (princ \"\n\"))))
+                        (princ (format \"  => %s\n\" (if failed \"FAILED\" \"ok\")))
+                        (when (buffer-live-p buf) (kill-buffer buf))
+                        (let ((elc (concat file \"c\")))
+                          (when (file-exists-p elc) (delete-file elc)))
+                        failed))
+                    (let ((failed-any nil))
+                      (dolist (file command-line-args-left)
+                        (unless (string= file \"--\")
+                          (when (p/check-file file) (setq failed-any t))))
+                      (when failed-any (kill-emacs 1))))"
+          --
         language: system
         files: \.el$
         pass_filenames: true
