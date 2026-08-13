@@ -49,20 +49,38 @@
   "Read single key for destination choice for HEADLINE.
 Returns one of: ?a (Next Action), ?r (Reference), ?s (Someday), ?t (Trash),
 ?x (Execute <2min), ?c (Clarify).
-Signals \\='quit if user presses \\`C-g\\'."
+Signals \\='quit if user presses \\`C-g\\'.
+If a multi-key command is typed \(e.g., \\[other-window]\ or
+\\[delete-other-windows]\), it is executed immediately and processing
+continues afterwards."
   (message "Process '%s': [a] Next Action | [r] Reference | [s] Someday | [t] Trash | [x] Execute (<2min) | [c] Clarify: "
            (substring headline 0 (min 30 (length headline))))
   (redisplay t)
-  (let ((key (read-key)))
-    (while (not (or (memq key '(?a ?A ?r ?R ?s ?S ?t ?T ?x ?X ?c ?C))
-                    (eq key 7)))  ; C-g is character 7
+  (let ((seq (read-key-sequence nil)))
+    (cond
+     ((and (= (length seq) 1)
+           (memq (aref seq 0) '(?a ?A ?r ?R ?s ?S ?t ?T ?x ?X ?c ?C)))
+      (downcase (aref seq 0)))
+     ((and (= (length seq) 1)
+           (eq (aref seq 0) 7))  ; C-g
+      (signal 'quit nil))
+     ((= (length seq) 1)
       (message "Invalid key. Process '%s': [a] Next Action | [r] Reference | [s] Someday | [t] Trash | [x] Execute (<2min) | [c] Clarify: "
                (substring headline 0 (min 30 (length headline))))
-      (setq key (read-key)))
-    ;; If C-g pressed, signal quit
-    (if (eq key 7)
-        (signal 'quit nil)
-      (downcase key))))
+      (sit-for 0.5)
+      (pearl-gtd-inbox--read-destination-key headline))
+     (t
+      ;; Multi-key command (e.g., C-x o): execute it immediately and
+      ;; continue processing afterwards.
+      (condition-case err
+          (progn
+            (execute-kbd-macro seq)
+            (pearl-gtd-inbox--read-destination-key headline))
+        (quit (signal 'quit nil))
+        (error
+         (message "Invalid key: %S" err)
+         (sit-for 0.5)
+         (pearl-gtd-inbox--read-destination-key headline)))))))
 
 (defun pearl-gtd-inbox--clarify-entry (headline)
   "Clarify HEADLINE and remarks.
@@ -508,21 +526,22 @@ BRAINSTORM is non-nil."
                 (pop-to-buffer staging-buffer)
                 (redisplay t)
                 (condition-case _
-                    (with-current-buffer staging-buffer
-                      (org-mode)
-                      (font-lock-ensure (point-min) (point-max))
-                      (redisplay t)
-                      (pearl-gtd-inbox--map-entries
-                       staging-buffer
-                       (lambda (headline entry-ref original-tags)
-                         (pearl-gtd-inbox--process-entry headline staging-buffer entry-ref original-tags default-context default-project)))
-                      (when pearl-gtd-inbox--current-highlight
-                        (delete-overlay pearl-gtd-inbox--current-highlight)
-                        (setq pearl-gtd-inbox--current-highlight nil))
-                      (setq pearl-gtd-inbox--pending-moves (nreverse pearl-gtd-inbox--pending-moves))
-                      (when (pearl-gtd-inbox--apply-pending-moves brainstorm)
-                        (message "Inbox empty, deleted."))
-                      (message "Inbox processing complete and changes applied per GTD workflow."))
+                    (catch 'pearl-gtd-inbox-abort
+                      (with-current-buffer staging-buffer
+                        (org-mode)
+                        (font-lock-ensure (point-min) (point-max))
+                        (redisplay t)
+                        (pearl-gtd-inbox--map-entries
+                         staging-buffer
+                         (lambda (headline entry-ref original-tags)
+                           (pearl-gtd-inbox--process-entry headline staging-buffer entry-ref original-tags default-context default-project)))
+                        (when pearl-gtd-inbox--current-highlight
+                          (delete-overlay pearl-gtd-inbox--current-highlight)
+                          (setq pearl-gtd-inbox--current-highlight nil))
+                        (setq pearl-gtd-inbox--pending-moves (nreverse pearl-gtd-inbox--pending-moves))
+                        (when (pearl-gtd-inbox--apply-pending-moves brainstorm)
+                          (message "Inbox empty, deleted."))
+                        (message "Inbox processing complete and changes applied per GTD workflow.")))
                   (quit
                    (message "Inbox processing cancelled.")
                    (when (buffer-live-p staging-buffer)
