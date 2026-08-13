@@ -187,12 +187,10 @@ identifies project rows."
                    (pearl-gtd-core-read-property-with-completion
                     "Context (empty to remove): " 'context
                     (or (alist-get 'context attributes) ""))))
-         (schedule (string-trim
-                    (read-string "Schedule (empty to remove): "
-                                 (or (alist-get 'schedule attributes) ""))))
-         (deadline (string-trim
-                    (read-string "Deadline (empty to remove): "
-                                 (or (alist-get 'deadline attributes) ""))))
+         (schedule (let ((val (pearl-gtd-core-read-date 'schedule)))
+                     (if val val "")))
+         (deadline (let ((val (pearl-gtd-core-read-date 'deadline)))
+                     (if val val "")))
          (delegate (string-trim
                     (pearl-gtd-core-read-property-with-completion
                      "Delegated to (empty to remove): " 'delegate
@@ -451,34 +449,42 @@ If input is empty, remove the property."
    (pearl-gtd-review--remove-property-by-id id file "DELEGATED_DATE"))
 
 (defun pearl-gtd-review--edit-scheduled-at-point ()
-  "Edit scheduled date with current value as default.
-If input is empty, remove it."
+  "Edit scheduled date using pearl-gtd-core-read-date quick keys.
+If user presses RET, remove the scheduled date."
   (interactive)
   (let ((entry (pearl-gtd-review--get-entry-at-point)))
     (when entry
       (let* ((id (car entry))
              (file (cdr entry))
-             (current-scheduled (pearl-gtd-review--get-scheduled-by-id id file))
-             (default-value (or current-scheduled ""))
-             (new-value (string-trim (read-string "Schedule date (empty to remove, e.g., 2026-12-25, 2026-12-25 14:30): " default-value))))
-        (pearl-gtd-core-with-entry-at-id id file
-          (if (string= new-value "")
+             (current-scheduled (pearl-gtd-review--get-scheduled-by-id id file)))
+        (when current-scheduled
+          (message "Current scheduled: %s" current-scheduled))
+        (let ((new-date (pearl-gtd-core-read-date 'schedule)))
+          (if new-date
+              (pearl-gtd-core-with-entry-at-id id file
+                (org-schedule nil new-date)
+                (save-buffer))
+            (pearl-gtd-core-with-entry-at-id id file
               (org-schedule '(4) nil)
-            (org-schedule nil new-value))
-          (save-buffer))
-        (pearl-gtd-review--refresh-view)))))
+              (save-buffer)))
+          (pearl-gtd-review--refresh-view))))))
 
 (defun pearl-gtd-review--set-deadline-at-point ()
-  "Set deadline for task at point."
+  "Set deadline for task at point using pearl-gtd-core-read-date quick keys.
+If user presses RET, remove the deadline."
   (interactive)
   (let ((entry (pearl-gtd-review--get-entry-at-point)))
     (when entry
       (let* ((id (car entry))
              (file (cdr entry))
-             (deadline (string-trim (read-string "Deadline (e.g., 2026-12-25, 2026-12-25 14:30): "))))
-        (pearl-gtd-core-with-entry-at-id id file
-          (org-deadline nil deadline)
-          (save-buffer))
+             (deadline (pearl-gtd-core-read-date 'deadline)))
+        (if deadline
+            (pearl-gtd-core-with-entry-at-id id file
+              (org-deadline nil deadline)
+              (save-buffer))
+          (pearl-gtd-core-with-entry-at-id id file
+            (org-deadline '(4) nil)
+            (save-buffer)))
         (pearl-gtd-review--refresh-view)))))
 
 (defun pearl-gtd-review--rename-task-at-point ()
