@@ -45,9 +45,9 @@
     (define-key map (kbd "g") #'pearl-gtd-review--refresh-view)
     ;; Property editing with defaults
     (define-key map (kbd "c") #'pearl-gtd-review--edit-context-at-point)
-    (define-key map (kbd "d") #'pearl-gtd-review--edit-delegated-at-point)
-    (define-key map (kbd "t") #'pearl-gtd-review--edit-scheduled-at-point)
-    (define-key map (kbd "s") #'pearl-gtd-review--set-deadline-at-point)
+    (define-key map (kbd "s") #'pearl-gtd-review--edit-scheduled-at-point)
+    (define-key map (kbd "d") #'pearl-gtd-review--set-deadline-at-point)
+    (define-key map (kbd "D") #'pearl-gtd-review--edit-delegated-at-point)
     (define-key map (kbd "r") #'pearl-gtd-review--rename-task-at-point)
     (define-key map (kbd "C") #'pearl-gtd-review--complete-task-at-point)
     (define-key map (kbd "P") #'pearl-gtd-review--edit-project-at-point)
@@ -449,7 +449,8 @@ If input is empty, remove the property."
    (pearl-gtd-review--remove-property-by-id id file "DELEGATED_DATE"))
 
 (defun pearl-gtd-review--edit-scheduled-at-point ()
-  "Edit scheduled date using pearl-gtd-core-read-date quick keys.
+  "Edit scheduled date at point (bound to `s' in review mode).
+Uses pearl-gtd-core-read-date quick keys.
 If user presses RET, remove the scheduled date."
   (interactive)
   (let ((entry (pearl-gtd-review--get-entry-at-point)))
@@ -470,7 +471,8 @@ If user presses RET, remove the scheduled date."
           (pearl-gtd-review--refresh-view))))))
 
 (defun pearl-gtd-review--set-deadline-at-point ()
-  "Set deadline for task at point using pearl-gtd-core-read-date quick keys.
+  "Set deadline for task at point (bound to `d' in review mode).
+Uses pearl-gtd-core-read-date quick keys.
 If user presses RET, remove the deadline."
   (interactive)
   (let ((entry (pearl-gtd-review--get-entry-at-point)))
@@ -596,9 +598,9 @@ META is an alist with keys :entry-map and :entry-index."
       (org-mode)
       (setq-local header-line-format
                   (pcase pearl-gtd-review--current-view-type
-                    ('daily "Daily Review | n/p/j/k: move | RET: jump | c/d/t/s/r/P: property | C: complete | A: archive | g: refresh | q: quit")
-                    ('weekly "Weekly Review | n/p/j/k: move | RET: jump | c/d/t/s/r/P/3-6: property | C: complete | a: activate someday | A: archive | g: refresh | q: quit")
-                    (_ "Review | n/p/j/k: move | RET: jump | c/d/t/s/r/P/3-6: property | C: complete | A: archive | g: refresh | q: quit")))
+                    ('daily "Daily Review | n/p/j/k: move | RET: jump | c/s/d/D/r/P: property | C: complete | A: archive | g: refresh | q: quit")
+                    ('weekly "Weekly Review | n/p/j/k: move | RET: jump | c/s/d/D/r/P/3-6: property | C: complete | a: activate someday | A: archive | g: refresh | q: quit")
+                    (_ "Review | n/p/j/k: move | RET: jump | c/s/d/D/r/P/3-6: property | C: complete | A: archive | g: refresh | q: quit")))
       (setq pearl-gtd-review--entry-map entry-map)
       (if (null sections-data)
           (insert "(No entries to review)\n")
