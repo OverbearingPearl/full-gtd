@@ -52,6 +52,7 @@ Returns one of: ?a (Next Action), ?r (Reference), ?s (Someday), ?t (Trash),
 Signals \\='quit if user presses \\`C-g\\'."
   (message "Process '%s': [a] Next Action | [r] Reference | [s] Someday | [t] Trash | [x] Execute (<2min) | [c] Clarify: "
            (substring headline 0 (min 30 (length headline))))
+  (redisplay t)
   (let ((key (read-key)))
     (while (not (or (memq key '(?a ?A ?r ?R ?s ?S ?t ?T ?x ?X ?c ?C))
                     (eq key 7)))  ; C-g is character 7
@@ -177,6 +178,8 @@ context of each entry; only entries matching the predicate are included."
                           age-str
                           (mapconcat #'identity (nth 1 entry) ",")))))
       (org-table-align)
+      (font-lock-ensure (point-min) (point-max))
+      (redisplay t)
       (setq buffer-read-only t)
       (current-buffer))))
 
@@ -214,7 +217,8 @@ ENTRY-REF is a cons cell (BUFFER . ROW)."
         (let ((ov (make-overlay (line-beginning-position) (line-end-position))))
           (overlay-put ov 'face 'pearl-gtd-inbox--highlight)
           (overlay-put ov 'evaporate t)
-          (setq pearl-gtd-inbox--current-highlight ov))))))
+          (setq pearl-gtd-inbox--current-highlight ov)
+          (redisplay t))))))
 
 (defun pearl-gtd-inbox--mark-deleted-impl (row)
   "Mark ROW as deleted.  Internal implementation for state layer."
@@ -502,13 +506,15 @@ BRAINSTORM is non-nil."
                                                    (string= (org-entry-get nil "PROJECT") default-project))))))))
                 (setq pearl-gtd-inbox-stage-buffer-name (buffer-name staging-buffer))
                 (pop-to-buffer staging-buffer)
+                (redisplay t)
                 (condition-case _
                     (with-current-buffer staging-buffer
                       (org-mode)
+                      (font-lock-ensure (point-min) (point-max))
+                      (redisplay t)
                       (pearl-gtd-inbox--map-entries
                        staging-buffer
                        (lambda (headline entry-ref original-tags)
-                         (pearl-gtd-inbox--highlight-entry entry-ref)
                          (pearl-gtd-inbox--process-entry headline staging-buffer entry-ref original-tags default-context default-project)))
                       (when pearl-gtd-inbox--current-highlight
                         (delete-overlay pearl-gtd-inbox--current-highlight)
