@@ -327,15 +327,16 @@ DEADLINE is the deadline date string, or nil if not set.")
   "The name of the current inbox staging buffer.")
 
 (defun pearl-gtd-inbox--capture ()
-  "Capture a new item to the inbox with a timestamp."
-  (let ((item (string-trim (read-string "Capture to inbox: <Raw idea or task> (e.g., Buy milk, Call mom about dinner): "))))
-    (unless (string-empty-p item)
-      ;; Sanitize: remove control chars and normalize newlines
+  "Capture one or more items to the inbox, each with a timestamp.
+Separate multiple items with semicolons (English or Chinese)."
+  (let* ((raw-input (read-string "Capture to inbox: <Raw idea or task> (separate with ; or ； for multiple): "))
+         (items (pearl-gtd-core--split-values raw-input)))
+    (dolist (item items)
       (setq item (replace-regexp-in-string "[\x00-\x08\x0b-\x0c\x0e-\x1f\x7f]" "" item))
       (setq item (replace-regexp-in-string "\n" " " item))
       (with-current-buffer (find-file-noselect (expand-file-name "inbox.org" pearl-gtd-init-base-directory))
         (goto-char (point-max))
-        (insert (format "* %s\n:PROPERTIES:\n:CREATED: %s\n:END:\n" item (format-time-string "%F %T")))
+        (insert (format "* %s\n:PROPERTIES:\n:CREATED: %s\n:END:\n" (string-trim item) (format-time-string "%F %T")))
         (forward-line -2)
         (org-id-get-create)
         (save-buffer)))))

@@ -313,6 +313,28 @@
              (should (pearl-gtd-test-file-contains-p-bool inbox-file ":ID:")))
   :teardown nil)
 
+(pearl-gtd-test-define-story pearl-gtd-capture-test-user-captures-multiple-items-with-semicolons
+  "User captures multiple items separated by semicolons, each becomes its own inbox entry."
+  :setup (pearl-gtd-init-initialize)
+  :files nil
+  :mock (((symbol-function 'read-string) (lambda (prompt &rest _)
+                                           (cond
+                                            ((string-match "Capture to inbox" prompt) "Buy milk; Call mom; 写周报")
+                                            (t "")))))
+  :body (pearl-gtd-capture)
+  :asserts (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+             (should (pearl-gtd-test-file-contains-p-bool inbox-file "* Buy milk"))
+             (should (pearl-gtd-test-file-contains-p-bool inbox-file "* Call mom"))
+             (should (pearl-gtd-test-file-contains-p-bool inbox-file "* 写周报"))
+             (with-temp-buffer
+               (insert-file-contents inbox-file)
+               (goto-char (point-min))
+               (let ((id-count 0))
+                 (while (re-search-forward "^:ID:" nil t)
+                   (setq id-count (1+ id-count)))
+                 (should (= id-count 3)))))
+  :teardown nil)
+
 (provide 'pearl-gtd-capture-test)
 
 ;;; pearl-gtd-capture-test.el ends here
