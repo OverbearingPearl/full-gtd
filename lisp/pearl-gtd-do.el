@@ -317,6 +317,13 @@ When scores are equal, earlier CREATED timestamps sort first."
           (when (and l3 (not (string= l3 "")))
             (insert (format "| L3 Area    | %s |\n" l3)))
           (org-table-align)
+          ;; Insert Notes section if the action has notes (body)
+          (let ((notes (pearl-gtd-core-with-entry-at-id (plist-get action :id) (plist-get action :file)
+                          (pearl-gtd-core--get-entry-notes))))
+            (when notes
+              (insert "\n** Notes\n")
+              (insert (replace-regexp-in-string "^" "  " notes))
+              (insert "\n")))
           (insert "\n** Commands\n\n")
           (insert "| [C]     | Done (mark complete) |\n")
           (insert "| [s]     | Skip (next task)     |\n")

@@ -264,6 +264,20 @@
                           "Old note")))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD: Do Session*")))
 
+(pearl-gtd-test-define-story pearl-gtd-do-test-session-shows-notes
+  "Session displays notes from source file."
+  :setup (pearl-gtd-init-initialize)
+  :files (("action.org" "* TODO Task with notes\n:PROPERTIES:\n:ID: show-notes-1\n:END:\nImportant note content\n"))
+  :mock (((symbol-function 'completing-read) (lambda (&rest _) ""))
+         ((symbol-function 'read-string) (lambda (&rest _) "")))
+  :body (pearl-gtd-do)
+  :asserts (progn
+             (should (get-buffer "*Pearl-GTD: Do Session*"))
+             (with-current-buffer "*Pearl-GTD: Do Session*"
+               (goto-char (point-min))
+               (should (search-forward "Important note content" nil t))))
+  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD: Do Session*")))
+
 (pearl-gtd-test-define-story pearl-gtd-do-test-session-jump-to-source
   "Jump command opens source file at task."
   :setup (pearl-gtd-init-initialize)
