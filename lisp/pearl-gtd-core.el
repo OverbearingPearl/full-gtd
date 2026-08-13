@@ -292,6 +292,67 @@ Project and horizons (L3-L6) support multiple values separated by semicolon."
             ""))
       (string-trim (completing-read prompt candidates nil nil initial)))))
 
+;;;; Notes (body) manipulation
+
+(defun pearl-gtd-core--entry-notes-bounds ()
+  "Return (BEGIN . END) of current entry's notes area.
+Notes area runs from after meta data to before first child heading
+or next sibling heading."
+  (save-excursion
+    (org-back-to-heading)
+    (let* ((begin (progn (org-end-of-meta-data t) (point)))
+           (section (cl-find-if
+                     (lambda (child)
+                       (eq (org-element-type child) 'section))
+                     (org-element-contents (org-element-at-point))))
+           (section-end (and section
+                             (let ((se (org-element-property :end section)))
+                               (when (> se begin) se))))
+           (end (or section-end
+                    (save-excursion
+                      (goto-char begin)
+                      (let ((pos (and (re-search-forward "^\\*+[ \t]" nil t)
+                                      (match-beginning 0))))
+                        (or pos (org-end-of-subtree)))))))
+      (when (and begin end)
+        ;; When there is no visible notes content (e.g., empty body with
+        ;; immediate sibling), ensure we still return a non-empty region
+        ;; that contains the separating newline.
+        (when (<= end begin)
+          (if (> begin (point-min))
+              (setq begin (1- begin))
+            (setq end (1+ end))))
+        (when (< begin end)
+          (cons begin end))))))
+
+(defun pearl-gtd-core--get-entry-notes ()
+  "Return current entry's notes (body) as string, or nil if empty."
+  (let ((bounds (pearl-gtd-core--entry-notes-bounds)))
+    (when bounds
+      (let ((text (buffer-substring-no-properties (car bounds) (cdr bounds))))
+        (setq text (string-trim text))
+        (unless (string= text "") text)))))
+
+(defun pearl-gtd-core--set-entry-notes (text)
+  "Replace current entry's notes (body) with TEXT.
+If TEXT is empty, delete all notes."
+  (let ((bounds (pearl-gtd-core--entry-notes-bounds)))
+    (when bounds
+      (let ((new-text (if (string= text "") nil text)))
+        (if new-text
+            (progn
+              (goto-char (car bounds))
+              (delete-region (car bounds) (cdr bounds))
+              (insert (concat new-text "\n")))
+          (delete-region (car bounds) (cdr bounds)))))))
+
+(defun pearl-gtd-core--edit-entry-notes ()
+  "Edit current entry's notes using `read-string'."
+  (let* ((old (pearl-gtd-core--get-entry-notes))
+         (new (string-trim (read-string "Notes (empty to clear, use C-q C-j for newline): "
+                                        (or old "")))))
+    (pearl-gtd-core--set-entry-notes new)))
+
 (provide 'pearl-gtd-core)
 
 ;;; pearl-gtd-core.el ends here

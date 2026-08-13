@@ -752,6 +752,29 @@
   :asserts t
   :teardown nil)
 
+(pearl-gtd-test-define-story pearl-gtd-review-test-user-edits-notes-with-e
+  "Press e to edit notes (body) for a task in weekly review."
+  :setup (pearl-gtd-init-initialize)
+  :files (("action.org" "* TODO Task with notes\n:PROPERTIES:\n:ID: edit-notes-1\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\nExisting note\n"))
+  :mock (((symbol-function 'read-string)
+          (lambda (_prompt &rest _) "New note")))
+  :body (progn
+          (pearl-gtd-review-weekly)
+          (with-current-buffer "*Pearl-GTD Weekly Review*"
+            (goto-char (point-min))
+            (search-forward "** action.org - Next Actions")
+            (search-forward "Task with notes")
+            (beginning-of-line)
+            (pearl-gtd-review--edit-notes-at-point)))
+  :asserts (progn
+             (should (pearl-gtd-test-file-contains-p
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                      "New note"))
+             (should-not (pearl-gtd-test-file-contains-p-bool
+                          (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                          "Existing note")))
+  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
+
 (pearl-gtd-test-define-story pearl-gtd-review-test-cursor-kept-on-task-row-after-property-edit
   "Editing a property in weekly review keeps cursor on the same task row."
   :setup (pearl-gtd-init-initialize)

@@ -213,6 +213,108 @@
     (let ((result (pearl-gtd-core-read-date 'deadline)))
       (should (string= result "2026-08-15")))))
 
+(ert-deftest pearl-gtd-core-test-get-set-entry-notes ()
+  "Get and set entry notes using body manipulation."
+  (let ((pearl-gtd-init-base-directory (make-temp-file "pearl-gtd-test-" t)))
+    (unwind-protect
+        (progn
+          (write-region "* TODO Test\n:PROPERTIES:\n:ID: notes-1\n:END:\nInitial body\n"
+                        nil
+                        (expand-file-name "action.org" pearl-gtd-init-base-directory))
+          (pearl-gtd-core-with-entry-at-id "notes-1" "action.org"
+            (should (string= (pearl-gtd-core--get-entry-notes) "Initial body"))
+            (pearl-gtd-core--set-entry-notes "Changed")
+            (should (string= (pearl-gtd-core--get-entry-notes) "Changed"))
+            (pearl-gtd-core--set-entry-notes "")
+            (should (null (pearl-gtd-core--get-entry-notes)))))
+      (let ((buf (get-file-buffer (expand-file-name "action.org" pearl-gtd-init-base-directory))))
+        (when buf (kill-buffer buf)))
+      (delete-directory pearl-gtd-init-base-directory t))))
+
+(ert-deftest pearl-gtd-core-test-entry-notes-bounds-with-subheadings ()
+  "Test that entry notes bounds correctly exclude subheadings."
+  (let ((pearl-gtd-init-base-directory (make-temp-file "pearl-gtd-test-" t)))
+    (unwind-protect
+        (progn
+          (write-region "* TODO Test entry with subheadings\n:PROPERTIES:\n:ID: notes-sub-1\n:END:\nThis is the main body text.\n\n** Subheading 1\nContent under subheading 1.\n\n** Subheading 2\nContent under subheading 2.\n"
+                        nil
+                        (expand-file-name "action.org" pearl-gtd-init-base-directory))
+          (pearl-gtd-core-with-entry-at-id "notes-sub-1" "action.org"
+            (let ((notes (pearl-gtd-core--get-entry-notes)))
+              (should (string= (string-trim notes) "This is the main body text."))
+              (should-not (string-match-p "Subheading 1" notes))
+              (should-not (string-match-p "Subheading 2" notes)))))
+      (let ((buf (get-file-buffer (expand-file-name "action.org" pearl-gtd-init-base-directory))))
+        (when buf (kill-buffer buf)))
+      (delete-directory pearl-gtd-init-base-directory t))))
+
+(ert-deftest pearl-gtd-core-test-entry-notes-bounds-without-subheadings ()
+  "Test that entry notes bounds work correctly for entries without subheadings."
+  (let ((pearl-gtd-init-base-directory (make-temp-file "pearl-gtd-test-" t)))
+    (unwind-protect
+        (progn
+          (write-region "* TODO Simple entry\n:PROPERTIES:\n:ID: notes-simple-1\n:END:\nThis is the main body text.\n\nSome more notes here.\n"
+                        nil
+                        (expand-file-name "action.org" pearl-gtd-init-base-directory))
+          (pearl-gtd-core-with-entry-at-id "notes-simple-1" "action.org"
+            (let ((notes (pearl-gtd-core--get-entry-notes)))
+              (should (string= (string-trim notes) "This is the main body text.\n\nSome more notes here.")))))
+      (let ((buf (get-file-buffer (expand-file-name "action.org" pearl-gtd-init-base-directory))))
+        (when buf (kill-buffer buf)))
+      (delete-directory pearl-gtd-init-base-directory t))))
+
+(ert-deftest pearl-gtd-core-test-entry-notes-bounds-with-sibling ()
+  "Test that entry notes bounds correctly stop before sibling heading."
+  (let ((pearl-gtd-init-base-directory (make-temp-file "pearl-gtd-test-" t)))
+    (unwind-protect
+        (progn
+          (write-region "* TODO First entry\n:PROPERTIES:\n:ID: notes-sibling-1\n:END:\nThis is the body of first entry.\n\n* TODO Second entry\n:PROPERTIES:\n:ID: notes-sibling-2\n:END:\nThis is second entry.\n"
+                        nil
+                        (expand-file-name "action.org" pearl-gtd-init-base-directory))
+          (pearl-gtd-core-with-entry-at-id "notes-sibling-1" "action.org"
+            (let ((notes (pearl-gtd-core--get-entry-notes)))
+              (should (string= (string-trim notes) "This is the body of first entry."))
+              (should-not (string-match-p "Second entry" notes)))))
+      (let ((buf (get-file-buffer (expand-file-name "action.org" pearl-gtd-init-base-directory))))
+        (when buf (kill-buffer buf)))
+      (delete-directory pearl-gtd-init-base-directory t))))
+
+(ert-deftest pearl-gtd-core-test-entry-notes-bounds-empty-notes ()
+  "Test that empty notes return nil."
+  (let ((pearl-gtd-init-base-directory (make-temp-file "pearl-gtd-test-" t)))
+    (unwind-protect
+        (progn
+          (write-region "* TODO Empty notes entry\n:PROPERTIES:\n:ID: notes-empty-1\n:END:\n"
+                        nil
+                        (expand-file-name "action.org" pearl-gtd-init-base-directory))
+          (pearl-gtd-core-with-entry-at-id "notes-empty-1" "action.org"
+            (let ((notes (pearl-gtd-core--get-entry-notes)))
+              (should (null notes)))))
+      (let ((buf (get-file-buffer (expand-file-name "action.org" pearl-gtd-init-base-directory))))
+        (when buf (kill-buffer buf)))
+      (delete-directory pearl-gtd-init-base-directory t))))
+
+(ert-deftest pearl-gtd-core-test-entry-notes-bounds-empty-with-sibling ()
+  "Test that empty notes with sibling heading returns correct bounds."
+  (let ((pearl-gtd-init-base-directory (make-temp-file "pearl-gtd-test-" t)))
+    (unwind-protect
+        (progn
+          (write-region "* TODO Empty entry\n:PROPERTIES:\n:ID: empty-sib-1\n:END:\n* TODO Next sibling\n:PROPERTIES:\n:ID: empty-sib-2\n:END:\nBody of sibling\n"
+                        nil
+                        (expand-file-name "action.org" pearl-gtd-init-base-directory))
+          (pearl-gtd-core-with-entry-at-id "empty-sib-1" "action.org"
+            (let ((notes (pearl-gtd-core--get-entry-notes)))
+              (should (null notes))
+              (let ((bounds (pearl-gtd-core--entry-notes-bounds)))
+                (should (< (car bounds) (cdr bounds)))
+                (let ((content (buffer-substring (car bounds) (cdr bounds))))
+                  (should (string= (string-trim content) ""))
+                  (should-not (string-match-p "Next sibling" content))
+                  (should-not (string-match-p "Body of sibling" content)))))))
+      (let ((buf (get-file-buffer (expand-file-name "action.org" pearl-gtd-init-base-directory))))
+        (when buf (kill-buffer buf)))
+      (delete-directory pearl-gtd-init-base-directory t))))
+
 (provide 'pearl-gtd-core-test)
 
 ;;; pearl-gtd-core-test.el ends here

@@ -19,7 +19,7 @@
   :files (("inbox.org" "* Raw task\n:PROPERTIES:\n:ID: c1\n:END:\n"))
   :mock (((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) ?r))
          ((symbol-function 'pearl-gtd-inbox--clarify-entry)
-          (lambda (_headline) (error "Should not be called when skipping clarify"))))
+          (lambda (_current-notes) (error "Should not be called when skipping clarify"))))
   :body (pearl-gtd-process-inbox)
   :asserts (progn
              (should (pearl-gtd-test-file-contains-p
@@ -29,7 +29,7 @@
   :teardown nil)
 
 (pearl-gtd-test-define-story pearl-gtd-clarify-test-user-clarifies-then-trash
-  "User clarifies title and remarks, then trashes."
+  "User clarifies title and notes, then trashes."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Bad idea\n:PROPERTIES:\n:ID: c2\n:END:\n"))
   :mock (((symbol-function 'pearl-gtd-inbox--read-destination-key)
@@ -38,7 +38,7 @@
               (setq calls (1+ calls))
               (if (= calls 1) ?c ?t))))  ; First c (clarify), then t (trash)
          ((symbol-function 'pearl-gtd-inbox--clarify-entry)
-          (lambda (_headline) (cons "Worse idea" "Actually terrible")))
+          (lambda (_headline &optional _current-notes) (cons "Worse idea" "Actually terrible")))
          ((symbol-function 'pearl-gtd-inbox--collect-action-attrs)
           (lambda () (error "Should not collect attrs for trash"))))
   :body (pearl-gtd-process-inbox)
@@ -61,7 +61,7 @@
               (setq calls (1+ calls))
               (if (= calls 1) ?c ?a))))  ; First c, then a
          ((symbol-function 'pearl-gtd-inbox--clarify-entry)
-          (lambda (_headline) (cons "Clear action" "Important notes")))
+          (lambda (_headline &optional _current-notes) (cons "Clear action" "Important notes")))
          ((symbol-function 'pearl-gtd-inbox--collect-action-attrs)
           (lambda (&optional _staging-buffer _default-context _default-project)
             '((context . "@office") (schedule . "") (deadline . "")
@@ -79,13 +79,42 @@
                       ":office:")))
   :teardown nil)
 
+(pearl-gtd-test-define-story pearl-gtd-clarify-test-user-clears-notes-with-second-clarify
+  "User can clear existing notes by pressing c again and deleting the default text."
+  :setup (pearl-gtd-init-initialize)
+  :files (("inbox.org" "* Task\n:PROPERTIES:\n:ID: c7\n:END:\n"))
+  :mock (((symbol-function 'pearl-gtd-inbox--read-destination-key)
+          (let ((calls 0))
+            (lambda (_headline)
+              (setq calls (1+ calls))
+              (if (<= calls 2) ?c ?r))))
+         ((symbol-function 'pearl-gtd-inbox--clarify-entry)
+          (let ((first  t))
+            (lambda (_headline &optional _current-notes)
+              (if first
+                  (progn
+                    (setq first nil)
+                    (cons nil "Old note"))
+                (cons nil "")))))
+         ((symbol-function 'pearl-gtd-inbox--collect-action-attrs)
+          (lambda (&optional _staging-buffer _default-context _default-project)
+            '((context . "") (schedule . "") (deadline . "")
+              (delegate . "") (project . "")))))
+  :body (pearl-gtd-process-inbox)
+  :asserts (progn
+             (should (pearl-gtd-test-file-lacks-p
+                      (expand-file-name "reference.org" pearl-gtd-init-base-directory)
+                      "Old note"))
+             (should (pearl-gtd-test-inbox-empty-p pearl-gtd-init-base-directory)))
+  :teardown nil)
+
 (pearl-gtd-test-define-story pearl-gtd-clarify-test-user-quits-during-clarify
   "User quits (C-g) during clarify input."
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Task to clarify\n:PROPERTIES:\n:ID: c4\n:END:\n"))
   :mock (((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) ?c))
          ((symbol-function 'pearl-gtd-inbox--clarify-entry)
-          (lambda (_headline) (signal 'quit nil))))
+          (lambda (_headline &optional _current-notes) (signal 'quit nil))))
   :body (condition-case nil
             (pearl-gtd-process-inbox)
           (quit (setq pearl-gtd-test-caught-error 'quit)))

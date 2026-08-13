@@ -634,7 +634,7 @@
   :teardown nil)
 
 (pearl-gtd-test-define-story pearl-gtd-horizons-test-set-horizon-unions-multiple-project-values
-  "显式编辑共享任务的 horizon 时应值级并集去重。"
+  "When editing a horizon for a task shared by multiple projects, the result should be a value-level union with duplicates removed."
   :setup (pearl-gtd-init-initialize)
   :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: union-1\n:PROJECT: ProjA; ProjB\n:L3_AREA: AreaA; AreaB\n:END:\n"))
   :mock (((symbol-function 'read-string) (lambda (&rest _) "AreaC"))

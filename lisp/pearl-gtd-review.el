@@ -60,6 +60,7 @@
     (define-key map (kbd "a") #'pearl-gtd-review--activate-someday-at-point)
     ;; Archive project
     (define-key map (kbd "A") #'pearl-gtd-review--archive-project-at-point)
+    (define-key map (kbd "e") #'pearl-gtd-review--edit-notes-at-point)
     map))
 
 (define-minor-mode pearl-gtd-review-view-mode
@@ -489,6 +490,17 @@ If user presses RET, remove the deadline."
             (save-buffer)))
         (pearl-gtd-review--refresh-view)))))
 
+(defun pearl-gtd-review--edit-notes-at-point ()
+  "Edit notes (body) for task at point."
+  (interactive)
+  (let ((entry (pearl-gtd-review--get-entry-at-point)))
+    (when entry
+      (let ((id (car entry))
+            (file (cdr entry)))
+        (pearl-gtd-core-with-entry-at-id id file
+          (pearl-gtd-core--edit-entry-notes)))
+      (pearl-gtd-review--refresh-view))))
+
 (defun pearl-gtd-review--rename-task-at-point ()
   "Rename task at point."
   (interactive)
@@ -598,9 +610,9 @@ META is an alist with keys :entry-map and :entry-index."
       (org-mode)
       (setq-local header-line-format
                   (pcase pearl-gtd-review--current-view-type
-                    ('daily "Daily Review | n/p/j/k: move | RET: jump | c/s/d/D/r/P: property | C: complete | A: archive | g: refresh | q: quit")
-                    ('weekly "Weekly Review | n/p/j/k: move | RET: jump | c/s/d/D/r/P/3-6: property | C: complete | a: activate someday | A: archive | g: refresh | q: quit")
-                    (_ "Review | n/p/j/k: move | RET: jump | c/s/d/D/r/P/3-6: property | C: complete | A: archive | g: refresh | q: quit")))
+                    ('daily "Daily Review | n/p/j/k: move | RET: jump | c/s/d/D/r/e/P: property | C: complete | A: archive | g: refresh | q: quit")
+                    ('weekly "Weekly Review | n/p/j/k: move | RET: jump | c/s/d/D/r/e/P/3-6: property | C: complete | a: activate someday | A: archive | g: refresh | q: quit")
+                    (_ "Review | n/p/j/k: move | RET: jump | c/s/d/D/r/e/P/3-6: property | C: complete | A: archive | g: refresh | q: quit")))
       (setq pearl-gtd-review--entry-map entry-map)
       (if (null sections-data)
           (insert "(No entries to review)\n")

@@ -26,7 +26,7 @@
               ;; First item: clarify then action
               (if (= calls 1) ?c ?a))))
          ((symbol-function 'pearl-gtd-inbox--clarify-entry)
-          (lambda (_headline) (cons "Buy gift for mom" "Check Amazon first")))
+          (lambda (_headline &optional _current-notes) (cons "Buy gift for mom" "Check Amazon first")))
          ((symbol-function 'pearl-gtd-inbox--collect-action-attrs)
           (lambda (&optional _staging-buffer _default-context _default-project)
             '((context . "@errands") (schedule . "") (deadline . "")
@@ -56,7 +56,7 @@
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Task to interrupt\n"))
   :mock (((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) (signal 'quit nil)))
-         ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil))))
+         ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_current-notes) (cons nil nil))))
   :body (progn
          (condition-case err
              (pearl-gtd-process-inbox)

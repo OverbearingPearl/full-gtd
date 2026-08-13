@@ -149,7 +149,7 @@ Inbox processing (`pearl-gtd-process-inbox`) presents a **staging table** with v
 2. **Principle** (L6) – What standards must we keep? (Optional: press RET to skip)
 3. **Vision** (L5) – What does success look like?
 4. **Brainstorming** – Dump all ideas into a temporary buffer
-5. **Organizing** – Force‑complete every brainstorm item via **staging buffer** with visual highlighting and **single‑key selection** (`n`ext/`r`ef/`s`omeday/`t`rash/`c`larify). The optional **clarify** step (`c`) allows renaming and adding remarks before final classification. A **session‑wide default context** is set once and auto‑applied to all Next Actions; if omitted, context is prompted per‑item using the same completion flow as inbox processing.
+5. **Organizing** – Force‑complete every brainstorm item via **staging buffer** with visual highlighting and **single‑key selection** (`n`ext/`r`ef/`s`omeday/`t`rash/`c`larify). The optional **clarify** step (`c`) allows renaming and adding notes before final classification. A **session‑wide default context** is set once and auto‑applied to all Next Actions; if omitted, context is prompted per‑item using the same completion flow as inbox processing.
 6. **Next Actions** – At least one physical next action is required
 
 The workflow cannot be skipped; it ensures every project has a clear outcome and at least one concrete next step.
@@ -177,7 +177,7 @@ Navigation in the horizon view uses the same keys as review mode: `n`/`p` or `j`
 - **Daily Review** (`pearl‑gtd‑review‑daily`) – Today’s scheduled tasks, completed today, next actions, and inbox.
 - **Weekly Review** (`pearl‑gtd‑review‑weekly`) – Comprehensive 10‑section review: inbox, overdue, upcoming deadlines, completed, delegated, next actions, stuck/active projects, no‑project actions, and someday/maybe.
 
-Both reviews use a unified table interface with keyboard shortcuts for navigation, editing properties, marking tasks complete, and jumping to source entries. Shortcuts: `c` (context), `D` (delegated), `s` (scheduled), `d` (deadline), `r` (rename), `P` (project), `C` (complete), `a` (activate a someday/maybe entry in weekly review), `A` (archive project), and `3`-`6` (horizons L3-L6, where `6` edits both Purpose and Principle sequentially). Archiving (`A`) moves a project to `archive.org` only when all its actions are DONE and no action belongs to other projects.
+Both reviews use a unified table interface with keyboard shortcuts for navigation, editing properties, marking tasks complete, and jumping to source entries. Shortcuts: `c` (context), `D` (delegated), `s` (scheduled), `d` (deadline), `r` (rename), `P` (project), `C` (complete), `a` (activate a someday/maybe entry in weekly review), `A` (archive project), `e` (edit notes), and `3`-`6` (horizons L3-L6, where `6` edits both Purpose and Principle sequentially). Archiving (`A`) moves a project to `archive.org` only when all its actions are DONE and no action belongs to other projects.
 
 ### 5. Do/Work Phase
 The Do phase uses **single-card execution** (`pearl-gtd-do`). Instead of browsing a long list, you tell the system your current conditions—**context** (e.g., @office, @home), **available time** (minutes), and **energy level** (high/normal/low)—and it **pushes the single most optimal task** based on a scoring algorithm:

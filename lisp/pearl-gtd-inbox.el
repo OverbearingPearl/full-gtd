@@ -82,16 +82,19 @@ continues afterwards."
          (sit-for 0.5)
          (pearl-gtd-inbox--read-destination-key headline)))))))
 
-(defun pearl-gtd-inbox--clarify-entry (headline)
-  "Clarify HEADLINE and remarks.
-Returns (NEW-HEADLINE . REMARKS).  Either can be nil."
+(defun pearl-gtd-inbox--clarify-entry (headline &optional default-notes)
+  "Clarify HEADLINE and notes.
+DEFAULT-NOTES is the current notes text (or nil).
+Returns (NEW-HEADLINE . NEW-NOTES).  NEW-NOTES is nil if cleared."
   (let* ((new (read-string (format "Clarify '%s' [RET keep]: <Clear next action> (e.g., Buy organic milk from Whole Foods, Call John about project): "
                                    headline)))
          (new-headline (let ((trimmed (string-trim new)))
                         (unless (string= trimmed "") trimmed)))
-         (remarks-text (string-trim (read-string (format "Notes for '%s' [RET skip]: <Details or constraints> (e.g., Check brand: Organic Valley, Ask about deadline): "
-                                            (or new-headline headline))))))
-    (cons new-headline (unless (string= remarks-text "") remarks-text))))
+         (notes-text (string-trim
+                      (read-string (format "Notes for '%s' [RET keep, empty to clear]: <Details or constraints> (e.g., Check brand: Organic Valley, Ask about deadline): "
+                                           (or new-headline headline))
+                                   (or default-notes "")))))
+    (cons new-headline (unless (string= notes-text "") notes-text))))
 
 (defun pearl-gtd-inbox--collect-action-attrs (&optional staging-buffer default-context default-project)
   "Collect action attributes with context inheritance.
@@ -176,7 +179,7 @@ context of each entry; only entries matching the predicate are included."
                        (org-entry-get nil "CREATED"))
                  headlines))))
       (erase-buffer)
-      (insert "| Headline | Remarks | Age | Tags |\n")
+      (insert "| Headline | Notes | Age | Tags |\n")
       (insert "|----------+---------+-----+------|\n")
       (dolist (entry (nreverse headlines))
         (let* ((created-str (nth 3 entry))
@@ -337,12 +340,12 @@ BUFFER is the staging buffer to update."
 
 Each element is a list:
 ORIGINAL-HEADLINE, TARGET-FILE, PROPERTIES-STRING,
-NEW-HEADLINE, REMARKS, and DEADLINE.
+NEW-HEADLINE, NOTES, and DEADLINE.
 
 If TARGET-FILE is nil, the entry is deleted (trash).
 PROPERTIES-STRING contains tags and properties.
 NEW-HEADLINE is the clarified headline, or nil if unchanged.
-REMARKS is the clarified remarks text, or nil if none.
+NOTES is the clarified notes text, or nil if none.
 DEADLINE is the deadline date string, or nil if not set.")
 
 (defvar pearl-gtd-inbox-stage-buffer-name nil
@@ -419,19 +422,18 @@ Optional DEFAULT-CONTEXT and DEFAULT-PROJECT are passed to action
 attribute collection.  ORIGINAL-TAGS is the original tags string from
 the staging buffer."
   (let ((current-headline headline)
-        (current-remarks nil)
+        (current-notes nil)
         (dest nil))
     (while (not dest)
       (pearl-gtd-inbox--highlight-entry entry-ref)
       (let ((key (pearl-gtd-inbox--read-destination-key current-headline)))
         (pcase key
-          (?c (let ((clarified (pearl-gtd-inbox--clarify-entry current-headline)))
+          (?c (let ((clarified (pearl-gtd-inbox--clarify-entry current-headline current-notes)))
                 (when (car clarified)
                   (setq current-headline (car clarified))
                   (pearl-gtd-inbox--stage-change entry-ref 1 current-headline))
-                (when (cdr clarified)
-                  (setq current-remarks (cdr clarified))
-                  (pearl-gtd-inbox--stage-change entry-ref 2 current-remarks))))
+                (setq current-notes (cdr clarified))
+                (pearl-gtd-inbox--stage-change entry-ref 2 (or current-notes ""))))
           (?a (setq dest 'action))
           (?r (setq dest 'ref))
           (?s (setq dest 'someday))
@@ -442,20 +444,20 @@ the staging buffer."
       ('execute
        (pearl-gtd-inbox--mark-executed entry-ref)
        (pearl-gtd-inbox--stage-change entry-ref 4 "Executed")
-       (push (list headline nil nil current-headline current-remarks nil)
+       (push (list headline nil nil current-headline current-notes nil)
              pearl-gtd-inbox--pending-moves))
       ('trash
        (pearl-gtd-inbox--mark-deleted entry-ref)
        (pearl-gtd-inbox--stage-change entry-ref 4 "Trashed")
-       (push (list headline nil nil current-headline current-remarks nil)
+       (push (list headline nil nil current-headline current-notes nil)
              pearl-gtd-inbox--pending-moves))
       ('ref
        (pearl-gtd-inbox--stage-change entry-ref 4 "Reference")
-       (push (list headline "reference.org" nil current-headline current-remarks nil)
+       (push (list headline "reference.org" nil current-headline current-notes nil)
              pearl-gtd-inbox--pending-moves))
       ('someday
        (pearl-gtd-inbox--stage-change entry-ref 4 "Someday")
-       (push (list headline "someday.org" nil current-headline current-remarks nil)
+       (push (list headline "someday.org" nil current-headline current-notes nil)
              pearl-gtd-inbox--pending-moves))
       ('action
        (let* ((attrs (pearl-gtd-inbox--collect-action-attrs buffer default-context default-project))
@@ -480,7 +482,7 @@ the staging buffer."
          (pearl-gtd-inbox--stage-change entry-ref 4 tags-summary)
          (push (list headline "action.org"
                      (pearl-gtd-inbox--fields-to-props attrs)
-                     current-headline current-remarks deadline)
+                     current-headline current-notes deadline)
                pearl-gtd-inbox--pending-moves))))))
 
 (defun pearl-gtd-inbox--apply-pending-moves (&optional brainstorm)
@@ -570,13 +572,13 @@ BRAINSTORM is non-nil."
         (pop-to-buffer buffer-name)
         (message "Inbox is empty, nothing to process.")))))
 
-(defun pearl-gtd-inbox--do-move (headline target-file properties-string new-headline remarks deadline &optional brainstorm)
+(defun pearl-gtd-inbox--do-move (headline target-file properties-string new-headline notes deadline &optional brainstorm)
   "Move HEADLINE to TARGET-FILE and delete from inbox.
 If TARGET-FILE is nil, just delete from inbox (trash).
 If BRAINSTORM is non-nil, remove BRAINSTORM property before moving.
 PROPERTIES-STRING contains tags and properties.
 NEW-HEADLINE is the clarified headline (nil if unchanged).
-REMARKS is the clarified remarks text (nil if none).
+NOTES is the clarified notes text (nil if none).
 DEADLINE is the deadline date string (nil if not set)."
   (let ((inbox-path (expand-file-name "inbox.org" pearl-gtd-init-base-directory))
         subtree-content)
@@ -608,11 +610,11 @@ DEADLINE is the deadline date string (nil if not set)."
           (org-todo (car org-not-done-keywords))
           (org-id-get-create)
           (pearl-gtd-horizons--sync-entry-horizons))
-        (when remarks
+        (when notes
           (org-end-of-meta-data t)
           (unless (bolp)
             (insert "\n"))
-          (insert remarks "\n"))
+          (insert notes "\n"))
         (goto-char (point-min))
         (re-search-forward (concat "^\\*+[ \t]+\\(?:[A-Z]+[ \t]+\\)?"
                                    (regexp-quote (or new-headline headline))
