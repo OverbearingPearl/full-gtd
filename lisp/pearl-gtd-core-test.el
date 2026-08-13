@@ -315,6 +315,26 @@
         (when buf (kill-buffer buf)))
       (delete-directory pearl-gtd-init-base-directory t))))
 
+(ert-deftest pearl-gtd-core-test-set-entry-notes-meta-end-same-line ()
+  "Setting notes when :END: is directly followed by text inserts a newline."
+  (let ((pearl-gtd-init-base-directory (make-temp-file "pearl-gtd-test-" t)))
+    (unwind-protect
+        (progn
+          (write-region "* TODO Task\n:PROPERTIES:\n:ID: same-line-1\n:END:Existing text\n"
+                        nil
+                        (expand-file-name "action.org" pearl-gtd-init-base-directory))
+          (pearl-gtd-core-with-entry-at-id "same-line-1" "action.org"
+            (pearl-gtd-core--set-entry-notes "New body"))
+          (let ((content (with-temp-buffer
+                           (insert-file-contents
+                            (expand-file-name "action.org" pearl-gtd-init-base-directory))
+                           (buffer-string))))
+            (should (string-match-p ":END:\nNew body\n" content))
+            (should-not (string-match-p "Existing text" content))))
+      (let ((buf (get-file-buffer (expand-file-name "action.org" pearl-gtd-init-base-directory))))
+        (when buf (kill-buffer buf)))
+      (delete-directory pearl-gtd-init-base-directory t))))
+
 (provide 'pearl-gtd-core-test)
 
 ;;; pearl-gtd-core-test.el ends here
