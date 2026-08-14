@@ -56,7 +56,7 @@ jobs:
           {
             echo "=== Building release package ==="
             mkdir -p dist/pearl-gtd
-            cp pearl-gtd.el README.md README_zh.md LICENSE dist/pearl-gtd/
+            cp pearl-gtd.el README.md LICENSE dist/pearl-gtd/
             cp -r lisp dist/pearl-gtd/
             cd dist
             zip -r ../pearl-gtd-${{ github.ref_name }}.zip pearl-gtd/
