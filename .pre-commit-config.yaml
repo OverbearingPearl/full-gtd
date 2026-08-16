@@ -9,7 +9,6 @@ repos:
           --eval "(progn
                     (require 'checkdoc)
                     (require 'package-lint)
-                    (require 'pearl-gtd)
                     (setq checkdoc-autofix-flag 'never
                           p/errors '())
                     (advice-add 'checkdoc-create-error :before
