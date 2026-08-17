@@ -292,6 +292,98 @@ Project and horizons (L3-L6) support multiple values separated by semicolon."
             ""))
       (string-trim (completing-read prompt candidates nil nil initial)))))
 
+;;;; Notes (body) manipulation
+
+(defun pearl-gtd-core--entry-notes-bounds ()
+  "Return (BEGIN . END) of current entry's notes area.
+Notes area runs from after meta data to before first child heading
+or next sibling heading."
+  (save-excursion
+    (org-back-to-heading)
+    (let* ((element (org-element-at-point))
+           (entry-end (or (org-element-property :end element)
+                          (progn (org-end-of-subtree) (point))))
+           (contents (and (eq (org-element-type element) 'headline)
+                          (org-element-contents element)))
+           (drawer (and contents
+                        (cl-find-if (lambda (child)
+                                      (eq (org-element-type child) 'property-drawer))
+                                    contents)))
+           (raw-begin (or (and drawer (org-element-property :end drawer))
+                          (progn (org-end-of-meta-data t) (point))))
+           ;; Find literal `:END:` line even if drawer is malformed
+           ;; because a trailing character on the :END: line makes it
+           ;; unrecognised by `org-element'.
+           (end-pos (save-excursion
+                      (goto-char (org-entry-beginning-position))
+                      (and (re-search-forward "^:END:" entry-end t)
+                           (match-end 0))))
+           (begin (cond
+                   ;; If there is text after the `:END:' marker on the
+                   ;; same line, treat that text as part of the notes
+                   ;; area.  The unprocessed leading character lets
+                   ;; `set-entry-notes' remove it later.
+                   ((and end-pos (char-after end-pos)
+                         (not (memq (char-after end-pos) '(?\n ?\r))))
+                    end-pos)
+                   ;; Otherwise use the standard property-drawer end,
+                   ;; which already points just past the newline.
+                   (t raw-begin)))
+           (section (and contents
+                         (cl-find-if (lambda (child)
+                                       (eq (org-element-type child) 'section))
+                                     contents)))
+           (section-end (and section
+                             (let ((se (org-element-property :end section)))
+                               (when (> se begin) se))))
+           (end (or section-end
+                    (save-excursion
+                      (goto-char begin)
+                      (let ((pos (and (re-search-forward "^\\*+[ \t]" entry-end t)
+                                      (match-beginning 0))))
+                        (or pos entry-end))))))
+      (when (and begin end)
+        ;; When there is no visible notes content (e.g., empty body with
+        ;; immediate sibling), ensure we still return a non-empty region
+        ;; that contains the separating newline.
+        (when (<= end begin)
+          (if (> begin (point-min))
+              (setq begin (1- begin))
+            (setq end (1+ end))))
+        (when (< begin end)
+          (cons begin end))))))
+
+(defun pearl-gtd-core--get-entry-notes ()
+  "Return current entry's notes (body) as string, or nil if empty."
+  (let ((bounds (pearl-gtd-core--entry-notes-bounds)))
+    (when bounds
+      (let ((text (buffer-substring-no-properties (car bounds) (cdr bounds))))
+        (setq text (string-trim text))
+        (unless (string= text "") text)))))
+
+(defun pearl-gtd-core--set-entry-notes (text)
+  "Replace current entry's notes (body) with TEXT.
+If TEXT is empty, delete all notes."
+  (let ((bounds (pearl-gtd-core--entry-notes-bounds)))
+    (when bounds
+      (let ((begin (car bounds))
+            (end (cdr bounds))
+            (new-text (if (string= text "") nil text)))
+        (goto-char begin)
+        (delete-region begin end)
+        (when new-text
+          ;; Ensure notes start on a new line after meta data.
+          (unless (or (bobp) (eq (char-before) ?\n))
+            (insert "\n"))
+          (insert new-text "\n"))))))
+
+(defun pearl-gtd-core--edit-entry-notes ()
+  "Edit current entry's notes using `read-string'."
+  (let* ((old (pearl-gtd-core--get-entry-notes))
+         (new (string-trim (read-string "Notes (empty to clear, use C-q C-j for newline): "
+                                        (or old "")))))
+    (pearl-gtd-core--set-entry-notes new)))
+
 (provide 'pearl-gtd-core)
 
 ;;; pearl-gtd-core.el ends here

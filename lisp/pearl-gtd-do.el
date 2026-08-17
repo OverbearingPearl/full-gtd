@@ -317,11 +317,19 @@ When scores are equal, earlier CREATED timestamps sort first."
           (when (and l3 (not (string= l3 "")))
             (insert (format "| L3 Area    | %s |\n" l3)))
           (org-table-align)
+          ;; Insert Notes section if the action has notes (body)
+          (let ((notes (pearl-gtd-core-with-entry-at-id (plist-get action :id) (plist-get action :file)
+                          (pearl-gtd-core--get-entry-notes))))
+            (when notes
+              (insert "\n** Notes\n")
+              (insert (replace-regexp-in-string "^" "  " notes))
+              (insert "\n")))
           (insert "\n** Commands\n\n")
           (insert "| [C]     | Done (mark complete) |\n")
           (insert "| [s]     | Skip (next task)     |\n")
           (insert "| [z]     | Snooze to tomorrow   |\n")
           (insert "| [r]     | Rename               |\n")
+          (insert "| [e]     | Edit notes           |\n")
           (insert "| [RET]   | Jump to source       |\n")
           (insert "| [c]     | Change conditions    |\n")
           (insert "| [q]     | Quit session         |\n")
@@ -499,6 +507,7 @@ CONTEXT, TIME-BUDGET, and ENERGY are optional initial filters."
     (define-key map (kbd "s") #'pearl-gtd-do--session-skip)
     (define-key map (kbd "z") #'pearl-gtd-do--session-snooze)
     (define-key map (kbd "r") #'pearl-gtd-do--session-rename)
+    (define-key map (kbd "e") #'pearl-gtd-do--edit-notes)
     (define-key map (kbd "RET") #'pearl-gtd-do--session-jump)
     (define-key map (kbd "c") #'pearl-gtd-do--session-change-conditions)
     (define-key map (kbd "q") #'pearl-gtd-do--session-quit)
@@ -512,6 +521,17 @@ CONTEXT, TIME-BUDGET, and ENERGY are optional initial filters."
   :lighter " Pearl-Do"
   :keymap pearl-gtd-do-session-mode-map
   :interactive nil)
+
+(defun pearl-gtd-do--edit-notes ()
+  "Edit notes (body) for current action."
+  (interactive)
+  (let ((action (pearl-gtd-do--current-action)))
+    (when action
+      (let ((id (plist-get action :id))
+            (file (plist-get action :file)))
+        (pearl-gtd-core-with-entry-at-id id file
+          (pearl-gtd-core--edit-entry-notes)))
+      (pearl-gtd-do--render-card (current-buffer)))))
 
 (defun pearl-gtd-do--session-done ()
   "Mark current card as done and advance.  Delete if no project."

@@ -15,7 +15,7 @@
   :setup (pearl-gtd-init-initialize)
   :files (("inbox.org" "* Junk item\n"))
   :mock (((symbol-function 'pearl-gtd-inbox--read-destination-key) (lambda (_headline) ?t))
-         ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_headline) (cons nil nil))))
+         ((symbol-function 'pearl-gtd-inbox--clarify-entry) (lambda (_current-notes) (cons nil nil))))
   :body (pearl-gtd-process-inbox)
   :asserts (should (pearl-gtd-test-inbox-empty-p pearl-gtd-init-base-directory))
   :teardown nil)

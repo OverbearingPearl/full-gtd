@@ -637,7 +637,7 @@
          ((symbol-function 'pearl-gtd-core-read-date) (lambda (&rest _) ""))
          ((symbol-function 'pearl-gtd-inbox--read-delegate) (lambda () ""))
          ((symbol-function 'pearl-gtd-inbox--clarify-entry)
-          (lambda (_headline) (cons "Clarified idea" "Important notes")))
+          (lambda (_headline &optional _current-notes) (cons "Clarified idea" "Important notes")))
          ((symbol-function 'pearl-gtd-inbox--read-context)
           (lambda () "@office"))
          ((symbol-function 'recursive-edit)

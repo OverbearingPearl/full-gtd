@@ -244,6 +244,40 @@
              (should-not (search-forward "* Office task" nil t)))
   :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD: Do Session*")))
 
+(pearl-gtd-test-define-story pearl-gtd-do-test-session-edit-notes
+  "Press e to edit notes (body) for current action."
+  :setup (pearl-gtd-init-initialize)
+  :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: edit-notes-do-1\n:END:\nOld note\n"))
+  :mock (((symbol-function 'completing-read) (lambda (&rest _) ""))
+         ((symbol-function 'read-string)
+          (lambda (_prompt &optional _initial &rest _) "Updated note")))
+  :body (progn
+          (pearl-gtd-do)
+          (with-current-buffer "*Pearl-GTD: Do Session*"
+            (pearl-gtd-do--edit-notes)))
+  :asserts (progn
+             (should (pearl-gtd-test-file-contains-p
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                      "Updated note"))
+             (should-not (pearl-gtd-test-file-contains-p-bool
+                          (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                          "Old note")))
+  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD: Do Session*")))
+
+(pearl-gtd-test-define-story pearl-gtd-do-test-session-shows-notes
+  "Session displays notes from source file."
+  :setup (pearl-gtd-init-initialize)
+  :files (("action.org" "* TODO Task with notes\n:PROPERTIES:\n:ID: show-notes-1\n:END:\nImportant note content\n"))
+  :mock (((symbol-function 'completing-read) (lambda (&rest _) ""))
+         ((symbol-function 'read-string) (lambda (&rest _) "")))
+  :body (pearl-gtd-do)
+  :asserts (progn
+             (should (get-buffer "*Pearl-GTD: Do Session*"))
+             (with-current-buffer "*Pearl-GTD: Do Session*"
+               (goto-char (point-min))
+               (should (search-forward "Important note content" nil t))))
+  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD: Do Session*")))
+
 (pearl-gtd-test-define-story pearl-gtd-do-test-session-jump-to-source
   "Jump command opens source file at task."
   :setup (pearl-gtd-init-initialize)

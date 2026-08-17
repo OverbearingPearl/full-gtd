@@ -151,8 +151,8 @@
           (lambda (_prompt _type &optional initial)
             (should (string-match-p "home" initial))
             "office"))
-         ((symbol-function 'read-string)
-          (lambda (&rest _) "")))
+         ((symbol-function 'pearl-gtd-core-read-date)
+          (lambda (&rest _) nil)))
   :body (progn
           (pearl-gtd-review-daily)
           (with-current-buffer "*Pearl-GTD Daily Review*"
@@ -223,10 +223,8 @@
   "Press 't' to edit scheduled date with current value as default."
   :setup (pearl-gtd-init-initialize)
   :files (("action.org" (concat "* TODO Scheduled task\nSCHEDULED: <" (format-time-string "%F %a") ">\n:PROPERTIES:\n:ID: edit-sch-1\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n")))
-  :mock (((symbol-function 'read-string)
-          (lambda (_prompt &optional initial _history)
-            (should (string-match-p (format-time-string "%F") (or initial "")))
-            "2026-05-15")))
+  :mock (((symbol-function 'pearl-gtd-core-read-date)
+          (lambda (&rest _) "2026-05-15")))
   :body (progn
           (pearl-gtd-review-daily)
           (with-current-buffer "*Pearl-GTD Daily Review*"
@@ -271,10 +269,8 @@
   "Press 's' in review buffer to set deadline for task at point."
   :setup (pearl-gtd-init-initialize)
   :files (("action.org" "* TODO Task for deadline\n:PROPERTIES:\n:ID: dl-1\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n"))
-  :mock (((symbol-function 'read-string)
-          (lambda (prompt &rest _)
-            (when (string-match "Deadline" prompt)
-              "2026-05-20"))))
+  :mock (((symbol-function 'pearl-gtd-core-read-date)
+          (lambda (&rest _) "2026-05-20")))
   :body (progn
           (pearl-gtd-review-weekly)
           (with-current-buffer "*Pearl-GTD Weekly Review*"
@@ -629,13 +625,10 @@
                 (3 (should (eq type 'project))
                    (should (string= initial "Old Project"))
                    "New Project")))))
-         ((symbol-function 'read-string)
-          (let ((calls 0))
-            (lambda (_prompt &optional initial)
-              (setq calls (1+ calls))
-              (pcase calls
-                (1 (should (string= initial "2026-01-20")) "2026-02-20")
-                (2 (should (string= initial "2026-01-25")) "2026-02-25"))))))
+         ((symbol-function 'pearl-gtd-core-read-date)
+          (let ((dates '("2026-02-20" "2026-02-25")))
+            (lambda (&rest _)
+              (pop dates)))))
   :body (progn
           (pearl-gtd-core-with-entry-at-id "someday-activate-1" "someday.org"
             (org-schedule nil "2026-01-20")
@@ -689,8 +682,8 @@
   :files (("someday.org" "* Someday task :home:\n:PROPERTIES:\n:ID: someday-activate-2\n:DELEGATED: Alice\n:PROJECT: Old Project\n:END:\n"))
   :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
           (lambda (&rest _) ""))
-         ((symbol-function 'read-string)
-          (lambda (&rest _) "")))
+         ((symbol-function 'pearl-gtd-core-read-date)
+          (lambda (&rest _) nil)))
   :body (progn
           (pearl-gtd-core-with-entry-at-id "someday-activate-2" "someday.org"
             (org-schedule nil "2026-01-20")
@@ -758,6 +751,29 @@
   :body (should (member "@office" (pearl-gtd-domain--collect-context-candidates)))
   :asserts t
   :teardown nil)
+
+(pearl-gtd-test-define-story pearl-gtd-review-test-user-edits-notes-with-e
+  "Press e to edit notes (body) for a task in weekly review."
+  :setup (pearl-gtd-init-initialize)
+  :files (("action.org" "* TODO Task with notes\n:PROPERTIES:\n:ID: edit-notes-1\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\nExisting note\n"))
+  :mock (((symbol-function 'read-string)
+          (lambda (_prompt &rest _) "New note")))
+  :body (progn
+          (pearl-gtd-review-weekly)
+          (with-current-buffer "*Pearl-GTD Weekly Review*"
+            (goto-char (point-min))
+            (search-forward "** action.org - Next Actions")
+            (search-forward "Task with notes")
+            (beginning-of-line)
+            (pearl-gtd-review--edit-notes-at-point)))
+  :asserts (progn
+             (should (pearl-gtd-test-file-contains-p
+                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                      "New note"))
+             (should-not (pearl-gtd-test-file-contains-p-bool
+                          (expand-file-name "action.org" pearl-gtd-init-base-directory)
+                          "Existing note")))
+  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
 
 (pearl-gtd-test-define-story pearl-gtd-review-test-cursor-kept-on-task-row-after-property-edit
   "Editing a property in weekly review keeps cursor on the same task row."
