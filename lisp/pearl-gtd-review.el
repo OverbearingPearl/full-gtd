@@ -19,12 +19,8 @@
 (require 'pearl-gtd-core)
 (require 'pearl-gtd-state)
 (require 'pearl-gtd-ui)
-
-(declare-function pearl-gtd-horizons--edit-area-at-point "pearl-gtd-horizons")
-(declare-function pearl-gtd-horizons--edit-goal-at-point "pearl-gtd-horizons")
-(declare-function pearl-gtd-horizons--edit-vision-at-point "pearl-gtd-horizons")
-(declare-function pearl-gtd-horizons--edit-purpose-at-point "pearl-gtd-horizons")
-(declare-function pearl-gtd-horizons--sync-entry-horizons "pearl-gtd-horizons")
+(require 'pearl-gtd-horizons)
+(require 'pearl-gtd-project-utils)
 
 (defvar-local pearl-gtd-review--current-view-type nil
   "Type of current review view: daily, weekly, or project.")
@@ -388,7 +384,7 @@ action belongs to any other project alongside PROJECT."
   (let ((project (pearl-gtd-review--get-project-at-point)))
     (unless project
       (error "No project at point"))
-    (pearl-gtd-review--archive-project project)
+    (pearl-gtd-project-utils--archive-project project)
     (pearl-gtd-review--refresh-view)))
 
 (defmacro pearl-gtd-review-define-property-editor (name property prompt property-type &optional extra-cleanup)
@@ -551,7 +547,7 @@ Delete task if it has no PROJECT property."
   (pcase pearl-gtd-review--current-view-type
     ('daily (pearl-gtd-review--daily))
     ('weekly (pearl-gtd-review--weekly))
-    ('project (pearl-gtd-review--show-project-tasks pearl-gtd-review--current-project))
+    ('project (pearl-gtd-project-utils--show-project-tasks pearl-gtd-review--current-project))
     (_ (message "Cannot refresh this view"))))
 
 (defun pearl-gtd-review--insert-table-row (head id file fields)
@@ -1021,7 +1017,7 @@ Creates and pops to buffer *Pearl-GTD Project: PROJ-NAME*."
         (setq project (get-text-property (point) 'pearl-gtd-project))
         (forward-char 1))
       (if project
-          (pearl-gtd-review--show-project-tasks project)
+          (pearl-gtd-project-utils--show-project-tasks project)
         (let ((entry (pearl-gtd-review--get-entry-at-point)))
           (when entry
             (let ((id (car entry))

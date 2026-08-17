@@ -36,8 +36,7 @@
 ;;; Code:
 
 (require 'cl-lib)
-(declare-function ert-delete-all-tests "ert")
-(declare-function ert-run-tests-batch-and-exit "ert")
+(require 'ert)
 
 (eval-and-compile
   (defvar pearl-gtd--package-root

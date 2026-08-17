@@ -31,11 +31,7 @@
 (require 'pearl-gtd-domain)
 (require 'pearl-gtd-state)
 (require 'pearl-gtd-ui)
-
-(declare-function pearl-gtd-review--archive-project "pearl-gtd-review")
-(declare-function pearl-gtd-review--show-project-tasks "pearl-gtd-review")
-
-(declare-function pearl-gtd-horizons-view "pearl-gtd")
+(require 'pearl-gtd-project-utils)
 
 (defun pearl-gtd-horizons--get-project-horizon (project property)
   "Get horizon PROPERTY value for PROJECT from any of its actions.
@@ -232,7 +228,7 @@ Prompts for Purpose first, then immediately prompts for Principle."
   (let ((project (pearl-gtd-horizons--get-project-at-point)))
     (unless project
       (error "No project at point"))
-    (pearl-gtd-review--archive-project project)
+    (pearl-gtd-project-utils--archive-project project)
     (pearl-gtd-horizons--view)))
 
 (defun pearl-gtd-horizons--collect-all-projects ()
@@ -514,11 +510,16 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
   #'pearl-gtd-horizons--data-row-boundaries
   "| Project[ \t]*|")
 
+(defun pearl-gtd-horizons--refresh ()
+  "Refresh the horizon alignment view."
+  (interactive)
+  (pearl-gtd-horizons--view))
+
 (defvar pearl-gtd-horizons-view-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "q") #'quit-window)
     (define-key map (kbd "RET") #'pearl-gtd-horizons--goto-project-at-point)
-    (define-key map (kbd "g") #'pearl-gtd-horizons-view)
+    (define-key map (kbd "g") #'pearl-gtd-horizons--refresh)
     (define-key map (kbd "n") #'pearl-gtd-horizons--next-row)
     (define-key map (kbd "p") #'pearl-gtd-horizons--previous-row)
     (define-key map (kbd "j") #'pearl-gtd-horizons--next-row)
@@ -542,7 +543,7 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
   (interactive)
   (let ((project (pearl-gtd-horizons--get-project-at-point)))
     (when project
-      (pearl-gtd-review--show-project-tasks project))))
+      (pearl-gtd-project-utils--show-project-tasks project))))
 
 ;; Horizon editing keybindings are now in pearl-gtd-horizons-view-mode-map
 

@@ -18,8 +18,7 @@
 (require 'org)
 (require 'org-id)
 (require 'pearl-gtd-core)
-
-(declare-function pearl-gtd-horizons--sync-entry-horizons "pearl-gtd-horizons")
+(require 'pearl-gtd-horizons)
 
 (defface pearl-gtd-inbox--highlight
   '((t :inherit highlight))
