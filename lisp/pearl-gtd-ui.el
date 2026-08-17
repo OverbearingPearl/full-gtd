@@ -37,13 +37,6 @@ If PROJECT-P is non-nil, attach `pearl-gtd-project' property instead of ID."
       (insert " | " (if field (format "%s" field) "")))
     (insert " |\n")))
 
-(defun pearl-gtd-ui--insert-empty-row (column-count)
-  "Insert an empty placeholder row with COLUMN-COUNT cells."
-  (insert "| (No entries)")
-  (dotimes (_ (1- column-count))
-    (insert " |"))
-  (insert " |\n"))
-
 (defun pearl-gtd-ui--anchor-at-point ()
   "Return anchor for current line: (ID-FILE PROJECT LINE).
 ID-FILE is (id . file) for task rows; PROJECT is project name for

@@ -32,13 +32,6 @@
   "Return non-nil if current entry is a DONE item."
   (member (org-get-todo-state) org-done-keywords))
 
-(defun pearl-gtd-core-entry-context-p (contexts)
-  "Return non-nil if current entry has any of CONTEXTS.
-CONTEXTS is a list of normalized context strings (without @ prefix)."
-  (when contexts
-    (let ((tags (org-get-tags)))
-      (cl-intersection tags contexts :test #'string=))))
-
 (defun pearl-gtd-core-entry-scheduled-today-p ()
   "Return non-nil if current entry is scheduled for today."
   (let* ((scheduled (org-entry-get nil "SCHEDULED"))
@@ -184,12 +177,6 @@ HEADER-REGEXP matches header lines to skip (default: \"| Headline\")."
 
 ;;;; Macros for file operations
 
-(defmacro pearl-gtd-core-with-file-buffer (file-path &rest body)
-  "Execute BODY in buffer of FILE-PATH.
-Delegate to state layer for transactional file operations."
-  (declare (indent 1))
-  `(pearl-gtd-state--with-file-buffer ,file-path ,@body))
-
 (defmacro pearl-gtd-core-with-entry-at-id (id file &rest body)
   "Execute BODY with point at entry ID in FILE.
 Delegate to state layer for transactional file operations."
@@ -255,10 +242,6 @@ Example: \"Project A；Project B；Project C\"
   -> \"Project A; Project B; Project C\"
 Delegate to domain layer for pure computation."
   (pearl-gtd-domain--normalize-project-input input))
-
-(defun pearl-gtd-core--escape-table-field (field)
-  "Escape pipe characters in FIELD for org-table display."
-  (replace-regexp-in-string "|" "\\\\vert{}" field))
 
 ;;;; Unified property reading with completion
 
