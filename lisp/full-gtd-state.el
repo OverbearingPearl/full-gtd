@@ -1,9 +1,9 @@
-;;; pearl-gtd-state.el --- Thin state layer for Pearl-GTD  -*- lexical-binding: t; -*-
+;;; full-gtd-state.el --- Thin state layer for Full-GTD  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 OverbearingPearl
 ;; Author: OverbearingPearl <OverbearingPearl@outlook.com>
 ;; Assisted-by: Kimi:kimi-k2.5, DeepSeek:deepseek-v3.2, Claude:claude-sonnet-4.6
-;; URL: https://github.com/OverbearingPearl/pearl-gtd
+;; URL: https://github.com/OverbearingPearl/full-gtd
 ;; SPDX-License-Identifier: MIT
 
 ;;; Commentary:
@@ -17,13 +17,13 @@
 
 (require 'cl-lib)
 (require 'org)
-(require 'pearl-gtd-init)
+(require 'full-gtd-init)
 
-(defmacro pearl-gtd-state--with-file-buffer (file-path &rest body)
+(defmacro full-gtd-state--with-file-buffer (file-path &rest body)
   "Execute BODY in buffer of FILE-PATH (expanded relative to base dir).
 Buffer is saved if modified after BODY."
   (declare (indent 1))
-  `(let* ((file-path-expanded (expand-file-name ,file-path pearl-gtd-init-base-directory))
+  `(let* ((file-path-expanded (expand-file-name ,file-path full-gtd-init-base-directory))
           (buf (find-file-noselect file-path-expanded)))
      (with-current-buffer buf
        (org-mode)
@@ -33,11 +33,11 @@ Buffer is saved if modified after BODY."
          (when (buffer-modified-p)
            (save-buffer))))))
 
-(defmacro pearl-gtd-state--with-entry-at-id (id file &rest body)
+(defmacro full-gtd-state--with-entry-at-id (id file &rest body)
   "Execute BODY with point at entry ID in FILE.
 Signals error if entry not found (internal state violation)."
   (declare (indent 2))
-  `(pearl-gtd-state--with-file-buffer ,file
+  `(full-gtd-state--with-file-buffer ,file
      (goto-char (point-min))
      (let ((id-val ,id))
        (unless (re-search-forward (concat ":ID:[ \t]+" (regexp-quote id-val)) nil t)
@@ -45,16 +45,16 @@ Signals error if entry not found (internal state violation)."
        (org-back-to-heading)
        ,@body)))
 
-(defun pearl-gtd-state--snapshot (file)
+(defun full-gtd-state--snapshot (file)
   "Create memory snapshot of FILE for transaction.
 Returns (FILE PATH CONTENT-STRING-OR-NIL)."
-  (let ((path (expand-file-name file pearl-gtd-init-base-directory)))
+  (let ((path (expand-file-name file full-gtd-init-base-directory)))
     (list file path (when (file-exists-p path)
                       (with-temp-buffer
                         (insert-file-contents path)
                         (buffer-string))))))
 
-(defun pearl-gtd-state--rollback (snapshots)
+(defun full-gtd-state--rollback (snapshots)
   "Restore files from SNAPSHOTS and kill visiting buffers."
   (dolist (snap snapshots)
     (let ((path (cadr snap))
@@ -69,17 +69,17 @@ Returns (FILE PATH CONTENT-STRING-OR-NIL)."
         (when (file-exists-p path)
           (delete-file path))))))
 
-(defmacro pearl-gtd-state--with-transaction (files &rest body)
+(defmacro full-gtd-state--with-transaction (files &rest body)
   "Execute BODY with transactional safety on FILES.
 If any signal, rollback to original state and re-signal."
   (declare (indent 1))
-  `(let ((snapshots (mapcar #'pearl-gtd-state--snapshot ,files)))
+  `(let ((snapshots (mapcar #'full-gtd-state--snapshot ,files)))
      (condition-case err
          (progn ,@body)
        (t
-        (pearl-gtd-state--rollback snapshots)
+        (full-gtd-state--rollback snapshots)
         (signal (car err) (cdr err))))))
 
-(provide 'pearl-gtd-state)
+(provide 'full-gtd-state)
 
-;;; pearl-gtd-state.el ends here
+;;; full-gtd-state.el ends here

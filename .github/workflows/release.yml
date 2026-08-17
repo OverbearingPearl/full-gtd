@@ -42,7 +42,7 @@ jobs:
         id: melpazoid_run
         env:
           LOCAL_REPO: ${{ github.workspace }}
-          RECIPE: (pearl-gtd :fetcher github :repo "${{ github.repository }}")
+          RECIPE: (full-gtd :fetcher github :repo "${{ github.repository }}")
           EXIST_OK: false
         run: |
           set -o pipefail
@@ -55,18 +55,18 @@ jobs:
         run: |
           {
             echo "=== Building release package ==="
-            mkdir -p dist/pearl-gtd
-            cp pearl-gtd.el README.md LICENSE dist/pearl-gtd/
-            cp -r lisp dist/pearl-gtd/
+            mkdir -p dist/full-gtd
+            cp full-gtd.el README.md LICENSE dist/full-gtd/
+            cp -r lisp dist/full-gtd/
             cd dist
-            zip -r ../pearl-gtd-${{ github.ref_name }}.zip pearl-gtd/
+            zip -r ../full-gtd-${{ github.ref_name }}.zip full-gtd/
           } 2>&1 | tee -a build-logs.txt
 
       - name: Create GitHub Release
         if: success() && github.event_name == 'push' && endsWith(github.ref_name, '.0')
         uses: softprops/action-gh-release@v1
         with:
-          files: pearl-gtd-*.zip
+          files: full-gtd-*.zip
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -80,12 +80,12 @@ jobs:
           secure: true
           username: ${{ secrets.SMTP_USER }}
           password: ${{ secrets.SMTP_PASS }}
-          subject: "pearl-gtd ${{ github.ref_name }} - Build Failed"
+          subject: "full-gtd ${{ github.ref_name }} - Build Failed"
           html_body: |
             <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;max-width:600px;margin:0 auto;">
               <div style="background-color:#d32f2f;color:#ffffff;padding:20px;text-align:center;border-radius:8px 8px 0 0;">
                 <h1 style="margin:0;font-size:24px;">❌ Build Failed</h1>
-                <p style="margin:8px 0 0 0;opacity:0.9;font-size:14px;">pearl-gtd ${{ github.ref_name }}</p>
+                <p style="margin:8px 0 0 0;opacity:0.9;font-size:14px;">full-gtd ${{ github.ref_name }}</p>
               </div>
 
               <div style="background-color:#ffffff;padding:24px;border:1px solid #e0e0e0;border-top:none;border-radius:0 0 8px 8px;">

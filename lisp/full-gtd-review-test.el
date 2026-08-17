@@ -1,4 +1,4 @@
-;;; pearl-gtd-test-review.el --- User stories: Review phase  -*- lexical-binding: t; -*-
+;;; full-gtd-test-review.el --- User stories: Review phase  -*- lexical-binding: t; -*-
 
 ;;; Commentary:
 
@@ -7,19 +7,20 @@
 ;;; Code:
 
 (require 'ert)
-(require 'pearl-gtd)
-(require 'pearl-gtd-test)
+(require 'full-gtd)
+(require 'full-gtd-test)
+(require 'full-gtd-project-utils)
 
-(pearl-gtd-test-define-story pearl-gtd-review-test-user-views-daily-sections
+(full-gtd-test-define-story full-gtd-review-test-user-views-daily-sections
   "Daily review shows Today, Next Actions, and Inbox in separate tables."
-  :setup (pearl-gtd-init-initialize)
+  :setup (full-gtd-init-initialize)
   :files (("inbox.org" "* New idea\n:PROPERTIES:\n:ID: d-1\n:CREATED: 2026-01-15\n:END:\n")
           ("action.org" "* TODO Today task\nSCHEDULED: <2026-01-15 Thu>\n:PROPERTIES:\n:ID: d-2\n:PROJECT: Web\n:CREATED: 2026-01-10\n:END:\n* TODO Next task\n:PROPERTIES:\n:ID: d-3\n:PROJECT: App\n:CREATED: 2026-01-11\n:END:\n* DONE Completed today task\nCLOSED: [2026-01-15 Thu 10:00]\n:PROPERTIES:\n:ID: d-4\n:END:\n"))
   :mock (((symbol-function 'current-time) (lambda () (encode-time 0 0 0 15 1 2026 t))))
-  :body (pearl-gtd-review-daily)
+  :body (full-gtd-review-daily)
   :asserts (progn
-             (should (get-buffer "*Pearl-GTD Daily Review*"))
-             (with-current-buffer "*Pearl-GTD Daily Review*"
+             (should (get-buffer "*Full-GTD Daily Review*"))
+             (with-current-buffer "*Full-GTD Daily Review*"
                ;; Verify sections exist
                (goto-char (point-min))
                (should (search-forward "** action.org - Today" nil t))
@@ -84,19 +85,19 @@
                (goto-char (point-min))
                (search-forward "** action.org - Completed Today")
                (should (search-forward "Completed today task" nil t))))
-  :teardown (kill-buffer "*Pearl-GTD Daily Review*"))
+  :teardown (kill-buffer "*Full-GTD Daily Review*"))
 
-(pearl-gtd-test-define-story pearl-gtd-review-test-user-views-weekly-sections
+(full-gtd-test-define-story full-gtd-review-test-user-views-weekly-sections
   "Weekly review aggregates all lists and action sub-views into separate tables."
-  :setup (pearl-gtd-init-initialize)
+  :setup (full-gtd-init-initialize)
   :files (("inbox.org" "* Unprocessed\n:PROPERTIES:\n:ID: w-1\n:END:\n")
           ("action.org" "* TODO Normal action\n:PROPERTIES:\n:ID: w-2\n:PROJECT: Active project\n:END:\n* TODO Overdue task\nSCHEDULED: <2026-01-01 Wed>\n:PROPERTIES:\n:ID: w-overdue\n:END:\n* TODO Delegated task\n:PROPERTIES:\n:ID: w-del\n:DELEGATED: Bob\n:END:\n* DONE Completed today task\nCLOSED: [2026-01-15 Thu 10:00]\n:PROPERTIES:\n:ID: w-done-today\n:END:\n* TODO No project task\n:PROPERTIES:\n:ID: w-no-proj\n:END:\n")
           ("someday.org" "* Maybe later\n:PROPERTIES:\n:ID: w-4\n:END:\n"))
   :mock (((symbol-function 'current-time) (lambda () (encode-time 0 0 0 15 1 2026))))
-  :body (pearl-gtd-review-weekly)
+  :body (full-gtd-review-weekly)
   :asserts (progn
-             (should (get-buffer "*Pearl-GTD Weekly Review*"))
-             (with-current-buffer "*Pearl-GTD Weekly Review*"
+             (should (get-buffer "*Full-GTD Weekly Review*"))
+             (with-current-buffer "*Full-GTD Weekly Review*"
                ;; Verify all sections present
                (goto-char (point-min))
                (should (search-forward "** inbox.org - Inbox" nil t))
@@ -141,228 +142,228 @@
                                       (search-forward "** action.org - No Project" nil t)
                                       (search-forward "** someday.org - Someday" nil t))))
                  (should (equal positions (sort (copy-sequence positions) #'<))))))
-  :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
+  :teardown (kill-buffer "*Full-GTD Weekly Review*"))
 
-(pearl-gtd-test-define-story pearl-gtd-review-test-user-edits-context-with-default
+(full-gtd-test-define-story full-gtd-review-test-user-edits-context-with-default
   "Press 'c' to edit context with current value as default."
-  :setup (pearl-gtd-init-initialize)
+  :setup (full-gtd-init-initialize)
   :files (("action.org" (concat "* TODO Task with context :home:\nSCHEDULED: <" (format-time-string "%F %a") ">\n:PROPERTIES:\n:ID: edit-ctx-1\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n")))
-  :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
+  :mock (((symbol-function 'full-gtd-core-read-property-with-completion)
           (lambda (_prompt _type &optional initial)
             (should (string-match-p "home" initial))
             "office"))
-         ((symbol-function 'pearl-gtd-core-read-date)
+         ((symbol-function 'full-gtd-core-read-date)
           (lambda (&rest _) nil)))
   :body (progn
-          (pearl-gtd-review-daily)
-          (with-current-buffer "*Pearl-GTD Daily Review*"
+          (full-gtd-review-daily)
+          (with-current-buffer "*Full-GTD Daily Review*"
             (goto-char (point-min))
             (search-forward "** action.org - Today")
             (search-forward "Task with context")
             (beginning-of-line)
-            (pearl-gtd-review--edit-context-at-point)))
+            (full-gtd-review--edit-context-at-point)))
   :asserts (progn
-             (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+             (should (full-gtd-test-file-contains-p
+                      (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":office:")))
-  :teardown (kill-buffer "*Pearl-GTD Daily Review*"))
+  :teardown (kill-buffer "*Full-GTD Daily Review*"))
 
-(pearl-gtd-test-define-story pearl-gtd-review-test-user-removes-context-by-empty-input
+(full-gtd-test-define-story full-gtd-review-test-user-removes-context-by-empty-input
   "Press 'c' and delete all to remove context property."
-  :setup (pearl-gtd-init-initialize)
+  :setup (full-gtd-init-initialize)
   :files (("action.org" (concat "* TODO Task to clear :home:\nSCHEDULED: <" (format-time-string "%F %a") ">\n:PROPERTIES:\n:ID: edit-ctx-2\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n")))
-  :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
+  :mock (((symbol-function 'full-gtd-core-read-property-with-completion)
           (lambda (_prompt _type &optional initial)
             (should (string= initial "home"))
             ""))
          ((symbol-function 'read-string)
           (lambda (&rest _) "")))
   :body (progn
-          (pearl-gtd-review-daily)
-          (with-current-buffer "*Pearl-GTD Daily Review*"
+          (full-gtd-review-daily)
+          (with-current-buffer "*Full-GTD Daily Review*"
             (goto-char (point-min))
             (search-forward "** action.org - Today")
             (search-forward "Task to clear")
             (beginning-of-line)
-            (pearl-gtd-review--edit-context-at-point)))
-  :asserts (let ((result (pearl-gtd-test-file-contains-p
-                          (expand-file-name "action.org" pearl-gtd-init-base-directory)
+            (full-gtd-review--edit-context-at-point)))
+  :asserts (let ((result (full-gtd-test-file-contains-p
+                          (expand-file-name "action.org" full-gtd-init-base-directory)
                           ":home:")))
              (should-not (car result)))
-  :teardown (kill-buffer "*Pearl-GTD Daily Review*"))
+  :teardown (kill-buffer "*Full-GTD Daily Review*"))
 
-(pearl-gtd-test-define-story pearl-gtd-review-test-user-edits-delegated-with-default
+(full-gtd-test-define-story full-gtd-review-test-user-edits-delegated-with-default
   "Press 'd' to edit delegated with current value shown."
-  :setup (pearl-gtd-init-initialize)
+  :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Delegated task\n:PROPERTIES:\n:ID: edit-del-1\n:DELEGATED: John\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n"))
-  :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
+  :mock (((symbol-function 'full-gtd-core-read-property-with-completion)
           (lambda (_prompt _type &optional initial)
             (should (string= initial "John"))
             "Bob"))
          ((symbol-function 'read-string)
           (lambda (&rest _) "")))
   :body (progn
-          (pearl-gtd-review-weekly)
-          (with-current-buffer "*Pearl-GTD Weekly Review*"
+          (full-gtd-review-weekly)
+          (with-current-buffer "*Full-GTD Weekly Review*"
             (goto-char (point-min))
             (search-forward "** action.org - Delegated")
             (search-forward "Delegated task")
             (beginning-of-line)
-            (pearl-gtd-review--edit-delegated-at-point)))
+            (full-gtd-review--edit-delegated-at-point)))
   :asserts (progn
-             (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+             (should (full-gtd-test-file-contains-p
+                      (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":DELEGATED:[ \t]+Bob"))
-             (let ((result (pearl-gtd-test-file-contains-p
-                            (expand-file-name "action.org" pearl-gtd-init-base-directory)
+             (let ((result (full-gtd-test-file-contains-p
+                            (expand-file-name "action.org" full-gtd-init-base-directory)
                             ":DELEGATED: John")))
                (should-not (car result))))
-  :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
+  :teardown (kill-buffer "*Full-GTD Weekly Review*"))
 
-(pearl-gtd-test-define-story pearl-gtd-review-test-user-edits-schedule-with-default
+(full-gtd-test-define-story full-gtd-review-test-user-edits-schedule-with-default
   "Press 't' to edit scheduled date with current value as default."
-  :setup (pearl-gtd-init-initialize)
+  :setup (full-gtd-init-initialize)
   :files (("action.org" (concat "* TODO Scheduled task\nSCHEDULED: <" (format-time-string "%F %a") ">\n:PROPERTIES:\n:ID: edit-sch-1\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n")))
-  :mock (((symbol-function 'pearl-gtd-core-read-date)
+  :mock (((symbol-function 'full-gtd-core-read-date)
           (lambda (&rest _) "2026-05-15")))
   :body (progn
-          (pearl-gtd-review-daily)
-          (with-current-buffer "*Pearl-GTD Daily Review*"
+          (full-gtd-review-daily)
+          (with-current-buffer "*Full-GTD Daily Review*"
             (goto-char (point-min))
             (search-forward "** action.org - Today")
             (search-forward "Scheduled task")
             (beginning-of-line)
-            (pearl-gtd-review--edit-scheduled-at-point)))
+            (full-gtd-review--edit-scheduled-at-point)))
   :asserts (progn
-             (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+             (should (full-gtd-test-file-contains-p
+                      (expand-file-name "action.org" full-gtd-init-base-directory)
                       "SCHEDULED: <2026-05-15"))
-             (let ((result (pearl-gtd-test-file-contains-p
-                            (expand-file-name "action.org" pearl-gtd-init-base-directory)
+             (let ((result (full-gtd-test-file-contains-p
+                            (expand-file-name "action.org" full-gtd-init-base-directory)
                             "SCHEDULED: <2026-01-01")))
                (should-not (car result))))
-  :teardown (kill-buffer "*Pearl-GTD Daily Review*"))
+  :teardown (kill-buffer "*Full-GTD Daily Review*"))
 
-(pearl-gtd-test-define-story pearl-gtd-review-test-user-jumps-to-task-from-table
+(full-gtd-test-define-story full-gtd-review-test-user-jumps-to-task-from-table
   "Press RET to jump to task in source file."
-  :setup (pearl-gtd-init-initialize)
+  :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Jump target\n:PROPERTIES:\n:ID: jump-1\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n"))
   :mock nil
   :body (progn
-          (pearl-gtd-review-weekly)
-          (with-current-buffer "*Pearl-GTD Weekly Review*"
+          (full-gtd-review-weekly)
+          (with-current-buffer "*Full-GTD Weekly Review*"
             (goto-char (point-min))
             (search-forward "** action.org - Next Actions")
             (search-forward "Jump target")
             (beginning-of-line)
-            (pearl-gtd-review--goto-task-at-point)))
+            (full-gtd-review--goto-task-at-point)))
   :asserts (progn
-             (should (get-file-buffer (expand-file-name "action.org" pearl-gtd-init-base-directory)))
-             (with-current-buffer (get-file-buffer (expand-file-name "action.org" pearl-gtd-init-base-directory))
+             (should (get-file-buffer (expand-file-name "action.org" full-gtd-init-base-directory)))
+             (with-current-buffer (get-file-buffer (expand-file-name "action.org" full-gtd-init-base-directory))
                (should (looking-at-p "\\*+ TODO Jump target"))))
   :teardown (progn
-             (kill-buffer "*Pearl-GTD Weekly Review*")
-             (let ((buf (get-file-buffer (expand-file-name "action.org" pearl-gtd-init-base-directory))))
+             (kill-buffer "*Full-GTD Weekly Review*")
+             (let ((buf (get-file-buffer (expand-file-name "action.org" full-gtd-init-base-directory))))
                (when buf (kill-buffer buf)))))
 
-(pearl-gtd-test-define-story pearl-gtd-review-test-user-sets-deadline-with-keybinding
+(full-gtd-test-define-story full-gtd-review-test-user-sets-deadline-with-keybinding
   "Press 's' in review buffer to set deadline for task at point."
-  :setup (pearl-gtd-init-initialize)
+  :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task for deadline\n:PROPERTIES:\n:ID: dl-1\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n"))
-  :mock (((symbol-function 'pearl-gtd-core-read-date)
+  :mock (((symbol-function 'full-gtd-core-read-date)
           (lambda (&rest _) "2026-05-20")))
   :body (progn
-          (pearl-gtd-review-weekly)
-          (with-current-buffer "*Pearl-GTD Weekly Review*"
+          (full-gtd-review-weekly)
+          (with-current-buffer "*Full-GTD Weekly Review*"
             (goto-char (point-min))
             (search-forward "** action.org - Next Actions")
             (search-forward "Task for deadline")
             (beginning-of-line)
-            (pearl-gtd-review--set-deadline-at-point)))
+            (full-gtd-review--set-deadline-at-point)))
   :asserts (progn
-             (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+             (should (full-gtd-test-file-contains-p
+                      (expand-file-name "action.org" full-gtd-init-base-directory)
                       "DEADLINE: <2026-05-20")))
-  :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
+  :teardown (kill-buffer "*Full-GTD Weekly Review*"))
 
-(pearl-gtd-test-define-story pearl-gtd-review-test-user-edits-task-in-review-window
+(full-gtd-test-define-story full-gtd-review-test-user-edits-task-in-review-window
   "User edits a task directly from review buffer."
-  :setup (pearl-gtd-init-initialize)
+  :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Old task name\n:PROPERTIES:\n:ID: edit-old-1\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n"))
   :mock (((symbol-function 'read-string) (lambda (&rest _) "Updated task name")))
   :body (progn
-          (pearl-gtd-review-weekly)
-          (with-current-buffer "*Pearl-GTD Weekly Review*"
+          (full-gtd-review-weekly)
+          (with-current-buffer "*Full-GTD Weekly Review*"
             (goto-char (point-min))
             (search-forward "** action.org - Next Actions")
             (search-forward "Old task name")
             (beginning-of-line)
-            (pearl-gtd-review--rename-task-at-point)))
+            (full-gtd-review--rename-task-at-point)))
   :asserts (progn
-             (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+             (should (full-gtd-test-file-contains-p
+                      (expand-file-name "action.org" full-gtd-init-base-directory)
                       "* TODO Updated task name"))
-             (let ((result (pearl-gtd-test-file-contains-p
-                            (expand-file-name "action.org" pearl-gtd-init-base-directory)
+             (let ((result (full-gtd-test-file-contains-p
+                            (expand-file-name "action.org" full-gtd-init-base-directory)
                             "* TODO Old task name")))
                (should-not (car result))))
-  :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
+  :teardown (kill-buffer "*Full-GTD Weekly Review*"))
 
-(pearl-gtd-test-define-story pearl-gtd-review-test-user-jumps-across-sections
+(full-gtd-test-define-story full-gtd-review-test-user-jumps-across-sections
   "RET jump works correctly from tasks in different sections and source files."
-  :setup (pearl-gtd-init-initialize)
+  :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Today task\nSCHEDULED: <2026-01-15 Thu>\n:PROPERTIES:\n:ID: jump-sec-1\n:END:\n* TODO Next task\n:PROPERTIES:\n:ID: jump-sec-2\n:END:\n")
           ("inbox.org" "* Inbox item\n:PROPERTIES:\n:ID: jump-sec-3\n:END:\n"))
   :mock (((symbol-function 'current-time) (lambda () (encode-time 0 0 0 15 1 2026))))
   :body (progn
-          (pearl-gtd-review-daily)
-          (with-current-buffer "*Pearl-GTD Daily Review*"
+          (full-gtd-review-daily)
+          (with-current-buffer "*Full-GTD Daily Review*"
             (goto-char (point-min))
             (search-forward "** action.org - Next Actions")
             (search-forward "Next task")
             (beginning-of-line)
-            (pearl-gtd-review--goto-task-at-point)))
+            (full-gtd-review--goto-task-at-point)))
   :asserts (progn
-             (should (get-file-buffer (expand-file-name "action.org" pearl-gtd-init-base-directory)))
-             (with-current-buffer (get-file-buffer (expand-file-name "action.org" pearl-gtd-init-base-directory))
+             (should (get-file-buffer (expand-file-name "action.org" full-gtd-init-base-directory)))
+             (with-current-buffer (get-file-buffer (expand-file-name "action.org" full-gtd-init-base-directory))
                (should (looking-at-p "\\*+ TODO Next task"))))
   :teardown (progn
-              (kill-buffer "*Pearl-GTD Daily Review*")
-              (let ((buf (get-file-buffer (expand-file-name "action.org" pearl-gtd-init-base-directory))))
+              (kill-buffer "*Full-GTD Daily Review*")
+              (let ((buf (get-file-buffer (expand-file-name "action.org" full-gtd-init-base-directory))))
                 (when buf (kill-buffer buf)))))
 
-(pearl-gtd-test-define-story pearl-gtd-review-test-user-views-project-stats
+(full-gtd-test-define-story full-gtd-review-test-user-views-project-stats
   "Project row displays total, todo, done counts and next deadline."
-  :setup (pearl-gtd-init-initialize)
+  :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task 1\n:PROPERTIES:\n:ID: p1-1\n:PROJECT: Website\n:END:\n* DONE Task 2\n:PROPERTIES:\n:ID: p1-2\n:PROJECT: Website\n:END:\n* TODO Task 3\nDEADLINE: <2026-05-20>\n:PROPERTIES:\n:ID: p1-3\n:PROJECT: Website\n:END:\n"))
   :mock nil
-  :body (pearl-gtd-review-weekly)
+  :body (full-gtd-review-weekly)
   :asserts (progn
-             (should (get-buffer "*Pearl-GTD Weekly Review*"))
-             (with-current-buffer "*Pearl-GTD Weekly Review*"
+             (should (get-buffer "*Full-GTD Weekly Review*"))
+             (with-current-buffer "*Full-GTD Weekly Review*"
                (goto-char (point-min))
                (search-forward "** Projects - Active")
                (forward-line 3)
                (beginning-of-line)
                (should (search-forward-regexp "|\\s-*Website\\s-*|\\s-*3\\s-*|\\s-*2\\s-*|\\s-*1\\s-*|\\s-*<2026-05-20[^>]*>\\s-*|" (line-end-position) t))))
-  :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
+  :teardown (kill-buffer "*Full-GTD Weekly Review*"))
 
-(pearl-gtd-test-define-story pearl-gtd-review-test-user-jumps-to-project-tasks
+(full-gtd-test-define-story full-gtd-review-test-user-jumps-to-project-tasks
   "Press RET on project row opens project task sub-view."
-  :setup (pearl-gtd-init-initialize)
+  :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task A\n:PROPERTIES:\n:ID: proj-a-1\n:PROJECT: Alpha\n:END:\n* TODO Task B\n:PROPERTIES:\n:ID: proj-a-2\n:PROJECT: Alpha\n:END:\n"))
   :mock nil
   :body (progn
-          (pearl-gtd-review-weekly)
-          (with-current-buffer "*Pearl-GTD Weekly Review*"
+          (full-gtd-review-weekly)
+          (with-current-buffer "*Full-GTD Weekly Review*"
             (goto-char (point-min))
             (search-forward "** Projects - Active")
             (search-forward "Alpha")
             (beginning-of-line)
-            (pearl-gtd-review--goto-task-at-point)))
+            (full-gtd-review--goto-task-at-point)))
   :asserts (progn
-             (should (get-buffer "*Pearl-GTD Project: Alpha*"))
-             (with-current-buffer "*Pearl-GTD Project: Alpha*"
+             (should (get-buffer "*Full-GTD Project: Alpha*"))
+             (with-current-buffer "*Full-GTD Project: Alpha*"
                (should (search-forward "Task A" nil t))
                (should (search-forward "Task B" nil t))
                ;; Verify table column count matches header (Created column must exist)
@@ -381,56 +382,56 @@
                (let ((data-line (buffer-substring (line-beginning-position) (line-end-position))))
                  (should (= (cl-count ?| data-line) 9)))))
   :teardown (progn
-              (kill-buffer "*Pearl-GTD Weekly Review*")
-              (when (get-buffer "*Pearl-GTD Project: Alpha*")
-                (kill-buffer "*Pearl-GTD Project: Alpha*"))))
+              (kill-buffer "*Full-GTD Weekly Review*")
+              (when (get-buffer "*Full-GTD Project: Alpha*")
+                (kill-buffer "*Full-GTD Project: Alpha*"))))
 
-(pearl-gtd-test-define-story pearl-gtd-review-test-user-returns-from-project-view
+(full-gtd-test-define-story full-gtd-review-test-user-returns-from-project-view
   "Press q in project sub-view returns to weekly review."
-  :setup (pearl-gtd-init-initialize)
+  :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: ret-1\n:PROJECT: Beta\n:END:\n"))
   :mock nil
   :body (progn
-          (pearl-gtd-review-weekly)
-          (with-current-buffer "*Pearl-GTD Weekly Review*"
+          (full-gtd-review-weekly)
+          (with-current-buffer "*Full-GTD Weekly Review*"
             (goto-char (point-min))
             (search-forward "** Projects - Active")
             (search-forward "Beta")
             (beginning-of-line)
-            (pearl-gtd-review--goto-task-at-point))
-          (with-current-buffer "*Pearl-GTD Project: Beta*"
-            (pearl-gtd-review--quit-or-return)))
+            (full-gtd-review--goto-task-at-point))
+          (with-current-buffer "*Full-GTD Project: Beta*"
+            (full-gtd-review--quit-or-return)))
   :asserts (progn
-             (should-not (get-buffer "*Pearl-GTD Project: Beta*"))
-             (should (get-buffer "*Pearl-GTD Weekly Review*")))
-  :teardown (when (get-buffer "*Pearl-GTD Weekly Review*")
-              (kill-buffer "*Pearl-GTD Weekly Review*")))
+             (should-not (get-buffer "*Full-GTD Project: Beta*"))
+             (should (get-buffer "*Full-GTD Weekly Review*")))
+  :teardown (when (get-buffer "*Full-GTD Weekly Review*")
+              (kill-buffer "*Full-GTD Weekly Review*")))
 
-(pearl-gtd-test-define-story pearl-gtd-review-test-user-identifies-stuck-project
+(full-gtd-test-define-story full-gtd-review-test-user-identifies-stuck-project
   "Stuck project shows zero todo count."
-  :setup (pearl-gtd-init-initialize)
+  :setup (full-gtd-init-initialize)
   :files (("action.org" "* DONE Completed task\n:PROPERTIES:\n:ID: stuck-1\n:PROJECT: StuckProj\n:END:\n* Scheduled but no todo\nSCHEDULED: <2026-04-10 Fri>\n:PROPERTIES:\n:ID: stuck-2\n:PROJECT: StuckProj\n:END:\n"))
   :mock nil
-  :body (pearl-gtd-review-weekly)
+  :body (full-gtd-review-weekly)
   :asserts (progn
-             (should (get-buffer "*Pearl-GTD Weekly Review*"))
-             (with-current-buffer "*Pearl-GTD Weekly Review*"
+             (should (get-buffer "*Full-GTD Weekly Review*"))
+             (with-current-buffer "*Full-GTD Weekly Review*"
                (goto-char (point-min))
                (search-forward "** Projects - Stuck")
                (forward-line 3)
                (beginning-of-line)
                (should (search-forward-regexp "|\\s-*StuckProj\\s-*|\\s-*2\\s-*|\\s-*0\\s-*|\\s-*1\\s-*|" (line-end-position) t))))
-  :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
+  :teardown (kill-buffer "*Full-GTD Weekly Review*"))
 
-(pearl-gtd-test-define-story pearl-gtd-review-test-project-exact-match-not-substring
+(full-gtd-test-define-story full-gtd-review-test-project-exact-match-not-substring
   "Project names that are substrings of each other are matched exactly."
-  :setup (pearl-gtd-init-initialize)
+  :setup (full-gtd-init-initialize)
   :files (("action.org" "* DONE P1 task\n:PROPERTIES:\n:ID: exact-1\n:PROJECT: P1\n:END:\n* TODO P10 task\n:PROPERTIES:\n:ID: exact-2\n:PROJECT: P10\n:END:\n"))
   :mock nil
-  :body (pearl-gtd-review-weekly)
+  :body (full-gtd-review-weekly)
   :asserts (progn
-             (should (get-buffer "*Pearl-GTD Weekly Review*"))
-             (with-current-buffer "*Pearl-GTD Weekly Review*"
+             (should (get-buffer "*Full-GTD Weekly Review*"))
+             (with-current-buffer "*Full-GTD Weekly Review*"
                ;; Get section boundaries first
                (goto-char (point-min))
                (let* ((stuck-pos (search-forward "** Projects - Stuck"))
@@ -462,17 +463,17 @@
                (search-forward "P10")
                (beginning-of-line)
                (should (search-forward-regexp "|\\s-*P10\\s-*|\\s-*1\\s-*|\\s-*1\\s-*|\\s-*0\\s-*|" (line-end-position) t))))
-  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
+  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
 
-(pearl-gtd-test-define-story pearl-gtd-review-test-weekly-no-project-table-no-project-column
+(full-gtd-test-define-story full-gtd-review-test-weekly-no-project-table-no-project-column
   "No Project table should not have Project column and should be after Project sections."
-  :setup (pearl-gtd-init-initialize)
+  :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO No project task 1\n:PROPERTIES:\n:ID: np-1\n:CREATED: 2026-01-15\n:END:\n* TODO No project task 2 :home:\nSCHEDULED: <2026-01-20 Fri>\n:PROPERTIES:\n:ID: np-2\n:CREATED: 2026-01-16\n:END:\n* TODO Project task\n:PROPERTIES:\n:ID: p-1\n:PROJECT: TestProject\n:CREATED: 2026-01-17\n:END:\n"))
   :mock (((symbol-function 'current-time) (lambda () (encode-time 0 0 0 15 1 2026))))
-  :body (pearl-gtd-review-weekly)
+  :body (full-gtd-review-weekly)
   :asserts (progn
-             (should (get-buffer "*Pearl-GTD Weekly Review*"))
-             (with-current-buffer "*Pearl-GTD Weekly Review*"
+             (should (get-buffer "*Full-GTD Weekly Review*"))
+             (with-current-buffer "*Full-GTD Weekly Review*"
                ;; Verify No Project section is after Project sections
                (goto-char (point-min))
                (let ((pos-active (search-forward "** Projects - Active" nil t))
@@ -511,107 +512,107 @@
                    (should (string-match-p "No project task" line))
                    (should-not (string-match-p "TestProject" line)))
                  (forward-line 1))))
-  :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
+  :teardown (kill-buffer "*Full-GTD Weekly Review*"))
 
-(pearl-gtd-test-define-story pearl-gtd-review-test-user-renames-task-and-view-updates
+(full-gtd-test-define-story full-gtd-review-test-user-renames-task-and-view-updates
   "Renaming task in review buffer should refresh display."
-  :setup (pearl-gtd-init-initialize)
+  :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Old name\n:PROPERTIES:\n:ID: rename-view-1\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n"))
   :mock (((symbol-function 'read-string) (lambda (&rest _) "New name")))
   :body (progn
-          (pearl-gtd-review-weekly)
-          (with-current-buffer "*Pearl-GTD Weekly Review*"
+          (full-gtd-review-weekly)
+          (with-current-buffer "*Full-GTD Weekly Review*"
             (goto-char (point-min))
             (search-forward "Old name")
             (beginning-of-line)
-            (pearl-gtd-review--rename-task-at-point)))
-  :asserts (with-current-buffer "*Pearl-GTD Weekly Review*"
+            (full-gtd-review--rename-task-at-point)))
+  :asserts (with-current-buffer "*Full-GTD Weekly Review*"
              (goto-char (point-min))
              (should (search-forward "New name" nil t))
              (should-not (search-forward "Old name" nil t)))
-  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
+  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
 
-(pearl-gtd-test-define-story pearl-gtd-review-test-user-completes-no-project-task-deletes
+(full-gtd-test-define-story full-gtd-review-test-user-completes-no-project-task-deletes
   "Completing a task without project property should delete it."
-  :setup (pearl-gtd-init-initialize)
+  :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO No project task\n:PROPERTIES:\n:ID: no-proj-1\n:END:\n* TODO Project task\n:PROPERTIES:\n:ID: proj-1\n:PROJECT: Test\n:END:\n"))
   :mock nil
   :body (progn
-          (pearl-gtd-review-weekly)
-          (with-current-buffer "*Pearl-GTD Weekly Review*"
+          (full-gtd-review-weekly)
+          (with-current-buffer "*Full-GTD Weekly Review*"
             (goto-char (point-min))
             (search-forward "** action.org - No Project")
             (search-forward "No project task")
             (beginning-of-line)
-            (pearl-gtd-review--complete-task-at-point)))
+            (full-gtd-review--complete-task-at-point)))
   :asserts (progn
              ;; Verify no-project task is deleted
-             (should-not (pearl-gtd-test-file-contains-p-bool
-                          (expand-file-name "action.org" pearl-gtd-init-base-directory)
+             (should-not (full-gtd-test-file-contains-p-bool
+                          (expand-file-name "action.org" full-gtd-init-base-directory)
                           "* TODO No project task"))
              ;; Verify project task remains
-             (should (pearl-gtd-test-file-contains-p-bool
-                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+             (should (full-gtd-test-file-contains-p-bool
+                      (expand-file-name "action.org" full-gtd-init-base-directory)
                       "* TODO Project task")))
-  :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
+  :teardown (kill-buffer "*Full-GTD Weekly Review*"))
 
-(pearl-gtd-test-define-story pearl-gtd-review-test-user-archives-completed-project
+(full-gtd-test-define-story full-gtd-review-test-user-archives-completed-project
   "User can archive a project when all actions are DONE and none are shared."
-  :setup (pearl-gtd-init-initialize)
+  :setup (full-gtd-init-initialize)
   :files (("action.org" "* DONE Task 1\n:PROPERTIES:\n:ID: ar-1\n:PROJECT: ArchProj\n:END:\n* DONE Task 2\n:PROPERTIES:\n:ID: ar-2\n:PROJECT: ArchProj\n:END:\n"))
   :mock nil
-  :body (pearl-gtd-review--archive-project "ArchProj")
+  :body (full-gtd-project-utils--archive-project "ArchProj")
   :asserts (progn
              ;; action.org no longer contains ArchProj entries
-             (let ((result (pearl-gtd-test-file-contains-p
-                            (expand-file-name "action.org" pearl-gtd-init-base-directory)
+             (let ((result (full-gtd-test-file-contains-p
+                            (expand-file-name "action.org" full-gtd-init-base-directory)
                             ":PROJECT: ArchProj")))
                (should-not (car result)))
              ;; archive.org exists with project heading and task entries
-             (should (file-exists-p (expand-file-name "archive.org" pearl-gtd-init-base-directory)))
+             (should (file-exists-p (expand-file-name "archive.org" full-gtd-init-base-directory)))
              (let ((content (with-temp-buffer
-                              (insert-file-contents (expand-file-name "archive.org" pearl-gtd-init-base-directory))
+                              (insert-file-contents (expand-file-name "archive.org" full-gtd-init-base-directory))
                               (buffer-string))))
                (should (string-match-p "\\* ArchProj" content))
                (should (string-match-p "Task 1" content))
                (should (string-match-p "Task 2" content))))
-  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Daily Review*" "*Pearl-GTD Weekly Review*")))
+  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Daily Review*" "*Full-GTD Weekly Review*")))
 
-(pearl-gtd-test-define-story pearl-gtd-review-test-user-cannot-archive-project-with-todo-actions
+(full-gtd-test-define-story full-gtd-review-test-user-cannot-archive-project-with-todo-actions
   "Archiving fails when project still has non-DONE actions."
-  :setup (pearl-gtd-init-initialize)
+  :setup (full-gtd-init-initialize)
   :files (("action.org" "* DONE Task 1\n:PROPERTIES:\n:ID: todo-ar-1\n:PROJECT: MixedProj\n:END:\n* TODO Task 2\n:PROPERTIES:\n:ID: todo-ar-2\n:PROJECT: MixedProj\n:END:\n"))
   :mock nil
-  :body (should-error (pearl-gtd-review--archive-project "MixedProj")
+  :body (should-error (full-gtd-project-utils--archive-project "MixedProj")
                       :type 'error)
   :asserts (progn
              ;; action.org still has both entries
-             (should (pearl-gtd-test-file-contains-p-bool
-                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+             (should (full-gtd-test-file-contains-p-bool
+                      (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":PROJECT: MixedProj"))
-             (should-not (file-exists-p (expand-file-name "archive.org" pearl-gtd-init-base-directory))))
+             (should-not (file-exists-p (expand-file-name "archive.org" full-gtd-init-base-directory))))
   :teardown nil)
 
-(pearl-gtd-test-define-story pearl-gtd-review-test-user-cannot-archive-project-with-actions-in-other-projects
+(full-gtd-test-define-story full-gtd-review-test-user-cannot-archive-project-with-actions-in-other-projects
   "Archiving fails when a task belongs to multiple projects."
-  :setup (pearl-gtd-init-initialize)
+  :setup (full-gtd-init-initialize)
   :files (("action.org" "* DONE Task 1\n:PROPERTIES:\n:ID: multi-ar-1\n:PROJECT: ProjA; ProjB\n:END:\n* DONE Task 2\n:PROPERTIES:\n:ID: multi-ar-2\n:PROJECT: ProjA\n:END:\n"))
   :mock nil
-  :body (should-error (pearl-gtd-review--archive-project "ProjA")
+  :body (should-error (full-gtd-project-utils--archive-project "ProjA")
                       :type 'error)
   :asserts (progn
-             (should (pearl-gtd-test-file-contains-p-bool
-                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+             (should (full-gtd-test-file-contains-p-bool
+                      (expand-file-name "action.org" full-gtd-init-base-directory)
                       "ProjA"))
-             (should-not (file-exists-p (expand-file-name "archive.org" pearl-gtd-init-base-directory))))
+             (should-not (file-exists-p (expand-file-name "archive.org" full-gtd-init-base-directory))))
   :teardown nil)
 
-(pearl-gtd-test-define-story pearl-gtd-review-test-user-activates-someday-entry
+(full-gtd-test-define-story full-gtd-review-test-user-activates-someday-entry
   "Activating a Someday entry re-confirms properties and moves it atomically."
-  :setup (pearl-gtd-init-initialize)
+  :setup (full-gtd-init-initialize)
   :files (("someday.org" "* Someday task :home:\n:PROPERTIES:\n:ID: someday-activate-1\n:DELEGATED: Alice\n:PROJECT: Old Project\n:END:\nNotes for later.\n")
           ("action.org" ""))
-  :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
+  :mock (((symbol-function 'full-gtd-core-read-property-with-completion)
           (let ((calls 0))
             (lambda (_prompt type initial)
               (setq calls (1+ calls))
@@ -625,194 +626,194 @@
                 (3 (should (eq type 'project))
                    (should (string= initial "Old Project"))
                    "New Project")))))
-         ((symbol-function 'pearl-gtd-core-read-date)
+         ((symbol-function 'full-gtd-core-read-date)
           (let ((dates '("2026-02-20" "2026-02-25")))
             (lambda (&rest _)
               (pop dates)))))
   :body (progn
-          (pearl-gtd-core-with-entry-at-id "someday-activate-1" "someday.org"
+          (full-gtd-core-with-entry-at-id "someday-activate-1" "someday.org"
             (org-schedule nil "2026-01-20")
             (org-deadline nil "2026-01-25"))
-          (pearl-gtd-review-weekly)
-          (with-current-buffer "*Pearl-GTD Weekly Review*"
+          (full-gtd-review-weekly)
+          (with-current-buffer "*Full-GTD Weekly Review*"
             (goto-char (point-min))
             (search-forward "** someday.org - Someday")
             (search-forward "Someday task")
             (beginning-of-line)
-            (should (equal (pearl-gtd-review--get-entry-at-point)
+            (should (equal (full-gtd-review--get-entry-at-point)
                            '("someday-activate-1" . "someday.org")))
-            (pearl-gtd-review--activate-someday-at-point)))
+            (full-gtd-review--activate-someday-at-point)))
   :asserts (progn
-             (should-not (pearl-gtd-test-file-contains-p-bool
-                          (expand-file-name "someday.org" pearl-gtd-init-base-directory)
+             (should-not (full-gtd-test-file-contains-p-bool
+                          (expand-file-name "someday.org" full-gtd-init-base-directory)
                           "someday-activate-1"))
-             (should (pearl-gtd-test-file-contains-p-bool
-                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+             (should (full-gtd-test-file-contains-p-bool
+                      (expand-file-name "action.org" full-gtd-init-base-directory)
                       "* TODO Someday task"))
-             (should (pearl-gtd-test-file-contains-p-bool
-                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+             (should (full-gtd-test-file-contains-p-bool
+                      (expand-file-name "action.org" full-gtd-init-base-directory)
                       "Notes for later."))
-             (should (pearl-gtd-test-file-contains-p-bool
-                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+             (should (full-gtd-test-file-contains-p-bool
+                      (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":ID:[ \t]+someday-activate-1"))
-             (should (pearl-gtd-test-file-contains-p-bool
-                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+             (should (full-gtd-test-file-contains-p-bool
+                      (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":office:"))
-             (should (pearl-gtd-test-file-contains-p-bool
-                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+             (should (full-gtd-test-file-contains-p-bool
+                      (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":DELEGATED: Bob"))
-             (should (pearl-gtd-test-file-contains-p-bool
-                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+             (should (full-gtd-test-file-contains-p-bool
+                      (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":PROJECT:[ \t]+New Project"))
-             (should (pearl-gtd-test-file-contains-p-bool
-                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+             (should (full-gtd-test-file-contains-p-bool
+                      (expand-file-name "action.org" full-gtd-init-base-directory)
                       "SCHEDULED: <2026-02-20"))
-             (should (pearl-gtd-test-file-contains-p-bool
-                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+             (should (full-gtd-test-file-contains-p-bool
+                      (expand-file-name "action.org" full-gtd-init-base-directory)
                       "DEADLINE: <2026-02-25"))
-             (with-current-buffer "*Pearl-GTD Weekly Review*"
+             (with-current-buffer "*Full-GTD Weekly Review*"
                (goto-char (point-min))
                (search-forward "** someday.org - Someday")
                (should-not (search-forward "Someday task" nil t))))
-  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
+  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
 
-(pearl-gtd-test-define-story pearl-gtd-review-test-user-activation-empty-removes-properties
+(full-gtd-test-define-story full-gtd-review-test-user-activation-empty-removes-properties
   "Empty activation values remove all confirmable properties."
-  :setup (pearl-gtd-init-initialize)
+  :setup (full-gtd-init-initialize)
   :files (("someday.org" "* Someday task :home:\n:PROPERTIES:\n:ID: someday-activate-2\n:DELEGATED: Alice\n:PROJECT: Old Project\n:END:\n"))
-  :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
+  :mock (((symbol-function 'full-gtd-core-read-property-with-completion)
           (lambda (&rest _) ""))
-         ((symbol-function 'pearl-gtd-core-read-date)
+         ((symbol-function 'full-gtd-core-read-date)
           (lambda (&rest _) nil)))
   :body (progn
-          (pearl-gtd-core-with-entry-at-id "someday-activate-2" "someday.org"
+          (full-gtd-core-with-entry-at-id "someday-activate-2" "someday.org"
             (org-schedule nil "2026-01-20")
             (org-deadline nil "2026-01-25"))
-          (pearl-gtd-review-weekly)
-          (with-current-buffer "*Pearl-GTD Weekly Review*"
+          (full-gtd-review-weekly)
+          (with-current-buffer "*Full-GTD Weekly Review*"
             (goto-char (point-min))
             (search-forward "** someday.org - Someday")
             (search-forward "Someday task")
             (beginning-of-line)
-            (should (equal (pearl-gtd-review--get-entry-at-point)
+            (should (equal (full-gtd-review--get-entry-at-point)
                            '("someday-activate-2" . "someday.org")))
-            (pearl-gtd-review--activate-someday-at-point)))
+            (full-gtd-review--activate-someday-at-point)))
   :asserts (progn
-             (should (pearl-gtd-test-file-contains-p-bool
-                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+             (should (full-gtd-test-file-contains-p-bool
+                      (expand-file-name "action.org" full-gtd-init-base-directory)
                       "* TODO Someday task"))
-             (should (pearl-gtd-test-file-contains-p-bool
-                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+             (should (full-gtd-test-file-contains-p-bool
+                      (expand-file-name "action.org" full-gtd-init-base-directory)
                       "someday-activate-2"))
-             (should-not (pearl-gtd-test-file-contains-p-bool
-                          (expand-file-name "action.org" pearl-gtd-init-base-directory)
+             (should-not (full-gtd-test-file-contains-p-bool
+                          (expand-file-name "action.org" full-gtd-init-base-directory)
                           ":home:"))
-             (should-not (pearl-gtd-test-file-contains-p-bool
-                          (expand-file-name "action.org" pearl-gtd-init-base-directory)
+             (should-not (full-gtd-test-file-contains-p-bool
+                          (expand-file-name "action.org" full-gtd-init-base-directory)
                           ":DELEGATED:"))
-             (should-not (pearl-gtd-test-file-contains-p-bool
-                          (expand-file-name "action.org" pearl-gtd-init-base-directory)
+             (should-not (full-gtd-test-file-contains-p-bool
+                          (expand-file-name "action.org" full-gtd-init-base-directory)
                           ":PROJECT:"))
-             (should-not (pearl-gtd-test-file-contains-p-bool
-                          (expand-file-name "action.org" pearl-gtd-init-base-directory)
+             (should-not (full-gtd-test-file-contains-p-bool
+                          (expand-file-name "action.org" full-gtd-init-base-directory)
                           "SCHEDULED:"))
-             (should-not (pearl-gtd-test-file-contains-p-bool
-                          (expand-file-name "action.org" pearl-gtd-init-base-directory)
+             (should-not (full-gtd-test-file-contains-p-bool
+                          (expand-file-name "action.org" full-gtd-init-base-directory)
                           "DEADLINE:")))
-  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
+  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
 
-(pearl-gtd-test-define-story pearl-gtd-review-test-user-rejects-action-activation
+(full-gtd-test-define-story full-gtd-review-test-user-rejects-action-activation
   "Activating a non-Someday action signals an error without modifying files."
-  :setup (pearl-gtd-init-initialize)
+  :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Existing action\n:PROPERTIES:\n:ID: existing-action-1\n:END:\n"))
   :mock nil
   :body (progn
-          (pearl-gtd-review-weekly)
-          (with-current-buffer "*Pearl-GTD Weekly Review*"
+          (full-gtd-review-weekly)
+          (with-current-buffer "*Full-GTD Weekly Review*"
             (goto-char (point-min))
             (search-forward "Existing action")
             (beginning-of-line)
             (should-error
-             (pearl-gtd-review--activate-someday-at-point)
+             (full-gtd-review--activate-someday-at-point)
              :type 'error)))
   :asserts (progn
-             (should (pearl-gtd-test-file-contains-p-bool
-                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+             (should (full-gtd-test-file-contains-p-bool
+                      (expand-file-name "action.org" full-gtd-init-base-directory)
                       "existing-action-1"))
-             (should-not (pearl-gtd-test-file-contains-p-bool
-                          (expand-file-name "someday.org" pearl-gtd-init-base-directory)
+             (should-not (full-gtd-test-file-contains-p-bool
+                          (expand-file-name "someday.org" full-gtd-init-base-directory)
                           "existing-action-1")))
-  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
+  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
 
-(pearl-gtd-test-define-story pearl-gtd-review-test-context-candidates-from-org-tags
+(full-gtd-test-define-story full-gtd-review-test-context-candidates-from-org-tags
   "Context completion candidates should be collected from Org tags, not properties."
-  :setup (pearl-gtd-init-initialize)
+  :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Existing action :office:\n:PROPERTIES:\n:ID: ctx-cand-1\n:END:\n"))
-  :body (should (member "@office" (pearl-gtd-domain--collect-context-candidates)))
+  :body (should (member "@office" (full-gtd-domain--collect-context-candidates)))
   :asserts t
   :teardown nil)
 
-(pearl-gtd-test-define-story pearl-gtd-review-test-user-edits-notes-with-e
+(full-gtd-test-define-story full-gtd-review-test-user-edits-notes-with-e
   "Press e to edit notes (body) for a task in weekly review."
-  :setup (pearl-gtd-init-initialize)
+  :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task with notes\n:PROPERTIES:\n:ID: edit-notes-1\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\nExisting note\n"))
   :mock (((symbol-function 'read-string)
           (lambda (_prompt &rest _) "New note")))
   :body (progn
-          (pearl-gtd-review-weekly)
-          (with-current-buffer "*Pearl-GTD Weekly Review*"
+          (full-gtd-review-weekly)
+          (with-current-buffer "*Full-GTD Weekly Review*"
             (goto-char (point-min))
             (search-forward "** action.org - Next Actions")
             (search-forward "Task with notes")
             (beginning-of-line)
-            (pearl-gtd-review--edit-notes-at-point)))
+            (full-gtd-review--edit-notes-at-point)))
   :asserts (progn
-             (should (pearl-gtd-test-file-contains-p
-                      (expand-file-name "action.org" pearl-gtd-init-base-directory)
+             (should (full-gtd-test-file-contains-p
+                      (expand-file-name "action.org" full-gtd-init-base-directory)
                       "New note"))
-             (should-not (pearl-gtd-test-file-contains-p-bool
-                          (expand-file-name "action.org" pearl-gtd-init-base-directory)
+             (should-not (full-gtd-test-file-contains-p-bool
+                          (expand-file-name "action.org" full-gtd-init-base-directory)
                           "Existing note")))
-  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
+  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
 
-(pearl-gtd-test-define-story pearl-gtd-review-test-cursor-kept-on-task-row-after-property-edit
+(full-gtd-test-define-story full-gtd-review-test-cursor-kept-on-task-row-after-property-edit
   "Editing a property in weekly review keeps cursor on the same task row."
-  :setup (pearl-gtd-init-initialize)
+  :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task one\n:PROPERTIES:\n:ID: cursor-edit-1\n:PROJECT: Test\n:END:\n* TODO Task two\n:PROPERTIES:\n:ID: cursor-edit-2\n:PROJECT: Test\n:END:\n"))
-  :mock (((symbol-function 'pearl-gtd-core-read-property-with-completion)
+  :mock (((symbol-function 'full-gtd-core-read-property-with-completion)
           (lambda (_prompt _type &optional _initial) "office")))
   :body (progn
-          (pearl-gtd-review-weekly)
-          (with-current-buffer "*Pearl-GTD Weekly Review*"
+          (full-gtd-review-weekly)
+          (with-current-buffer "*Full-GTD Weekly Review*"
             (goto-char (point-min))
             (search-forward "Task one")
             (beginning-of-line)
-            (pearl-gtd-review--edit-context-at-point)))
-  :asserts (with-current-buffer "*Pearl-GTD Weekly Review*"
+            (full-gtd-review--edit-context-at-point)))
+  :asserts (with-current-buffer "*Full-GTD Weekly Review*"
              (beginning-of-line)
              (should (string-match-p "Task one"
                                      (buffer-substring (line-beginning-position) (line-end-position)))))
-  :teardown (kill-buffer "*Pearl-GTD Weekly Review*"))
+  :teardown (kill-buffer "*Full-GTD Weekly Review*"))
 
-(pearl-gtd-test-define-story pearl-gtd-review-test-cursor-moves-to-next-task-after-delete
+(full-gtd-test-define-story full-gtd-review-test-cursor-moves-to-next-task-after-delete
   "Deleting a no-project task in review moves cursor to the next task row."
-  :setup (pearl-gtd-init-initialize)
+  :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task one\n:PROPERTIES:\n:ID: cursor-del-1\n:END:\n* TODO Task two\n:PROPERTIES:\n:ID: cursor-del-2\n:END:\n"))
   :mock nil
   :body (progn
-          (pearl-gtd-review-weekly)
-          (with-current-buffer "*Pearl-GTD Weekly Review*"
+          (full-gtd-review-weekly)
+          (with-current-buffer "*Full-GTD Weekly Review*"
             (goto-char (point-min))
             (search-forward "** action.org - No Project")
             (search-forward "Task one")
             (beginning-of-line)
-            (pearl-gtd-review--complete-task-at-point)))
-  :asserts (with-current-buffer "*Pearl-GTD Weekly Review*"
+            (full-gtd-review--complete-task-at-point)))
+  :asserts (with-current-buffer "*Full-GTD Weekly Review*"
              (beginning-of-line)
              (should (string-match-p "Task two"
                                      (buffer-substring (line-beginning-position) (line-end-position)))))
-  :teardown (pearl-gtd-test-cleanup-buffers '("*Pearl-GTD Weekly Review*")))
+  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
 
-(provide 'pearl-gtd-review-test)
+(provide 'full-gtd-review-test)
 
-;;; pearl-gtd-review-test.el ends here
+;;; full-gtd-review-test.el ends here

@@ -1,8 +1,8 @@
-;;; pearl-gtd-test.el --- Test infrastructure and entry point  -*- lexical-binding: t; -*-
+;;; full-gtd-test.el --- Test infrastructure and entry point  -*- lexical-binding: t; -*-
 
 ;;; Commentary:
 
-;; This file provides shared infrastructure for Pearl-GTD user story tests.
+;; This file provides shared infrastructure for Full-GTD user story tests.
 ;; It contains assertion helpers and test runners.
 
 ;;; Code:
@@ -10,10 +10,10 @@
 (require 'ert)
 (require 'cl-lib)
 
-(defvar pearl-gtd-test-caught-error nil
+(defvar full-gtd-test-caught-error nil
   "Variable to store caught errors during tests.")
 
-(defun pearl-gtd-test-file-contains-p (file pattern)
+(defun full-gtd-test-file-contains-p (file pattern)
   "Check FILE for PATTERN and return (FOUND CONTENT).
 FOUND is non-nil if PATTERN found; CONTENT is the file content as string.
 FILE is the file path; PATTERN is the regex pattern to search for."
@@ -28,13 +28,13 @@ FILE is the file path; PATTERN is the regex pattern to search for."
                        (re-search-forward pattern nil t)))))
         (list found content)))))
 
-(defun pearl-gtd-test-file-contains-p-bool (file pattern)
+(defun full-gtd-test-file-contains-p-bool (file pattern)
   "Check FILE for PATTERN and return t if present, nil otherwise.
 FILE is the file path to check.
 PATTERN is the regex pattern to search for."
-  (car (pearl-gtd-test-file-contains-p file pattern)))
+  (car (full-gtd-test-file-contains-p file pattern)))
 
-(defun pearl-gtd-test-file-lacks-p (file pattern)
+(defun full-gtd-test-file-lacks-p (file pattern)
   "Assert that FILE does not contain PATTERN.
 FILE is the file path to check.
 PATTERN is the string to search for."
@@ -44,14 +44,14 @@ PATTERN is the string to search for."
     (let ((case-fold-search nil))
       (not (search-forward pattern nil t)))))
 
-(defun pearl-gtd-test-inbox-empty-p (base-dir)
+(defun full-gtd-test-inbox-empty-p (base-dir)
   "Check if inbox is visually empty (missing or zero size).
 BASE-DIR is the base directory to check."
   (let ((inbox (expand-file-name "inbox.org" base-dir)))
     (or (not (file-exists-p inbox))
         (= 0 (file-attribute-size (file-attributes inbox))))))
 
-(defun pearl-gtd-test-cleanup-buffers (buffer-names)
+(defun full-gtd-test-cleanup-buffers (buffer-names)
   "Safely kill all buffers in BUFFER-NAMES, ignoring errors."
   (dolist (name buffer-names)
     (when-let ((buf (get-buffer name)))
@@ -59,13 +59,13 @@ BASE-DIR is the base directory to check."
         (setq buffer-read-only nil))
       (ignore-errors (kill-buffer buf)))))
 
-(defun pearl-gtd-test-task-exists-p (file title)
+(defun full-gtd-test-task-exists-p (file title)
   "Check if task TITLE exists in FILE.
 FILE is the file path to check.
 TITLE is the task title to search for."
-  (pearl-gtd-test-file-contains-p file (format "* %s" title)))
+  (full-gtd-test-file-contains-p file (format "* %s" title)))
 
-(defun pearl-gtd-test--create-files (temp-dir file-specs)
+(defun full-gtd-test--create-files (temp-dir file-specs)
   "Create files in TEMP-DIR from FILE-SPECS.
 Each spec is (FILENAME CONTENT).  CONTENT is a list of lines or a string."
   (dolist (spec file-specs)
@@ -76,7 +76,7 @@ Each spec is (FILENAME CONTENT).  CONTENT is a list of lines or a string."
                     content
                   (mapconcat #'identity content "\n")))))))
 
-(defun pearl-gtd-test--cleanup (temp-dir)
+(defun full-gtd-test--cleanup (temp-dir)
   "Kill buffers visiting files under TEMP-DIR, then delete TEMP-DIR."
   (dolist (buf (buffer-list))
     (when (and (buffer-file-name buf)
@@ -87,7 +87,7 @@ Each spec is (FILENAME CONTENT).  CONTENT is a list of lines or a string."
   (when (file-directory-p temp-dir)
     (delete-directory temp-dir t)))
 
-(defun pearl-gtd-test--debug-files (temp-dir file-names)
+(defun full-gtd-test--debug-files (temp-dir file-names)
   "Return multi-line debug string showing contents of files under TEMP-DIR.
 FILE-NAMES is a list of filenames (strings)."
   (mapconcat
@@ -101,7 +101,7 @@ FILE-NAMES is a list of filenames (strings)."
                  "File does not exist"))))
    file-names "\n\n"))
 
-(defmacro pearl-gtd-test-define-story (name docstring &rest args)
+(defmacro full-gtd-test-define-story (name docstring &rest args)
   "Define a user story test named NAME with DOCSTRING.
 ARGS is a plist with:
 :setup    - Form to run before test.
@@ -119,26 +119,26 @@ ARGS is a plist with:
         (teardown (plist-get args :teardown)))
     `(ert-deftest ,name ()
        ,docstring
-       (let* ((temp-dir (make-temp-file "pearl-gtd-test-" t))
-              (pearl-gtd-init-base-directory temp-dir)
-              (pearl-gtd-test-caught-error nil))
+       (let* ((temp-dir (make-temp-file "full-gtd-test-" t))
+              (full-gtd-init-base-directory temp-dir)
+              (full-gtd-test-caught-error nil))
          (unwind-protect
              (progn
                ,setup
-               (pearl-gtd-test--create-files
+               (full-gtd-test--create-files
                 temp-dir
                 (list ,@(mapcar (lambda (spec)
                                   `(cons ,(car spec) ,(cadr spec)))
                                 files)))
                (cl-letf ,mock
                  ,body)
-               (ert-info ((pearl-gtd-test--debug-files
+               (ert-info ((full-gtd-test--debug-files
                            temp-dir
                            ',(mapcar #'car files)))
                  ,asserts))
            (ignore-errors ,teardown)
-           (pearl-gtd-test--cleanup temp-dir))))))
+           (full-gtd-test--cleanup temp-dir))))))
 
-(provide 'pearl-gtd-test)
+(provide 'full-gtd-test)
 
-;;; pearl-gtd-test.el ends here
+;;; full-gtd-test.el ends here

@@ -1,15 +1,15 @@
-# Pearl-GTD
+# Full-GTD
 
 A complete [Getting Things Done](https://gettingthingsdone.com/) implementation for Emacs org-mode, covering the full David Allen framework — including the Natural Planning Model and the Six Horizons of Focus.
 
 <pre>
-                  PEARL-GTD: FIVE WORKFLOWS
+                   FULL-GTD: FIVE WORKFLOWS
 
   ANYTIME
   ═══════
   ┌───────────────────┐            ┌─────────────────────────┐
   │      CAPTURE      │───────────▶│         PROCESS         │
-  │ pearl-gtd-capture │ inbox full │ pearl-gtd-process-inbox │
+  │ full-gtd-capture  │ inbox full │ full-gtd-process-inbox  │
   └───────────────────┘            └─────────────────────────┘
 
 
@@ -17,7 +17,7 @@ A complete [Getting Things Done](https://gettingthingsdone.com/) implementation 
   ═══════════════════════
   ┌───────────────────────────────────────────────────────────────────┐
   │                            PLANNING                               │
-  │                    pearl-gtd-planning-start                       │
+  │                    full-gtd-planning-start                        │
   │                                                                   │
   │ Purpose&Principle → Vision → Brainstorm → Organize → Next Actions │
   └───────────────────────────────────────────────────────────────────┘
@@ -27,7 +27,7 @@ A complete [Getting Things Done](https://gettingthingsdone.com/) implementation 
   ═════════════
   ┌────────────────────────────────────────────┐
   │               DAILY REVIEW                 │
-  │          pearl-gtd-review-daily            │
+  │           full-gtd-review-daily            │
   │                                            │
   │   inbox → calendar → completed → actions   │
   └────────────────────────────────────────────┘
@@ -37,7 +37,7 @@ A complete [Getting Things Done](https://gettingthingsdone.com/) implementation 
   ══════════════
   ┌────────────────────────────────────────────────────────────────────┐
   │                         WEEKLY REVIEW                              │
-  │                    pearl-gtd-review-weekly                         │
+  │                     full-gtd-review-weekly                         │
   │                                                                    │
   │ inbox → overdue → deadlines → completed → delegated → next actions │
   │       → stuck projects → active projects → no-project actions      │
@@ -49,7 +49,7 @@ A complete [Getting Things Done](https://gettingthingsdone.com/) implementation 
   ═══════════════════════════
   ┌─────────────────────────────┐    ┌──────────────────────────────┐
   │           ENGAGE            │    │           HORIZONS           │
-  │        pearl-gtd-do         │    │   pearl-gtd-horizons-view    │
+  │        full-gtd-do          │    │    full-gtd-horizons-view    │
   │                             │    │                              │
   │  single-card execution      │    │  L6 Purpose                  │
   │  system pushes optimal task │    │    → L5 Vision               │
@@ -61,44 +61,44 @@ A complete [Getting Things Done](https://gettingthingsdone.com/) implementation 
 
 ## Status
 
-v0.1.x — Core workflows are complete and stable.
+v0.x.x — Core workflows are complete and stable.
 UI polish (menus, key hints, progress indicators) is ongoing.
 Feedback on interaction friction is especially welcome.
 
-## Why Pearl-GTD?
+## Why Full-GTD?
 
 Existing Emacs GTD packages handle lists and agendas well, but omit two pillars of Allen's original model:
 
-| Feature                    | org-gtd | Pearl-GTD |
-|----------------------------|---------|-----------|
-| Inbox processing           | ✅      | ✅       |
-| Projects & Next Actions    | ✅      | ✅       |
-| Natural Planning Model     | ❌      | ✅       |
-| Six Horizons of Focus      | ❌      | ✅       |
-| Daily/Weekly Review cycles | Partial | ✅       |
+| Feature                    | org-gtd | Full-GTD |
+|----------------------------|---------|----------|
+| Inbox processing           | ✅     | ✅      |
+| Projects & Next Actions    | ✅     | ✅      |
+| Natural Planning Model     | ❌     | ✅      |
+| Six Horizons of Focus      | ❌     | ✅      |
+| Daily/Weekly Review cycles | Partial | ✅      |
 
-Unlike traditional tools that show long lists for you to browse, Pearl-GTD uses **single-card push mode** during execution: it scores actions by urgency, horizon alignment, and context match, then pushes the single optimal task. You simply act or skip—no decision fatigue, no list paralysis.
+Unlike traditional tools that show long lists for you to browse, Full-GTD uses **single-card push mode** during execution: it scores actions by urgency, horizon alignment, and context match, then pushes the single optimal task. You simply act or skip—no decision fatigue, no list paralysis.
 
 This package is for you if you've read the book and want your tool to match the theory.
 
 ## Quick Start
 
-By default, data is stored in `~/.pearl-gtd/`. You can customize this with `pearl-gtd-init-base-directory`, e.g. `(setq pearl-gtd-init-base-directory "~/org/gtd/")`. Before first use, run `M-x pearl-gtd-init-initialize` to create the directory and skeleton files. When using `use-package`, you can call that function automatically in `:config`.
+By default, data is stored in `~/.full-gtd/`. You can customize this with `full-gtd-init-base-directory`, e.g. `(setq full-gtd-init-base-directory "~/org/gtd/")`. Before first use, run `M-x full-gtd-init-initialize` to create the directory and skeleton files. When using `use-package`, you can call that function automatically in `:config`.
 
 ```elisp
-(use-package pearl-gtd
+(use-package full-gtd
   :ensure t
   :custom
-  (pearl-gtd-init-base-directory "~/.pearl-gtd/")
+  (full-gtd-init-base-directory "~/.full-gtd/")
   :config
-  (pearl-gtd-init-initialize)
-  :bind (("C-c g c" . pearl-gtd-capture)
-         ("C-c g i" . pearl-gtd-process-inbox)
-         ("C-c g p" . pearl-gtd-planning-start)
-         ("C-c g r" . pearl-gtd-review-weekly)
-         ("C-c g d" . pearl-gtd-review-daily)
-         ("C-c g e" . pearl-gtd-do)
-         ("C-c g h" . pearl-gtd-horizons-view)))
+  (full-gtd-init-initialize)
+  :bind (("C-c g c" . full-gtd-capture)
+         ("C-c g i" . full-gtd-process-inbox)
+         ("C-c g p" . full-gtd-planning-start)
+         ("C-c g r" . full-gtd-review-weekly)
+         ("C-c g d" . full-gtd-review-daily)
+         ("C-c g e" . full-gtd-do)
+         ("C-c g h" . full-gtd-horizons-view)))
 ```
 
 1. `C-c g c` — Capture anything to inbox
@@ -109,38 +109,38 @@ By default, data is stored in `~/.pearl-gtd/`. You can customize this with `pear
 6. `C-c g e` — Start a Do session (Engage/Execute)
 7. `C-c g h` — View the Six Horizons hierarchy
 
-## A Day with Pearl-GTD
+## A Day with Full-GTD
 
 **Morning:**
 
-1. `pearl-gtd-review-daily` — Check today's calendar and next actions
+1. `full-gtd-review-daily` — Check today's calendar and next actions
 
 **Throughout the day:**
 
-2. `pearl-gtd-capture` — Dump anything into inbox
-3. `pearl-gtd-do` — Start a Do session; the system will ask for your current context, available time, and energy level, then push the optimal task
+2. `full-gtd-capture` — Dump anything into inbox
+3. `full-gtd-do` — Start a Do session; the system will ask for your current context, available time, and energy level, then push the optimal task
 
 **When inbox piles up:**
 
-4. `pearl-gtd-process-inbox` — Clarify and organize each item
+4. `full-gtd-process-inbox` — Clarify and organize each item
 
 **Starting a new project:**
 
-5. `pearl-gtd-planning-start` — Run the Natural Planning Model
+5. `full-gtd-planning-start` — Run the Natural Planning Model
 
 **Feeling lost:**
 
-6. `pearl-gtd-horizons-view` — Check vertical alignment: see which projects lack higher-level horizons, and verify actions connect to purpose
+6. `full-gtd-horizons-view` — Check vertical alignment: see which projects lack higher-level horizons, and verify actions connect to purpose
 
 **Weekend:**
 
-7. `pearl-gtd-review-weekly` — Full system review
+7. `full-gtd-review-weekly` — Full system review
 
 ## Core Features
 
 ### 1. Capture & Inbox Processing
-One‑key capture (`pearl-gtd-capture`) with automatic timestamp and unique ID. 
-Inbox processing (`pearl-gtd-process-inbox`) presents a **staging table** with visual highlighting, using **single‑key destination selection** (`a`ction/`r`ef/`s`omeday/`t`rash/e`x`ecute/`c`larify) with an **optional clarify step** (rename + notes) and **hybrid date input** (`a`/`t`/`w` shortcuts or free‑form). Contexts complete from existing values with **inheritance across the session**.
+One‑key capture (`full-gtd-capture`) with automatic timestamp and unique ID. 
+Inbox processing (`full-gtd-process-inbox`) presents a **staging table** with visual highlighting, using **single‑key destination selection** (`a`ction/`r`ef/`s`omeday/`t`rash/e`x`ecute/`c`larify) with an **optional clarify step** (rename + notes) and **hybrid date input** (`a`/`t`/`w` shortcuts or free‑form). Contexts complete from existing values with **inheritance across the session**.
 
 ### 2. Natural Planning Model
 `M‑x pearl‑gtd‑planning‑start` enforces David Allen’s five‑step project thinking:
@@ -180,7 +180,7 @@ Navigation in the horizon view uses the same keys as review mode: `n`/`p` or `j`
 Both reviews use a unified table interface with keyboard shortcuts for navigation, editing properties, marking tasks complete, and jumping to source entries. Shortcuts: `c` (context), `D` (delegated), `s` (scheduled), `d` (deadline), `r` (rename), `P` (project), `C` (complete), `a` (activate a someday/maybe entry in weekly review), `A` (archive project), `e` (edit notes), and `3`-`6` (horizons L3-L6, where `6` edits both Purpose and Principle sequentially). Archiving (`A`) moves a project to `archive.org` only when all its actions are DONE and no action belongs to other projects.
 
 ### 5. Do/Work Phase
-The Do phase uses **single-card execution** (`pearl-gtd-do`). Instead of browsing a long list, you tell the system your current conditions—**context** (e.g., @office, @home), **available time** (minutes), and **energy level** (high/normal/low)—and it **pushes the single most optimal task** based on a scoring algorithm:
+The Do phase uses **single-card execution** (`full-gtd-do`). Instead of browsing a long list, you tell the system your current conditions—**context** (e.g., @office, @home), **available time** (minutes), and **energy level** (high/normal/low)—and it **pushes the single most optimal task** based on a scoring algorithm:
 
 - **Urgency** – deadline proximity, scheduled today, task age
 - **Importance** – horizon alignment (L6 Purpose → L3 Area), project association
@@ -251,12 +251,12 @@ For configuration, see [Quick Start](#quick-start).
 Clone the repository and add to your `load‑path`:
 
 ```bash
-git clone https://github.com/OverbearingPearl/pearl-gtd.git /path/to/pearl-gtd
+git clone https://github.com/OverbearingPearl/full-gtd.git /path/to/full-gtd
 ```
 
 ```elisp
-(add-to-list 'load-path "/path/to/pearl-gtd")
-(require 'pearl-gtd)
+(add-to-list 'load-path "/path/to/full-gtd")
+(require 'full-gtd)
 ```
 
 ## Contributing

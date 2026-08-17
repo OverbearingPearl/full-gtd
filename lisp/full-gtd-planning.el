@@ -1,9 +1,9 @@
-;;; pearl-gtd-planning.el --- Natural Planning Model for pearl-gtd  -*- lexical-binding: t; -*-
+;;; full-gtd-planning.el --- Natural Planning Model for full-gtd  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 OverbearingPearl
 ;; Author: OverbearingPearl <OverbearingPearl@outlook.com>
 ;; Assisted-by: Kimi:kimi-k2.5, DeepSeek:deepseek-v3.2, Claude:claude-sonnet-4.6
-;; URL: https://github.com/OverbearingPearl/pearl-gtd
+;; URL: https://github.com/OverbearingPearl/full-gtd
 ;; SPDX-License-Identifier: MIT
 
 ;;; Commentary:
@@ -11,30 +11,30 @@
 ;; Natural Planning Model workflow: Purpose -> Principle -> Vision
 ;; -> Goal -> Area -> Brainstorm -> Organize -> Next Actions.
 ;; Coordinator pattern: this module orchestrates user interaction,
-;; delegates business rule validation to pearl-gtd-domain,
-;; and delegates all file operations to pearl-gtd-state.
+;; delegates business rule validation to full-gtd-domain,
+;; and delegates all file operations to full-gtd-state.
 ;; Transaction boundary: entire planning workflow is atomic.
 
 ;;; Code:
 
 (require 'cl-lib)
 (require 'org)
-(require 'pearl-gtd-init)
-(require 'pearl-gtd-core)
-(require 'pearl-gtd-inbox)
-(require 'pearl-gtd-state)
+(require 'full-gtd-init)
+(require 'full-gtd-core)
+(require 'full-gtd-inbox)
+(require 'full-gtd-state)
 
-(defvar pearl-gtd-planning--current-project nil
+(defvar full-gtd-planning--current-project nil
   "Current project name during planning session.")
 
-(defvar pearl-gtd-planning--default-context nil
+(defvar full-gtd-planning--default-context nil
   "Default context for next actions during current planning session.")
 
-(defun pearl-gtd-planning--project-exists-p (proj-name)
+(defun full-gtd-planning--project-exists-p (proj-name)
   "Check if PROJ-NAME already exists in action.org.
 This also handles multi-project values separated by semicolons
 \(English and Chinese)."
-  (let ((file-path (expand-file-name "action.org" pearl-gtd-init-base-directory)))
+  (let ((file-path (expand-file-name "action.org" full-gtd-init-base-directory)))
     (when (file-exists-p file-path)
       (with-temp-buffer
         (insert-file-contents file-path)
@@ -43,39 +43,18 @@ This also handles multi-project values separated by semicolons
         (catch 'found
           (while (re-search-forward (concat ":PROJECT:[ \t]+\\([^\n]*\\)") nil t)
             (let ((project-value (match-string 1)))
-              (dolist (proj (pearl-gtd-core--split-values project-value))
+              (dolist (proj (full-gtd-core--split-values project-value))
                 (when (string= proj proj-name)
                   (throw 'found t)))))
           nil)))))
 
-(defun pearl-gtd-planning--collect-brainstorm-projects ()
-  "Collect unique project names from inbox.org entries with BRAINSTORM property.
-Returns list of unique project names from entries where BRAINSTORM is \"t\"."
-  (let ((inbox-path (expand-file-name "inbox.org" pearl-gtd-init-base-directory))
-        (projects '()))
-    (when (file-exists-p inbox-path)
-      (with-temp-buffer
-        (insert-file-contents inbox-path)
-        (org-mode)
-        (org-map-entries
-         (lambda ()
-           (when (string= (org-entry-get nil "BRAINSTORM") "t")
-             (let ((proj (org-entry-get nil "PROJECT")))
-               (when proj
-                 (let ((normalized (pearl-gtd-core--normalize-project-input proj)))
-                   (when normalized
-                     (dolist (p (pearl-gtd-core--split-values normalized))
-                       (cl-pushnew p projects :test #'string=))))))))
-         nil nil)))
-    (nreverse projects)))
-
-(defun pearl-gtd-planning--select-project ()
+(defun full-gtd-planning--select-project ()
   "Prompt user to create new project name.
 Return project name string after validation (non-empty and not existing).
 Supports spaces in project names."
   (let ((proj-name ""))
     (while (or (string= proj-name "")
-               (pearl-gtd-planning--project-exists-p proj-name))
+               (full-gtd-planning--project-exists-p proj-name))
       (setq proj-name (string-trim (read-string
                           "Project name: <Unique identifier> (e.g., Website Redesign): ")))
       ;; Planning is for single project only, reject multi-project input
@@ -87,13 +66,13 @@ Supports spaces in project names."
        ((string= proj-name "")
         (message "Project name cannot be empty, please re-enter.")
         (sit-for 1))
-       ((pearl-gtd-planning--project-exists-p proj-name)
+       ((full-gtd-planning--project-exists-p proj-name)
         (message "Project '%s' already exists, please use a new name." proj-name)
         (sit-for 1)
         (setq proj-name ""))))
     proj-name))
 
-(defun pearl-gtd-planning--ask-horizon (level description &optional optional example-level)
+(defun full-gtd-planning--ask-horizon (level description &optional optional example-level)
   "Prompt for horizon value at LEVEL with DESCRIPTION.
 LEVEL is a number (3-7).  DESCRIPTION is a string describing the horizon.
 If OPTIONAL is non-nil, empty input is allowed.
@@ -121,24 +100,24 @@ Supports multiple values separated by semicolon (;)."
                           (`(7 ,_) 'principle)
                           (_ nil))))
     (let ((input (if property-type
-                     (pearl-gtd-core-read-property-with-completion prompt property-type "")
+                     (full-gtd-core-read-property-with-completion prompt property-type "")
                    (string-trim (read-string prompt)))))
       (while (and (not optional) (string= input ""))
         (message "This field is required, please enter a value.")
         (sit-for 1)
         (setq input (if property-type
-                        (pearl-gtd-core-read-property-with-completion prompt property-type "")
+                        (full-gtd-core-read-property-with-completion prompt property-type "")
                       (string-trim (read-string prompt)))))
       ;; Normalize multiple values if present
       (if (string-match-p "[;；]" input)
-          (let ((values (pearl-gtd-core--split-values input)))
-            (pearl-gtd-core--join-values values))
+          (let ((values (full-gtd-core--split-values input)))
+            (full-gtd-core--join-values values))
         input))))
 
-(defun pearl-gtd-planning--collect-brainstorm-items (project)
+(defun full-gtd-planning--collect-brainstorm-items (project)
   "Collect brainstorm item headlines for PROJECT from inbox.org.
 Returns list of headline strings."
-  (let ((inbox-path (expand-file-name "inbox.org" pearl-gtd-init-base-directory))
+  (let ((inbox-path (expand-file-name "inbox.org" full-gtd-init-base-directory))
         (items '()))
     (when (file-exists-p inbox-path)
       (with-temp-buffer
@@ -153,13 +132,13 @@ Returns list of headline strings."
          nil nil)))
     (nreverse items)))
 
-(defun pearl-gtd-planning--ask-brainstorm (project)
+(defun full-gtd-planning--ask-brainstorm (project)
   "Collect brainstorm items for PROJECT via temp buffer.
 If PROJECT already has brainstorm items in inbox, they are pre-populated.
 Return list of written headline strings.
 Signal error if user aborts."
-  (let ((buf (get-buffer-create "*Pearl-GTD Brainstorm*"))
-        (existing-items (pearl-gtd-planning--collect-brainstorm-items project)))
+  (let ((buf (get-buffer-create "*Full-GTD Brainstorm*"))
+        (existing-items (full-gtd-planning--collect-brainstorm-items project)))
     (with-current-buffer buf
       (erase-buffer)
       (text-mode)
@@ -189,7 +168,7 @@ Signal error if user aborts."
                                  (split-string (buffer-string) "\n"))))
           ;; Write to inbox
           (dolist (item lines)
-            (let ((inbox-path (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+            (let ((inbox-path (expand-file-name "inbox.org" full-gtd-init-base-directory)))
               (with-current-buffer (find-file-noselect inbox-path)
                 (goto-char (point-max))
                 (unless (bolp) (insert "\n"))
@@ -202,9 +181,9 @@ Signal error if user aborts."
           lines)))
     (kill-buffer buf)))
 
-(defun pearl-gtd-planning--has-brainstorm-items-p (project)
+(defun full-gtd-planning--has-brainstorm-items-p (project)
   "Check if PROJECT has brainstorm items in inbox (pure query)."
-  (let ((inbox-path (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+  (let ((inbox-path (expand-file-name "inbox.org" full-gtd-init-base-directory)))
     (and (file-exists-p inbox-path)
          (with-temp-buffer
            (insert-file-contents inbox-path)
@@ -218,7 +197,7 @@ Signal error if user aborts."
               nil nil)
              nil)))))
 
-(defun pearl-gtd-planning--read-forced-action (prompt)
+(defun full-gtd-planning--read-forced-action (prompt)
   "Read forced next action from user with validation using PROMPT.
 Returns non-empty string."
   (let ((action ""))
@@ -227,29 +206,29 @@ Returns non-empty string."
         (setq action (string-trim raw))))
     action))
 
-(defun pearl-gtd-planning--organize-brainstorm-items (project default-context)
+(defun full-gtd-planning--organize-brainstorm-items (project default-context)
   "Organize all brainstorm items for PROJECT with DEFAULT-CONTEXT.
 Returns count of next actions created (integer)."
   (let ((count 0))
-    (pearl-gtd-inbox--process t default-context project)
+    (full-gtd-inbox--process t default-context project)
     ;; Count next actions created for this project
-    (pearl-gtd-state--with-file-buffer "action.org"
+    (full-gtd-state--with-file-buffer "action.org"
       (org-map-entries
        (lambda ()
-         (let ((todo-p (pearl-gtd-core-entry-todo-p))
+         (let ((todo-p (full-gtd-core-entry-todo-p))
                (proj (org-entry-get nil "PROJECT")))
            (when (and todo-p (string= proj project))
              (cl-incf count))))
        nil nil))
     count))
 
-(defun pearl-gtd-planning--create-action (headline project context horizons)
+(defun full-gtd-planning--create-action (headline project context horizons)
   "Create a new action in action.org.
 HEADLINE is the task title.
 PROJECT is the project name.
 CONTEXT is the context tag (may be empty).
 HORIZONS is an alist of horizon properties."
-  (pearl-gtd-state--with-file-buffer "action.org"
+  (full-gtd-state--with-file-buffer "action.org"
     (goto-char (point-max))
     (unless (bolp) (insert "\n"))
     (insert "* " (car org-not-done-keywords) " " (or headline "Unnamed action") "\n")
@@ -265,10 +244,10 @@ HORIZONS is an alist of horizon properties."
           (org-set-property prop val))))
     (org-id-get-create)))
 
-(defun pearl-gtd-planning--apply-horizons-to-project (project horizons)
+(defun full-gtd-planning--apply-horizons-to-project (project horizons)
   "Apply HORIZONS to all actions in newly created PROJECT.
 HORIZONS is an alist of horizon properties."
-  (pearl-gtd-state--with-file-buffer "action.org"
+  (full-gtd-state--with-file-buffer "action.org"
     (org-map-entries
      (lambda ()
        (let ((proj (org-entry-get nil "PROJECT")))
@@ -281,13 +260,13 @@ HORIZONS is an alist of horizon properties."
                  (org-entry-put nil prop val)))))))
      nil nil)))
 
-(defun pearl-gtd-planning--show-project-summary (project horizons)
+(defun full-gtd-planning--show-project-summary (project horizons)
   "Display PROJECT overview with HORIZONS and all related items."
-  (let ((buffer (get-buffer-create "*Pearl-GTD Planning Summary*"))
+  (let ((buffer (get-buffer-create "*Full-GTD Planning Summary*"))
         (actions '())
         (references '())
         (someday '())
-        (base pearl-gtd-init-base-directory))
+        (base full-gtd-init-base-directory))
 
     ;; Collect items from each file
     (dolist (file '("action.org" "reference.org" "someday.org"))
@@ -331,14 +310,14 @@ HORIZONS is an alist of horizon properties."
                          (if (string= val "")
                              "(not set)"
                            ;; Split and display multiple values
-                           (string-join (pearl-gtd-core--split-values val) ", "))))))
+                           (string-join (full-gtd-core--split-values val) ", "))))))
 
       ;; Next Actions
       (insert "\n* Next Actions\n")
       (if actions
           (dolist (a (nreverse actions))
             (insert (format "- %s %s %s\n"
-                           (or (plist-get a :todo) (pearl-gtd-core--default-todo-keyword))
+                           (or (plist-get a :todo) (full-gtd-core--default-todo-keyword))
                            (plist-get a :headline)
                            (if (plist-get a :tags)
                                (format ":%s:" (string-join (plist-get a :tags) ":"))
@@ -363,18 +342,18 @@ HORIZONS is an alist of horizon properties."
     (pop-to-buffer buffer)
     (goto-char (point-min))))
 
-(defun pearl-gtd-planning--collect-inputs ()
+(defun full-gtd-planning--collect-inputs ()
   "Collect all user inputs for Natural Planning Model.
 Returns plist with :proj-name, :purpose, :principle, :vision,
 :goal, :area, :default-context, and :horizons."
-  (let* ((proj-name (pearl-gtd-planning--select-project))
-         (purpose (pearl-gtd-planning--ask-horizon 6 "Purpose" nil))
-         (principle (pearl-gtd-planning--ask-horizon 6 "Principle" t))
-         (vision (pearl-gtd-planning--ask-horizon 5 "Vision" nil))
-         (goal (pearl-gtd-planning--ask-horizon 4 "Goal" nil))
-         (area (pearl-gtd-planning--ask-horizon 3 "Area" t))
+  (let* ((proj-name (full-gtd-planning--select-project))
+         (purpose (full-gtd-planning--ask-horizon 6 "Purpose" nil))
+         (principle (full-gtd-planning--ask-horizon 6 "Principle" t))
+         (vision (full-gtd-planning--ask-horizon 5 "Vision" nil))
+         (goal (full-gtd-planning--ask-horizon 4 "Goal" nil))
+         (area (full-gtd-planning--ask-horizon 3 "Area" t))
          (default-context
-           (let ((input (pearl-gtd-core-read-property-with-completion
+           (let ((input (full-gtd-core-read-property-with-completion
                          "Default context [RET none, TAB complete]: " 'context "")))
              (if (string= input "") "" input)))
          (horizons `(("L6_PURPOSE" . ,purpose)
@@ -386,12 +365,12 @@ Returns plist with :proj-name, :purpose, :principle, :vision,
           :vision vision :goal goal :area area
           :default-context default-context :horizons horizons)))
 
-(defun pearl-gtd-planning--start ()
+(defun full-gtd-planning--start ()
   "Start Natural Planning Model workflow.
 Coordinator pattern: delegates all business logic to domain layer,
 all state operations to state layer."
   (let* (;; Step 1: Collect inputs (interaction layer)
-         (inputs (pearl-gtd-planning--collect-inputs))
+         (inputs (full-gtd-planning--collect-inputs))
          (proj-name (plist-get inputs :proj-name))
          (purpose (plist-get inputs :purpose))
          (vision (plist-get inputs :vision))
@@ -401,40 +380,35 @@ all state operations to state layer."
 
     ;; Validate inputs (domain layer)
     (cl-destructuring-bind (valid-p . error-msg)
-        (pearl-gtd-domain--planning-input-valid-p proj-name purpose vision goal)
+        (full-gtd-domain--planning-input-valid-p proj-name purpose vision goal)
       (unless valid-p
         (error "Planning validation failed: %s" error-msg)))
 
     ;; Execute workflow with transaction (state layer)
-    (pearl-gtd-state--with-transaction '("action.org" "inbox.org")
+    (full-gtd-state--with-transaction '("action.org" "inbox.org")
       ;; Brainstorm phase
-      (pearl-gtd-planning--ask-brainstorm proj-name)
+      (full-gtd-planning--ask-brainstorm proj-name)
 
       ;; Organize phase (returns count of next actions created)
       (let ((next-action-count
-             (if (pearl-gtd-planning--has-brainstorm-items-p proj-name)
-                 (pearl-gtd-planning--organize-brainstorm-items proj-name default-context)
+             (if (full-gtd-planning--has-brainstorm-items-p proj-name)
+                 (full-gtd-planning--organize-brainstorm-items proj-name default-context)
                0)))
 
         ;; Force next action if required (domain rule)
-        (when (pearl-gtd-domain--require-next-action-p next-action-count)
+        (when (full-gtd-domain--require-next-action-p next-action-count)
           (let ((forced-action
-                 (pearl-gtd-planning--read-forced-action "Required next action: ")))
-            (pearl-gtd-planning--create-action
+                 (full-gtd-planning--read-forced-action "Required next action: ")))
+            (full-gtd-planning--create-action
              forced-action proj-name default-context horizons)))
 
         ;; Apply horizons to all project actions
-        (pearl-gtd-planning--apply-horizons-to-project proj-name horizons)))
+        (full-gtd-planning--apply-horizons-to-project proj-name horizons)))
 
     ;; Presentation
-    (pearl-gtd-planning--show-project-summary proj-name horizons)
+    (full-gtd-planning--show-project-summary proj-name horizons)
     (message "Natural planning completed for project: %s" proj-name)))
 
-(defun pearl-gtd-planning-start ()
-  "Start Natural Planning Model workflow."
-  (interactive)
-  (pearl-gtd-planning--start))
+(provide 'full-gtd-planning)
 
-(provide 'pearl-gtd-planning)
-
-;;; pearl-gtd-planning.el ends here
+;;; full-gtd-planning.el ends here

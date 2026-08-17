@@ -1,45 +1,38 @@
-;;; pearl-gtd-core.el --- Core infrastructure for pearl-gtd  -*- lexical-binding: t; -*-
+;;; full-gtd-core.el --- Core infrastructure for full-gtd  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 OverbearingPearl
 ;; Author: OverbearingPearl <OverbearingPearl@outlook.com>
 ;; Assisted-by: Kimi:kimi-k2.5, DeepSeek:deepseek-v3.2, Claude:claude-sonnet-4.6
-;; URL: https://github.com/OverbearingPearl/pearl-gtd
+;; URL: https://github.com/OverbearingPearl/full-gtd
 ;; SPDX-License-Identifier: MIT
 
 ;;; Commentary:
 
 ;; Core infrastructure and thin delegation layer.
 ;; Predicates, filters, and data collection utilities.
-;; File operation macros delegate to pearl-gtd-state.
-;; Data normalization functions delegate to pearl-gtd-domain.
+;; File operation macros delegate to full-gtd-state.
+;; Data normalization functions delegate to full-gtd-domain.
 
 ;;; Code:
 
 (require 'org)
 (require 'crm)  ;; completing-read-multiple
-(require 'pearl-gtd-init)
-(require 'pearl-gtd-domain)
-(require 'pearl-gtd-state)
+(require 'full-gtd-init)
+(require 'full-gtd-domain)
+(require 'full-gtd-state)
 
 ;;;; Predicates
 
-(defun pearl-gtd-core-entry-todo-p ()
+(defun full-gtd-core-entry-todo-p ()
   "Return non-nil if current entry is a TODO item."
   (let ((state (org-get-todo-state)))
     (member state org-not-done-keywords)))
 
-(defun pearl-gtd-core-entry-done-p ()
+(defun full-gtd-core-entry-done-p ()
   "Return non-nil if current entry is a DONE item."
   (member (org-get-todo-state) org-done-keywords))
 
-(defun pearl-gtd-core-entry-context-p (contexts)
-  "Return non-nil if current entry has any of CONTEXTS.
-CONTEXTS is a list of normalized context strings (without @ prefix)."
-  (when contexts
-    (let ((tags (org-get-tags)))
-      (cl-intersection tags contexts :test #'string=))))
-
-(defun pearl-gtd-core-entry-scheduled-today-p ()
+(defun full-gtd-core-entry-scheduled-today-p ()
   "Return non-nil if current entry is scheduled for today."
   (let* ((scheduled (org-entry-get nil "SCHEDULED"))
          (ct (current-time))
@@ -47,28 +40,28 @@ CONTEXTS is a list of normalized context strings (without @ prefix)."
     (and scheduled
          (string-match-p today-pattern scheduled))))
 
-(defun pearl-gtd-core-entry-completed-today-p ()
+(defun full-gtd-core-entry-completed-today-p ()
   "Return non-nil if current entry was closed today."
   (let* ((closed (org-entry-get nil "CLOSED")))
     (and closed
          (string-match-p (format-time-string "\\[%F" (current-time)) closed))))
 
-(defun pearl-gtd-core-entry-delegated-p ()
+(defun full-gtd-core-entry-delegated-p ()
   "Return non-nil if current entry is delegated."
   (org-entry-get nil "DELEGATED"))
 
-(defun pearl-gtd-core-entry-overdue-p ()
+(defun full-gtd-core-entry-overdue-p ()
   "Return non-nil if current entry is overdue."
   (let ((scheduled (org-entry-get nil "SCHEDULED")))
     (and scheduled (time-less-p (org-time-string-to-time scheduled) (current-time)))))
 
-(defun pearl-gtd-core--default-todo-keyword ()
+(defun full-gtd-core--default-todo-keyword ()
   "Return the first not-done TODO keyword, or \"TODO\" if none."
   (or (car org-not-done-keywords) "TODO"))
 
 ;;;; Filters
 
-(defun pearl-gtd-core-filter-entries (file-path predicates)
+(defun full-gtd-core-filter-entries (file-path predicates)
   "Filter entries in FILE-PATH using PREDICATES.
 PREDICATES is a list of predicate functions to apply.
 Each predicate is called with no arguments in the context of the entry.
@@ -101,7 +94,7 @@ Nil values indicate unset properties."
                     (l5 (org-entry-get nil "L5_VISION"))
                     (l6 (org-entry-get nil "L6_PURPOSE")))
                (when id
-                 (put-text-property 0 (length head) 'pearl-gtd-id id head))
+                 (put-text-property 0 (length head) 'full-gtd-id id head))
                (push (list head
                            (mapconcat (lambda (c) (concat "@" c)) tags ",")
                            todo-state
@@ -123,7 +116,7 @@ Nil values indicate unset properties."
 
 ;;;; Data Collection
 
-(defun pearl-gtd-core-collect-contexts (file-path)
+(defun full-gtd-core-collect-contexts (file-path)
   "Collect all unique context tags from FILE-PATH."
   (let ((contexts '()))
     (when (file-exists-p file-path)
@@ -142,7 +135,7 @@ Nil values indicate unset properties."
 
 ;;;; Macro for table navigation
 
-(defmacro pearl-gtd-core-define-table-navigators (prefix boundaries-func &optional header-regexp)
+(defmacro full-gtd-core-define-table-navigators (prefix boundaries-func &optional header-regexp)
   "Define table navigation functions for PREFIX using BOUNDARIES-FUNC.
 Creates PREFIX--next-row and PREFIX--previous-row interactive functions.
 BOUNDARIES-FUNC should return (first-row-pos . last-row-pos).
@@ -184,19 +177,13 @@ HEADER-REGEXP matches header lines to skip (default: \"| Headline\")."
 
 ;;;; Macros for file operations
 
-(defmacro pearl-gtd-core-with-file-buffer (file-path &rest body)
-  "Execute BODY in buffer of FILE-PATH.
-Delegate to state layer for transactional file operations."
-  (declare (indent 1))
-  `(pearl-gtd-state--with-file-buffer ,file-path ,@body))
-
-(defmacro pearl-gtd-core-with-entry-at-id (id file &rest body)
+(defmacro full-gtd-core-with-entry-at-id (id file &rest body)
   "Execute BODY with point at entry ID in FILE.
 Delegate to state layer for transactional file operations."
   (declare (indent 2))
-  `(pearl-gtd-state--with-entry-at-id ,id ,file ,@body))
+  `(full-gtd-state--with-entry-at-id ,id ,file ,@body))
 
-(defun pearl-gtd-core-read-date (prompt-type)
+(defun full-gtd-core-read-date (prompt-type)
   "Hybrid date input for PROMPT-TYPE: letter=quick, number=free-form, RET=skip.
 PROMPT-TYPE is \\='schedule or \\='deadline for display.
 Quick keys: t (today), T (tomorrow), w (week), h (hour, schedule only).
@@ -231,52 +218,48 @@ Signals \\='quit if user presses \\`C-g\\'."
            (t (message "Invalid key") (sit-for 0.5)))))
       result)))
 
-(defun pearl-gtd-core--split-values (value-string)
+(defun full-gtd-core--split-values (value-string)
   "Split VALUE-STRING using semicolon separator.
 Supports both English (;) and Chinese (；) semicolons.
 Trim whitespace from each value.  Filter empty values.
 Example: \"Project A; Project B；Project C\"
   -> (\"Project A\" \"Project B\" \"Project C\")
 Delegate to domain layer for pure computation."
-  (pearl-gtd-domain--split-values value-string))
+  (full-gtd-domain--split-values value-string))
 
-(defun pearl-gtd-core--join-values (values)
+(defun full-gtd-core--join-values (values)
   "Join VALUES list using English semicolon separator.
 Always uses English semicolon for storage consistency.
 Example: (\"Project A\" \"Project B\") -> \"Project A; Project B\"
 Delegate to domain layer for pure computation."
-  (pearl-gtd-domain--join-values values))
+  (full-gtd-domain--join-values values))
 
-(defun pearl-gtd-core--normalize-project-input (input)
+(defun full-gtd-core--normalize-project-input (input)
   "Normalize project input: convert Chinese semicolons to English.
 Trim whitespace from each value.  Returns nil if empty.
 INPUT is the input string to normalize.
 Example: \"Project A；Project B；Project C\"
   -> \"Project A; Project B; Project C\"
 Delegate to domain layer for pure computation."
-  (pearl-gtd-domain--normalize-project-input input))
-
-(defun pearl-gtd-core--escape-table-field (field)
-  "Escape pipe characters in FIELD for org-table display."
-  (replace-regexp-in-string "|" "\\\\vert{}" field))
+  (full-gtd-domain--normalize-project-input input))
 
 ;;;; Unified property reading with completion
 
-(defun pearl-gtd-core-read-property-with-completion (prompt property-type &optional initial)
+(defun full-gtd-core-read-property-with-completion (prompt property-type &optional initial)
   "Read property value with completion.
 PROMPT is the prompt string displayed to the user.
 PROPERTY-TYPE: context/project/delegate/l3/l4/l5/l6/principle.
 INITIAL is the optional initial value string.
 Project and horizons (L3-L6) support multiple values separated by semicolon."
   (let* ((candidates (pcase property-type
-                       ('context (pearl-gtd-domain--collect-context-candidates))
-                       ('project (pearl-gtd-domain--collect-project-candidates))
-                       ('delegate (pearl-gtd-domain--collect-delegate-candidates))
-                       ('l3 (pearl-gtd-domain--collect-horizon-candidates "L3_AREA"))
-                       ('l4 (pearl-gtd-domain--collect-horizon-candidates "L4_GOAL"))
-                       ('l5 (pearl-gtd-domain--collect-horizon-candidates "L5_VISION"))
-                       ('l6 (pearl-gtd-domain--collect-horizon-candidates "L6_PURPOSE"))
-                       ('principle (pearl-gtd-domain--collect-horizon-candidates "L6_PRINCIPLE"))
+                       ('context (full-gtd-domain--collect-context-candidates))
+                       ('project (full-gtd-domain--collect-project-candidates))
+                       ('delegate (full-gtd-domain--collect-delegate-candidates))
+                       ('l3 (full-gtd-domain--collect-horizon-candidates "L3_AREA"))
+                       ('l4 (full-gtd-domain--collect-horizon-candidates "L4_GOAL"))
+                       ('l5 (full-gtd-domain--collect-horizon-candidates "L5_VISION"))
+                       ('l6 (full-gtd-domain--collect-horizon-candidates "L6_PURPOSE"))
+                       ('principle (full-gtd-domain--collect-horizon-candidates "L6_PRINCIPLE"))
                        (_ (error "Unknown property type: %s" property-type))))
          (is-multi-value (member property-type '(project l3 l4 l5 l6 principle))))
 
@@ -284,17 +267,17 @@ Project and horizons (L3-L6) support multiple values separated by semicolon."
         (let* ((crm-separator "[;；]\\s-*")
                (initial-input
                 (when initial
-                  (pearl-gtd-domain--join-values
-                   (pearl-gtd-domain--split-values initial))))
+                  (full-gtd-domain--join-values
+                   (full-gtd-domain--split-values initial))))
                (values (completing-read-multiple prompt candidates nil nil initial-input)))
           (if values
-              (pearl-gtd-domain--join-values values)
+              (full-gtd-domain--join-values values)
             ""))
       (string-trim (completing-read prompt candidates nil nil initial)))))
 
 ;;;; Notes (body) manipulation
 
-(defun pearl-gtd-core--entry-notes-bounds ()
+(defun full-gtd-core--entry-notes-bounds ()
   "Return (BEGIN . END) of current entry's notes area.
 Notes area runs from after meta data to before first child heading
 or next sibling heading."
@@ -353,18 +336,18 @@ or next sibling heading."
         (when (< begin end)
           (cons begin end))))))
 
-(defun pearl-gtd-core--get-entry-notes ()
+(defun full-gtd-core--get-entry-notes ()
   "Return current entry's notes (body) as string, or nil if empty."
-  (let ((bounds (pearl-gtd-core--entry-notes-bounds)))
+  (let ((bounds (full-gtd-core--entry-notes-bounds)))
     (when bounds
       (let ((text (buffer-substring-no-properties (car bounds) (cdr bounds))))
         (setq text (string-trim text))
         (unless (string= text "") text)))))
 
-(defun pearl-gtd-core--set-entry-notes (text)
+(defun full-gtd-core--set-entry-notes (text)
   "Replace current entry's notes (body) with TEXT.
 If TEXT is empty, delete all notes."
-  (let ((bounds (pearl-gtd-core--entry-notes-bounds)))
+  (let ((bounds (full-gtd-core--entry-notes-bounds)))
     (when bounds
       (let ((begin (car bounds))
             (end (cdr bounds))
@@ -377,13 +360,13 @@ If TEXT is empty, delete all notes."
             (insert "\n"))
           (insert new-text "\n"))))))
 
-(defun pearl-gtd-core--edit-entry-notes ()
+(defun full-gtd-core--edit-entry-notes ()
   "Edit current entry's notes using `read-string'."
-  (let* ((old (pearl-gtd-core--get-entry-notes))
+  (let* ((old (full-gtd-core--get-entry-notes))
          (new (string-trim (read-string "Notes (empty to clear, use C-q C-j for newline): "
                                         (or old "")))))
-    (pearl-gtd-core--set-entry-notes new)))
+    (full-gtd-core--set-entry-notes new)))
 
-(provide 'pearl-gtd-core)
+(provide 'full-gtd-core)
 
-;;; pearl-gtd-core.el ends here
+;;; full-gtd-core.el ends here
