@@ -1,4 +1,4 @@
-;;; pearl-gtd-domain-test.el --- Unit tests for pearl-gtd-domain  -*- lexical-binding: t; -*-
+;;; full-gtd-domain-test.el --- Unit tests for full-gtd-domain  -*- lexical-binding: t; -*-
 
 ;;; Commentary:
 
@@ -7,108 +7,108 @@
 ;;; Code:
 
 (require 'ert)
-(require 'pearl-gtd-domain)
+(require 'full-gtd-domain)
 
 ;;;; Planning validation tests
 
-(ert-deftest pearl-gtd-domain-test-planning-input-valid-p-all-valid ()
+(ert-deftest full-gtd-domain-test-planning-input-valid-p-all-valid ()
   "All fields provided should return valid."
-  (let ((result (pearl-gtd-domain--planning-input-valid-p "Proj" "Purpose" "Vision" "Goal")))
+  (let ((result (full-gtd-domain--planning-input-valid-p "Proj" "Purpose" "Vision" "Goal")))
     (should (consp result))
     (should (car result))
     (should (null (cdr result)))))
 
-(ert-deftest pearl-gtd-domain-test-planning-input-valid-p-empty-project ()
+(ert-deftest full-gtd-domain-test-planning-input-valid-p-empty-project ()
   "Empty project name should be invalid."
-  (let ((result (pearl-gtd-domain--planning-input-valid-p "" "Purpose" "Vision" "Goal")))
+  (let ((result (full-gtd-domain--planning-input-valid-p "" "Purpose" "Vision" "Goal")))
     (should-not (car result))
     (should (string-match-p "Project name" (cdr result)))))
 
-(ert-deftest pearl-gtd-domain-test-planning-input-valid-p-nil-project ()
+(ert-deftest full-gtd-domain-test-planning-input-valid-p-nil-project ()
   "Nil project name should be invalid."
-  (let ((result (pearl-gtd-domain--planning-input-valid-p nil "Purpose" "Vision" "Goal")))
+  (let ((result (full-gtd-domain--planning-input-valid-p nil "Purpose" "Vision" "Goal")))
     (should-not (car result))))
 
-(ert-deftest pearl-gtd-domain-test-planning-input-valid-p-empty-purpose ()
+(ert-deftest full-gtd-domain-test-planning-input-valid-p-empty-purpose ()
   "Empty purpose should be invalid."
-  (let ((result (pearl-gtd-domain--planning-input-valid-p "Proj" "" "Vision" "Goal")))
+  (let ((result (full-gtd-domain--planning-input-valid-p "Proj" "" "Vision" "Goal")))
     (should-not (car result))
     (should (string-match-p "Purpose" (cdr result)))))
 
-(ert-deftest pearl-gtd-domain-test-planning-input-valid-p-empty-goal ()
+(ert-deftest full-gtd-domain-test-planning-input-valid-p-empty-goal ()
   "Empty goal should be invalid."
-  (let ((result (pearl-gtd-domain--planning-input-valid-p "Proj" "Purpose" "Vision" "")))
+  (let ((result (full-gtd-domain--planning-input-valid-p "Proj" "Purpose" "Vision" "")))
     (should-not (car result))
     (should (string-match-p "Goal" (cdr result)))))
 
-(ert-deftest pearl-gtd-domain-test-planning-input-valid-p-empty-vision ()
+(ert-deftest full-gtd-domain-test-planning-input-valid-p-empty-vision ()
   "Empty vision should be invalid (required field)."
-  (let ((result (pearl-gtd-domain--planning-input-valid-p "Proj" "Purpose" "" "Goal")))
+  (let ((result (full-gtd-domain--planning-input-valid-p "Proj" "Purpose" "" "Goal")))
     (should-not (car result))
     (should (string-match-p "Vision" (cdr result)))))
 
-(ert-deftest pearl-gtd-domain-test-require-next-action-p-zero ()
+(ert-deftest full-gtd-domain-test-require-next-action-p-zero ()
   "Zero actions should require forced next action."
-  (should (pearl-gtd-domain--require-next-action-p 0)))
+  (should (full-gtd-domain--require-next-action-p 0)))
 
-(ert-deftest pearl-gtd-domain-test-require-next-action-p-nonzero ()
+(ert-deftest full-gtd-domain-test-require-next-action-p-nonzero ()
   "Non-zero actions should not require forced next action."
-  (should-not (pearl-gtd-domain--require-next-action-p 1))
-  (should-not (pearl-gtd-domain--require-next-action-p 5)))
+  (should-not (full-gtd-domain--require-next-action-p 1))
+  (should-not (full-gtd-domain--require-next-action-p 5)))
 
 ;;;; Horizon hierarchy tests
 
-(ert-deftest pearl-gtd-domain-test-check-hierarchy-constraint-area ()
+(ert-deftest full-gtd-domain-test-check-hierarchy-constraint-area ()
   "Area can always be set."
-  (let ((result (pearl-gtd-domain--check-hierarchy-constraint '() 'area)))
+  (let ((result (full-gtd-domain--check-hierarchy-constraint '() 'area)))
     (should (car result))))
 
-(ert-deftest pearl-gtd-domain-test-check-hierarchy-constraint-goal ()
+(ert-deftest full-gtd-domain-test-check-hierarchy-constraint-goal ()
   "Goal level should always be valid (no dependency)."
-  (let ((result-empty (pearl-gtd-domain--check-hierarchy-constraint '() 'goal))
-        (result-with-data (pearl-gtd-domain--check-hierarchy-constraint
+  (let ((result-empty (full-gtd-domain--check-hierarchy-constraint '() 'goal))
+        (result-with-data (full-gtd-domain--check-hierarchy-constraint
                            '((L4_GOAL . "Existing")) 'goal)))
     (should (car result-empty))
     (should (null (cdr result-empty)))
     (should (car result-with-data))
     (should (null (cdr result-with-data)))))
 
-(ert-deftest pearl-gtd-domain-test-check-hierarchy-constraint-vision-without-goal ()
+(ert-deftest full-gtd-domain-test-check-hierarchy-constraint-vision-without-goal ()
   "Vision without goal should be invalid."
-  (let ((result (pearl-gtd-domain--check-hierarchy-constraint
+  (let ((result (full-gtd-domain--check-hierarchy-constraint
                  '((L4_GOAL . "")) 'vision)))
     (should-not (car result))
     (should (string-match-p "L4 Goal" (cdr result)))))
 
-(ert-deftest pearl-gtd-domain-test-check-hierarchy-constraint-vision-with-goal ()
+(ert-deftest full-gtd-domain-test-check-hierarchy-constraint-vision-with-goal ()
   "Vision with goal should be valid."
-  (let ((result (pearl-gtd-domain--check-hierarchy-constraint
+  (let ((result (full-gtd-domain--check-hierarchy-constraint
                  '((L4_GOAL . "Goal")) 'vision)))
     (should (car result))))
 
-(ert-deftest pearl-gtd-domain-test-check-hierarchy-constraint-purpose-without-vision ()
+(ert-deftest full-gtd-domain-test-check-hierarchy-constraint-purpose-without-vision ()
   "Purpose without vision should be invalid."
-  (let ((result (pearl-gtd-domain--check-hierarchy-constraint
+  (let ((result (full-gtd-domain--check-hierarchy-constraint
                  '((L5_VISION . "")) 'purpose)))
     (should-not (car result))
     (should (string-match-p "L5 Vision" (cdr result)))))
 
-(ert-deftest pearl-gtd-domain-test-check-hierarchy-constraint-principle-without-purpose ()
+(ert-deftest full-gtd-domain-test-check-hierarchy-constraint-principle-without-purpose ()
   "Principle without purpose should be invalid."
-  (let ((result (pearl-gtd-domain--check-hierarchy-constraint
+  (let ((result (full-gtd-domain--check-hierarchy-constraint
                  '((L6_PURPOSE . "")) 'principle)))
     (should-not (car result))
     (should (string-match-p "L6 Purpose" (cdr result)))))
 
-(ert-deftest pearl-gtd-domain-test-check-hierarchy-constraint-principle-with-purpose ()
+(ert-deftest full-gtd-domain-test-check-hierarchy-constraint-principle-with-purpose ()
   "Principle with purpose should be valid."
-  (let ((result (pearl-gtd-domain--check-hierarchy-constraint
+  (let ((result (full-gtd-domain--check-hierarchy-constraint
                  '((L6_PURPOSE . "Purpose")) 'principle)))
     (should (car result))))
 
 ;;;; Horizon computation tests
 
-(ert-deftest pearl-gtd-domain-test-compute-project-horizon-intersection ()
+(ert-deftest full-gtd-domain-test-compute-project-horizon-intersection ()
   "Intersection of values across actions in the same project."
   (let ((entries
          (list (cons '("ProjA") '(("L3_AREA" . "Area1; Area2")
@@ -116,51 +116,51 @@
                (cons '("ProjA" "ProjB") '(("L3_AREA" . "Area2; Area3")
                                           ("L4_GOAL" . "Goal1; Goal2"))))))
     ;; ProjA: Area1;Area2 ∩ Area2;Area3 = Area2
-    (should (equal (pearl-gtd-domain--compute-project-horizon "ProjA" "L3_AREA" entries)
+    (should (equal (full-gtd-domain--compute-project-horizon "ProjA" "L3_AREA" entries)
                    '("Area2")))
     ;; ProjA: Goal1 ∩ Goal1;Goal2 = Goal1
-    (should (equal (pearl-gtd-domain--compute-project-horizon "ProjA" "L4_GOAL" entries)
+    (should (equal (full-gtd-domain--compute-project-horizon "ProjA" "L4_GOAL" entries)
                    '("Goal1")))
     ;; ProjB: only second entry has ProjB, values = Area2;Area3
-    (should (equal (pearl-gtd-domain--compute-project-horizon "ProjB" "L3_AREA" entries)
+    (should (equal (full-gtd-domain--compute-project-horizon "ProjB" "L3_AREA" entries)
                    '("Area2" "Area3")))))
 
-(ert-deftest pearl-gtd-domain-test-compute-project-horizon-ignores-missing-level ()
+(ert-deftest full-gtd-domain-test-compute-project-horizon-ignores-missing-level ()
   "Actions without the level or with empty value are ignored."
   (let ((entries (list (cons '("ProjA") '(("L3_AREA" . "Area1; Area2")))
                        (cons '("ProjA") '(("L3_AREA" . "")))
                        (cons '("ProjA") '(("L3_AREA" . nil))))))
-    (should (equal (pearl-gtd-domain--compute-project-horizon "ProjA" "L3_AREA" entries)
+    (should (equal (full-gtd-domain--compute-project-horizon "ProjA" "L3_AREA" entries)
                    '("Area1" "Area2")))))
 
-(ert-deftest pearl-gtd-domain-test-compute-project-horizon-no-intersection ()
+(ert-deftest full-gtd-domain-test-compute-project-horizon-no-intersection ()
   "Disjoint values yield nil."
   (let ((entries (list (cons '("ProjA") '(("L3_AREA" . "Area1")))
                        (cons '("ProjA") '(("L3_AREA" . "Area2"))))))
-    (should (null (pearl-gtd-domain--compute-project-horizon "ProjA" "L3_AREA" entries)))))
+    (should (null (full-gtd-domain--compute-project-horizon "ProjA" "L3_AREA" entries)))))
 
-(ert-deftest pearl-gtd-domain-test-compute-project-horizon-no-actions ()
+(ert-deftest full-gtd-domain-test-compute-project-horizon-no-actions ()
   "No entries or no matching project yields nil."
-  (should (null (pearl-gtd-domain--compute-project-horizon "ProjA" "L3_AREA" '())))
-  (should (null (pearl-gtd-domain--compute-project-horizon
+  (should (null (full-gtd-domain--compute-project-horizon "ProjA" "L3_AREA" '())))
+  (should (null (full-gtd-domain--compute-project-horizon
                  "ProjA" "L3_AREA"
                  (list (cons '("ProjB") '(("L3_AREA" . "Area1"))))))))
 
-(ert-deftest pearl-gtd-domain-test-combine-project-horizons-union ()
+(ert-deftest full-gtd-domain-test-combine-project-horizons-union ()
   "Union deduplicates and ignores nil inputs."
-  (should (equal (pearl-gtd-domain--combine-project-horizons
+  (should (equal (full-gtd-domain--combine-project-horizons
                   '(("Area1" "Area2") ("Area2" "Area3")))
                  '("Area1" "Area2" "Area3")))
-  (should (equal (pearl-gtd-domain--combine-project-horizons
+  (should (equal (full-gtd-domain--combine-project-horizons
                   '(nil ("Area2") ("Area3")))
                  '("Area2" "Area3"))))
 
-(ert-deftest pearl-gtd-domain-test-combine-project-horizons-empty ()
+(ert-deftest full-gtd-domain-test-combine-project-horizons-empty ()
   "All-empty inputs yield nil."
-  (should (null (pearl-gtd-domain--combine-project-horizons '(nil nil))))
-  (should (null (pearl-gtd-domain--combine-project-horizons '()))))
+  (should (null (full-gtd-domain--combine-project-horizons '(nil nil))))
+  (should (null (full-gtd-domain--combine-project-horizons '()))))
 
-(ert-deftest pearl-gtd-domain-test-compute-entry-horizons-single-project ()
+(ert-deftest full-gtd-domain-test-compute-entry-horizons-single-project ()
   "Single project: intersection across all five levels."
   (let* ((entries '((("ProjA")
                      ("L3_AREA" . "Area1; Area2")
@@ -174,32 +174,32 @@
                      ("L5_VISION" . "Vision1; Vision2")
                      ("L6_PURPOSE" . "Purpose2")
                      ("L6_PRINCIPLE" . "Principle1; Principle2"))))
-         (result (pearl-gtd-domain--compute-entry-horizons '("ProjA") entries)))
+         (result (full-gtd-domain--compute-entry-horizons '("ProjA") entries)))
     (should (equal (cdr (assoc "L3_AREA" result)) "Area2"))
     (should (equal (cdr (assoc "L4_GOAL" result)) "Goal1"))
     (should (equal (cdr (assoc "L5_VISION" result)) "Vision1"))
     (should (null (assoc "L6_PURPOSE" result)))
     (should (equal (cdr (assoc "L6_PRINCIPLE" result)) "Principle1"))))
 
-(ert-deftest pearl-gtd-domain-test-compute-entry-horizons-multi-project-union ()
+(ert-deftest full-gtd-domain-test-compute-entry-horizons-multi-project-union ()
   "Multiple projects: union of per-project intersections."
   (let* ((entries '((("ProjA") ("L3_AREA" . "Area1; Area2") ("L4_GOAL" . "GoalA"))
                     (("ProjB") ("L3_AREA" . "Area2; Area3") ("L4_GOAL" . "GoalB"))))
-         (result (pearl-gtd-domain--compute-entry-horizons '("ProjA" "ProjB") entries)))
+         (result (full-gtd-domain--compute-entry-horizons '("ProjA" "ProjB") entries)))
     (should (equal (cdr (assoc "L3_AREA" result)) "Area1; Area2; Area3"))
     (should (equal (cdr (assoc "L4_GOAL" result)) "GoalA; GoalB"))))
 
-(ert-deftest pearl-gtd-domain-test-compute-entry-horizons-no-project ()
+(ert-deftest full-gtd-domain-test-compute-entry-horizons-no-project ()
   "No project yields empty alist."
   (let ((entries '((("ProjA") ("L3_AREA" . "Area1")))))
-    (should (null (pearl-gtd-domain--compute-entry-horizons nil entries)))))
+    (should (null (full-gtd-domain--compute-entry-horizons nil entries)))))
 
-(ert-deftest pearl-gtd-domain-test-compute-entry-horizons-only-action ()
+(ert-deftest full-gtd-domain-test-compute-entry-horizons-only-action ()
   "Entry is the only action in its project → all levels empty."
   (let* ((entries '((("OtherProj") ("L3_AREA" . "AreaX"))))
-         (result (pearl-gtd-domain--compute-entry-horizons '("ProjA") entries)))
+         (result (full-gtd-domain--compute-entry-horizons '("ProjA") entries)))
     (should (null result))))
 
-(provide 'pearl-gtd-domain-test)
+(provide 'full-gtd-domain-test)
 
-;;; pearl-gtd-domain-test.el ends here
+;;; full-gtd-domain-test.el ends here

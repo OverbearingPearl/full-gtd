@@ -1,9 +1,9 @@
-;;; pearl-gtd-review.el --- Review phase for pearl-gtd  -*- lexical-binding: t; -*-
+;;; full-gtd-review.el --- Review phase for full-gtd  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 OverbearingPearl
 ;; Author: OverbearingPearl <OverbearingPearl@outlook.com>
 ;; Assisted-by: Kimi:kimi-k2.5, DeepSeek:deepseek-v3.2, Claude:claude-sonnet-4.6
-;; URL: https://github.com/OverbearingPearl/pearl-gtd
+;; URL: https://github.com/OverbearingPearl/full-gtd
 ;; SPDX-License-Identifier: MIT
 
 ;;; Commentary:
@@ -15,58 +15,58 @@
 
 (require 'org)
 (require 'cl-lib)
-(require 'pearl-gtd-init)
-(require 'pearl-gtd-core)
-(require 'pearl-gtd-state)
-(require 'pearl-gtd-ui)
-(require 'pearl-gtd-horizons)
-(require 'pearl-gtd-project-utils)
+(require 'full-gtd-init)
+(require 'full-gtd-core)
+(require 'full-gtd-state)
+(require 'full-gtd-ui)
+(require 'full-gtd-horizons)
+(require 'full-gtd-project-utils)
 
-(defvar-local pearl-gtd-review--current-view-type nil
+(defvar-local full-gtd-review--current-view-type nil
   "Type of current review view: daily, weekly, or project.")
-(defvar-local pearl-gtd-review--current-project nil
+(defvar-local full-gtd-review--current-project nil
   "Project name of the current project sub-view, if any.")
 
-(defvar-local pearl-gtd-review--entry-map nil
+(defvar-local full-gtd-review--entry-map nil
   "Vector mapping row numbers to (ID . FILE) cons cells.")
 
-(defvar pearl-gtd-review-view-mode-map
+(defvar full-gtd-review-view-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "q") #'pearl-gtd-review--quit-or-return)
-    (define-key map (kbd "n") #'pearl-gtd-review--next-row)
-    (define-key map (kbd "p") #'pearl-gtd-review--previous-row)
-    (define-key map (kbd "j") #'pearl-gtd-review--next-row)
-    (define-key map (kbd "k") #'pearl-gtd-review--previous-row)
-    (define-key map (kbd "RET") #'pearl-gtd-review--goto-task-at-point)
-    (define-key map (kbd "g") #'pearl-gtd-review--refresh-view)
+    (define-key map (kbd "q") #'full-gtd-review--quit-or-return)
+    (define-key map (kbd "n") #'full-gtd-review--next-row)
+    (define-key map (kbd "p") #'full-gtd-review--previous-row)
+    (define-key map (kbd "j") #'full-gtd-review--next-row)
+    (define-key map (kbd "k") #'full-gtd-review--previous-row)
+    (define-key map (kbd "RET") #'full-gtd-review--goto-task-at-point)
+    (define-key map (kbd "g") #'full-gtd-review--refresh-view)
     ;; Property editing with defaults
-    (define-key map (kbd "c") #'pearl-gtd-review--edit-context-at-point)
-    (define-key map (kbd "s") #'pearl-gtd-review--edit-scheduled-at-point)
-    (define-key map (kbd "d") #'pearl-gtd-review--set-deadline-at-point)
-    (define-key map (kbd "D") #'pearl-gtd-review--edit-delegated-at-point)
-    (define-key map (kbd "r") #'pearl-gtd-review--rename-task-at-point)
-    (define-key map (kbd "C") #'pearl-gtd-review--complete-task-at-point)
-    (define-key map (kbd "P") #'pearl-gtd-review--edit-project-at-point)
+    (define-key map (kbd "c") #'full-gtd-review--edit-context-at-point)
+    (define-key map (kbd "s") #'full-gtd-review--edit-scheduled-at-point)
+    (define-key map (kbd "d") #'full-gtd-review--set-deadline-at-point)
+    (define-key map (kbd "D") #'full-gtd-review--edit-delegated-at-point)
+    (define-key map (kbd "r") #'full-gtd-review--rename-task-at-point)
+    (define-key map (kbd "C") #'full-gtd-review--complete-task-at-point)
+    (define-key map (kbd "P") #'full-gtd-review--edit-project-at-point)
     ;; Horizon editing
-    (define-key map (kbd "3") #'pearl-gtd-horizons--edit-area-at-point)
-    (define-key map (kbd "4") #'pearl-gtd-horizons--edit-goal-at-point)
-    (define-key map (kbd "5") #'pearl-gtd-horizons--edit-vision-at-point)
-    (define-key map (kbd "6") #'pearl-gtd-horizons--edit-purpose-at-point)
+    (define-key map (kbd "3") #'full-gtd-horizons--edit-area-at-point)
+    (define-key map (kbd "4") #'full-gtd-horizons--edit-goal-at-point)
+    (define-key map (kbd "5") #'full-gtd-horizons--edit-vision-at-point)
+    (define-key map (kbd "6") #'full-gtd-horizons--edit-purpose-at-point)
     ;; Activate someday
-    (define-key map (kbd "a") #'pearl-gtd-review--activate-someday-at-point)
+    (define-key map (kbd "a") #'full-gtd-review--activate-someday-at-point)
     ;; Archive project
-    (define-key map (kbd "A") #'pearl-gtd-review--archive-project-at-point)
-    (define-key map (kbd "e") #'pearl-gtd-review--edit-notes-at-point)
+    (define-key map (kbd "A") #'full-gtd-review--archive-project-at-point)
+    (define-key map (kbd "e") #'full-gtd-review--edit-notes-at-point)
     map))
 
-(define-minor-mode pearl-gtd-review-view-mode
+(define-minor-mode full-gtd-review-view-mode
   "Minor mode for reviewing GTD items in table format."
   :init-value nil
-  :lighter " Pearl-Review"
-  :keymap pearl-gtd-review-view-mode-map
+  :lighter " Full-Review"
+  :keymap full-gtd-review-view-mode-map
   :interactive nil)
 
-(defun pearl-gtd-review--data-row-boundaries ()
+(defun full-gtd-review--data-row-boundaries ()
   "Return cons cell (FIRST-DATA-ROW . LAST-DATA-ROW) positions."
   (save-excursion
     (goto-char (point-min))
@@ -86,7 +86,7 @@
         (forward-line -1))
       (cons first-data (line-beginning-position)))))
 
-(defun pearl-gtd-review--get-entry-at-point ()
+(defun full-gtd-review--get-entry-at-point ()
   "Get (ID . FILE) from current row in table using text properties."
   (save-excursion
     (beginning-of-line)
@@ -96,14 +96,14 @@
       (while (and (< (point) end)
                   (or (null id) (null file)))
         (unless id
-          (setq id (get-text-property (point) 'pearl-gtd-id)))
+          (setq id (get-text-property (point) 'full-gtd-id)))
         (unless file
-          (setq file (get-text-property (point) 'pearl-gtd-file)))
+          (setq file (get-text-property (point) 'full-gtd-file)))
         (forward-char 1))
       (when (and id file)
         (cons id file)))))
 
-(defun pearl-gtd-review--put-row-metadata (marker id file project)
+(defun full-gtd-review--put-row-metadata (marker id file project)
   "Attach row metadata after Org table alignment.
 MARKER identifies an aligned data row.  ID and FILE identify task rows; PROJECT
 identifies project rows."
@@ -120,91 +120,91 @@ identifies project rows."
             (when (< start end)
               (if id
                   (progn
-                    (put-text-property start end 'pearl-gtd-id id)
-                    (put-text-property start end 'pearl-gtd-file file))
-                (put-text-property start end 'pearl-gtd-project project))))))))
+                    (put-text-property start end 'full-gtd-id id)
+                    (put-text-property start end 'full-gtd-file file))
+                (put-text-property start end 'full-gtd-project project))))))))
   (set-marker marker nil))
 
-(defun pearl-gtd-review--get-project-at-point ()
+(defun full-gtd-review--get-project-at-point ()
   "Return project name at point, if any."
   (save-excursion
     (beginning-of-line)
     (let ((end (line-end-position))
           (project nil))
       (while (and (not project) (< (point) end))
-        (setq project (get-text-property (point) 'pearl-gtd-project))
+        (setq project (get-text-property (point) 'full-gtd-project))
         (forward-char 1))
       project)))
 
-(defun pearl-gtd-review--get-property-by-id (id file property)
+(defun full-gtd-review--get-property-by-id (id file property)
   "Get PROPERTY value of entry with ID in FILE."
-  (pearl-gtd-core-with-entry-at-id id file
+  (full-gtd-core-with-entry-at-id id file
     (org-entry-get nil property)))
 
-(defun pearl-gtd-review--set-property-by-id (id file property value)
+(defun full-gtd-review--set-property-by-id (id file property value)
   "Set PROPERTY to VALUE for entry with ID in FILE."
-  (pearl-gtd-core-with-entry-at-id id file
+  (full-gtd-core-with-entry-at-id id file
     (org-entry-put nil property value)
     (when (and (string= property "PROJECT")
                (string= file "action.org"))
-      (pearl-gtd-horizons--sync-entry-horizons))))
+      (full-gtd-horizons--sync-entry-horizons))))
 
-(defun pearl-gtd-review--remove-property-by-id (id file property)
+(defun full-gtd-review--remove-property-by-id (id file property)
   "Remove PROPERTY from entry with ID in FILE."
-  (pearl-gtd-core-with-entry-at-id id file
+  (full-gtd-core-with-entry-at-id id file
     (org-delete-property property)
     (when (and (string= property "PROJECT")
                (string= file "action.org"))
-      (pearl-gtd-horizons--sync-entry-horizons))))
+      (full-gtd-horizons--sync-entry-horizons))))
 
-(defun pearl-gtd-review--get-context-by-id (id file)
+(defun full-gtd-review--get-context-by-id (id file)
   "Return context tag (without @) for entry with ID in FILE, or nil."
-  (pearl-gtd-core-with-entry-at-id id file
+  (full-gtd-core-with-entry-at-id id file
     (car (org-get-tags))))
 
-(defun pearl-gtd-review--get-scheduled-by-id (id file)
+(defun full-gtd-review--get-scheduled-by-id (id file)
   "Get scheduled date string for entry with ID in FILE."
-  (pearl-gtd-core-with-entry-at-id id file
+  (full-gtd-core-with-entry-at-id id file
     (let ((s (org-entry-get nil "SCHEDULED")))
       (when s
         (string-match "<\\([0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\)" s)
         (match-string 1 s)))))
 
-(defun pearl-gtd-review--get-deadline-by-id (id file)
+(defun full-gtd-review--get-deadline-by-id (id file)
   "Get deadline date string for entry with ID in FILE."
-  (pearl-gtd-core-with-entry-at-id id file
+  (full-gtd-core-with-entry-at-id id file
     (let ((deadline (org-entry-get nil "DEADLINE")))
       (when (and deadline
                  (string-match "<\\([0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\)" deadline))
         (match-string 1 deadline)))))
 
-(defun pearl-gtd-review--collect-activation-attributes (attributes)
+(defun full-gtd-review--collect-activation-attributes (attributes)
   "Read confirmed activation attributes using ATTRIBUTES as defaults."
   (let* ((context (string-trim
-                   (pearl-gtd-core-read-property-with-completion
+                   (full-gtd-core-read-property-with-completion
                     "Context (empty to remove): " 'context
                     (or (alist-get 'context attributes) ""))))
-         (schedule (let ((val (pearl-gtd-core-read-date 'schedule)))
+         (schedule (let ((val (full-gtd-core-read-date 'schedule)))
                      (if val val "")))
-         (deadline (let ((val (pearl-gtd-core-read-date 'deadline)))
+         (deadline (let ((val (full-gtd-core-read-date 'deadline)))
                      (if val val "")))
          (delegate (string-trim
-                    (pearl-gtd-core-read-property-with-completion
+                    (full-gtd-core-read-property-with-completion
                      "Delegated to (empty to remove): " 'delegate
                      (or (alist-get 'delegate attributes) ""))))
          (project-input (string-trim
-                         (pearl-gtd-core-read-property-with-completion
+                         (full-gtd-core-read-property-with-completion
                           "Project (empty to remove): " 'project
                           (or (alist-get 'project attributes) ""))))
          (project (and (not (string-empty-p project-input))
-                       (pearl-gtd-core--normalize-project-input project-input))))
+                       (full-gtd-core--normalize-project-input project-input))))
     `((context . ,context)
       (schedule . ,schedule)
       (deadline . ,deadline)
       (delegate . ,delegate)
       (project . ,(or project "")))))
 
-(defun pearl-gtd-review--apply-activation-attributes (attributes)
+(defun full-gtd-review--apply-activation-attributes (attributes)
   "Apply confirmed activation ATTRIBUTES to the current Org entry."
   (let ((context (alist-get 'context attributes))
         (schedule (alist-get 'schedule attributes))
@@ -228,35 +228,35 @@ identifies project rows."
       (org-deadline nil deadline))
     (org-todo (car org-not-done-keywords))))
 
-(defun pearl-gtd-review--activate-someday-at-point ()
+(defun full-gtd-review--activate-someday-at-point ()
   "Activate the Someday entry at point as a TODO action."
   (interactive)
-  (let ((entry (pearl-gtd-review--get-entry-at-point)))
+  (let ((entry (full-gtd-review--get-entry-at-point)))
     (unless entry
       (error "No entry at point"))
     (let ((someday-file (expand-file-name "someday.org"
-                                          pearl-gtd-init-base-directory))
+                                          full-gtd-init-base-directory))
           (entry-file (expand-file-name (cdr entry)
-                                        pearl-gtd-init-base-directory)))
+                                        full-gtd-init-base-directory)))
       (let ((same-file-p (file-equal-p someday-file entry-file)))
         (unless same-file-p
           (error "Only someday entries can be activated")))
       (let* ((id (car entry))
-             (context (pearl-gtd-review--get-context-by-id id entry-file))
+             (context (full-gtd-review--get-context-by-id id entry-file))
              (schedule (progn
-                         (let ((value (pearl-gtd-review--get-scheduled-by-id
+                         (let ((value (full-gtd-review--get-scheduled-by-id
                                        id entry-file)))
                            value)))
              (deadline (progn
-                         (let ((value (pearl-gtd-review--get-deadline-by-id
+                         (let ((value (full-gtd-review--get-deadline-by-id
                                        id entry-file)))
                            value)))
              (delegate (progn
-                         (let ((value (pearl-gtd-review--get-property-by-id
+                         (let ((value (full-gtd-review--get-property-by-id
                                        id entry-file "DELEGATED")))
                            value)))
              (project (progn
-                        (let ((value (pearl-gtd-review--get-property-by-id
+                        (let ((value (full-gtd-review--get-property-by-id
                                       id entry-file "PROJECT")))
                           value)))
              (attributes `((context . ,context)
@@ -267,19 +267,19 @@ identifies project rows."
              (confirmed
               (progn
                 (let ((value
-                       (pearl-gtd-review--collect-activation-attributes
+                       (full-gtd-review--collect-activation-attributes
                         attributes)))
                   value))))
-        (pearl-gtd-state--with-transaction '("someday.org" "action.org")
-          (pearl-gtd-core-with-entry-at-id id entry-file
-            (pearl-gtd-review--apply-activation-attributes confirmed)
-            (pearl-gtd-horizons--sync-entry-horizons)
+        (full-gtd-state--with-transaction '("someday.org" "action.org")
+          (full-gtd-core-with-entry-at-id id entry-file
+            (full-gtd-review--apply-activation-attributes confirmed)
+            (full-gtd-horizons--sync-entry-horizons)
             (org-mark-subtree)
             (let ((subtree (buffer-substring-no-properties
                             (region-beginning) (region-end))))
               (delete-region (region-beginning) (region-end))
               (save-buffer)
-              (pearl-gtd-state--with-file-buffer "action.org"
+              (full-gtd-state--with-file-buffer "action.org"
                 (goto-char (point-max))
                 (unless (bolp)
                   (insert "\n"))
@@ -288,57 +288,57 @@ identifies project rows."
                   (insert "\n"))
                 (save-buffer)))))
         (message "Activated someday entry in action.org")
-        (pearl-gtd-review--refresh-view)))))
+        (full-gtd-review--refresh-view)))))
 
-(defun pearl-gtd-review--get-headline-by-id (id file)
+(defun full-gtd-review--get-headline-by-id (id file)
   "Get headline of entry with ID in FILE."
-  (pearl-gtd-core-with-entry-at-id id file
+  (full-gtd-core-with-entry-at-id id file
     (org-get-heading t t)))
 
-(defun pearl-gtd-review--delete-entry-by-id (id file)
+(defun full-gtd-review--delete-entry-by-id (id file)
   "Delete entry with ID from FILE."
-  (pearl-gtd-core-with-entry-at-id id file
+  (full-gtd-core-with-entry-at-id id file
     (org-cut-subtree)
     (save-buffer)))
 
-(defun pearl-gtd-review--should-delete-on-completion-p (id file)
+(defun full-gtd-review--should-delete-on-completion-p (id file)
   "Return non-nil if entry with ID in FILE should be deleted when completed.
 Entries without PROJECT property should be deleted."
-  (let ((project (pearl-gtd-review--get-property-by-id id file "PROJECT")))
+  (let ((project (full-gtd-review--get-property-by-id id file "PROJECT")))
     (or (null project) (string= project ""))))
 
-(defun pearl-gtd-review--archive-project-at-point ()
+(defun full-gtd-review--archive-project-at-point ()
   "Archive project at point from review view."
   (interactive)
-  (let ((project (pearl-gtd-review--get-project-at-point)))
+  (let ((project (full-gtd-review--get-project-at-point)))
     (unless project
       (error "No project at point"))
-    (pearl-gtd-project-utils--archive-project project)
-    (pearl-gtd-review--refresh-view)))
+    (full-gtd-project-utils--archive-project project)
+    (full-gtd-review--refresh-view)))
 
-(defmacro pearl-gtd-review-define-property-editor (name property prompt property-type &optional extra-cleanup)
+(defmacro full-gtd-review-define-property-editor (name property prompt property-type &optional extra-cleanup)
   "Define property editor function with NAME for PROPERTY.
 PROMPT is the user prompt string.
 PROPERTY-TYPE is a symbol for completion (context, project, delegate,
 l3, l4, l5, l6, principle).
 EXTRA-CLEANUP is a form to execute when removing the property
 \(e.g., also remove DELEGATED_DATE)."
-  (let ((fn-name (intern (concat "pearl-gtd-review--edit-" name "-at-point")))
-        (getter (intern (concat "pearl-gtd-review--get-property-by-id")))
-        (setter (intern (concat "pearl-gtd-review--set-property-by-id")))
-        (remover (intern (concat "pearl-gtd-review--remove-property-by-id"))))
+  (let ((fn-name (intern (concat "full-gtd-review--edit-" name "-at-point")))
+        (getter (intern (concat "full-gtd-review--get-property-by-id")))
+        (setter (intern (concat "full-gtd-review--set-property-by-id")))
+        (remover (intern (concat "full-gtd-review--remove-property-by-id"))))
     `(defun ,fn-name ()
        ,(format "Edit %s with current value as default.
 If input is empty, remove the property."
                 property)
        (interactive)
-       (let ((entry (pearl-gtd-review--get-entry-at-point)))
+       (let ((entry (full-gtd-review--get-entry-at-point)))
          (when entry
            (let* ((id (car entry))
                   (file (cdr entry))
                   (current-value (,getter id file ,property))
                   (new-value (if ',property-type
-                                (pearl-gtd-core-read-property-with-completion
+                                (full-gtd-core-read-property-with-completion
                                  ,prompt ',property-type (or current-value ""))
                               (string-trim (read-string ,prompt (or current-value ""))))))
              (if (string= new-value "")
@@ -346,151 +346,151 @@ If input is empty, remove the property."
                    (,remover id file ,property)
                    ,extra-cleanup)
                (,setter id file ,property new-value))
-             (pearl-gtd-review--refresh-view)))))))
+             (full-gtd-review--refresh-view)))))))
 
-(defun pearl-gtd-review--edit-context-at-point ()
+(defun full-gtd-review--edit-context-at-point ()
   "Edit context tag with current value as default.
 If input is empty, remove the property."
   (interactive)
-  (let ((entry (pearl-gtd-review--get-entry-at-point)))
+  (let ((entry (full-gtd-review--get-entry-at-point)))
     (when entry
       (let* ((id (car entry))
              (file (cdr entry))
-             (current-context (pearl-gtd-review--get-context-by-id id file))
-             (new-context (pearl-gtd-core-read-property-with-completion
+             (current-context (full-gtd-review--get-context-by-id id file))
+             (new-context (full-gtd-core-read-property-with-completion
                            "Context (empty to remove, supports spaces, e.g., @office, @home office): "
                            'context (or current-context ""))))
-        (pearl-gtd-core-with-entry-at-id id file
+        (full-gtd-core-with-entry-at-id id file
           (if (string= new-context "")
               (org-set-tags '())
             (org-set-tags (list new-context)))
           (save-buffer))
-        (pearl-gtd-review--refresh-view)))))
+        (full-gtd-review--refresh-view)))))
 
-(pearl-gtd-review-define-property-editor
+(full-gtd-review-define-property-editor
    "delegated" "DELEGATED"
    (concat "Delegated to (empty to remove, supports full name, "
            "e.g., John Smith): ")
    delegate
-   (pearl-gtd-review--remove-property-by-id id file "DELEGATED_DATE"))
+   (full-gtd-review--remove-property-by-id id file "DELEGATED_DATE"))
 
-(defun pearl-gtd-review--edit-scheduled-at-point ()
+(defun full-gtd-review--edit-scheduled-at-point ()
   "Edit scheduled date at point (bound to `s' in review mode).
-Uses `pearl-gtd-core-read-date' quick keys.
+Uses `full-gtd-core-read-date' quick keys.
 If user presses RET, remove the scheduled date."
   (interactive)
-  (let ((entry (pearl-gtd-review--get-entry-at-point)))
+  (let ((entry (full-gtd-review--get-entry-at-point)))
     (when entry
       (let* ((id (car entry))
              (file (cdr entry))
-             (current-scheduled (pearl-gtd-review--get-scheduled-by-id id file)))
+             (current-scheduled (full-gtd-review--get-scheduled-by-id id file)))
         (when current-scheduled
           (message "Current scheduled: %s" current-scheduled))
-        (let ((new-date (pearl-gtd-core-read-date 'schedule)))
+        (let ((new-date (full-gtd-core-read-date 'schedule)))
           (if new-date
-              (pearl-gtd-core-with-entry-at-id id file
+              (full-gtd-core-with-entry-at-id id file
                 (org-schedule nil new-date)
                 (save-buffer))
-            (pearl-gtd-core-with-entry-at-id id file
+            (full-gtd-core-with-entry-at-id id file
               (org-schedule '(4) nil)
               (save-buffer)))
-          (pearl-gtd-review--refresh-view))))))
+          (full-gtd-review--refresh-view))))))
 
-(defun pearl-gtd-review--set-deadline-at-point ()
+(defun full-gtd-review--set-deadline-at-point ()
   "Set deadline for task at point (bound to `d' in review mode).
-Uses `pearl-gtd-core-read-date' quick keys.
+Uses `full-gtd-core-read-date' quick keys.
 If user presses RET, remove the deadline."
   (interactive)
-  (let ((entry (pearl-gtd-review--get-entry-at-point)))
+  (let ((entry (full-gtd-review--get-entry-at-point)))
     (when entry
       (let* ((id (car entry))
              (file (cdr entry))
-             (deadline (pearl-gtd-core-read-date 'deadline)))
+             (deadline (full-gtd-core-read-date 'deadline)))
         (if deadline
-            (pearl-gtd-core-with-entry-at-id id file
+            (full-gtd-core-with-entry-at-id id file
               (org-deadline nil deadline)
               (save-buffer))
-          (pearl-gtd-core-with-entry-at-id id file
+          (full-gtd-core-with-entry-at-id id file
             (org-deadline '(4) nil)
             (save-buffer)))
-        (pearl-gtd-review--refresh-view)))))
+        (full-gtd-review--refresh-view)))))
 
-(defun pearl-gtd-review--edit-notes-at-point ()
+(defun full-gtd-review--edit-notes-at-point ()
   "Edit notes (body) for task at point."
   (interactive)
-  (let ((entry (pearl-gtd-review--get-entry-at-point)))
+  (let ((entry (full-gtd-review--get-entry-at-point)))
     (when entry
       (let ((id (car entry))
             (file (cdr entry)))
-        (pearl-gtd-core-with-entry-at-id id file
-          (pearl-gtd-core--edit-entry-notes)))
-      (pearl-gtd-review--refresh-view))))
+        (full-gtd-core-with-entry-at-id id file
+          (full-gtd-core--edit-entry-notes)))
+      (full-gtd-review--refresh-view))))
 
-(defun pearl-gtd-review--rename-task-at-point ()
+(defun full-gtd-review--rename-task-at-point ()
   "Rename task at point."
   (interactive)
-  (let ((entry (pearl-gtd-review--get-entry-at-point)))
+  (let ((entry (full-gtd-review--get-entry-at-point)))
     (when entry
       (let* ((id (car entry))
              (file (cdr entry))
-             (current-headline (pearl-gtd-review--get-headline-by-id id file))
+             (current-headline (full-gtd-review--get-headline-by-id id file))
              (new-name (string-trim (read-string "New task name (supports spaces, e.g., Prepare quarterly report): " current-headline))))
         (when (and new-name (not (string= new-name "")) (not (string= new-name current-headline)))
-          (pearl-gtd-core-with-entry-at-id id file
+          (full-gtd-core-with-entry-at-id id file
             (org-edit-headline new-name)
             (save-buffer))
-          (pearl-gtd-review--refresh-view))))))
+          (full-gtd-review--refresh-view))))))
 
-(pearl-gtd-review-define-property-editor
+(full-gtd-review-define-property-editor
    "project" "PROJECT"
    (concat "Project (empty to remove, supports spaces, use ; "
            "for multiple, e.g., Website Redesign; Q1 Goals): ")
    project
    (progn
-    (pearl-gtd-review--remove-property-by-id id file "L3_AREA")
-    (pearl-gtd-review--remove-property-by-id id file "L4_GOAL")
-    (pearl-gtd-review--remove-property-by-id id file "L5_VISION")
-    (pearl-gtd-review--remove-property-by-id id file "L6_PURPOSE")))
+    (full-gtd-review--remove-property-by-id id file "L3_AREA")
+    (full-gtd-review--remove-property-by-id id file "L4_GOAL")
+    (full-gtd-review--remove-property-by-id id file "L5_VISION")
+    (full-gtd-review--remove-property-by-id id file "L6_PURPOSE")))
 
-(defun pearl-gtd-review--complete-task-at-point ()
+(defun full-gtd-review--complete-task-at-point ()
   "Mark task at point as done.
 Delete task if it has no PROJECT property."
   (interactive)
-  (let ((entry (pearl-gtd-review--get-entry-at-point)))
+  (let ((entry (full-gtd-review--get-entry-at-point)))
     (when entry
       (let ((id (car entry))
             (file (cdr entry)))
-        (if (pearl-gtd-review--should-delete-on-completion-p id file)
+        (if (full-gtd-review--should-delete-on-completion-p id file)
             (progn
-              (pearl-gtd-review--delete-entry-by-id id file)
+              (full-gtd-review--delete-entry-by-id id file)
               (message "Task deleted (no project)"))
-          (pearl-gtd-core-with-entry-at-id id file
+          (full-gtd-core-with-entry-at-id id file
             (let ((org-log-done 'time))
               (org-todo 'done))
             (save-buffer)))
-        (pearl-gtd-review--refresh-view)))))
+        (full-gtd-review--refresh-view)))))
 
-(defun pearl-gtd-review--refresh-view ()
+(defun full-gtd-review--refresh-view ()
   "Refresh current review view."
   (interactive)
-  (pcase pearl-gtd-review--current-view-type
-    ('daily (pearl-gtd-review--daily))
-    ('weekly (pearl-gtd-review--weekly))
-    ('project (pearl-gtd-project-utils--show-project-tasks pearl-gtd-review--current-project))
+  (pcase full-gtd-review--current-view-type
+    ('daily (full-gtd-review--daily))
+    ('weekly (full-gtd-review--weekly))
+    ('project (full-gtd-project-utils--show-project-tasks full-gtd-review--current-project))
     (_ (message "Cannot refresh this view"))))
 
-(defun pearl-gtd-review--insert-table-row (head id file fields)
+(defun full-gtd-review--insert-table-row (head id file fields)
   "Insert a table row into the review buffer.
 HEAD is the entry headline string.
 ID is the unique identifier string, or nil for project rows.
 FILE is the source file path string.
 FIELDS is a list of field values in order.
 
-For project rows (ID is nil), attach `pearl-gtd-project' property to HEAD.
-For task rows, attach `pearl-gtd-id' and `pearl-gtd-file' properties to HEAD."
-  (pearl-gtd-ui--insert-table-row head id file fields (null id)))
+For project rows (ID is nil), attach `full-gtd-project' property to HEAD.
+For task rows, attach `full-gtd-id' and `full-gtd-file' properties to HEAD."
+  (full-gtd-ui--insert-table-row head id file fields (null id)))
 
-(defun pearl-gtd-review--build-table-data (sections)
+(defun full-gtd-review--build-table-data (sections)
   "Build table data from SECTIONS.
 Returns SECTIONS-DATA and META.
 SECTIONS-DATA is a list of \=(TITLE TYPE ENTRIES).
@@ -523,22 +523,22 @@ META is an alist with keys :entry-map and :entry-index."
           (list (cons :entry-map entry-map)
                 (cons :entry-index entry-index)))))
 
-(defun pearl-gtd-review--render-table (buffer sections-data meta)
+(defun full-gtd-review--render-table (buffer sections-data meta)
   "Render SECTIONS-DATA into BUFFER using META."
   (let* ((entry-map (cdr (assq :entry-map meta)))
          (anchor (when (buffer-live-p buffer)
                    (with-current-buffer buffer
-                     (pearl-gtd-ui--anchor-at-point)))))
+                     (full-gtd-ui--anchor-at-point)))))
     (with-current-buffer buffer
       (setq buffer-read-only nil)
       (erase-buffer)
       (org-mode)
       (setq-local header-line-format
-                  (pcase pearl-gtd-review--current-view-type
+                  (pcase full-gtd-review--current-view-type
                     ('daily "Daily Review | n/p/j/k: move | RET: jump | c/s/d/D/r/e/P: property | C: complete | A: archive | g: refresh | q: quit")
                     ('weekly "Weekly Review | n/p/j/k: move | RET: jump | c/s/d/D/r/e/P/3-6: property | C: complete | a: activate someday | A: archive | g: refresh | q: quit")
                     (_ "Review | n/p/j/k: move | RET: jump | c/s/d/D/r/e/P/3-6: property | C: complete | A: archive | g: refresh | q: quit")))
-      (setq pearl-gtd-review--entry-map entry-map)
+      (setq full-gtd-review--entry-map entry-map)
       (if (null sections-data)
           (insert "(No entries to review)\n")
         (dolist (section sections-data)
@@ -588,7 +588,7 @@ META is an alist with keys :entry-map and :entry-index."
                       (id (nth 1 entry))
                       (file (or (nth 2 entry) "action.org"))
                       (fields (nthcdr 3 entry)))
-                  (pearl-gtd-review--insert-table-row head id file fields)
+                  (full-gtd-review--insert-table-row head id file fields)
                   (push (list id file (and (null id) head))
                         row-metadata)))
               (org-table-align)
@@ -598,33 +598,33 @@ META is an alist with keys :entry-map and :entry-index."
                 (dolist (metadata (nreverse row-metadata))
                   (let ((row-marker (copy-marker (point))))
                     (forward-line 1)
-                    (apply #'pearl-gtd-review--put-row-metadata
+                    (apply #'full-gtd-review--put-row-metadata
                            row-marker metadata))))
               (set-marker table-marker nil))
             (goto-char (point-max))
             (insert "\n"))))
       (setq buffer-read-only t)
       (goto-char (point-min))
-      (pearl-gtd-ui--restore-point-anchor anchor)
+      (full-gtd-ui--restore-point-anchor anchor)
       (current-buffer))))
 
-(defun pearl-gtd-review--create-table-buffer (buffer-name sections)
+(defun full-gtd-review--create-table-buffer (buffer-name sections)
   "Create review buffer named BUFFER-NAME with multiple sections.
 SECTIONS is a list of (TITLE . ENTRIES) or (TITLE ENTRIES . TYPE)
 where TYPE can be \\='project for project sections."
-  (let* ((table-data (pearl-gtd-review--build-table-data sections))
+  (let* ((table-data (full-gtd-review--build-table-data sections))
          (sections-data (car table-data))
          (meta (cdr table-data))
          (buffer (get-buffer-create buffer-name)))
-    (pearl-gtd-review--render-table buffer sections-data meta)
+    (full-gtd-review--render-table buffer sections-data meta)
     buffer))
 
-(defun pearl-gtd-review--collect-entries-from-file (file &optional predicates include-created)
+(defun full-gtd-review--collect-entries-from-file (file &optional predicates include-created)
   "Collect entries from FILE matching PREDICATES.
 INCLUDE-CREATED non-nil means include Created field.
 Returns list of entry lists suitable for table display."
-  (let* ((file-path (expand-file-name file pearl-gtd-init-base-directory))
-         (entries (pearl-gtd-core-filter-entries file-path predicates)))
+  (let* ((file-path (expand-file-name file full-gtd-init-base-directory))
+         (entries (full-gtd-core-filter-entries file-path predicates)))
     (if include-created
         (mapcar (lambda (e)
                   (list (nth 0 e) (nth 7 e) (nth 8 e) (or (nth 6 e) "")))
@@ -635,7 +635,7 @@ Returns list of entry lists suitable for table display."
                       (or (nth 10 e) "") (or (nth 4 e) "") (or (nth 5 e) "")))
               entries))))
 
-(defun pearl-gtd-review--entry-upcoming-deadline-p ()
+(defun full-gtd-review--entry-upcoming-deadline-p ()
   "Return non-nil if entry has deadline within next 7 days."
   (let ((deadline (org-entry-get nil "DEADLINE")))
     (when deadline
@@ -646,18 +646,18 @@ Returns list of entry lists suitable for table display."
         (and (>= deadline-days now-days)
              (<= deadline-days seven-days-later))))))
 
-(defun pearl-gtd-review--collect-upcoming-deadlines ()
+(defun full-gtd-review--collect-upcoming-deadlines ()
   "Collect entries with deadlines in next 7 days from action.org."
-  (pearl-gtd-review--collect-entries-from-file
+  (full-gtd-review--collect-entries-from-file
    "action.org"
-   (list #'pearl-gtd-core-entry-todo-p
-         #'pearl-gtd-review--entry-upcoming-deadline-p)
+   (list #'full-gtd-core-entry-todo-p
+         #'full-gtd-review--entry-upcoming-deadline-p)
    nil))  ; no Created field
 
-(defun pearl-gtd-review--collect-all-projects ()
+(defun full-gtd-review--collect-all-projects ()
   "Collect all unique project names from action.org.
 Supports semicolon separators (both English and Chinese)."
-  (let ((actions-file (expand-file-name "action.org" pearl-gtd-init-base-directory))
+  (let ((actions-file (expand-file-name "action.org" full-gtd-init-base-directory))
         (projects '()))
     (when (file-exists-p actions-file)
       (with-temp-buffer
@@ -667,16 +667,16 @@ Supports semicolon separators (both English and Chinese)."
          (lambda ()
            (let ((proj (org-entry-get nil "PROJECT")))
              (when proj
-               (dolist (p (pearl-gtd-core--split-values proj))
+               (dolist (p (full-gtd-core--split-values proj))
                  (cl-pushnew p projects :test #'string=)))))
          nil nil)))
     (nreverse projects)))
 
-(defun pearl-gtd-review--get-project-stats (proj-name)
+(defun full-gtd-review--get-project-stats (proj-name)
   "Get statistics for PROJ-NAME from action.org.
 PROJ-NAME is a string naming the project to analyze.
 Returns list (TOTAL TODO DONE NEXT-DEADLINE L3 L4 L5 L6)."
-  (let ((file-path (expand-file-name "action.org" pearl-gtd-init-base-directory))
+  (let ((file-path (expand-file-name "action.org" full-gtd-init-base-directory))
         (total 0)
         (done 0)
         (todo 0)
@@ -693,7 +693,7 @@ Returns list (TOTAL TODO DONE NEXT-DEADLINE L3 L4 L5 L6)."
          (lambda ()
            (let ((proj (org-entry-get nil "PROJECT")))
              (when proj
-               (let ((projects (pearl-gtd-core--split-values proj)))
+               (let ((projects (full-gtd-core--split-values proj)))
                  (when (member proj-name projects)
                    (cl-incf total)
                    (let ((todo-state (org-get-todo-state)))
@@ -701,7 +701,7 @@ Returns list (TOTAL TODO DONE NEXT-DEADLINE L3 L4 L5 L6)."
                       ((member todo-state org-done-keywords) (cl-incf done))
                       ((member todo-state org-not-done-keywords) (cl-incf todo)))
                      ;; Collect horizon values from first TODO entry
-                     (when (and (null horizon-l3) (pearl-gtd-core-entry-todo-p))
+                     (when (and (null horizon-l3) (full-gtd-core-entry-todo-p))
                        (setq horizon-l3 (org-entry-get nil "L3_AREA"))
                        (setq horizon-l4 (org-entry-get nil "L4_GOAL"))
                        (setq horizon-l5 (org-entry-get nil "L5_VISION"))
@@ -722,28 +722,28 @@ Returns list (TOTAL TODO DONE NEXT-DEADLINE L3 L4 L5 L6)."
           (or horizon-l5 "")
           (or horizon-l6 ""))))
 
-(defun pearl-gtd-review--collect-stuck-projects ()
+(defun full-gtd-review--collect-stuck-projects ()
   "Collect projects with no associated TODO actions.
 Returns list of entries formatted for project table display."
-  (let ((all-projects (pearl-gtd-review--collect-all-projects))
+  (let ((all-projects (full-gtd-review--collect-all-projects))
         (projects-with-todos '())
         (stuck-projects '()))
-    (let ((file-path (expand-file-name "action.org" pearl-gtd-init-base-directory)))
+    (let ((file-path (expand-file-name "action.org" full-gtd-init-base-directory)))
       (when (file-exists-p file-path)
         (with-temp-buffer
           (insert-file-contents file-path)
           (org-mode)
           (org-map-entries
            (lambda ()
-             (when (pearl-gtd-core-entry-todo-p)
+             (when (full-gtd-core-entry-todo-p)
                (let ((proj (org-entry-get nil "PROJECT")))
                  (when proj
-                   (dolist (p (pearl-gtd-core--split-values proj))
+                   (dolist (p (full-gtd-core--split-values proj))
                      (cl-pushnew p projects-with-todos :test #'string=))))))
            nil nil))))
     (dolist (proj all-projects)
       (unless (member proj projects-with-todos)
-        (let ((stats (pearl-gtd-review--get-project-stats proj)))
+        (let ((stats (full-gtd-review--get-project-stats proj)))
           (push (list proj nil "action.org"
                       (nth 0 stats)  ; Total
                       (nth 1 stats)  ; Todo
@@ -757,26 +757,26 @@ Returns list of entries formatted for project table display."
                 stuck-projects))))
     (nreverse stuck-projects)))
 
-(defun pearl-gtd-review--collect-active-projects ()
+(defun full-gtd-review--collect-active-projects ()
   "Collect projects that have associated TODO actions.
 Returns list of entries formatted for project table display."
   (let ((projects-with-todos '())
         (active-projects '()))
-    (let ((file-path (expand-file-name "action.org" pearl-gtd-init-base-directory)))
+    (let ((file-path (expand-file-name "action.org" full-gtd-init-base-directory)))
       (when (file-exists-p file-path)
         (with-temp-buffer
           (insert-file-contents file-path)
           (org-mode)
           (org-map-entries
            (lambda ()
-             (when (pearl-gtd-core-entry-todo-p)
+             (when (full-gtd-core-entry-todo-p)
                (let ((proj (org-entry-get nil "PROJECT")))
                  (when proj
-                   (dolist (p (pearl-gtd-core--split-values proj))
+                   (dolist (p (full-gtd-core--split-values proj))
                      (cl-pushnew p projects-with-todos :test #'string=))))))
            nil nil))))
     (dolist (proj projects-with-todos)
-      (let ((stats (pearl-gtd-review--get-project-stats proj)))
+      (let ((stats (full-gtd-review--get-project-stats proj)))
         (push (list proj nil "action.org"
                     (nth 0 stats)  ; Total
                     (nth 1 stats)  ; Todo
@@ -790,11 +790,11 @@ Returns list of entries formatted for project table display."
               active-projects)))
     (nreverse active-projects)))
 
-(defun pearl-gtd-review--collect-no-project-actions ()
+(defun full-gtd-review--collect-no-project-actions ()
   "Collect TODO actions that don't belong to any project.
 Returns list of entry lists suitable for table display."
-  (let* ((file-path (expand-file-name "action.org" pearl-gtd-init-base-directory))
-         (entries (pearl-gtd-core-filter-entries file-path (list #'pearl-gtd-core-entry-todo-p))))
+  (let* ((file-path (expand-file-name "action.org" full-gtd-init-base-directory))
+         (entries (full-gtd-core-filter-entries file-path (list #'full-gtd-core-entry-todo-p))))
     (mapcar (lambda (e)
               (list (nth 0 e) (nth 7 e) (nth 8 e)
                     (or (nth 2 e) "") (or (nth 3 e) "") (or (nth 9 e) "")
@@ -805,77 +805,77 @@ Returns list of entry lists suitable for table display."
                  (or (null proj) (string= proj ""))))
              entries))))
 
-(defun pearl-gtd-review--daily ()
+(defun full-gtd-review--daily ()
   "Run daily review with sections: Today, Next Actions, and Inbox."
-  (let* ((buffer-name "*Pearl-GTD Daily Review*")
-         (today-entries (pearl-gtd-review--collect-entries-from-file
+  (let* ((buffer-name "*Full-GTD Daily Review*")
+         (today-entries (full-gtd-review--collect-entries-from-file
                          "action.org"
-                         (list #'pearl-gtd-core-entry-todo-p
-                               #'pearl-gtd-core-entry-scheduled-today-p)
+                         (list #'full-gtd-core-entry-todo-p
+                               #'full-gtd-core-entry-scheduled-today-p)
                          nil))  ; no Created field
-         (next-entries (pearl-gtd-review--collect-entries-from-file
+         (next-entries (full-gtd-review--collect-entries-from-file
                         "action.org"
                         (list (lambda ()
-                                (and (pearl-gtd-core-entry-todo-p)
-                                     (not (pearl-gtd-core-entry-scheduled-today-p)))))
+                                (and (full-gtd-core-entry-todo-p)
+                                     (not (full-gtd-core-entry-scheduled-today-p)))))
                         nil))  ; no Created field
-         (inbox-entries (pearl-gtd-review--collect-entries-from-file "inbox.org" nil t))  ; include Created
-         (completed-today-entries (pearl-gtd-review--collect-entries-from-file
+         (inbox-entries (full-gtd-review--collect-entries-from-file "inbox.org" nil t))  ; include Created
+         (completed-today-entries (full-gtd-review--collect-entries-from-file
                                    "action.org"
-                                   (list #'pearl-gtd-core-entry-done-p
-                                         #'pearl-gtd-core-entry-completed-today-p)
+                                   (list #'full-gtd-core-entry-done-p
+                                         #'full-gtd-core-entry-completed-today-p)
                                    nil))  ; no Created field
          (sections (list (cons "action.org - Today" today-entries)
                          (cons "action.org - Completed Today" completed-today-entries)
                          (cons "action.org - Next Actions" next-entries)
                          (cons "inbox.org - Inbox" inbox-entries))))
-    (pearl-gtd-review--create-table-buffer buffer-name sections)
+    (full-gtd-review--create-table-buffer buffer-name sections)
     (with-current-buffer buffer-name
-      (setq pearl-gtd-review--current-view-type 'daily))
+      (setq full-gtd-review--current-view-type 'daily))
     (pop-to-buffer buffer-name)
-    (pearl-gtd-review-view-mode 1)))
+    (full-gtd-review-view-mode 1)))
 
-(defun pearl-gtd-review--weekly ()
+(defun full-gtd-review--weekly ()
   "Run weekly review with comprehensive sections."
-  (let* ((buffer-name "*Pearl-GTD Weekly Review*")
+  (let* ((buffer-name "*Full-GTD Weekly Review*")
          ;; 1. Inbox - clear first (include Created)
-         (inbox-entries (pearl-gtd-review--collect-entries-from-file "inbox.org" nil t))
+         (inbox-entries (full-gtd-review--collect-entries-from-file "inbox.org" nil t))
          ;; 2. Overdue - urgent items (no Created)
-         (overdue-entries (pearl-gtd-review--collect-entries-from-file
+         (overdue-entries (full-gtd-review--collect-entries-from-file
                            "action.org"
-                           (list #'pearl-gtd-core-entry-todo-p
-                                 #'pearl-gtd-core-entry-overdue-p)
+                           (list #'full-gtd-core-entry-todo-p
+                                 #'full-gtd-core-entry-overdue-p)
                            nil))
          ;; 3. Upcoming Deadlines (no Created)
-         (upcoming-entries (pearl-gtd-review--collect-upcoming-deadlines))
+         (upcoming-entries (full-gtd-review--collect-upcoming-deadlines))
          ;; 4. Completed - review accomplishments (no Created)
-         (completed-entries (pearl-gtd-review--collect-entries-from-file
+         (completed-entries (full-gtd-review--collect-entries-from-file
                              "action.org"
-                             (list #'pearl-gtd-core-entry-done-p)
+                             (list #'full-gtd-core-entry-done-p)
                              nil))
          ;; 6. Delegated - check waiting for (no Created)
-         (delegated-entries (pearl-gtd-review--collect-entries-from-file
+         (delegated-entries (full-gtd-review--collect-entries-from-file
                              "action.org"
-                             (list #'pearl-gtd-core-entry-todo-p
-                                   #'pearl-gtd-core-entry-delegated-p)
+                             (list #'full-gtd-core-entry-todo-p
+                                   #'full-gtd-core-entry-delegated-p)
                              nil))
          ;; 7. Next Actions (no Created)
-         (next-entries (pearl-gtd-review--collect-entries-from-file
+         (next-entries (full-gtd-review--collect-entries-from-file
                         "action.org"
                         (list (lambda ()
-                                (and (pearl-gtd-core-entry-todo-p)
-                                     (not (pearl-gtd-core-entry-overdue-p))
-                                     (not (pearl-gtd-core-entry-delegated-p))
-                                     (not (pearl-gtd-review--entry-upcoming-deadline-p)))))
+                                (and (full-gtd-core-entry-todo-p)
+                                     (not (full-gtd-core-entry-overdue-p))
+                                     (not (full-gtd-core-entry-delegated-p))
+                                     (not (full-gtd-review--entry-upcoming-deadline-p)))))
                         nil))
          ;; 8. Stuck Projects
-         (stuck-entries (pearl-gtd-review--collect-stuck-projects))
+         (stuck-entries (full-gtd-review--collect-stuck-projects))
          ;; 9. Active Projects
-         (active-entries (pearl-gtd-review--collect-active-projects))
+         (active-entries (full-gtd-review--collect-active-projects))
          ;; 10. Actions without projects (include Created for No Project)
-         (no-project-entries (pearl-gtd-review--collect-no-project-actions))
+         (no-project-entries (full-gtd-review--collect-no-project-actions))
          ;; 11. Someday/Maybe (no Created)
-         (someday-entries (pearl-gtd-review--collect-entries-from-file "someday.org" nil nil))
+         (someday-entries (full-gtd-review--collect-entries-from-file "someday.org" nil nil))
          ;; Build sections in GTD review order
          (sections (list (cons "inbox.org - Inbox" inbox-entries)
                          (cons "action.org - Overdue" overdue-entries)
@@ -887,24 +887,24 @@ Returns list of entry lists suitable for table display."
                          (cons "Projects - Active" (cons active-entries 'project))
                          (cons "action.org - No Project" no-project-entries)
                          (cons "someday.org - Someday" someday-entries))))
-    (pearl-gtd-review--create-table-buffer buffer-name sections)
+    (full-gtd-review--create-table-buffer buffer-name sections)
     (with-current-buffer buffer-name
-      (setq pearl-gtd-review--current-view-type 'weekly))
+      (setq full-gtd-review--current-view-type 'weekly))
     (pop-to-buffer buffer-name)
-    (pearl-gtd-review-view-mode 1)))
+    (full-gtd-review-view-mode 1)))
 
-(defun pearl-gtd-review--quit-or-return ()
+(defun full-gtd-review--quit-or-return ()
   "Quit window, or return to weekly review if in project sub-view."
   (interactive)
-  (if (and (boundp 'pearl-gtd-review--current-view-type)
-           (memq pearl-gtd-review--current-view-type '(nil project)))
+  (if (and (boundp 'full-gtd-review--current-view-type)
+           (memq full-gtd-review--current-view-type '(nil project)))
       (progn
         (kill-buffer)
-        (when (get-buffer "*Pearl-GTD Weekly Review*")
-          (pop-to-buffer "*Pearl-GTD Weekly Review*")))
+        (when (get-buffer "*Full-GTD Weekly Review*")
+          (pop-to-buffer "*Full-GTD Weekly Review*")))
     (quit-window)))
 
-(defun pearl-gtd-review--goto-task-at-point ()
+(defun full-gtd-review--goto-task-at-point ()
   "Jump to task in source file, or show project tasks if on project row."
   (interactive)
   (save-excursion
@@ -912,24 +912,24 @@ Returns list of entry lists suitable for table display."
     (let ((end (line-end-position))
           (project nil))
       (while (and (< (point) end) (not project))
-        (setq project (get-text-property (point) 'pearl-gtd-project))
+        (setq project (get-text-property (point) 'full-gtd-project))
         (forward-char 1))
       (if project
-          (pearl-gtd-project-utils--show-project-tasks project)
-        (let ((entry (pearl-gtd-review--get-entry-at-point)))
+          (full-gtd-project-utils--show-project-tasks project)
+        (let ((entry (full-gtd-review--get-entry-at-point)))
           (when entry
             (let ((id (car entry))
                   (file (cdr entry)))
-              (find-file (expand-file-name file pearl-gtd-init-base-directory))
+              (find-file (expand-file-name file full-gtd-init-base-directory))
               (goto-char (point-min))
               (when (re-search-forward (concat ":ID:[ \t]+" (regexp-quote id)) nil t)
                 (org-back-to-heading)))))))))
 
-(pearl-gtd-core-define-table-navigators
-  "pearl-gtd-review"
-  #'pearl-gtd-review--data-row-boundaries
+(full-gtd-core-define-table-navigators
+  "full-gtd-review"
+  #'full-gtd-review--data-row-boundaries
   "| Headline[ \t]*|")
 
-(provide 'pearl-gtd-review)
+(provide 'full-gtd-review)
 
-;;; pearl-gtd-review.el ends here
+;;; full-gtd-review.el ends here

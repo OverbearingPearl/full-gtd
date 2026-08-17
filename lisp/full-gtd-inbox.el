@@ -1,14 +1,14 @@
-;;; pearl-gtd-inbox.el --- Inbox handling for pearl-gtd  -*- lexical-binding: t; -*-
+;;; full-gtd-inbox.el --- Inbox handling for full-gtd  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 OverbearingPearl
 ;; Author: OverbearingPearl <OverbearingPearl@outlook.com>
 ;; Assisted-by: Kimi:kimi-k2.5, DeepSeek:deepseek-v3.2, Claude:claude-sonnet-4.6
-;; URL: https://github.com/OverbearingPearl/pearl-gtd
+;; URL: https://github.com/OverbearingPearl/full-gtd
 ;; SPDX-License-Identifier: MIT
 
 ;;; Commentary:
 
-;; This file handles inbox-related functions for pearl-gtd,
+;; This file handles inbox-related functions for full-gtd,
 ;; including capture and processing with user interaction via staging,
 ;; fully aligned with GTD workflow.
 
@@ -17,34 +17,34 @@
 (require 'cl-lib)
 (require 'org)
 (require 'org-id)
-(require 'pearl-gtd-core)
-(require 'pearl-gtd-horizons)
+(require 'full-gtd-core)
+(require 'full-gtd-horizons)
 
-(defface pearl-gtd-inbox--highlight
+(defface full-gtd-inbox--highlight
   '((t :inherit highlight))
   "Face for highlighting the current entry."
-  :group 'pearl-gtd)
+  :group 'full-gtd)
 
-(defface pearl-gtd-inbox--deleted
+(defface full-gtd-inbox--deleted
   '((t :inherit shadow :strike-through t))
   "Face for deleted (trash) entries."
-  :group 'pearl-gtd)
+  :group 'full-gtd)
 
-(defface pearl-gtd-inbox--executed
+(defface full-gtd-inbox--executed
   '((t :inherit success :strike-through t))
   "Face for executed (2-minute rule) entries."
-  :group 'pearl-gtd)
+  :group 'full-gtd)
 
-(defvar pearl-gtd-inbox--staging-original-file nil
+(defvar full-gtd-inbox--staging-original-file nil
   "The original Org file path for the staging buffer.")
 
-(defvar pearl-gtd-inbox--staging-changes nil
+(defvar full-gtd-inbox--staging-changes nil
   "A list to store staged changes, e.g., ((row col new-value) ...).")
 
-(defvar pearl-gtd-inbox--last-context nil
+(defvar full-gtd-inbox--last-context nil
   "Last context used during current inbox processing session.")
 
-(defun pearl-gtd-inbox--read-destination-key (headline)
+(defun full-gtd-inbox--read-destination-key (headline)
   "Read single key for destination choice for HEADLINE.
 Returns one of: ?a (Next Action), ?r (Reference), ?s (Someday), ?t (Trash),
 ?x (Execute <2min), ?c (Clarify).
@@ -67,21 +67,21 @@ continues afterwards."
       (message "Invalid key. Process '%s': [a] Next Action | [r] Reference | [s] Someday | [t] Trash | [x] Execute (<2min) | [c] Clarify: "
                (substring headline 0 (min 30 (length headline))))
       (sit-for 0.5)
-      (pearl-gtd-inbox--read-destination-key headline))
+      (full-gtd-inbox--read-destination-key headline))
      (t
       ;; Multi-key command (e.g., C-x o): execute it immediately and
       ;; continue processing afterwards.
       (condition-case err
           (progn
             (execute-kbd-macro seq)
-            (pearl-gtd-inbox--read-destination-key headline))
+            (full-gtd-inbox--read-destination-key headline))
         (quit (signal 'quit nil))
         (error
          (message "Invalid key: %S" err)
          (sit-for 0.5)
-         (pearl-gtd-inbox--read-destination-key headline)))))))
+         (full-gtd-inbox--read-destination-key headline)))))))
 
-(defun pearl-gtd-inbox--clarify-entry (headline &optional default-notes)
+(defun full-gtd-inbox--clarify-entry (headline &optional default-notes)
   "Clarify HEADLINE and notes.
 DEFAULT-NOTES is the current notes text (or nil).
 Returns (NEW-HEADLINE . NEW-NOTES).  NEW-NOTES is nil if cleared."
@@ -95,7 +95,7 @@ Returns (NEW-HEADLINE . NEW-NOTES).  NEW-NOTES is nil if cleared."
                                    (or default-notes "")))))
     (cons new-headline (unless (string= notes-text "") notes-text))))
 
-(defun pearl-gtd-inbox--collect-action-attrs (&optional staging-buffer default-context default-project)
+(defun full-gtd-inbox--collect-action-attrs (&optional staging-buffer default-context default-project)
   "Collect action attributes with context inheritance.
 If STAGING-BUFFER is provided, ensure focus returns to it after each input.
 If DEFAULT-CONTEXT is a non-empty string, use it directly.
@@ -106,63 +106,63 @@ Returns alist: ((context . VAL) (schedule . VAL) (deadline . VAL)
                   default-context
                 (progn
                   (when staging-buffer (pop-to-buffer staging-buffer))
-                  (pearl-gtd-inbox--read-context))))
+                  (full-gtd-inbox--read-context))))
          (sched (progn
                   (when staging-buffer (pop-to-buffer staging-buffer))
-                  (pearl-gtd-core-read-date 'schedule)))
+                  (full-gtd-core-read-date 'schedule)))
          (dead (progn
                  (when staging-buffer (pop-to-buffer staging-buffer))
-                 (pearl-gtd-core-read-date 'deadline)))
+                 (full-gtd-core-read-date 'deadline)))
          (deleg (progn
                   (when staging-buffer (pop-to-buffer staging-buffer))
-                  (pearl-gtd-inbox--read-delegate)))
+                  (full-gtd-inbox--read-delegate)))
          (proj (if (and default-project (not (string= default-project "")))
                    default-project
                  (progn
                    (when staging-buffer (pop-to-buffer staging-buffer))
-                   (pearl-gtd-inbox--read-project)))))
+                   (full-gtd-inbox--read-project)))))
     `((context . ,ctx) (schedule . ,sched) (deadline . ,dead)
       (delegate . ,deleg) (project . ,proj))))
 
-(defun pearl-gtd-inbox--read-context ()
+(defun full-gtd-inbox--read-context ()
   "Read context with completion from existing actions, allowing free input.
 Supports spaces in context names.  Examples: @office, @home office, @phone."
-  (let* ((default (or pearl-gtd-inbox--last-context ""))
+  (let* ((default (or full-gtd-inbox--last-context ""))
          (prompt (format "Context [RET %s, TAB complete]: " (if (string= default "") "none" (concat "keep '" default "'"))))
-         (input (pearl-gtd-core-read-property-with-completion prompt 'context default)))
-    (unless (string= input "") (setq pearl-gtd-inbox--last-context input))
+         (input (full-gtd-core-read-property-with-completion prompt 'context default)))
+    (unless (string= input "") (setq full-gtd-inbox--last-context input))
     (if (string= input "") "" input)))
 
-(defun pearl-gtd-inbox--read-project ()
+(defun full-gtd-inbox--read-project ()
   "Read project with completion from existing projects.
 Supports spaces in project names.  Use ; to separate multiple projects.
 Examples: Website Redesign, Q1 Marketing; Q2 Planning."
-  (pearl-gtd-core-read-property-with-completion "Project [RET none, TAB complete]: " 'project))
+  (full-gtd-core-read-property-with-completion "Project [RET none, TAB complete]: " 'project))
 
-(defun pearl-gtd-inbox--read-delegate ()
+(defun full-gtd-inbox--read-delegate ()
   "Read delegate with completion from existing delegates.
 Supports full names with spaces.  Examples: John Smith, Alice Johnson."
-  (pearl-gtd-core-read-property-with-completion "Delegated to [RET none, TAB complete]: " 'delegate))
+  (full-gtd-core-read-property-with-completion "Delegated to [RET none, TAB complete]: " 'delegate))
 
-(defvar-local pearl-gtd-inbox--current-highlight nil
+(defvar-local full-gtd-inbox--current-highlight nil
   "Current highlight overlay in the staging buffer.")
 
-(defvar-local pearl-gtd-inbox--marked-deleted-rows '()
+(defvar-local full-gtd-inbox--marked-deleted-rows '()
   "Buffer-local list of row numbers marked as deleted.")
 
-(defvar-local pearl-gtd-inbox--marked-executed-rows '()
+(defvar-local full-gtd-inbox--marked-executed-rows '()
   "Buffer-local list of row numbers marked as executed.")
 
-(defun pearl-gtd-inbox--create-staging-buffer (file-path &optional buffer-name filter-pred)
+(defun full-gtd-inbox--create-staging-buffer (file-path &optional buffer-name filter-pred)
   "Create a staging buffer from FILE-PATH.
 Optional BUFFER-NAME specifies the buffer name.  Return the created buffer.
 Optional FILTER-PRED is a predicate called with no arguments in the
 context of each entry; only entries matching the predicate are included."
-  (setq pearl-gtd-inbox--staging-original-file file-path
-        pearl-gtd-inbox--staging-changes nil
-        pearl-gtd-inbox--marked-deleted-rows '()
-        pearl-gtd-inbox--marked-executed-rows '())
-  (let ((actual-buffer-name (or buffer-name (generate-new-buffer-name " *pearl-gtd-inbox-staging*")))
+  (setq full-gtd-inbox--staging-original-file file-path
+        full-gtd-inbox--staging-changes nil
+        full-gtd-inbox--marked-deleted-rows '()
+        full-gtd-inbox--marked-executed-rows '())
+  (let ((actual-buffer-name (or buffer-name (generate-new-buffer-name " *full-gtd-inbox-staging*")))
         (headlines '()))
     (with-current-buffer (get-buffer-create actual-buffer-name)
       (setq buffer-read-only nil)
@@ -203,7 +203,7 @@ context of each entry; only entries matching the predicate are included."
       (setq buffer-read-only t)
       (current-buffer))))
 
-(defun pearl-gtd-inbox--map-entries (buffer func)
+(defun full-gtd-inbox--map-entries (buffer func)
   "Map over all entries in BUFFER.
 Calls FUNC with headline, entry-ref, and original-tags for each entry."
   (with-current-buffer buffer
@@ -224,23 +224,23 @@ Calls FUNC with headline, entry-ref, and original-tags for each entry."
         (dolist (entry (nreverse entries))
           (funcall func (nth 0 entry) (nth 1 entry) (nth 2 entry)))))))
 
-(defun pearl-gtd-inbox--highlight-entry (entry-ref)
+(defun full-gtd-inbox--highlight-entry (entry-ref)
   "Highlight ENTRY-REF in staging buffer.
 ENTRY-REF is a cons cell (BUFFER . ROW)."
   (let ((buffer (car entry-ref)) (row (cdr entry-ref)))
     (with-current-buffer buffer
       (save-excursion
-        (when pearl-gtd-inbox--current-highlight
-          (delete-overlay pearl-gtd-inbox--current-highlight))
+        (when full-gtd-inbox--current-highlight
+          (delete-overlay full-gtd-inbox--current-highlight))
         (goto-char (point-min))
         (forward-line (1- row))
         (let ((ov (make-overlay (line-beginning-position) (line-end-position))))
-          (overlay-put ov 'face 'pearl-gtd-inbox--highlight)
+          (overlay-put ov 'face 'full-gtd-inbox--highlight)
           (overlay-put ov 'evaporate t)
-          (setq pearl-gtd-inbox--current-highlight ov)
+          (setq full-gtd-inbox--current-highlight ov)
           (redisplay t))))))
 
-(defun pearl-gtd-inbox--mark-deleted-impl (row)
+(defun full-gtd-inbox--mark-deleted-impl (row)
   "Mark ROW as deleted.  Internal implementation for state layer."
   (let ((inhibit-read-only t))
     (save-excursion
@@ -250,18 +250,18 @@ ENTRY-REF is a cons cell (BUFFER . ROW)."
       (let* ((start (point))
              (end (progn (skip-chars-forward "^|") (point)))
              (ov (make-overlay start end)))
-        (overlay-put ov 'face 'pearl-gtd-inbox--deleted)
+        (overlay-put ov 'face 'full-gtd-inbox--deleted)
         (overlay-put ov 'evaporate t)))
-    (cl-pushnew row pearl-gtd-inbox--marked-deleted-rows)))
+    (cl-pushnew row full-gtd-inbox--marked-deleted-rows)))
 
-(defun pearl-gtd-inbox--mark-deleted (entry-ref)
+(defun full-gtd-inbox--mark-deleted (entry-ref)
   "Mark ENTRY-REF as deleted.
 ENTRY-REF is a cons cell (BUFFER . ROW)."
   (let ((buffer (car entry-ref)) (row (cdr entry-ref)))
     (with-current-buffer buffer
-      (pearl-gtd-inbox--mark-deleted-impl row))))
+      (full-gtd-inbox--mark-deleted-impl row))))
 
-(defun pearl-gtd-inbox--mark-executed-impl (row)
+(defun full-gtd-inbox--mark-executed-impl (row)
   "Mark ROW as executed.  Internal implementation for state layer."
   (let ((inhibit-read-only t))
     (save-excursion
@@ -271,21 +271,21 @@ ENTRY-REF is a cons cell (BUFFER . ROW)."
       (let* ((start (point))
              (end (progn (skip-chars-forward "^|") (point)))
              (ov (make-overlay start end)))
-        (overlay-put ov 'face 'pearl-gtd-inbox--executed)
+        (overlay-put ov 'face 'full-gtd-inbox--executed)
         (overlay-put ov 'evaporate t)))
-    (cl-pushnew row pearl-gtd-inbox--marked-executed-rows)))
+    (cl-pushnew row full-gtd-inbox--marked-executed-rows)))
 
-(defun pearl-gtd-inbox--mark-executed (entry-ref)
+(defun full-gtd-inbox--mark-executed (entry-ref)
   "Mark ENTRY-REF as executed.
 ENTRY-REF is a cons cell (BUFFER . ROW)."
   (let ((buffer (car entry-ref)) (row (cdr entry-ref)))
     (with-current-buffer buffer
-      (pearl-gtd-inbox--mark-executed-impl row))))
+      (full-gtd-inbox--mark-executed-impl row))))
 
-(defun pearl-gtd-inbox--stage-change-impl (row col new-value)
+(defun full-gtd-inbox--stage-change-impl (row col new-value)
   "Stage change for ROW at COL with NEW-VALUE.
 Internal implementation for state layer."
-  (push (list row col new-value) pearl-gtd-inbox--staging-changes)
+  (push (list row col new-value) full-gtd-inbox--staging-changes)
   (let ((inhibit-read-only t))
     (save-excursion
       (goto-char (point-min))
@@ -294,22 +294,22 @@ Internal implementation for state layer."
       (org-table-blank-field)
       (insert new-value)
       (org-table-align)
-      (pearl-gtd-inbox--reapply-marks (current-buffer)))))
+      (full-gtd-inbox--reapply-marks (current-buffer)))))
 
-(defun pearl-gtd-inbox--stage-change (entry-ref col new-value)
+(defun full-gtd-inbox--stage-change (entry-ref col new-value)
   "Stage change for ENTRY-REF at COL with NEW-VALUE.
 ENTRY-REF is a cons cell (BUFFER . ROW).
 COL is the column number to modify.
 NEW-VALUE is the string to insert."
   (let ((buffer (car entry-ref)) (row (cdr entry-ref)))
     (with-current-buffer buffer
-      (pearl-gtd-inbox--stage-change-impl row col new-value))))
+      (full-gtd-inbox--stage-change-impl row col new-value))))
 
-(defun pearl-gtd-inbox--reapply-marks (buffer)
+(defun full-gtd-inbox--reapply-marks (buffer)
   "Reapply mark to BUFFER after table alignment.
 BUFFER is the staging buffer to update."
   (with-current-buffer buffer
-    (dolist (row pearl-gtd-inbox--marked-deleted-rows)
+    (dolist (row full-gtd-inbox--marked-deleted-rows)
       (condition-case nil
           (progn
             (goto-char (point-min))
@@ -318,10 +318,10 @@ BUFFER is the staging buffer to update."
             (let* ((start (point))
                    (end (progn (skip-chars-forward "^|") (point)))
                    (ov (make-overlay start end)))
-              (overlay-put ov 'face 'pearl-gtd-inbox--deleted)
+              (overlay-put ov 'face 'full-gtd-inbox--deleted)
               (overlay-put ov 'evaporate t)))
         (error nil)))
-    (dolist (row pearl-gtd-inbox--marked-executed-rows)
+    (dolist (row full-gtd-inbox--marked-executed-rows)
       (condition-case nil
           (progn
             (goto-char (point-min))
@@ -330,11 +330,11 @@ BUFFER is the staging buffer to update."
             (let* ((start (point))
                    (end (progn (skip-chars-forward "^|") (point)))
                    (ov (make-overlay start end)))
-              (overlay-put ov 'face 'pearl-gtd-inbox--executed)
+              (overlay-put ov 'face 'full-gtd-inbox--executed)
               (overlay-put ov 'evaporate t)))
         (error nil)))))
 
-(defvar pearl-gtd-inbox--pending-moves nil
+(defvar full-gtd-inbox--pending-moves nil
   "List of pending moves after staging.
 
 Each element is a list:
@@ -347,18 +347,18 @@ NEW-HEADLINE is the clarified headline, or nil if unchanged.
 NOTES is the clarified notes text, or nil if none.
 DEADLINE is the deadline date string, or nil if not set.")
 
-(defvar pearl-gtd-inbox-stage-buffer-name nil
+(defvar full-gtd-inbox-stage-buffer-name nil
   "The name of the current inbox staging buffer.")
 
-(defun pearl-gtd-inbox--capture ()
+(defun full-gtd-inbox--capture ()
   "Capture one or more items to the inbox, each with a timestamp.
 Separate multiple items with semicolons (English or Chinese)."
   (let* ((raw-input (read-string "Capture to inbox: <Raw idea or task> (separate with ; or ； for multiple): "))
-         (items (pearl-gtd-core--split-values raw-input)))
+         (items (full-gtd-core--split-values raw-input)))
     (dolist (item items)
       (setq item (replace-regexp-in-string "[\x00-\x08\x0b-\x0c\x0e-\x1f\x7f]" "" item))
       (setq item (replace-regexp-in-string "\n" " " item))
-      (with-current-buffer (find-file-noselect (expand-file-name "inbox.org" pearl-gtd-init-base-directory))
+      (with-current-buffer (find-file-noselect (expand-file-name "inbox.org" full-gtd-init-base-directory))
         (goto-char (point-max))
         (insert (format "* %s\n:PROPERTIES:\n:CREATED: %s\n:END:\n" (string-trim item) (format-time-string "%F %T")))
         (forward-line -2)
@@ -367,7 +367,7 @@ Separate multiple items with semicolons (English or Chinese)."
 
 ;;;; State Machine Layer
 
-(defun pearl-gtd-inbox--fields-to-props (fields)
+(defun full-gtd-inbox--fields-to-props (fields)
   "Convert FIELDS alist to properties string for org entry."
   (let ((parts '()))
     (dolist (f fields)
@@ -384,7 +384,7 @@ Separate multiple items with semicolons (English or Chinese)."
          (when proj (push (format ":PROJECT:%s:" (string-trim proj)) parts)))))
     (mapconcat #'identity (nreverse parts) "\n")))
 
-(defun pearl-gtd-inbox--parse-properties-string (properties-string)
+(defun full-gtd-inbox--parse-properties-string (properties-string)
   "Parse PROPERTIES-STRING and apply to current entry.
 PROPERTIES-STRING contains tags and properties in special format."
   (let ((components (split-string properties-string "\n" t)))
@@ -395,7 +395,7 @@ PROPERTIES-STRING contains tags and properties in special format."
           (org-schedule nil date-str)))
        ((string-match "^:PROJECT:\\(.+\\):$" comp)
         (let ((projects (match-string 1 comp)))
-          (let ((normalized-projects (pearl-gtd-core--normalize-project-input projects)))
+          (let ((normalized-projects (full-gtd-core--normalize-project-input projects)))
             (when normalized-projects
               (org-set-property "PROJECT" normalized-projects)))))
        ((string-match "^:\\([^:]+\\):\\(.+\\):$" comp)
@@ -413,7 +413,7 @@ PROPERTIES-STRING contains tags and properties in special format."
 
 ;;;; Entry Point
 
-(defun pearl-gtd-inbox--process-entry (headline buffer entry-ref original-tags &optional default-context default-project)
+(defun full-gtd-inbox--process-entry (headline buffer entry-ref original-tags &optional default-context default-project)
   "Process HEADLINE entry in BUFFER with new streamlined flow.
 ENTRY-REF is the staging entry reference (BUFFER . ROW).
 BUFFER is the staging buffer containing the entry.
@@ -424,15 +424,15 @@ the staging buffer."
         (current-notes nil)
         (dest nil))
     (while (not dest)
-      (pearl-gtd-inbox--highlight-entry entry-ref)
-      (let ((key (pearl-gtd-inbox--read-destination-key current-headline)))
+      (full-gtd-inbox--highlight-entry entry-ref)
+      (let ((key (full-gtd-inbox--read-destination-key current-headline)))
         (pcase key
-          (?c (let ((clarified (pearl-gtd-inbox--clarify-entry current-headline current-notes)))
+          (?c (let ((clarified (full-gtd-inbox--clarify-entry current-headline current-notes)))
                 (when (car clarified)
                   (setq current-headline (car clarified))
-                  (pearl-gtd-inbox--stage-change entry-ref 1 current-headline))
+                  (full-gtd-inbox--stage-change entry-ref 1 current-headline))
                 (setq current-notes (cdr clarified))
-                (pearl-gtd-inbox--stage-change entry-ref 2 (or current-notes ""))))
+                (full-gtd-inbox--stage-change entry-ref 2 (or current-notes ""))))
           (?a (setq dest 'action))
           (?r (setq dest 'ref))
           (?s (setq dest 'someday))
@@ -441,25 +441,25 @@ the staging buffer."
           (_ (message "Invalid key") (sit-for 0.5)))))
     (pcase dest
       ('execute
-       (pearl-gtd-inbox--mark-executed entry-ref)
-       (pearl-gtd-inbox--stage-change entry-ref 4 "Executed")
+       (full-gtd-inbox--mark-executed entry-ref)
+       (full-gtd-inbox--stage-change entry-ref 4 "Executed")
        (push (list headline nil nil current-headline current-notes nil)
-             pearl-gtd-inbox--pending-moves))
+             full-gtd-inbox--pending-moves))
       ('trash
-       (pearl-gtd-inbox--mark-deleted entry-ref)
-       (pearl-gtd-inbox--stage-change entry-ref 4 "Trashed")
+       (full-gtd-inbox--mark-deleted entry-ref)
+       (full-gtd-inbox--stage-change entry-ref 4 "Trashed")
        (push (list headline nil nil current-headline current-notes nil)
-             pearl-gtd-inbox--pending-moves))
+             full-gtd-inbox--pending-moves))
       ('ref
-       (pearl-gtd-inbox--stage-change entry-ref 4 "Reference")
+       (full-gtd-inbox--stage-change entry-ref 4 "Reference")
        (push (list headline "reference.org" nil current-headline current-notes nil)
-             pearl-gtd-inbox--pending-moves))
+             full-gtd-inbox--pending-moves))
       ('someday
-       (pearl-gtd-inbox--stage-change entry-ref 4 "Someday")
+       (full-gtd-inbox--stage-change entry-ref 4 "Someday")
        (push (list headline "someday.org" nil current-headline current-notes nil)
-             pearl-gtd-inbox--pending-moves))
+             full-gtd-inbox--pending-moves))
       ('action
-       (let* ((attrs (pearl-gtd-inbox--collect-action-attrs buffer default-context default-project))
+       (let* ((attrs (full-gtd-inbox--collect-action-attrs buffer default-context default-project))
               (deadline (cdr (assoc 'deadline attrs)))
               (context (cdr (assoc 'context attrs)))
               (project (cdr (assoc 'project attrs)))
@@ -478,36 +478,36 @@ the staging buffer."
                                  (concat "Deadline:" deadline)
                                (concat tags-summary ",Deadline:" deadline))))
          (when buffer (pop-to-buffer buffer))
-         (pearl-gtd-inbox--stage-change entry-ref 4 tags-summary)
+         (full-gtd-inbox--stage-change entry-ref 4 tags-summary)
          (push (list headline "action.org"
-                     (pearl-gtd-inbox--fields-to-props attrs)
+                     (full-gtd-inbox--fields-to-props attrs)
                      current-headline current-notes deadline)
-               pearl-gtd-inbox--pending-moves))))))
+               full-gtd-inbox--pending-moves))))))
 
-(defun pearl-gtd-inbox--apply-pending-moves (&optional brainstorm)
+(defun full-gtd-inbox--apply-pending-moves (&optional brainstorm)
   "Apply all pending move operations to target files and cleanup inbox.
 If BRAINSTORM is non-nil, remove BRAINSTORM property before moving.
 Returns t if inbox file was deleted (empty after processing)."
-  (dolist (move pearl-gtd-inbox--pending-moves)
-    (pearl-gtd-inbox--do-move (nth 0 move) (nth 1 move) (nth 2 move)
+  (dolist (move full-gtd-inbox--pending-moves)
+    (full-gtd-inbox--do-move (nth 0 move) (nth 1 move) (nth 2 move)
                               (nth 3 move) (nth 4 move) (nth 5 move)
                               brainstorm))
-  (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
+  (let ((inbox-file (expand-file-name "inbox.org" full-gtd-init-base-directory)))
     (when (and (file-exists-p inbox-file)
                (= 0 (file-attribute-size (file-attributes inbox-file))))
       (delete-file inbox-file)
       t)))
 
-(defun pearl-gtd-inbox--process (&optional brainstorm default-context default-project)
+(defun full-gtd-inbox--process (&optional brainstorm default-context default-project)
   "Process the inbox according to GTD clarify and organize procedure.
 If BRAINSTORM is non-nil, only process entries with BRAINSTORM property
 set to \"t\".  DEFAULT-CONTEXT and DEFAULT-PROJECT are used when
 BRAINSTORM is non-nil."
-  (setq pearl-gtd-inbox--last-context nil)
-  (let ((inbox-file (expand-file-name "inbox.org" pearl-gtd-init-base-directory)))
-    (setq pearl-gtd-inbox--pending-moves '())
-    (when (and pearl-gtd-inbox-stage-buffer-name (get-buffer pearl-gtd-inbox-stage-buffer-name))
-      (kill-buffer pearl-gtd-inbox-stage-buffer-name))
+  (setq full-gtd-inbox--last-context nil)
+  (let ((inbox-file (expand-file-name "inbox.org" full-gtd-init-base-directory)))
+    (setq full-gtd-inbox--pending-moves '())
+    (when (and full-gtd-inbox-stage-buffer-name (get-buffer full-gtd-inbox-stage-buffer-name))
+      (kill-buffer full-gtd-inbox-stage-buffer-name))
     (if (file-exists-p inbox-file)
         (let* ((attrs (file-attributes inbox-file))
                (file-size (file-attribute-size attrs)))
@@ -515,7 +515,7 @@ BRAINSTORM is non-nil."
               (let* ((buffer-name (if brainstorm
                                       (format " *brainstorm-organize: %s*" (or default-project "unknown"))
                                     " *inbox-processing*"))
-                     (staging-buffer (pearl-gtd-inbox--create-staging-buffer
+                     (staging-buffer (full-gtd-inbox--create-staging-buffer
                                       inbox-file
                                       buffer-name
                                       (when brainstorm
@@ -523,24 +523,24 @@ BRAINSTORM is non-nil."
                                           (and (string= (org-entry-get nil "BRAINSTORM") "t")
                                                (or (null default-project)
                                                    (string= (org-entry-get nil "PROJECT") default-project))))))))
-                (setq pearl-gtd-inbox-stage-buffer-name (buffer-name staging-buffer))
+                (setq full-gtd-inbox-stage-buffer-name (buffer-name staging-buffer))
                 (pop-to-buffer staging-buffer)
                 (redisplay t)
                 (condition-case _
-                    (catch 'pearl-gtd-inbox-abort
+                    (catch 'full-gtd-inbox-abort
                       (with-current-buffer staging-buffer
                         (org-mode)
                         (font-lock-ensure (point-min) (point-max))
                         (redisplay t)
-                        (pearl-gtd-inbox--map-entries
+                        (full-gtd-inbox--map-entries
                          staging-buffer
                          (lambda (headline entry-ref original-tags)
-                           (pearl-gtd-inbox--process-entry headline staging-buffer entry-ref original-tags default-context default-project)))
-                        (when pearl-gtd-inbox--current-highlight
-                          (delete-overlay pearl-gtd-inbox--current-highlight)
-                          (setq pearl-gtd-inbox--current-highlight nil))
-                        (setq pearl-gtd-inbox--pending-moves (nreverse pearl-gtd-inbox--pending-moves))
-                        (when (pearl-gtd-inbox--apply-pending-moves brainstorm)
+                           (full-gtd-inbox--process-entry headline staging-buffer entry-ref original-tags default-context default-project)))
+                        (when full-gtd-inbox--current-highlight
+                          (delete-overlay full-gtd-inbox--current-highlight)
+                          (setq full-gtd-inbox--current-highlight nil))
+                        (setq full-gtd-inbox--pending-moves (nreverse full-gtd-inbox--pending-moves))
+                        (when (full-gtd-inbox--apply-pending-moves brainstorm)
                           (message "Inbox empty, deleted."))
                         (message "Inbox processing complete and changes applied per GTD workflow.")))
                   (quit
@@ -548,7 +548,7 @@ BRAINSTORM is non-nil."
                    (when (buffer-live-p staging-buffer)
                      (kill-buffer staging-buffer))
                    (signal 'quit nil))))
-            (let ((buffer-name "*Pearl-GTD: Inbox*"))
+            (let ((buffer-name "*Full-GTD: Inbox*"))
               (get-buffer-create buffer-name)
               (with-current-buffer buffer-name
                 (setq buffer-read-only nil)
@@ -559,7 +559,7 @@ BRAINSTORM is non-nil."
                 (goto-char (point-min)))
               (pop-to-buffer buffer-name)
               (message "Inbox is empty, nothing to process."))))
-      (let ((buffer-name "*Pearl-GTD: Inbox*"))
+      (let ((buffer-name "*Full-GTD: Inbox*"))
         (get-buffer-create buffer-name)
         (with-current-buffer buffer-name
           (setq buffer-read-only nil)
@@ -571,7 +571,7 @@ BRAINSTORM is non-nil."
         (pop-to-buffer buffer-name)
         (message "Inbox is empty, nothing to process.")))))
 
-(defun pearl-gtd-inbox--do-move (headline target-file properties-string new-headline notes deadline &optional brainstorm)
+(defun full-gtd-inbox--do-move (headline target-file properties-string new-headline notes deadline &optional brainstorm)
   "Move HEADLINE to TARGET-FILE and delete from inbox.
 If TARGET-FILE is nil, just delete from inbox (trash).
 If BRAINSTORM is non-nil, remove BRAINSTORM property before moving.
@@ -579,7 +579,7 @@ PROPERTIES-STRING contains tags and properties.
 NEW-HEADLINE is the clarified headline (nil if unchanged).
 NOTES is the clarified notes text (nil if none).
 DEADLINE is the deadline date string (nil if not set)."
-  (let ((inbox-path (expand-file-name "inbox.org" pearl-gtd-init-base-directory))
+  (let ((inbox-path (expand-file-name "inbox.org" full-gtd-init-base-directory))
         subtree-content)
     (when (and properties-string (not (string= properties-string "")))
       (with-current-buffer (find-file-noselect inbox-path)
@@ -587,7 +587,7 @@ DEADLINE is the deadline date string (nil if not set)."
         (goto-char (point-min))
         (when (re-search-forward (concat "^\\*+[ \t]+" (regexp-quote headline) "\\($\\| \\)") nil t)
           (beginning-of-line)
-          (pearl-gtd-inbox--parse-properties-string properties-string)
+          (full-gtd-inbox--parse-properties-string properties-string)
           (save-buffer))))
     (when (and deadline (not (string= deadline "")))
       (with-current-buffer (find-file-noselect inbox-path)
@@ -608,7 +608,7 @@ DEADLINE is the deadline date string (nil if not set)."
         (when (and target-file (string= target-file "action.org"))
           (org-todo (car org-not-done-keywords))
           (org-id-get-create)
-          (pearl-gtd-horizons--sync-entry-horizons))
+          (full-gtd-horizons--sync-entry-horizons))
         (when notes
           (org-end-of-meta-data t)
           (unless (bolp)
@@ -626,7 +626,7 @@ DEADLINE is the deadline date string (nil if not set)."
         (kill-region (region-beginning) (region-end))
         (save-buffer))
       (when (and target-file subtree-content)
-        (let ((target-path (expand-file-name target-file pearl-gtd-init-base-directory)))
+        (let ((target-path (expand-file-name target-file full-gtd-init-base-directory)))
           (with-current-buffer (find-file-noselect target-path)
             (org-mode)
             (goto-char (point-max))
@@ -635,6 +635,6 @@ DEADLINE is the deadline date string (nil if not set)."
             (unless (bolp) (insert "\n"))
             (save-buffer)))))))
 
-(provide 'pearl-gtd-inbox)
+(provide 'full-gtd-inbox)
 
-;;; pearl-gtd-inbox.el ends here
+;;; full-gtd-inbox.el ends here

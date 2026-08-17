@@ -1,32 +1,32 @@
-;;; pearl-gtd-project-utils.el --- Project archive and project task view utilities  -*- lexical-binding: t; -*-
+;;; full-gtd-project-utils.el --- Project archive and project task view utilities  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 OverbearingPearl
 ;; Author: OverbearingPearl <OverbearingPearl@outlook.com>
 ;; Assisted-by: DeepSeek:deepseek-v4-flash
-;; URL: https://github.com/OverbearingPearl/pearl-gtd
+;; URL: https://github.com/OverbearingPearl/full-gtd
 ;; SPDX-License-Identifier: MIT
 
 ;;; Commentary:
 
 ;; Shared utilities for archiving projects and viewing project tasks.
-;; Used by both pearl-gtd-horizons and pearl-gtd-review to avoid
+;; Used by both full-gtd-horizons and full-gtd-review to avoid
 ;; circular dependencies.
 
 ;;; Code:
 
 (require 'cl-lib)
 (require 'org)
-(require 'pearl-gtd-init)
-(require 'pearl-gtd-core)
-(require 'pearl-gtd-state)
-(require 'pearl-gtd-ui)
+(require 'full-gtd-init)
+(require 'full-gtd-core)
+(require 'full-gtd-state)
+(require 'full-gtd-ui)
 
-(defun pearl-gtd-project-utils--collect-project-entries (proj-name)
+(defun full-gtd-project-utils--collect-project-entries (proj-name)
   "Collect all entries from action.org belonging to PROJ-NAME.
 PROJ-NAME is a string naming the project to search for.
 Returns list of entry lists suitable for table display."
-  (let* ((file-path (expand-file-name "action.org" pearl-gtd-init-base-directory))
-         (entries (pearl-gtd-core-filter-entries file-path nil)))
+  (let* ((file-path (expand-file-name "action.org" full-gtd-init-base-directory))
+         (entries (full-gtd-core-filter-entries file-path nil)))
     (mapcar (lambda (e)
               (list (nth 0 e) (nth 7 e) (nth 8 e)
                     (or (nth 2 e) "") (or (nth 3 e) "") (or (nth 9 e) "")
@@ -35,15 +35,15 @@ Returns list of entry lists suitable for table display."
             (cl-remove-if-not
              (lambda (e)
                (let ((proj (nth 5 e)))
-                 (and proj (member proj-name (pearl-gtd-core--split-values proj)))))
+                 (and proj (member proj-name (full-gtd-core--split-values proj)))))
              entries))))
 
-(defun pearl-gtd-project-utils--archive-project (project)
+(defun full-gtd-project-utils--archive-project (project)
   "Archive PROJECT from action.org to archive.org.
 Archiving is allowed only when all actions of PROJECT are DONE and no
 action belongs to any other project alongside PROJECT."
-  (let ((action-file (expand-file-name "action.org" pearl-gtd-init-base-directory))
-        (archive-file (expand-file-name "archive.org" pearl-gtd-init-base-directory)))
+  (let ((action-file (expand-file-name "action.org" full-gtd-init-base-directory))
+        (archive-file (expand-file-name "archive.org" full-gtd-init-base-directory)))
     (unless (file-exists-p action-file)
       (error "File action.org not found"))
     (let ((archive-buffer (find-file-noselect archive-file)))
@@ -63,7 +63,7 @@ action belongs to any other project alongside PROJECT."
           (unless (bolp) (insert "\n"))
           (insert (format "* %s\n" project))))
       ;; Process action.org.
-      (pearl-gtd-state--with-file-buffer action-file
+      (full-gtd-state--with-file-buffer action-file
         (let ((positions '())
               (blocked nil))
           ;; First pass: validate and collect all matching entries.
@@ -72,7 +72,7 @@ action belongs to any other project alongside PROJECT."
              (let ((proj (org-entry-get nil "PROJECT"))
                    (todo-state (org-get-todo-state)))
                (when (and proj (not (string= proj "")))
-                 (let ((projects (pearl-gtd-core--split-values proj)))
+                 (let ((projects (full-gtd-core--split-values proj)))
                    (when (member project projects)
                      ;; Must be exclusive to this project.
                      (unless (and (= (length projects) 1)
@@ -109,12 +109,12 @@ action belongs to any other project alongside PROJECT."
         (set-buffer-modified-p nil)))
     (message "Project %s archived to archive.org" project)))
 
-(defun pearl-gtd-project-utils--show-project-tasks (proj-name)
+(defun full-gtd-project-utils--show-project-tasks (proj-name)
   "Display all tasks for PROJ-NAME in a dedicated buffer.
 PROJ-NAME is a string naming the project to display.
-Creates and pops to buffer *Pearl-GTD Project: PROJ-NAME*."
-  (let* ((buffer-name (format "*Pearl-GTD Project: %s*" proj-name))
-         (entries (pearl-gtd-project-utils--collect-project-entries proj-name))
+Creates and pops to buffer *Full-GTD Project: PROJ-NAME*."
+  (let* ((buffer-name (format "*Full-GTD Project: %s*" proj-name))
+         (entries (full-gtd-project-utils--collect-project-entries proj-name))
          (header "| Headline | Status | Scheduled | Deadline | Context | Delegated | Project | Created |\n")
          (sep "|----------+--------+-----------+----------+---------+-----------+---------+---------|\n"))
     (with-current-buffer (get-buffer-create buffer-name)
@@ -131,18 +131,18 @@ Creates and pops to buffer *Pearl-GTD Project: PROJ-NAME*."
                 (id (nth 1 entry))
                 (file (or (nth 2 entry) "action.org"))
                 (fields (nthcdr 3 entry)))
-            (pearl-gtd-ui--insert-table-row head id file fields nil))))
+            (full-gtd-ui--insert-table-row head id file fields nil))))
       (org-table-align)
       (setq buffer-read-only t)
-      (setq-local pearl-gtd-review--current-view-type 'project)
-      (setq-local pearl-gtd-review--current-project proj-name)
+      (setq-local full-gtd-review--current-view-type 'project)
+      (setq-local full-gtd-review--current-project proj-name)
       (goto-char (point-min)))
     (pop-to-buffer buffer-name)))
 
-(defun pearl-gtd-project-utils--collect-project-statistics ()
+(defun full-gtd-project-utils--collect-project-statistics ()
   "Collect all unique project names from action.org with their stats.
 Returns list of (PROJECT-NAME TOTAL TODO DONE L6-PURPOSE L6-PRINCIPLE L5 L4 L3)."
-  (let ((file-path (expand-file-name "action.org" pearl-gtd-init-base-directory))
+  (let ((file-path (expand-file-name "action.org" full-gtd-init-base-directory))
         (projects (make-hash-table :test 'equal)))
     (when (file-exists-p file-path)
       (with-temp-buffer
@@ -158,7 +158,7 @@ Returns list of (PROJECT-NAME TOTAL TODO DONE L6-PURPOSE L6-PRINCIPLE L5 L4 L3).
                  (l6-purpose (org-entry-get nil "L6_PURPOSE"))
                  (l6-principle (org-entry-get nil "L6_PRINCIPLE")))
              (when proj
-               (dolist (p (pearl-gtd-core--split-values proj))
+               (dolist (p (full-gtd-core--split-values proj))
                  (let ((data (or (gethash p projects)
                                  (puthash p (list 0 0 0 nil nil nil nil nil) projects))))
                    (cl-incf (nth 0 data))  ; Total
@@ -179,17 +179,17 @@ Returns list of (PROJECT-NAME TOTAL TODO DONE L6-PURPOSE L6-PRINCIPLE L5 L4 L3).
                projects)
       result)))
 
-(defun pearl-gtd-project-utils--collect-no-project-actions ()
+(defun full-gtd-project-utils--collect-no-project-actions ()
   "Collect TODO actions without project.
-Returns list of entry lists, as returned by `pearl-gtd-core-filter-entries'."
-  (let* ((file-path (expand-file-name "action.org" pearl-gtd-init-base-directory))
-         (entries (pearl-gtd-core-filter-entries file-path (list #'pearl-gtd-core-entry-todo-p))))
+Returns list of entry lists, as returned by `full-gtd-core-filter-entries'."
+  (let* ((file-path (expand-file-name "action.org" full-gtd-init-base-directory))
+         (entries (full-gtd-core-filter-entries file-path (list #'full-gtd-core-entry-todo-p))))
     (cl-remove-if-not
      (lambda (e)
        (let ((proj (nth 5 e)))
          (or (null proj) (string= proj ""))))
      entries)))
 
-(provide 'pearl-gtd-project-utils)
+(provide 'full-gtd-project-utils)
 
-;;; pearl-gtd-project-utils.el ends here
+;;; full-gtd-project-utils.el ends here

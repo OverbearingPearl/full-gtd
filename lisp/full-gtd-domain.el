@@ -1,9 +1,9 @@
-;;; pearl-gtd-domain.el --- Domain layer: pure functions for GTD business rules  -*- lexical-binding: t; -*-
+;;; full-gtd-domain.el --- Domain layer: pure functions for GTD business rules  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 OverbearingPearl
 ;; Author: OverbearingPearl <OverbearingPearl@outlook.com>
 ;; Assisted-by: Kimi:kimi-k2.5, DeepSeek:deepseek-v3.2, Claude:claude-sonnet-4.6
-;; URL: https://github.com/OverbearingPearl/pearl-gtd
+;; URL: https://github.com/OverbearingPearl/full-gtd
 ;; SPDX-License-Identifier: MIT
 
 ;;; Commentary:
@@ -17,11 +17,11 @@
 
 (require 'cl-lib)
 (require 'org)
-(require 'pearl-gtd-init)
+(require 'full-gtd-init)
 
-;;;; Data normalization (migrated from pearl-gtd-core)
+;;;; Data normalization (migrated from full-gtd-core)
 
-(defun pearl-gtd-domain--split-values (value-string)
+(defun full-gtd-domain--split-values (value-string)
   "Split VALUE-STRING using semicolon separator.
 Supports both English (;) and Chinese (；) semicolons.
 Trim whitespace from each value.  Filter empty values.
@@ -32,14 +32,14 @@ Returns list of strings or nil."
                   (mapcar #'string-trim
                           (split-string normalized ";"))))))
 
-(defun pearl-gtd-domain--join-values (values)
+(defun full-gtd-domain--join-values (values)
   "Join VALUES list using English semicolon separator.
 VALUES must be a list of strings.
 Returns string."
   (cl-assert (listp values) t "Internal: join-values requires list")
   (mapconcat #'identity values "; "))
 
-(defun pearl-gtd-domain--normalize-project-input (input)
+(defun full-gtd-domain--normalize-project-input (input)
   "Normalize project input: convert Chinese semicolons to English.
 Trim whitespace from each value.  Returns nil if empty.
 INPUT must be string or nil."
@@ -48,14 +48,14 @@ INPUT must be string or nil."
     (let ((trimmed (string-trim input)))
       (if (string-empty-p trimmed)
           nil
-        (let ((values (pearl-gtd-domain--split-values trimmed)))
+        (let ((values (full-gtd-domain--split-values trimmed)))
           (if values
-              (pearl-gtd-domain--join-values values)
+              (full-gtd-domain--join-values values)
             nil))))))
 
-;;;; Horizon validation (migrated from pearl-gtd-horizons)
+;;;; Horizon validation (migrated from full-gtd-horizons)
 
-(defun pearl-gtd-domain--check-hierarchy-constraint (existing-horizons level)
+(defun full-gtd-domain--check-hierarchy-constraint (existing-horizons level)
   "Check hierarchy constraint for setting LEVEL horizon.
 EXISTING-HORIZONS is an alist of ((L3_AREA . val) (L4_GOAL . val) ...).
 LEVEL must be a symbol: \\='area, \\='goal, \\='vision, \\='purpose,
@@ -77,14 +77,14 @@ Returns (VALID-P . ERROR-MSG)."
                   (cons nil "L5 Vision must be set first")))
       ('principle (if (and l6-purpose
                            (cl-some (lambda (v) (not (string= v "")))
-                                    (pearl-gtd-domain--split-values l6-purpose)))
+                                    (full-gtd-domain--split-values l6-purpose)))
                       (cons t nil)
                     (cons nil "L6 Purpose must be set first")))
       (_ (cons nil (format "Unknown horizon level: %s" level))))))
 
 ;;;; Planning workflow validation
 
-(defun pearl-gtd-domain--planning-input-valid-p (proj-name purpose vision goal)
+(defun full-gtd-domain--planning-input-valid-p (proj-name purpose vision goal)
   "Validate PROJ-NAME, PURPOSE, VISION, and GOAL for required planning fields.
 Returns (VALID-P . ERROR-MSG)."
   (cond
@@ -98,7 +98,7 @@ Returns (VALID-P . ERROR-MSG)."
     (cons nil "Goal (L4) is required"))
    (t (cons t nil))))
 
-(defun pearl-gtd-domain--require-next-action-p (actions-count)
+(defun full-gtd-domain--require-next-action-p (actions-count)
   "Determine if forced next action is required.
 ACTIONS-COUNT is number of next actions created.
 Returns t if no next actions exist."
@@ -106,12 +106,12 @@ Returns t if no next actions exist."
 
 ;;;; Completion candidates collection
 
-(defun pearl-gtd-domain--collect-unique-properties (property)
+(defun full-gtd-domain--collect-unique-properties (property)
   "Collect all unique values for PROPERTY from action.org.
 PROPERTY is a string like \"CONTEXT\", \"PROJECT\", \"DELEGATED\",
 \"L3_AREA\", etc.
 Returns list of strings."
-  (let ((file-path (expand-file-name "action.org" pearl-gtd-init-base-directory))
+  (let ((file-path (expand-file-name "action.org" full-gtd-init-base-directory))
         (values '()))
     (when (file-exists-p file-path)
       (with-temp-buffer
@@ -121,18 +121,18 @@ Returns list of strings."
          (lambda ()
            (let ((val (org-entry-get nil property)))
              (when val
-               (dolist (v (pearl-gtd-domain--split-values val))
+               (dolist (v (full-gtd-domain--split-values val))
                  (when (and v (not (string= v "")))
                    (cl-pushnew v values :test #'string=))))))
          nil nil)))
     (sort values #'string<)))
 
-(defun pearl-gtd-domain--collect-context-candidates ()
+(defun full-gtd-domain--collect-context-candidates ()
   "Collect context candidates (with @ prefix) from Org tags."
   (let ((contexts '())
         (files '("action.org" "someday.org" "reference.org" "inbox.org")))
     (dolist (file files)
-      (let ((path (expand-file-name file pearl-gtd-init-base-directory)))
+      (let ((path (expand-file-name file full-gtd-init-base-directory)))
         (when (file-exists-p path)
           (with-temp-buffer
             (insert-file-contents path)
@@ -145,23 +145,23 @@ Returns list of strings."
              nil nil)))))
     (mapcar (lambda (c) (concat "@" c)) contexts)))
 
-(defun pearl-gtd-domain--collect-project-candidates ()
+(defun full-gtd-domain--collect-project-candidates ()
   "Collect project candidates."
-  (pearl-gtd-domain--collect-unique-properties "PROJECT"))
+  (full-gtd-domain--collect-unique-properties "PROJECT"))
 
-(defun pearl-gtd-domain--collect-delegate-candidates ()
+(defun full-gtd-domain--collect-delegate-candidates ()
   "Collect delegate candidates."
-  (pearl-gtd-domain--collect-unique-properties "DELEGATED"))
+  (full-gtd-domain--collect-unique-properties "DELEGATED"))
 
-(defun pearl-gtd-domain--collect-horizon-candidates (level)
+(defun full-gtd-domain--collect-horizon-candidates (level)
   "Collect horizon candidates for LEVEL.
 LEVEL is one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE,
 L6_PRINCIPLE."
   (cl-assert (member level '("L3_AREA" "L4_GOAL" "L5_VISION" "L6_PURPOSE" "L6_PRINCIPLE" "PRINCIPLE"))
              t "Internal: invalid horizon level %s" level)
-  (pearl-gtd-domain--collect-unique-properties level))
+  (full-gtd-domain--collect-unique-properties level))
 
-(defun pearl-gtd-domain--compute-project-horizon (project level entries)
+(defun full-gtd-domain--compute-project-horizon (project level entries)
   "Compute PROJECT's horizon for LEVEL across ENTRIES.
 ENTRIES is a list of (PROJECTS . HORIZONS) where PROJECTS is a list
 of project names and HORIZONS is an alist mapping property names to
@@ -175,7 +175,7 @@ ignored."
       (when (member project (car entry))
         (let* ((raw-value (cdr (assoc level (cdr entry))))
                (values (when (and raw-value (not (string= raw-value "")))
-                         (delete-dups (pearl-gtd-domain--split-values raw-value)))))
+                         (delete-dups (full-gtd-domain--split-values raw-value)))))
           (when values
             (setq intersection
                   (if (eq intersection :unset)
@@ -184,7 +184,7 @@ ignored."
     (unless (eq intersection :unset)
       intersection)))
 
-(defun pearl-gtd-domain--combine-project-horizons (project-horizons)
+(defun full-gtd-domain--combine-project-horizons (project-horizons)
   "Combine PROJECT-HORIZONS lists into a single deduplicated list.
 Empty/nil inputs are ignored.  Returns nil if all inputs are empty."
   (let ((result '()))
@@ -193,7 +193,7 @@ Empty/nil inputs are ignored.  Returns nil if all inputs are empty."
         (cl-pushnew value result :test #'string=)))
     (nreverse result)))
 
-(defun pearl-gtd-domain--compute-entry-horizons (projects entries)
+(defun full-gtd-domain--compute-entry-horizons (projects entries)
   "Compute horizons for an entry belonging to PROJECTS.
 For each of L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE, L6_PRINCIPLE:
 single project → intersection of that project's other actions;
@@ -207,15 +207,15 @@ are omitted from the result."
     (dolist (level '("L3_AREA" "L4_GOAL" "L5_VISION" "L6_PURPOSE" "L6_PRINCIPLE"))
       (let* ((per-project
               (mapcar (lambda (proj)
-                        (pearl-gtd-domain--compute-project-horizon
+                        (full-gtd-domain--compute-project-horizon
                          proj level entries))
                       projects))
-             (combined (pearl-gtd-domain--combine-project-horizons per-project)))
+             (combined (full-gtd-domain--combine-project-horizons per-project)))
         (when combined
-          (push (cons level (pearl-gtd-domain--join-values combined))
+          (push (cons level (full-gtd-domain--join-values combined))
                 result))))
     (nreverse result)))
 
-(provide 'pearl-gtd-domain)
+(provide 'full-gtd-domain)
 
-;;; pearl-gtd-domain.el ends here
+;;; full-gtd-domain.el ends here
