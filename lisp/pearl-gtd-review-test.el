@@ -9,6 +9,7 @@
 (require 'ert)
 (require 'pearl-gtd)
 (require 'pearl-gtd-test)
+(require 'pearl-gtd-project-utils)
 
 (pearl-gtd-test-define-story pearl-gtd-review-test-user-views-daily-sections
   "Daily review shows Today, Next Actions, and Inbox in separate tables."
@@ -560,7 +561,7 @@
   :setup (pearl-gtd-init-initialize)
   :files (("action.org" "* DONE Task 1\n:PROPERTIES:\n:ID: ar-1\n:PROJECT: ArchProj\n:END:\n* DONE Task 2\n:PROPERTIES:\n:ID: ar-2\n:PROJECT: ArchProj\n:END:\n"))
   :mock nil
-  :body (pearl-gtd-review--archive-project "ArchProj")
+  :body (pearl-gtd-project-utils--archive-project "ArchProj")
   :asserts (progn
              ;; action.org no longer contains ArchProj entries
              (let ((result (pearl-gtd-test-file-contains-p
@@ -582,7 +583,7 @@
   :setup (pearl-gtd-init-initialize)
   :files (("action.org" "* DONE Task 1\n:PROPERTIES:\n:ID: todo-ar-1\n:PROJECT: MixedProj\n:END:\n* TODO Task 2\n:PROPERTIES:\n:ID: todo-ar-2\n:PROJECT: MixedProj\n:END:\n"))
   :mock nil
-  :body (should-error (pearl-gtd-review--archive-project "MixedProj")
+  :body (should-error (pearl-gtd-project-utils--archive-project "MixedProj")
                       :type 'error)
   :asserts (progn
              ;; action.org still has both entries
@@ -597,7 +598,7 @@
   :setup (pearl-gtd-init-initialize)
   :files (("action.org" "* DONE Task 1\n:PROPERTIES:\n:ID: multi-ar-1\n:PROJECT: ProjA; ProjB\n:END:\n* DONE Task 2\n:PROPERTIES:\n:ID: multi-ar-2\n:PROJECT: ProjA\n:END:\n"))
   :mock nil
-  :body (should-error (pearl-gtd-review--archive-project "ProjA")
+  :body (should-error (pearl-gtd-project-utils--archive-project "ProjA")
                       :type 'error)
   :asserts (progn
              (should (pearl-gtd-test-file-contains-p-bool

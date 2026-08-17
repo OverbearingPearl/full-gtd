@@ -231,68 +231,6 @@ Prompts for Purpose first, then immediately prompts for Principle."
     (pearl-gtd-project-utils--archive-project project)
     (pearl-gtd-horizons--view)))
 
-(defun pearl-gtd-horizons--collect-all-projects ()
-  "Collect all unique project names from action.org with their stats.
-Returns list of (PROJECT-NAME TOTAL TODO DONE L6-PURPOSE L6-PRINCIPLE L5 L4 L3)."
-  (let ((file-path (expand-file-name "action.org" pearl-gtd-init-base-directory))
-        (projects (make-hash-table :test 'equal)))
-    (when (file-exists-p file-path)
-      (with-temp-buffer
-        (insert-file-contents file-path)
-        (org-mode)
-        (org-map-entries
-         (lambda ()
-           (let ((proj (org-entry-get nil "PROJECT"))
-                 (todo-state (org-get-todo-state))
-                 (l3 (org-entry-get nil "L3_AREA"))
-                 (l4 (org-entry-get nil "L4_GOAL"))
-                 (l5 (org-entry-get nil "L5_VISION"))
-                 (l6-purpose (org-entry-get nil "L6_PURPOSE"))
-                 (l6-principle (org-entry-get nil "L6_PRINCIPLE")))
-             (when proj
-               (dolist (p (pearl-gtd-core--split-values proj))
-                 (let ((data (or (gethash p projects)
-                                 (puthash p (list 0 0 0 nil nil nil nil nil) projects))))
-                   (cl-incf (nth 0 data))  ; Total
-                   (cond
-                    ((member todo-state org-done-keywords) (cl-incf (nth 2 data)))
-                    ((member todo-state org-not-done-keywords) (cl-incf (nth 1 data))))
-                   ;; Store first non-empty horizon value
-                   (unless (nth 3 data) (setf (nth 3 data) (and l6-purpose (not (string= l6-purpose "")) l6-purpose)))
-                   (unless (nth 4 data) (setf (nth 4 data) (and l6-principle (not (string= l6-principle "")) l6-principle)))
-                   (unless (nth 5 data) (setf (nth 5 data) (and l5 (not (string= l5 "")) l5)))
-                   (unless (nth 6 data) (setf (nth 6 data) (and l4 (not (string= l4 "")) l4)))
-                   (unless (nth 7 data) (setf (nth 7 data) (and l3 (not (string= l3 "")) l3))))))))
-         nil nil)))
-    ;; Convert hash to list
-    (let (result)
-      (maphash (lambda (k v)
-                 (push (cons k v) result))
-               projects)
-      result)))
-
-(defun pearl-gtd-horizons--collect-no-project-actions ()
-  "Collect TODO actions without project, with L3 Area.
-Returns list of (HEADLINE STATUS CONTEXT L3)."
-  (let ((file-path (expand-file-name "action.org" pearl-gtd-init-base-directory))
-        (actions '()))
-    (when (file-exists-p file-path)
-      (with-temp-buffer
-        (insert-file-contents file-path)
-        (org-mode)
-        (org-map-entries
-         (lambda ()
-           (when (pearl-gtd-core-entry-todo-p)
-             (let ((proj (org-entry-get nil "PROJECT"))
-                   (head (org-get-heading t t))
-                   (status (org-get-todo-state))
-                   (context (mapconcat (lambda (c) (concat "@" c)) (org-get-tags) ","))
-                   (l3 (org-entry-get nil "L3_AREA")))
-               (when (or (null proj) (string= proj ""))
-                 (push (list head status context (or l3 "")) actions)))))
-         nil nil)))
-    (nreverse actions)))
-
 (defun pearl-gtd-horizons--classify-projects (projects)
   "Classify PROJECTS into categories based on horizon alignment.
 Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."

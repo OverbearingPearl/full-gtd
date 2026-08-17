@@ -48,27 +48,6 @@ This also handles multi-project values separated by semicolons
                   (throw 'found t)))))
           nil)))))
 
-(defun pearl-gtd-planning--collect-brainstorm-projects ()
-  "Collect unique project names from inbox.org entries with BRAINSTORM property.
-Returns list of unique project names from entries where BRAINSTORM is \"t\"."
-  (let ((inbox-path (expand-file-name "inbox.org" pearl-gtd-init-base-directory))
-        (projects '()))
-    (when (file-exists-p inbox-path)
-      (with-temp-buffer
-        (insert-file-contents inbox-path)
-        (org-mode)
-        (org-map-entries
-         (lambda ()
-           (when (string= (org-entry-get nil "BRAINSTORM") "t")
-             (let ((proj (org-entry-get nil "PROJECT")))
-               (when proj
-                 (let ((normalized (pearl-gtd-core--normalize-project-input proj)))
-                   (when normalized
-                     (dolist (p (pearl-gtd-core--split-values normalized))
-                       (cl-pushnew p projects :test #'string=))))))))
-         nil nil)))
-    (nreverse projects)))
-
 (defun pearl-gtd-planning--select-project ()
   "Prompt user to create new project name.
 Return project name string after validation (non-empty and not existing).
@@ -429,11 +408,6 @@ all state operations to state layer."
     ;; Presentation
     (pearl-gtd-planning--show-project-summary proj-name horizons)
     (message "Natural planning completed for project: %s" proj-name)))
-
-(defun pearl-gtd-planning-start ()
-  "Start Natural Planning Model workflow."
-  (interactive)
-  (pearl-gtd-planning--start))
 
 (provide 'pearl-gtd-planning)
 

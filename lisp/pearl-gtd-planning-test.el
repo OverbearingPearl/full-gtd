@@ -714,31 +714,6 @@
               (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))
               (when (get-buffer "*Pearl-GTD Brainstorm Organize*") (kill-buffer "*Pearl-GTD Brainstorm Organize*"))))
 
-(pearl-gtd-test-define-story pearl-gtd-planning-test-collects-brainstorm-projects-from-inbox
-  "Collects unique project names from inbox entries with BRAINSTORM property."
-  :setup (pearl-gtd-init-initialize)
-  :files (("inbox.org" "* Brainstorm item 1\n:PROPERTIES:\n:ID: bs-1\n:BRAINSTORM: t\n:PROJECT: AlphaProject\n:END:\n* Brainstorm item 2\n:PROPERTIES:\n:ID: bs-2\n:BRAINSTORM: t\n:PROJECT: BetaProject\n:END:\n* Not brainstorm\n:PROPERTIES:\n:ID: bs-3\n:PROJECT: GammaProject\n:END:\n"))
-  :mock nil
-  :body (let ((projects (pearl-gtd-planning--collect-brainstorm-projects)))
-          (should (member "AlphaProject" projects))
-          (should (member "BetaProject" projects))
-          (should-not (member "GammaProject" projects)))
-  :asserts t
-  :teardown nil)
-
-(pearl-gtd-test-define-story pearl-gtd-planning-test-brainstorm-projects-deduplicated
-  "Brainstorm projects with same name are deduplicated in completion list."
-  :setup (pearl-gtd-init-initialize)
-  :files (("inbox.org" "* Item 1\n:PROPERTIES:\n:ID: bs-1\n:BRAINSTORM: t\n:PROJECT: SharedProject\n:END:\n* Item 2\n:PROPERTIES:\n:ID: bs-2\n:BRAINSTORM: t\n:PROJECT: SharedProject\n:END:\n* Item 3\n:PROPERTIES:\n:ID: bs-3\n:BRAINSTORM: t\n:PROJECT: MultiA;MultiB\n:END:\n"))
-  :mock nil
-  :body (let ((projects (pearl-gtd-planning--collect-brainstorm-projects)))
-          (should (= 3 (length projects)))
-          (should (member "SharedProject" projects))
-          (should (member "MultiA" projects))
-          (should (member "MultiB" projects)))
-  :asserts t
-  :teardown nil)
-
 (pearl-gtd-test-define-story pearl-gtd-planning-test-user-selects-brainstorm-project-from-completion
   "User selects an existing brainstorm project from completion list, existing items pre-populated."
   :setup (progn
@@ -847,16 +822,6 @@
               (when (get-buffer "*Pearl-GTD Planning*") (kill-buffer "*Pearl-GTD Planning*"))
               (when (get-buffer "*Pearl-GTD Brainstorm*") (kill-buffer "*Pearl-GTD Brainstorm*"))
               (when (get-buffer "*Pearl-GTD Planning Summary*") (kill-buffer "*Pearl-GTD Planning Summary*"))))
-
-(pearl-gtd-test-define-story pearl-gtd-planning-test-empty-inbox-no-brainstorm-projects
-  "Empty inbox returns empty list of brainstorm projects."
-  :setup (pearl-gtd-init-initialize)
-  :files (("inbox.org" ""))
-  :mock nil
-  :body (let ((projects (pearl-gtd-planning--collect-brainstorm-projects)))
-          (should (null projects)))
-  :asserts t
-  :teardown nil)
 
 (pearl-gtd-test-define-story pearl-gtd-planning-test-proj-name-with-space
   "Project name containing spaces should be handled correctly."
