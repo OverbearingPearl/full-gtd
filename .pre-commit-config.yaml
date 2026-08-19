@@ -28,10 +28,14 @@ repos:
                       (mapconcat (lambda (line) (concat \"    \" line))
                                  (split-string s \"\n\" t) \"\n\"))
                     (defun p/check-file (file)
+                      (setq file (expand-file-name file))
                       (let ((buf (find-file file))
                             (failed nil))
                         (dolist (b '(\"*Warnings*\" \"*Compile-Log*\" \"*Messages*\"))
-                          (when (get-buffer b) (with-current-buffer b (erase-buffer))))
+                          (when (get-buffer b)
+                            (with-current-buffer b
+                              (let ((inhibit-read-only t))
+                                (erase-buffer)))))
                         (setq p/errors '())
                         (princ (format \"===== %s =====\n\" file))
                         ;; checkdoc
@@ -45,9 +49,16 @@ repos:
                                 (setq failed t))
                             (princ \"  checkdoc: OK\n\")))
                         ;; package-lint
-                        (ignore-errors (package-lint-current-buffer))
-                        (let ((pl (string-trim (p/buf-str \"*Warnings*\"))))
-                          (if (string-empty-p pl)
+                        (let ((root (or (locate-dominating-file file \".git\")
+                                        default-directory)))
+                          (setq package-lint-main-file
+                                (expand-file-name \"full-gtd.el\" root)))
+                        (when (get-buffer \"*Package-Lint*\")
+                          (kill-buffer \"*Package-Lint*\"))
+                        (package-lint-current-buffer)
+                        (let ((pl (string-trim (p/buf-str \"*Package-Lint*\"))))
+                          (if (or (string-empty-p pl)
+                                  (string= pl \"No issues found.\"))
                               (princ \"  package-lint: OK\n\")
                             (progn
                               (setq failed t)
@@ -55,6 +66,15 @@ repos:
                               (princ (p/indent pl))
                               (princ \"\n\"))))
                         ;; byte-compile
+                        (let ((inhibit-message t)
+                              (byte-compile-verbose nil))
+                          (byte-compile-file file))
+                        ;; clear other buffers that may hold duplicate warnings
+                        (dolist (b '(\"*Warnings*\" \"*Messages*\"))
+                          (when (get-buffer b)
+                            (with-current-buffer b
+                              (let ((inhibit-read-only t))
+                                (erase-buffer)))))
                         (let ((bc (string-trim (p/buf-str \"*Compile-Log*\"))))
                           (if (string-empty-p bc)
                               (princ \"  byte-compile: OK\n\")
@@ -63,6 +83,61 @@ repos:
                               (princ \"  byte-compile: warning(s)/error(s)\n\")
                               (princ (p/indent bc))
                               (princ \"\n\"))))
+                        ;; format-check
+                        (let ((format-errors nil)
+                              (lines (split-string (buffer-string) \"\n\"))
+                              (line-num 0)
+                              (blank-run 0)
+                              (last-blank-start nil))
+                          (when (and lines (string-empty-p (car (last lines))))
+                            (setq lines (butlast lines)))
+                          (dolist (line lines)
+                            (setq line-num (1+ line-num))
+                            (when (and (not (string-match-p \"^[ \\t]*$\" line))
+                                       (string-match-p \"[ \\t]+$\" line))
+                              (push (format \"trailing whitespace (line %d)\" line-num)
+                                    format-errors))
+                            (if (string-match-p \"^[ \\t]*$\" line)
+                                (progn
+                                  (when (= blank-run 0)
+                                    (setq last-blank-start line-num))
+                                  (setq blank-run (1+ blank-run)))
+                              (progn
+                                (when (> blank-run 1)
+                                  (push (format \"more than one consecutive blank line (line %d)\"
+                                                last-blank-start)
+                                        format-errors))
+                                (setq blank-run 0))))
+                          (when (> blank-run 1)
+                            (push (format \"more than one consecutive blank line (line %d)\"
+                                          last-blank-start)
+                                  format-errors))
+                          (if format-errors
+                              (progn
+                                (princ \"  format-check: issue(s)\\n\")
+                                (dolist (e (nreverse format-errors))
+                                  (princ (format \"    %s\\n\" e)))
+                                (setq failed t))
+                            (princ \"  format-check: OK\\n\")))
+                        ;; banned-construct check
+                        (let ((banned-errors nil)
+                              (banned-line-num 0))
+                          (dolist (banned-line (split-string (buffer-string) \"\n\" t))
+                            (setq banned-line-num (1+ banned-line-num))
+                            (cond
+                             ((string-match-p \"declare-function\" banned-line)
+                              (push (format \"banned construct `declare-function` (line %d)\" banned-line-num)
+                                    banned-errors))
+                             ((string-match-p \";; package-lint: disable\" banned-line)
+                              (push (format \"banned construct `;; package-lint: disable` (line %d)\" banned-line-num)
+                                    banned-errors))))
+                          (if banned-errors
+                              (progn
+                                (princ \"  banned-construct: issue(s)\\n\")
+                                (dolist (e (nreverse banned-errors))
+                                  (princ (format \"    %s\\n\" e)))
+                                (setq failed t))
+                            (princ \"  banned-construct: OK\\n\")))
                         (princ (format \"  => %s\n\" (if failed \"FAILED\" \"ok\")))
                         (when (buffer-live-p buf) (kill-buffer buf))
                         (let ((elc (concat file \"c\")))

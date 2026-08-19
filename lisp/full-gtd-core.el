@@ -16,6 +16,7 @@
 ;;; Code:
 
 (require 'org)
+(require 'org-element)
 (require 'crm)  ;; completing-read-multiple
 (require 'full-gtd-init)
 (require 'full-gtd-domain)
