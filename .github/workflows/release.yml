@@ -40,6 +40,7 @@ jobs:
         env:
           LOCAL_REPO: ${{ github.workspace }}
           RECIPE: (full-gtd :fetcher github :repo "${{ github.repository }}")
+          WARN_IS_ERROR: true
           EXIST_OK: false
         run: |
           set -o pipefail
