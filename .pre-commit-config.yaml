@@ -125,13 +125,13 @@ repos:
                           (dolist (banned-line (split-string (buffer-string) \"\n\" t))
                             (setq banned-line-num (1+ banned-line-num))
                             (cond
-                             ((string-match-p \"declare-function\" banned-line)
-                              (push (format \"banned construct `declare-function` (line %d)\" banned-line-num)
-                                    banned-errors))
                              ((string-match-p \";; package-lint: disable\" banned-line)
                               (push (format \"banned construct `;; package-lint: disable` (line %d)\" banned-line-num)
                                     banned-errors))
-                             ((string-match-p \"\\\\bignore-errors\\\\b\" banned-line)
+                             ((string-match-p (rx symbol-start \"declare-function\" symbol-end) banned-line)
+                              (push (format \"banned construct `declare-function` (line %d)\" banned-line-num)
+                                    banned-errors))
+                             ((string-match-p (rx symbol-start \"ignore-errors\" symbol-end) banned-line)
                               (push (format \"banned construct `ignore-errors` (line %d)\" banned-line-num)
                                     banned-errors))))
                           (if banned-errors
