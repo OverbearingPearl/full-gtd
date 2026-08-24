@@ -143,7 +143,7 @@ One‑key capture (`full-gtd-capture`) with automatic timestamp and unique ID.
 Inbox processing (`full-gtd-process-inbox`) presents a **staging table** with visual highlighting, using **single‑key destination selection** (`a`ction/`r`ef/`s`omeday/`t`rash/e`x`ecute/`c`larify) with an **optional clarify step** (rename + notes) and **hybrid date input** (`a`/`t`/`w` shortcuts or free‑form). Contexts complete from existing values with **inheritance across the session**.
 
 ### 2. Natural Planning Model
-`M‑x pearl‑gtd‑planning‑start` enforces David Allen’s five‑step project thinking:
+`M‑x full-gtd-planning-start` enforces David Allen’s five‑step project thinking:
 
 1. **Purpose** (L6) – Why are we doing this?
 2. **Principle** (L6) – What standards must we keep? (Optional: press RET to skip)
@@ -162,7 +162,7 @@ Horizons are stored as Org properties (`L3_AREA` … `L6_PURPOSE`) and obey stri
 - **L5 Vision** – 3‑5 year picture
 - **L6 Purpose & Principle** – Life purpose and guiding principles
 
-Horizons flow from high levels down: Purpose (L6) → Vision (L5) → Goals (L4) → Areas (L3) → Projects → Actions. The horizon view (`pearl‑gtd‑horizons‑view`) displays a **matrix alignment view**:
+Horizons flow from high levels down: Purpose (L6) → Vision (L5) → Goals (L4) → Areas (L3) → Projects → Actions. The horizon view (`full‑gtd‑horizons‑view`) displays a **matrix alignment view**:
 
 - **Rows**: Projects grouped by alignment status (Critical/Partial/Aligned/Multi-Horizon)
 - **Columns**: L6 Purpose → L5 Vision → L4 Goal → L3 Area
@@ -174,8 +174,8 @@ This matrix format makes it easy to spot "orphaned" projects (no horizon alignme
 Navigation in the horizon view uses the same keys as review mode: `n`/`p` or `j`/`k` to move between rows, `RET` to view project tasks, `g` to refresh, `q` to quit. Press `3`–`6` to edit the corresponding horizon level (L3–L6) for the project at point. Press `A` to archive the project with the same rules as in Review (all actions DONE, no shared projects).
 
 ### 4. Review Cycles
-- **Daily Review** (`pearl‑gtd‑review‑daily`) – Today’s scheduled tasks, completed today, next actions, and inbox.
-- **Weekly Review** (`pearl‑gtd‑review‑weekly`) – Comprehensive 10‑section review: inbox, overdue, upcoming deadlines, completed, delegated, next actions, stuck/active projects, no‑project actions, and someday/maybe.
+- **Daily Review** (`full-gtd-review-daily`) – Today’s scheduled tasks, completed today, next actions, and inbox.
+- **Weekly Review** (`full-gtd-review-weekly`) – Comprehensive 10‑section review: inbox, overdue, upcoming deadlines, completed, delegated, next actions, stuck/active projects, no‑project actions, and someday/maybe.
 
 Both reviews use a unified table interface with keyboard shortcuts for navigation, editing properties, marking tasks complete, and jumping to source entries. Shortcuts: `c` (context), `D` (delegated), `s` (scheduled), `d` (deadline), `r` (rename), `P` (project), `C` (complete), `a` (activate a someday/maybe entry in weekly review), `A` (archive project), `e` (edit notes), and `3`-`6` (horizons L3-L6, where `6` edits both Purpose and Principle sequentially). Archiving (`A`) moves a project to `archive.org` only when all its actions are DONE and no action belongs to other projects.
 
@@ -216,7 +216,7 @@ This design eliminates decision fatigue—you don't choose from a list, the syst
 
 > “Your mind is for having ideas, not holding them.” — David Allen
 
-Most GTD software becomes a todo‑list app with extra steps. Pearl‑GTD stays close to the book because **Allen designed GTD as a complete system, not a feature set**:
+Most GTD software becomes a todo‑list app with extra steps. Full‑GTD stays close to the book because **Allen designed GTD as a complete system, not a feature set**:
 
 - **Capture must be frictionless** – One key, no categorization, no thinking.
 - **The Natural Planning Model is not optional** – It’s how projects actually get done.
@@ -224,7 +224,7 @@ Most GTD software becomes a todo‑list app with extra steps. Pearl‑GTD stays 
 - **Review is the engine** – Without weekly review, GTD decays into a mess of stale lists. The tool enforces the habit.
 - **Engage needs focus** – A long next-actions list is overwhelming. Single-card execution with smart prioritization helps you pick the right next thing and finish the session with momentum.
 
-Emacs is the right host because GTD is fundamentally **text and structure**. Org‑mode gives us outlines, tags, links, and agenda views. Pearl‑GTD adds the **workflow layer** on top.
+Emacs is the right host because GTD is fundamentally **text and structure**. Org‑mode gives us outlines, tags, links, and agenda views. Full‑GTD adds the **workflow layer** on top.
 
 ## Installation
 
@@ -241,7 +241,7 @@ Ensure MELPA is in your `package-archives`:
 Then install:
 
 ```
-M‑x package‑install RET pearl‑gtd RET
+M‑x package‑install RET full-gtd RET
 ```
 
 For configuration, see [Quick Start](#quick-start).
@@ -261,7 +261,7 @@ git clone https://github.com/OverbearingPearl/full-gtd.git /path/to/full-gtd
 
 ## Contributing
 
-Issues and PRs welcome. If you find a place where Pearl‑GTD deviates from Allen’s model, that’s a bug.
+Issues and PRs welcome. If you find a place where Full‑GTD deviates from Allen’s model, that’s a bug.
 
 ## License
 
