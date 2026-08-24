@@ -64,7 +64,12 @@ Decrements when actions are completed, unchanged when skipped.")
   "Return number of days until DATE-STRING, or nil if not a date.
 DATE-STRING should be an Org date or timestamp."
   (when date-string
-    (let ((time (ignore-errors (org-time-string-to-time date-string))))
+    (let ((time (condition-case err
+                    (org-time-string-to-time date-string)
+                  (error
+                   (message "full-gtd-do--days-until: invalid date %S: %s"
+                            date-string (error-message-string err))
+                   nil))))
       (when time
         (/ (- (float-time time) (float-time (current-time))) 86400.0)))))
 
