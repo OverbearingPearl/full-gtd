@@ -32,7 +32,6 @@ jobs:
           python -m pip install --upgrade pip
           sudo apt-get update && sudo apt-get install -y emacs
           git clone https://github.com/riscy/melpazoid.git ~/melpazoid
-          echo "(package-install 'package-build)" > ~/melpazoid/_requirements.el
           pip install ~/melpazoid
 
       - name: Initialize build log
