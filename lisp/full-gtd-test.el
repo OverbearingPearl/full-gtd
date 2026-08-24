@@ -57,7 +57,9 @@ BASE-DIR is the base directory to check."
     (when-let ((buf (get-buffer name)))
       (with-current-buffer buf
         (setq buffer-read-only nil))
-      (ignore-errors (kill-buffer buf)))))
+      (condition-case nil
+          (kill-buffer buf)
+        (error nil)))))
 
 (defun full-gtd-test-task-exists-p (file title)
   "Check if task TITLE exists in FILE.
@@ -136,7 +138,9 @@ ARGS is a plist with:
                            temp-dir
                            ',(mapcar #'car files)))
                  ,asserts))
-           (ignore-errors ,teardown)
+           (condition-case nil
+               ,teardown
+             (error nil))
            (full-gtd-test--cleanup temp-dir))))))
 
 (provide 'full-gtd-test)
