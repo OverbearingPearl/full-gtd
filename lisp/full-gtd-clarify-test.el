@@ -1,8 +1,5 @@
 ;;; full-gtd-clarify-test.el --- Clarify phase tests for new flow  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2026 OverbearingPearl
-;; Author: OverbearingPearl <OverbearingPearl@outlook.com>
-
 ;;; Commentary:
 
 ;; Tests for the clarify phase of inbox processing.
