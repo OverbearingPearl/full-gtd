@@ -130,6 +130,9 @@ repos:
                                     banned-errors))
                              ((string-match-p \";; package-lint: disable\" banned-line)
                               (push (format \"banned construct `;; package-lint: disable` (line %d)\" banned-line-num)
+                                    banned-errors))
+                             ((string-match-p \"\\\\bignore-errors\\\\b\" banned-line)
+                              (push (format \"banned construct `ignore-errors` (line %d)\" banned-line-num)
                                     banned-errors))))
                           (if banned-errors
                               (progn
