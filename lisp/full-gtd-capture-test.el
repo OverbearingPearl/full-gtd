@@ -8,7 +8,7 @@
 
 (require 'ert)
 (require 'full-gtd)
-(require 'full-gtd-test-utils)
+(require 'full-gtd-utils-test)
 
 (full-gtd-test-define-story full-gtd-capture-test-user-captures-simple-idea-to-inbox
   "User runs M-x full-gtd-capture and inputs 'Buy milk'."

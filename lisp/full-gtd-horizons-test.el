@@ -8,7 +8,7 @@
 
 (require 'ert)
 (require 'full-gtd)
-(require 'full-gtd-test-utils)
+(require 'full-gtd-utils-test)
 
 (full-gtd-test-define-story full-gtd-horizons-test-view-shows-project-matrix
   "Horizon view shows projects in matrix with L6-L3 columns."

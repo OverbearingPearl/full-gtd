@@ -8,7 +8,7 @@
 
 (require 'ert)
 (require 'full-gtd)
-(require 'full-gtd-test-utils)
+(require 'full-gtd-utils-test)
 (require 'full-gtd-project-utils)
 
 (full-gtd-test-define-story full-gtd-review-test-user-views-daily-sections

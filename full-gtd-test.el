@@ -21,7 +21,7 @@
 (add-to-list 'load-path (expand-file-name "lisp" full-gtd-test--package-root))
 
 (require 'full-gtd)
-(require 'full-gtd-test-utils)
+(require 'full-gtd-utils-test)
 
 (defun full-gtd-test-reload-modules ()
   "Reload Full-GTD modules for updated code."
@@ -71,7 +71,7 @@ every ERT test defined in the Lisp directory."
   ;; Reload all modules first to ensure latest code is used
   (full-gtd-test-reload-modules)
   ;; Ensure test infrastructure is loaded
-  (require 'full-gtd-test-utils)
+  (require 'full-gtd-utils-test)
   ;; Load test files automatically from the lisp directory
   (let ((test-dir (expand-file-name "lisp" full-gtd-test--package-root)))
     (dolist (file (directory-files test-dir nil "full-gtd-.*-test\\.el$"))

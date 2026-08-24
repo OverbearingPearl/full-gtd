@@ -1,4 +1,4 @@
-;;; full-gtd-test-utils.el --- Test infrastructure and utilities  -*- lexical-binding: t; -*-
+;;; full-gtd-utils-test.el --- Test infrastructure and utilities  -*- lexical-binding: t; -*-
 
 ;;; Commentary:
 
@@ -143,6 +143,6 @@ ARGS is a plist with:
              (error nil))
            (full-gtd-test--cleanup temp-dir))))))
 
-(provide 'full-gtd-test-utils)
+(provide 'full-gtd-utils-test)
 
-;;; full-gtd-test-utils.el ends here
+;;; full-gtd-utils-test.el ends here

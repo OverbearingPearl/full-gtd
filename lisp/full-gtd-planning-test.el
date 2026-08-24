@@ -10,7 +10,7 @@
 
 (require 'ert)
 (require 'full-gtd)
-(require 'full-gtd-test-utils)
+(require 'full-gtd-utils-test)
 
 ;; Helper to simulate sequential inputs for read-string
 (defun full-gtd-test-planning--make-read-string-mock (inputs)

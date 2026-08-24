@@ -11,7 +11,7 @@
 
 (require 'ert)
 (require 'full-gtd)
-(require 'full-gtd-test-utils)
+(require 'full-gtd-utils-test)
 
 (full-gtd-test-define-story full-gtd-clarify-test-user-skips-clarify-entirely
   "User processes to reference without clarifying."

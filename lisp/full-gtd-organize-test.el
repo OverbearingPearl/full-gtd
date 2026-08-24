@@ -8,7 +8,7 @@
 
 (require 'ert)
 (require 'full-gtd)
-(require 'full-gtd-test-utils)
+(require 'full-gtd-utils-test)
 
 (full-gtd-test-define-story full-gtd-organize-test-user-trashes-junk-item
   "User decides item is trash, it disappears completely."
