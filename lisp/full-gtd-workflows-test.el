@@ -1,4 +1,4 @@
-;;; full-gtd-test-workflows.el --- User stories: End-to-end workflows  -*- lexical-binding: t; -*-
+;;; full-gtd-workflows-test.el --- User stories: End-to-end workflows  -*- lexical-binding: t; -*-
 
 ;;; Commentary:
 
@@ -8,7 +8,7 @@
 
 (require 'ert)
 (require 'full-gtd)
-(require 'full-gtd-test)
+(require 'full-gtd-test-utils)
 
 (full-gtd-test-define-story full-gtd-workflows-test-user-processes-full-gtd-pipeline
   "User captures, clarifies, organizes, and completes processing."

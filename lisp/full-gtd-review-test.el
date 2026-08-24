@@ -1,4 +1,4 @@
-;;; full-gtd-test-review.el --- User stories: Review phase  -*- lexical-binding: t; -*-
+;;; full-gtd-review-test.el --- User stories: Review phase  -*- lexical-binding: t; -*-
 
 ;;; Commentary:
 
@@ -8,7 +8,7 @@
 
 (require 'ert)
 (require 'full-gtd)
-(require 'full-gtd-test)
+(require 'full-gtd-test-utils)
 (require 'full-gtd-project-utils)
 
 (full-gtd-test-define-story full-gtd-review-test-user-views-daily-sections

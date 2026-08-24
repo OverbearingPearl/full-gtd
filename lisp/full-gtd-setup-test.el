@@ -1,4 +1,4 @@
-;;; full-gtd-test-setup.el --- User stories: System initialization  -*- lexical-binding: t; -*-
+;;; full-gtd-setup-test.el --- User stories: System initialization  -*- lexical-binding: t; -*-
 
 ;;; Commentary:
 
@@ -8,7 +8,7 @@
 
 (require 'ert)
 (require 'full-gtd)
-(require 'full-gtd-test)
+(require 'full-gtd-test-utils)
 
 (full-gtd-test-define-story full-gtd-setup-test-user-initializes-gtd-system-for-first-time
   "User runs M-x full-gtd-init-initialize for the first time."

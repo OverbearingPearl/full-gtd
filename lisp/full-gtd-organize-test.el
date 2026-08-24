@@ -1,4 +1,4 @@
-;;; full-gtd-test-organize.el --- User stories: Organize phase  -*- lexical-binding: t; -*-
+;;; full-gtd-organize-test.el --- User stories: Organize phase  -*- lexical-binding: t; -*-
 
 ;;; Commentary:
 
@@ -8,7 +8,7 @@
 
 (require 'ert)
 (require 'full-gtd)
-(require 'full-gtd-test)
+(require 'full-gtd-test-utils)
 
 (full-gtd-test-define-story full-gtd-organize-test-user-trashes-junk-item
   "User decides item is trash, it disappears completely."

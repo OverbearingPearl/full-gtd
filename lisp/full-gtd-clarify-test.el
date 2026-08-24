@@ -1,4 +1,4 @@
-;;; full-gtd-test-clarify.el --- Clarify phase tests for new flow  -*- lexical-binding: t; -*-
+;;; full-gtd-clarify-test.el --- Clarify phase tests for new flow  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 OverbearingPearl
 ;; Author: OverbearingPearl <OverbearingPearl@outlook.com>
@@ -11,7 +11,7 @@
 
 (require 'ert)
 (require 'full-gtd)
-(require 'full-gtd-test)
+(require 'full-gtd-test-utils)
 
 (full-gtd-test-define-story full-gtd-clarify-test-user-skips-clarify-entirely
   "User processes to reference without clarifying."

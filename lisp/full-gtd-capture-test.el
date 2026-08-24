@@ -1,4 +1,4 @@
-;;; full-gtd-test-capture.el --- User stories: Capture phase  -*- lexical-binding: t; -*-
+;;; full-gtd-capture-test.el --- User stories: Capture phase  -*- lexical-binding: t; -*-
 
 ;;; Commentary:
 
@@ -8,7 +8,7 @@
 
 (require 'ert)
 (require 'full-gtd)
-(require 'full-gtd-test)
+(require 'full-gtd-test-utils)
 
 (full-gtd-test-define-story full-gtd-capture-test-user-captures-simple-idea-to-inbox
   "User runs M-x full-gtd-capture and inputs 'Buy milk'."

@@ -8,7 +8,7 @@
 
 (require 'ert)
 (require 'full-gtd-state)
-(require 'full-gtd-test)
+(require 'full-gtd-test-utils)
 
 (ert-deftest full-gtd-state-test-with-file-buffer-creates-and-saves ()
   "With-file-buffer creates file and saves modifications."

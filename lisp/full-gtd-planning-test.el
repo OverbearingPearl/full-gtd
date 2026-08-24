@@ -1,4 +1,4 @@
-;;; full-gtd-test-planning.el --- User stories: Natural Planning Model  -*- lexical-binding: t; -*-
+;;; full-gtd-planning-test.el --- User stories: Natural Planning Model  -*- lexical-binding: t; -*-
 
 ;;; Commentary:
 
@@ -10,7 +10,7 @@
 
 (require 'ert)
 (require 'full-gtd)
-(require 'full-gtd-test)
+(require 'full-gtd-test-utils)
 
 ;; Helper to simulate sequential inputs for read-string
 (defun full-gtd-test-planning--make-read-string-mock (inputs)

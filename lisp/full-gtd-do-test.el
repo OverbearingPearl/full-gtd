@@ -1,4 +1,4 @@
-;;; full-gtd-test-do.el --- User stories: Do/Work phase  -*- lexical-binding: t; -*-
+;;; full-gtd-do-test.el --- User stories: Do/Work phase  -*- lexical-binding: t; -*-
 
 ;;; Commentary:
 
@@ -8,7 +8,7 @@
 
 (require 'ert)
 (require 'full-gtd)
-(require 'full-gtd-test)
+(require 'full-gtd-test-utils)
 
 ;;;; Unit tests for scoring
 

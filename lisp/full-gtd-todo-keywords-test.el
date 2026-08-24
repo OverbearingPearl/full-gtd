@@ -11,7 +11,7 @@
 
 (require 'ert)
 (require 'full-gtd)
-(require 'full-gtd-test)
+(require 'full-gtd-test-utils)
 
 (ert-deftest full-gtd-todo-keywords-test-default-todo-keyword ()
   "Helper returns first not-done keyword, falling back to TODO."

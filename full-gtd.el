@@ -36,7 +36,6 @@
 ;;; Code:
 
 (require 'cl-lib)
-(require 'ert)
 
 (eval-and-compile
   (defvar full-gtd--package-root
@@ -108,68 +107,6 @@ With \\[universal-argument] as prefix, prompts for view type
   "Start Natural Planning Model workflow."
   (interactive)
   (full-gtd-planning--start))
-
-(defun full-gtd-run-tests ()
-  "Run all Full-GTD test suites (unit and user story)."
-  (interactive)
-  (require 'ert)
-  (ert-delete-all-tests)
-  ;; Reload all modules first to ensure latest code is used
-  (full-gtd-reload-modules)
-  ;; Load test files automatically from the lisp directory
-  (let ((test-dir (expand-file-name "lisp" full-gtd--package-root)))
-    ;; First load the test infrastructure
-    (let ((test-file (expand-file-name "full-gtd-test.el" test-dir)))
-      (when (file-exists-p test-file)
-        (load-file test-file)))
-    ;; Then load all other test files (horizontal layer + vertical layer)
-    (dolist (file (directory-files test-dir nil "full-gtd-.*-test\\.el$"))
-      (unless (string= file "full-gtd-test.el")  ; Infrastructure already loaded above
-        (let ((full-path (expand-file-name file test-dir)))
-          (when (file-exists-p full-path)
-            (load-file full-path))))))
-  ;; Use batch-compatible function to ensure output is visible in terminal
-  (if noninteractive
-      (ert-run-tests-batch-and-exit)
-    (ert t)))
-
-(defun full-gtd-reload-modules ()
-  "Reload Full-GTD modules for updated code."
-  (interactive)
-  (let* ((root-dir full-gtd--package-root)
-         (lisp-dir (expand-file-name "lisp" full-gtd--package-root))
-         (el-files (directory-files lisp-dir nil "\\.el$")))
-    ;; Unload all features first
-    (dolist (file el-files)
-      (when (string-match "^[^.]+\\.el$" file)
-        (let ((feature (intern (file-name-base file))))
-          (when (featurep feature)
-            (condition-case nil
-                (unload-feature feature)
-              (error nil))))))
-    ;; Unload full-gtd.el if loaded
-    (when (featurep 'full-gtd)
-      (condition-case nil
-          (unload-feature 'full-gtd)
-        (error nil)))
-    
-    ;; Auto-clear all full-gtd keymap variables
-    (mapatoms (lambda (sym)
-                (when (and (string-match-p "^full-gtd-.*-mode-map$" (symbol-name sym))
-                           (boundp sym))
-                  (makunbound sym))))
-    
-    ;; Load full-gtd.el from root directory
-    (let ((full-gtd-el (expand-file-name "full-gtd.el" root-dir)))
-      (when (file-exists-p full-gtd-el)
-        (load-file full-gtd-el)))
-    ;; Load .el source files from lisp directory, ignoring .elc and test files
-    (dolist (file el-files)
-      (when (and (string-match "^[^.]+\\.el$" file)
-                 (not (string-match "-test\\.el$" file)))
-        (let ((el-path (expand-file-name file lisp-dir)))
-          (load-file el-path))))
-    (message "Modules reloaded.")))
 
 (provide 'full-gtd)
 

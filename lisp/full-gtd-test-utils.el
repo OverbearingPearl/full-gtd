@@ -1,9 +1,9 @@
-;;; full-gtd-test.el --- Test infrastructure and entry point  -*- lexical-binding: t; -*-
+;;; full-gtd-test-utils.el --- Test infrastructure and utilities  -*- lexical-binding: t; -*-
 
 ;;; Commentary:
 
 ;; This file provides shared infrastructure for Full-GTD user story tests.
-;; It contains assertion helpers and test runners.
+;; It contains assertion helpers and test utilities.
 
 ;;; Code:
 
@@ -143,6 +143,6 @@ ARGS is a plist with:
              (error nil))
            (full-gtd-test--cleanup temp-dir))))))
 
-(provide 'full-gtd-test)
+(provide 'full-gtd-test-utils)
 
-;;; full-gtd-test.el ends here
+;;; full-gtd-test-utils.el ends here

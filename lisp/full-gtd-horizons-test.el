@@ -1,4 +1,4 @@
-;;; full-gtd-test-horizons.el --- User stories: 6 Horizons  -*- lexical-binding: t; -*-
+;;; full-gtd-horizons-test.el --- User stories: 6 Horizons  -*- lexical-binding: t; -*-
 
 ;;; Commentary:
 
@@ -8,7 +8,7 @@
 
 (require 'ert)
 (require 'full-gtd)
-(require 'full-gtd-test)
+(require 'full-gtd-test-utils)
 
 (full-gtd-test-define-story full-gtd-horizons-test-view-shows-project-matrix
   "Horizon view shows projects in matrix with L6-L3 columns."
