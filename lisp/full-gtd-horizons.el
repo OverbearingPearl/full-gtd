@@ -140,6 +140,8 @@ LEVEL should be a symbol:
 Supports multiple values separated by semicolon."
   (let* ((project (or project
                       (full-gtd-horizons--get-project-at-point))))
+    (unless project
+      (error "Horizons are managed at project level.  Use M-x full-gtd-horizons-view to edit them"))
     (when project
       (let* ((property (full-gtd-horizons--level-to-property level))
              (current-value (full-gtd-horizons--get-project-horizon project property))

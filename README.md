@@ -59,12 +59,6 @@ A complete [Getting Things Done](https://gettingthingsdone.com/) implementation 
   └─────────────────────────────┘    └──────────────────────────────┘
 </pre>
 
-## Status
-
-v0.x.x — Core workflows are complete and stable.
-UI polish (menus, key hints, progress indicators) is ongoing.
-Feedback on interaction friction is especially welcome.
-
 ## Why Full-GTD?
 
 Existing Emacs GTD packages handle lists and agendas well, but omit two pillars of Allen's original model:

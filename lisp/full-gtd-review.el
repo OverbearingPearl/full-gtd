@@ -460,6 +460,8 @@ Delete task if it has no PROJECT property."
     (when entry
       (let ((id (car entry))
             (file (cdr entry)))
+        (unless (string= file "action.org")
+          (error "Only action entries can be completed"))
         (if (full-gtd-review--should-delete-on-completion-p id file)
             (progn
               (full-gtd-review--delete-entry-by-id id file)
@@ -876,6 +878,8 @@ Returns list of entry lists suitable for table display."
          (no-project-entries (full-gtd-review--collect-no-project-actions))
          ;; 11. Someday/Maybe (no Created)
          (someday-entries (full-gtd-review--collect-entries-from-file "someday.org" nil nil))
+         ;; 12. Reference (no Created)
+         (reference-entries (full-gtd-review--collect-entries-from-file "reference.org" nil nil))
          ;; Build sections in GTD review order
          (sections (list (cons "inbox.org - Inbox" inbox-entries)
                          (cons "action.org - Overdue" overdue-entries)
@@ -886,7 +890,8 @@ Returns list of entry lists suitable for table display."
                          (cons "Projects - Stuck" (cons stuck-entries 'project))
                          (cons "Projects - Active" (cons active-entries 'project))
                          (cons "action.org - No Project" no-project-entries)
-                         (cons "someday.org - Someday" someday-entries))))
+                         (cons "someday.org - Someday" someday-entries)
+                         (cons "reference.org - Reference" reference-entries))))
     (full-gtd-review--create-table-buffer buffer-name sections)
     (with-current-buffer buffer-name
       (setq full-gtd-review--current-view-type 'weekly))

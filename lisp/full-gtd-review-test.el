@@ -92,7 +92,8 @@
   :setup (full-gtd-init-initialize)
   :files (("inbox.org" "* Unprocessed\n:PROPERTIES:\n:ID: w-1\n:END:\n")
           ("action.org" "* TODO Normal action\n:PROPERTIES:\n:ID: w-2\n:PROJECT: Active project\n:END:\n* TODO Overdue task\nSCHEDULED: <2026-01-01 Wed>\n:PROPERTIES:\n:ID: w-overdue\n:END:\n* TODO Delegated task\n:PROPERTIES:\n:ID: w-del\n:DELEGATED: Bob\n:END:\n* DONE Completed today task\nCLOSED: [2026-01-15 Thu 10:00]\n:PROPERTIES:\n:ID: w-done-today\n:END:\n* TODO No project task\n:PROPERTIES:\n:ID: w-no-proj\n:END:\n")
-          ("someday.org" "* Maybe later\n:PROPERTIES:\n:ID: w-4\n:END:\n"))
+          ("someday.org" "* Maybe later\n:PROPERTIES:\n:ID: w-4\n:END:\n")
+          ("reference.org" "* Interesting article\n:PROPERTIES:\n:ID: w-ref\n:END:\n"))
   :mock (((symbol-function 'current-time) (lambda () (encode-time 0 0 0 15 1 2026))))
   :body (full-gtd-review-weekly)
   :asserts (progn
@@ -129,7 +130,7 @@
                (should (search-forward-regexp "|\\s-*Headline\\s-*|\\s-*Status\\s-*|\\s-*Scheduled\\s-*|\\s-*Deadline\\s-*|\\s-*Context\\s-*|\\s-*Delegated\\s-*|" nil t))
                (should-not (search-forward-regexp "|\\s-*Project\\s-*|" (line-end-position) t))
                (should-not (search-forward-regexp "|\\s-*Created\\s-*|" (line-end-position) t))
-               ;; Verify GTD weekly review order: Inbox → Overdue/Upcoming → Completed → Delegated → Next Actions → Projects → No Project → Someday
+               ;; Verify GTD weekly review order: Inbox → Overdue/Upcoming → Completed → Delegated → Next Actions → Projects → No Project → Someday → Reference
                (goto-char (point-min))
                (let ((positions (list (search-forward "** inbox.org - Inbox" nil t)
                                       (search-forward "** action.org - Overdue" nil t)
@@ -140,7 +141,8 @@
                                       (search-forward "** Projects - Stuck" nil t)
                                       (search-forward "** Projects - Active" nil t)
                                       (search-forward "** action.org - No Project" nil t)
-                                      (search-forward "** someday.org - Someday" nil t))))
+                                      (search-forward "** someday.org - Someday" nil t)
+                                      (search-forward "** reference.org - Reference" nil t))))
                  (should (equal positions (sort (copy-sequence positions) #'<))))))
   :teardown (kill-buffer "*Full-GTD Weekly Review*"))
 
@@ -813,6 +815,80 @@
              (should (string-match-p "Task two"
                                      (buffer-substring (line-beginning-position) (line-end-position)))))
   :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
+
+(ert-deftest full-gtd-review-test-weekly-shows-reference ()
+  "Weekly review includes reference.org section."
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+    (unwind-protect
+        (progn
+          (full-gtd-init-initialize)
+          (write-region "* Interesting article\n:PROPERTIES:\n:ID: ref-1\n:PROJECT: ProjA\n:END:\n"
+                        nil
+                        (expand-file-name "reference.org" full-gtd-init-base-directory))
+          (full-gtd-review-weekly)
+          (with-current-buffer "*Full-GTD Weekly Review*"
+            (goto-char (point-min))
+            (should (search-forward "** reference.org - Reference" nil t))
+            (should (search-forward "Interesting article" nil t))))
+      (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*"))
+      (delete-directory full-gtd-init-base-directory t))))
+
+(ert-deftest full-gtd-review-test-someday-horizon-edit-errors ()
+  "Editing horizon on Someday row signals error."
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+    (unwind-protect
+        (progn
+          (full-gtd-init-initialize)
+          (write-region "* Someday task\n:PROPERTIES:\n:ID: s-1\n:END:\n"
+                        nil (expand-file-name "someday.org" full-gtd-init-base-directory))
+          (full-gtd-review-weekly)
+          (with-current-buffer "*Full-GTD Weekly Review*"
+            (goto-char (point-min))
+            (search-forward "** someday.org - Someday")
+            (search-forward "Someday task")
+            (beginning-of-line)
+            (should-error (full-gtd-horizons--edit-area-at-point)
+                          :type 'error)))
+      (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*"))
+      (delete-directory full-gtd-init-base-directory t))))
+
+(ert-deftest full-gtd-review-test-reference-horizon-edit-errors ()
+  "Editing horizon on Reference row signals error."
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+    (unwind-protect
+        (progn
+          (full-gtd-init-initialize)
+          (write-region "* Ref task\n:PROPERTIES:\n:ID: r-1\n:END:\n"
+                        nil (expand-file-name "reference.org" full-gtd-init-base-directory))
+          (full-gtd-review-weekly)
+          (with-current-buffer "*Full-GTD Weekly Review*"
+            (goto-char (point-min))
+            (search-forward "** reference.org - Reference")
+            (search-forward "Ref task")
+            (beginning-of-line)
+            (should-error (full-gtd-horizons--edit-area-at-point)
+                          :type 'error)))
+      (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*"))
+      (delete-directory full-gtd-init-base-directory t))))
+
+(ert-deftest full-gtd-review-test-someday-complete-errors ()
+  "Completing Someday entry signals error."
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+    (unwind-protect
+        (progn
+          (full-gtd-init-initialize)
+          (write-region "* Someday task\n:PROPERTIES:\n:ID: s-2\n:END:\n"
+                        nil (expand-file-name "someday.org" full-gtd-init-base-directory))
+          (full-gtd-review-weekly)
+          (with-current-buffer "*Full-GTD Weekly Review*"
+            (goto-char (point-min))
+            (search-forward "** someday.org - Someday")
+            (search-forward "Someday task")
+            (beginning-of-line)
+            (should-error (full-gtd-review--complete-task-at-point)
+                          :type 'error)))
+      (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*"))
+      (delete-directory full-gtd-init-base-directory t))))
 
 (provide 'full-gtd-review-test)
 
