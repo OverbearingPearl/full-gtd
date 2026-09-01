@@ -19,6 +19,7 @@
 (require 'org-id)
 (require 'full-gtd-core)
 (require 'full-gtd-horizons)
+(require 'full-gtd-table)
 
 (defface full-gtd-inbox--highlight
   '((t :inherit highlight))
@@ -178,8 +179,7 @@ context of each entry; only entries matching the predicate are included."
                        (org-entry-get nil "CREATED"))
                  headlines))))
       (erase-buffer)
-      (insert "| Headline | Notes | Age | Tags |\n")
-      (insert "|----------+---------+-----+------|\n")
+      (full-gtd-table-insert-header '("Headline" "Notes" "Age" "Tags"))
       (dolist (entry (nreverse headlines))
         (let* ((created-str (nth 3 entry))
                (age-str (if created-str

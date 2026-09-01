@@ -47,10 +47,10 @@
     (add-to-list 'load-path (expand-file-name "lisp" full-gtd--package-root))))
 
 (require 'full-gtd-init)
+(require 'full-gtd-table)
 (require 'full-gtd-state)
 (require 'full-gtd-inbox)
 (require 'full-gtd-core)
-(require 'full-gtd-ui)
 (require 'full-gtd-review)
 (require 'full-gtd-do)
 (require 'full-gtd-horizons)

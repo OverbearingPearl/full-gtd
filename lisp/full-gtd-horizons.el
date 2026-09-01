@@ -30,8 +30,8 @@
 (require 'full-gtd-core)
 (require 'full-gtd-domain)
 (require 'full-gtd-state)
-(require 'full-gtd-ui)
 (require 'full-gtd-project-utils)
+(require 'full-gtd-table)
 
 (defun full-gtd-horizons--get-project-horizon (project property)
   "Get horizon PROPERTY value for PROJECT from any of its actions.
@@ -124,14 +124,7 @@ LEVEL is symbol: \\='area, \\='goal, \\='vision, \\='purpose, or \\='principle."
 
 (defun full-gtd-horizons--get-project-at-point ()
   "Get project name from text property in current table row."
-  (save-excursion
-    (beginning-of-line)
-    (let ((end (line-end-position))
-          (project nil))
-      (while (and (not project) (< (point) end))
-        (setq project (get-text-property (point) 'full-gtd-project))
-        (forward-char 1))
-      project)))
+  (full-gtd-table-project-at-point))
 
 (defun full-gtd-horizons--edit-horizon-at-point (level &optional project)
   "Edit horizon LEVEL for PROJECT at point.
@@ -285,27 +278,29 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
           (l5-display (string-join (full-gtd-core--split-values l5) "; "))
           (l4-display (string-join (full-gtd-core--split-values l4) "; "))
           (l3-display (string-join (full-gtd-core--split-values l3) "; ")))
-      (full-gtd-ui--insert-table-row name nil "action.org"
-                                      (list total todo done l6-purpose-display l6-principle-display l5-display l4-display l3-display)
-                                      t))))
+      (full-gtd-table-insert-row
+       name nil "action.org"
+       (list total todo done l6-purpose-display l6-principle-display
+             l5-display l4-display l3-display)
+       t))))
 
 (defun full-gtd-horizons--insert-no-project-row (action)
-  "Insert table row for no-project ACTION."
+  "Insert table row for no-project ACTION.
+ACTION is an entry from `full-gtd-core-filter-entries'."
   (let* ((head (nth 0 action))
-         (status (nth 1 action))
-         (context (nth 2 action))
-         (l3 (or (nth 3 action) ""))
+         (status (nth 2 action))
+         (context (nth 10 action))
+         (l3 (or (nth 11 action) ""))
          (l3-display (string-join (full-gtd-core--split-values l3) "; ")))
-    (full-gtd-ui--insert-table-row head nil "action.org"
-                                    (list status context l3-display)
-                                    nil)))
+    (full-gtd-table-insert-row head nil "action.org"
+                               (list status context l3-display))))
 
 (defun full-gtd-horizons--view ()
   "Display horizon alignment matrix view."
   (let* ((buffer-name "*Full-GTD Horizon View*")
          (anchor (when (get-buffer buffer-name)
                    (with-current-buffer (get-buffer buffer-name)
-                     (full-gtd-ui--anchor-at-point))))
+                     (full-gtd-table-anchor-at-point))))
          (projects (full-gtd-project-utils--collect-project-statistics))
          (classified (full-gtd-horizons--classify-projects projects))
          (critical (nth 0 classified))
@@ -317,6 +312,10 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
          (orphaned (length critical))
          (partial-count (length partial))
          (aligned-count (length aligned))
+         (project-header-columns
+          '("Project" "Total" "Todo" "Done"
+            ("L6 Purpose" . 20) ("L6 Principle" . 20)
+            ("L5 Vision" . 20) ("L4 Goal" . 20) ("L3 Area" . 20)))
          (empty-heading-markers '()))
     ;; Calculate health score based on action-level horizon coverage
     (let ((health-score
@@ -341,7 +340,7 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
                  (setq total-actions (+ total-actions action-count))))
              ;; No-project actions: only L3 possible
              (dolist (action no-project)
-               (let ((l3 (nth 3 action)))
+               (let ((l3 (nth 11 action)))
                  (when (and l3 (not (string= l3 "")))
                    (setq total-score (+ total-score 10)))
                  (setq total-actions (1+ total-actions))))
@@ -368,13 +367,12 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
           (insert "** Critical: Projects Without Any Horizon\n")
           (unless critical
             (push heading-marker empty-heading-markers))
-          (insert "| Project | Total | Todo | Done | L6 Purpose | L6 Principle | L5 Vision | L4 Goal | L3 Area |\n")
-          (insert "|---------+-------+------+------+------------+--------------+-----------+---------+---------|\n")
+          (full-gtd-table-insert-header project-header-columns)
           (if (null critical)
               (insert "| (No entries) | | | | | | | | |\n")
             (dolist (proj critical)
               (full-gtd-horizons--insert-project-row proj)))
-          (org-table-align)
+          (full-gtd-table-finalize)
           (insert "\n"))
 
         ;; Partial: L3 only
@@ -382,13 +380,12 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
           (insert "** Partial: Projects Missing Higher Horizons\n")
           (unless partial
             (push heading-marker empty-heading-markers))
-          (insert "| Project | Total | Todo | Done | L6 Purpose | L6 Principle | L5 Vision | L4 Goal | L3 Area |\n")
-          (insert "|---------+-------+------+------+------------+--------------+-----------+---------+---------|\n")
+          (full-gtd-table-insert-header project-header-columns)
           (if (null partial)
               (insert "| (No entries) | | | | | | | | |\n")
             (dolist (proj partial)
               (full-gtd-horizons--insert-project-row proj)))
-          (org-table-align)
+          (full-gtd-table-finalize)
           (insert "\n"))
 
         ;; Aligned: Complete
@@ -396,13 +393,12 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
           (insert "** Aligned Projects\n")
           (unless aligned
             (push heading-marker empty-heading-markers))
-          (insert "| Project | Total | Todo | Done | L6 Purpose | L6 Principle | L5 Vision | L4 Goal | L3 Area |\n")
-          (insert "|---------+-------+------+------+------------+--------------+-----------+---------+---------|\n")
+          (full-gtd-table-insert-header project-header-columns)
           (if (null aligned)
               (insert "| (No entries) | | | | | | | | |\n")
             (dolist (proj aligned)
               (full-gtd-horizons--insert-project-row proj)))
-          (org-table-align)
+          (full-gtd-table-finalize)
           (insert "\n"))
 
         ;; Multi-horizon
@@ -410,13 +406,12 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
           (insert "** Multi-Horizon Projects\n")
           (unless multi
             (push heading-marker empty-heading-markers))
-          (insert "| Project | Total | Todo | Done | L6 Purpose | L6 Principle | L5 Vision | L4 Goal | L3 Area |\n")
-          (insert "|---------+-------+------+------+------------+--------------+-----------+---------+---------|\n")
+          (full-gtd-table-insert-header project-header-columns)
           (if (null multi)
               (insert "| (No entries) | | | | | | | | |\n")
             (dolist (proj multi)
               (full-gtd-horizons--insert-project-row proj)))
-          (org-table-align)
+          (full-gtd-table-finalize)
           (insert "\n"))
 
         ;; No-project actions
@@ -424,15 +419,16 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
           (insert "** No-Project Actions (L3 Area Only)\n")
           (unless no-project
             (push heading-marker empty-heading-markers))
-          (insert "| Headline | Status | Context | L3 Area |\n")
-          (insert "|----------+--------+---------+---------|\n")
+          (full-gtd-table-insert-header
+           '("Headline" "Status" "Context" ("L3 Area" . 20)))
           (if (null no-project)
               (insert "| (No entries) | | | |\n")
             (dolist (action no-project)
               (full-gtd-horizons--insert-no-project-row action)))
-          (org-table-align)
+          (full-gtd-table-finalize)
           (insert "\n"))
 
+          (full-gtd-table-shrink-buffer)
           ;; Fold empty sections so their headings collapse automatically.
           (dolist (marker empty-heading-markers)
             (when (marker-position marker)
@@ -441,37 +437,12 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
               (set-marker marker nil)))
           (setq buffer-read-only t)
           (goto-char (point-min))
-          (full-gtd-ui--restore-point-anchor anchor))
+          (full-gtd-table-restore-point-anchor anchor))
       (switch-to-buffer buffer-name)
       (delete-other-windows)
       (full-gtd-horizons-view-mode 1))))
 
-(defun full-gtd-horizons--data-row-boundaries ()
-  "Return cons cell (FIRST-DATA-ROW . LAST-DATA-ROW) positions."
-  (save-excursion
-    (goto-char (point-min))
-    (while (and (not (eobp))
-                (or (looking-at "|[-+]")
-                    (looking-at "| Project[ \t]*|")
-                    (looking-at "| Headline[ \t]*|")
-                    (not (looking-at "|"))))
-      (forward-line 1))
-    (let ((first-data (line-beginning-position)))
-      (goto-char (point-max))
-      (forward-line -1)
-      (while (and (not (bobp))
-                  (or (looking-at "|[-+]")
-                      (looking-at "| Project[ \t]*|")
-                      (looking-at "| Headline[ \t]*|")
-                      (not (looking-at "|"))
-                      (looking-at "^$")))
-        (forward-line -1))
-      (cons first-data (line-beginning-position)))))
-
-(full-gtd-core-define-table-navigators
-  "full-gtd-horizons"
-  #'full-gtd-horizons--data-row-boundaries
-  "| Project[ \t]*|")
+(full-gtd-table-define-navigators "full-gtd-horizons")
 
 (defun full-gtd-horizons--refresh ()
   "Refresh the horizon alignment view."

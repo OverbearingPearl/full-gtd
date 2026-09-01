@@ -19,7 +19,7 @@
 (require 'full-gtd-init)
 (require 'full-gtd-core)
 (require 'full-gtd-state)
-(require 'full-gtd-ui)
+(require 'full-gtd-table)
 
 (defun full-gtd-project-utils--collect-project-entries (proj-name)
   "Collect all entries from action.org belonging to PROJ-NAME.
@@ -114,16 +114,15 @@ action belongs to any other project alongside PROJECT."
 PROJ-NAME is a string naming the project to display.
 Creates and pops to buffer *Full-GTD Project: PROJ-NAME*."
   (let* ((buffer-name (format "*Full-GTD Project: %s*" proj-name))
-         (entries (full-gtd-project-utils--collect-project-entries proj-name))
-         (header "| Headline | Status | Scheduled | Deadline | Context | Delegated | Project | Created |\n")
-         (sep "|----------+--------+-----------+----------+---------+-----------+---------+---------|\n"))
+         (entries (full-gtd-project-utils--collect-project-entries proj-name)))
     (with-current-buffer (get-buffer-create buffer-name)
       (setq buffer-read-only nil)
       (erase-buffer)
       (org-mode)
       (insert (format "* %s\n" proj-name))
-      (insert header)
-      (insert sep)
+      (full-gtd-table-insert-header
+       '("Headline" "Status" "Scheduled" "Deadline" "Context"
+         "Delegated" "Project" "Created"))
       (if (null entries)
           (insert "| (No entries) | | | | | | | |\n")
         (dolist (entry entries)
@@ -131,7 +130,7 @@ Creates and pops to buffer *Full-GTD Project: PROJ-NAME*."
                 (id (nth 1 entry))
                 (file (or (nth 2 entry) "action.org"))
                 (fields (nthcdr 3 entry)))
-            (full-gtd-ui--insert-table-row head id file fields nil))))
+            (full-gtd-table-insert-row head id file fields nil))))
       (org-table-align)
       (setq buffer-read-only t)
       (setq-local full-gtd-review--current-view-type 'project)

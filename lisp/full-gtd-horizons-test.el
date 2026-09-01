@@ -688,6 +688,8 @@
                  (goto-char (point-min))
                  (search-forward "** Aligned Projects")
                  (forward-line 1)
+                 (while (eq (full-gtd-table-line-type) 'cookie)
+                   (forward-line 1))
                  (should-not (get-char-property (line-beginning-position) 'invisible))
                  ;; Empty sections -> folded
                  (dolist (heading '("** Critical: Projects Without Any Horizon"

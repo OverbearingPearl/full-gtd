@@ -18,9 +18,9 @@
 (require 'full-gtd-init)
 (require 'full-gtd-core)
 (require 'full-gtd-state)
-(require 'full-gtd-ui)
 (require 'full-gtd-horizons)
 (require 'full-gtd-project-utils)
+(require 'full-gtd-table)
 
 (defvar-local full-gtd-review--current-view-type nil
   "Type of current review view: daily, weekly, or project.")
@@ -66,75 +66,43 @@
   :keymap full-gtd-review-view-mode-map
   :interactive nil)
 
-(defun full-gtd-review--data-row-boundaries ()
-  "Return cons cell (FIRST-DATA-ROW . LAST-DATA-ROW) positions."
-  (save-excursion
-    (goto-char (point-min))
-    (while (and (not (eobp))
-                (or (looking-at "|[-+]")
-                    (looking-at "| Headline[ \t]*|")
-                    (not (looking-at "|"))))
-      (forward-line 1))
-    (let ((first-data (line-beginning-position)))
-      (goto-char (point-max))
-      (forward-line -1)
-      (while (and (not (bobp))
-                  (or (looking-at "|[-+]")
-                      (looking-at "| Headline[ \t]*|")
-                      (not (looking-at "|"))
-                      (looking-at "^$")))
-        (forward-line -1))
-      (cons first-data (line-beginning-position)))))
-
 (defun full-gtd-review--get-entry-at-point ()
   "Get (ID . FILE) from current row in table using text properties."
-  (save-excursion
-    (beginning-of-line)
-    (let ((end (line-end-position))
-          (id nil)
-          (file nil))
-      (while (and (< (point) end)
-                  (or (null id) (null file)))
-        (unless id
-          (setq id (get-text-property (point) 'full-gtd-id)))
-        (unless file
-          (setq file (get-text-property (point) 'full-gtd-file)))
-        (forward-char 1))
-      (when (and id file)
-        (cons id file)))))
+  (full-gtd-table-entry-at-point))
 
 (defun full-gtd-review--put-row-metadata (marker id file project)
   "Attach row metadata after Org table alignment.
 MARKER identifies an aligned data row.  ID and FILE identify task rows; PROJECT
 identifies project rows."
   (when (marker-position marker)
-    (goto-char marker)
-    (beginning-of-line)
-    (when (looking-at "|[ \t]*")
-      (goto-char (match-end 0))
-      (let ((start (point)))
-        (when (search-forward "|" (line-end-position) t)
-          (let ((end (progn
-                       (skip-chars-backward " \t")
-                       (point))))
-            (when (< start end)
-              (if id
-                  (progn
-                    (put-text-property start end 'full-gtd-id id)
-                    (put-text-property start end 'full-gtd-file file))
-                (put-text-property start end 'full-gtd-project project))))))))
+    (save-excursion
+      (goto-char marker)
+      (beginning-of-line)
+      ;; Org alignment can relocate properties attached before alignment.
+      (remove-text-properties
+       (line-beginning-position) (line-end-position)
+       (list full-gtd-table-prop-id nil
+             full-gtd-table-prop-file nil
+             full-gtd-table-prop-project nil))
+      (when (looking-at "|[ \t]*")
+        (goto-char (match-end 0))
+        (let ((start (point)))
+          (when (search-forward "|" (line-end-position) t)
+            (let ((end (progn
+                         (skip-chars-backward " \t")
+                         (point))))
+              (when (< start end)
+                (if id
+                    (progn
+                      (put-text-property start end full-gtd-table-prop-id id)
+                      (put-text-property start end full-gtd-table-prop-file file))
+                  (put-text-property
+                   start end full-gtd-table-prop-project project)))))))))
   (set-marker marker nil))
 
 (defun full-gtd-review--get-project-at-point ()
   "Return project name at point, if any."
-  (save-excursion
-    (beginning-of-line)
-    (let ((end (line-end-position))
-          (project nil))
-      (while (and (not project) (< (point) end))
-        (setq project (get-text-property (point) 'full-gtd-project))
-        (forward-char 1))
-      project)))
+  (full-gtd-table-project-at-point))
 
 (defun full-gtd-review--get-property-by-id (id file property)
   "Get PROPERTY value of entry with ID in FILE."
@@ -464,6 +432,8 @@ Delete task if it has no PROJECT property."
           (error "Only action entries can be completed"))
         (if (full-gtd-review--should-delete-on-completion-p id file)
             (progn
+              ;; Anchor the refresh to the successor before deleting this entry.
+              (full-gtd-review--next-row)
               (full-gtd-review--delete-entry-by-id id file)
               (message "Task deleted (no project)"))
           (full-gtd-core-with-entry-at-id id file
@@ -486,11 +456,11 @@ Delete task if it has no PROJECT property."
 HEAD is the entry headline string.
 ID is the unique identifier string, or nil for project rows.
 FILE is the source file path string.
-FIELDS is a list of field values in order.
+FIELDS is a list of complete field values in order.
 
 For project rows (ID is nil), attach `full-gtd-project' property to HEAD.
 For task rows, attach `full-gtd-id' and `full-gtd-file' properties to HEAD."
-  (full-gtd-ui--insert-table-row head id file fields (null id)))
+  (full-gtd-table-insert-row head id file fields (null id)))
 
 (defun full-gtd-review--build-table-data (sections)
   "Build table data from SECTIONS.
@@ -530,7 +500,7 @@ META is an alist with keys :entry-map and :entry-index."
   (let* ((entry-map (cdr (assq :entry-map meta)))
          (anchor (when (buffer-live-p buffer)
                    (with-current-buffer buffer
-                     (full-gtd-ui--anchor-at-point))))
+                     (full-gtd-table-anchor-at-point))))
          (empty-heading-markers '()))
     (with-current-buffer buffer
       (setq buffer-read-only nil)
@@ -556,20 +526,24 @@ META is an alist with keys :entry-map and :entry-index."
               (push heading-marker empty-heading-markers))
             (pcase type
               ('project
-               (insert "| Project | Total | Todo | Done | Next Deadline | L3_AREA | L4_GOAL | L5_VISION | L6_PURPOSE |\n")
-               (insert "|---------+-------+------+------+---------------+---------+---------+-----------+------------|\n"))
+               (full-gtd-table-insert-header
+                '("Project" "Total" "Todo" "Done" "Next Deadline"
+                  ("L3_AREA" . 20) ("L4_GOAL" . 20)
+                  ("L5_VISION" . 20) ("L6_PURPOSE" . 20))))
               ('no-project
-               (insert "| Headline | Status | Scheduled | Deadline | Context | Delegated | L3_AREA |\n")
-               (insert "|----------+--------+-----------+----------+---------+-----------+---------|\n"))
+               (full-gtd-table-insert-header
+                '("Headline" "Status" "Scheduled" "Deadline" "Context"
+                  "Delegated" ("L3_AREA" . 20))))
               ('inbox
-               (insert "| Headline | Created |\n")
-               (insert "|----------+---------|\n"))
+               (full-gtd-table-insert-header '("Headline" "Created")))
               ('project-tasks
-               (insert "| Headline | Status | Scheduled | Deadline | Context | Delegated | Project | Created |\n")
-               (insert "|----------+--------+-----------+----------+---------+-----------+---------+---------|\n"))
+               (full-gtd-table-insert-header
+                '("Headline" "Status" "Scheduled" "Deadline" "Context"
+                  "Delegated" "Project" "Created")))
               (_
-               (insert "| Headline | Status | Scheduled | Deadline | Context | Delegated | Project |\n")
-               (insert "|----------+--------+-----------+----------+---------+-----------+---------|\n")))
+               (full-gtd-table-insert-header
+                '("Headline" "Status" "Scheduled" "Deadline" "Context"
+                  "Delegated" "Project"))))
             (if (null entries)
                 (progn
                   (pcase type
@@ -588,7 +562,7 @@ META is an alist with keys :entry-map and :entry-index."
                     (_
                      ;; 7 columns: Headline, Status, Scheduled, Deadline, Context, Delegated, Project
                      (insert "| (No entries) | | | | | | |\n")))
-                  (org-table-align))
+                  (full-gtd-table-finalize))
               (dolist (entry entries)
                 (let ((head (nth 0 entry))
                       (id (nth 1 entry))
@@ -597,18 +571,24 @@ META is an alist with keys :entry-map and :entry-index."
                   (full-gtd-review--insert-table-row head id file fields)
                   (push (list id file (and (null id) head))
                         row-metadata)))
-              (org-table-align)
+              (full-gtd-table-finalize)
               (save-excursion
                 (goto-char table-marker)
-                (forward-line 2)
+                (while (and (not (eobp))
+                            (not (eq (full-gtd-table-line-type) 'data)))
+                  (forward-line 1))
                 (dolist (metadata (nreverse row-metadata))
                   (let ((row-marker (copy-marker (point))))
                     (forward-line 1)
+                    (while (and (not (eobp))
+                                (not (eq (full-gtd-table-line-type) 'data)))
+                      (forward-line 1))
                     (apply #'full-gtd-review--put-row-metadata
                            row-marker metadata))))
               (set-marker table-marker nil))
             (goto-char (point-max))
             (insert "\n"))))
+      (full-gtd-table-shrink-buffer)
       ;; Fold empty sections so their headings collapse automatically.
       (dolist (marker empty-heading-markers)
         (when (marker-position marker)
@@ -617,7 +597,7 @@ META is an alist with keys :entry-map and :entry-index."
           (set-marker marker nil)))
       (setq buffer-read-only t)
       (goto-char (point-min))
-      (full-gtd-ui--restore-point-anchor anchor)
+      (full-gtd-table-restore-point-anchor anchor)
       (current-buffer))))
 
 (defun full-gtd-review--create-table-buffer (buffer-name sections)
@@ -925,12 +905,7 @@ Returns list of entry lists suitable for table display."
   "Jump to task in source file, or show project tasks if on project row."
   (interactive)
   (save-excursion
-    (beginning-of-line)
-    (let ((end (line-end-position))
-          (project nil))
-      (while (and (< (point) end) (not project))
-        (setq project (get-text-property (point) 'full-gtd-project))
-        (forward-char 1))
+    (let ((project (full-gtd-table-project-at-point)))
       (if project
           (full-gtd-project-utils--show-project-tasks project)
         (let ((entry (full-gtd-review--get-entry-at-point)))
@@ -942,10 +917,7 @@ Returns list of entry lists suitable for table display."
               (when (re-search-forward (concat ":ID:[ \t]+" (regexp-quote id)) nil t)
                 (org-back-to-heading)))))))))
 
-(full-gtd-core-define-table-navigators
-  "full-gtd-review"
-  #'full-gtd-review--data-row-boundaries
-  "| Headline[ \t]*|")
+(full-gtd-table-define-navigators "full-gtd-review")
 
 (provide 'full-gtd-review)
 

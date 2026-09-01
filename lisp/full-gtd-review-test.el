@@ -345,7 +345,8 @@
              (with-current-buffer "*Full-GTD Weekly Review*"
                (goto-char (point-min))
                (search-forward "** Projects - Active")
-               (forward-line 3)
+               (while (not (eq (full-gtd-table-line-type) 'data))
+                 (forward-line 1))
                (beginning-of-line)
                (should (search-forward-regexp "|\\s-*Website\\s-*|\\s-*3\\s-*|\\s-*2\\s-*|\\s-*1\\s-*|\\s-*<2026-05-20[^>]*>\\s-*|" (line-end-position) t))))
   :teardown (kill-buffer "*Full-GTD Weekly Review*"))
@@ -420,7 +421,8 @@
              (with-current-buffer "*Full-GTD Weekly Review*"
                (goto-char (point-min))
                (search-forward "** Projects - Stuck")
-               (forward-line 3)
+               (while (not (eq (full-gtd-table-line-type) 'data))
+                 (forward-line 1))
                (beginning-of-line)
                (should (search-forward-regexp "|\\s-*StuckProj\\s-*|\\s-*2\\s-*|\\s-*0\\s-*|\\s-*1\\s-*|" (line-end-position) t))))
   :teardown (kill-buffer "*Full-GTD Weekly Review*"))
@@ -487,6 +489,8 @@
                (goto-char (point-min))
                (search-forward "** action.org - No Project")
                (forward-line 1) ; Skip to table header
+               (while (eq (full-gtd-table-line-type) 'cookie)
+                 (forward-line 1))
                (beginning-of-line)
                (let ((line (buffer-substring (line-beginning-position) (line-end-position))))
                  ;; Count pipe separators - should be 8 pipes for 7 columns
@@ -906,6 +910,8 @@
                    (goto-char (point-min))
                    (search-forward heading)
                    (forward-line 1)
+                   (while (eq (full-gtd-table-line-type) 'cookie)
+                     (forward-line 1))
                    (should-not (get-char-property (line-beginning-position) 'invisible)))
                  ;; Empty sections -> folded
                  (dolist (heading '("** inbox.org - Inbox"
