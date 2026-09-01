@@ -137,13 +137,13 @@ current column between constrained and complete display."
          (separator (concat "|" (mapconcat #'identity cells "|") "|\n")))
     (when (cl-some #'identity widths)
       (insert
-       (concat "| "
-               (mapconcat
-                (lambda (width)
-                  (if width (format "<%d>" width) ""))
-                widths
-                " | ")
-               " |\n")))
+       "| "
+       (mapconcat
+        (lambda (width)
+          (if width (format "<%d>" width) ""))
+        widths
+        " | ")
+       " |\n"))
     (insert header)
     (insert separator)))
 
