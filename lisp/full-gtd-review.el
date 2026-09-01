@@ -530,7 +530,8 @@ META is an alist with keys :entry-map and :entry-index."
   (let* ((entry-map (cdr (assq :entry-map meta)))
          (anchor (when (buffer-live-p buffer)
                    (with-current-buffer buffer
-                     (full-gtd-ui--anchor-at-point)))))
+                     (full-gtd-ui--anchor-at-point))))
+         (empty-heading-markers '()))
     (with-current-buffer buffer
       (setq buffer-read-only nil)
       (erase-buffer)
@@ -547,9 +548,12 @@ META is an alist with keys :entry-map and :entry-index."
           (let ((title (nth 0 section))
                 (type (nth 1 section))
                 (entries (nth 2 section))
+                (heading-marker (copy-marker (point)))
                 (table-marker (copy-marker (point)))
                 (row-metadata '()))
             (insert (format "** %s\n" title))
+            (unless entries
+              (push heading-marker empty-heading-markers))
             (pcase type
               ('project
                (insert "| Project | Total | Todo | Done | Next Deadline | L3_AREA | L4_GOAL | L5_VISION | L6_PURPOSE |\n")
@@ -605,6 +609,12 @@ META is an alist with keys :entry-map and :entry-index."
               (set-marker table-marker nil))
             (goto-char (point-max))
             (insert "\n"))))
+      ;; Fold empty sections so their headings collapse automatically.
+      (dolist (marker empty-heading-markers)
+        (when (marker-position marker)
+          (goto-char marker)
+          (outline-hide-subtree)
+          (set-marker marker nil)))
       (setq buffer-read-only t)
       (goto-char (point-min))
       (full-gtd-ui--restore-point-anchor anchor)

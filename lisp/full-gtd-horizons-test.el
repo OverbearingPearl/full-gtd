@@ -674,6 +674,32 @@
                                      (buffer-substring (line-beginning-position) (line-end-position)))))
   :teardown (kill-buffer "*Full-GTD Horizon View*"))
 
+(full-gtd-test-define-story full-gtd-horizons-test-empty-sections-folded
+  "Empty horizon sections are automatically folded; non-empty sections stay visible."
+  :setup (full-gtd-init-initialize)
+  :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: fold-test-1\n:PROJECT: FullProj\n:L3_AREA: Work\n:L4_GOAL: Goal\n:L5_VISION: Vision\n:L6_PURPOSE: Purpose\n:END:\n"))
+  :mock nil
+  :body (full-gtd-horizons-view)
+  :asserts (progn
+             (should (get-buffer "*Full-GTD Horizon View*"))
+             (with-current-buffer "*Full-GTD Horizon View*"
+               (let ((search-invisible 'remove))
+                 ;; Aligned has one project -> NOT folded
+                 (goto-char (point-min))
+                 (search-forward "** Aligned Projects")
+                 (forward-line 1)
+                 (should-not (get-char-property (line-beginning-position) 'invisible))
+                 ;; Empty sections -> folded
+                 (dolist (heading '("** Critical: Projects Without Any Horizon"
+                                    "** Partial: Projects Missing Higher Horizons"
+                                    "** Multi-Horizon Projects"
+                                    "** No-Project Actions (L3 Area Only)"))
+                   (goto-char (point-min))
+                   (search-forward heading)
+                   (forward-line 1)
+                   (should (get-char-property (line-beginning-position) 'invisible))))))
+  :teardown (kill-buffer "*Full-GTD Horizon View*"))
+
 (provide 'full-gtd-horizons-test)
 
 ;;; full-gtd-horizons-test.el ends here

@@ -890,6 +890,39 @@
       (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*"))
       (delete-directory full-gtd-init-base-directory t))))
 
+(full-gtd-test-define-story full-gtd-review-test-empty-sections-folded
+  "Empty review sections are automatically folded; non-empty sections stay visible."
+  :setup (full-gtd-init-initialize)
+  :files (("action.org" "* TODO Task 1\n:PROPERTIES:\n:ID: rev-fold-1\n:PROJECT: P\n:END:\n"))
+  :mock nil
+  :body (full-gtd-review-weekly)
+  :asserts (progn
+             (should (get-buffer "*Full-GTD Weekly Review*"))
+             (with-current-buffer "*Full-GTD Weekly Review*"
+               (let ((search-invisible 'remove))
+                 ;; Non-empty sections -> NOT folded
+                 (dolist (heading '("** action.org - Next Actions"
+                                    "** Projects - Active"))
+                   (goto-char (point-min))
+                   (search-forward heading)
+                   (forward-line 1)
+                   (should-not (get-char-property (line-beginning-position) 'invisible)))
+                 ;; Empty sections -> folded
+                 (dolist (heading '("** inbox.org - Inbox"
+                                    "** action.org - Overdue"
+                                    "** action.org - Upcoming Deadlines"
+                                    "** action.org - Completed"
+                                    "** action.org - Delegated"
+                                    "** Projects - Stuck"
+                                    "** action.org - No Project"
+                                    "** someday.org - Someday"
+                                    "** reference.org - Reference"))
+                   (goto-char (point-min))
+                   (search-forward heading)
+                   (forward-line 1)
+                   (should (get-char-property (line-beginning-position) 'invisible))))))
+  :teardown (kill-buffer "*Full-GTD Weekly Review*"))
+
 (provide 'full-gtd-review-test)
 
 ;;; full-gtd-review-test.el ends here
