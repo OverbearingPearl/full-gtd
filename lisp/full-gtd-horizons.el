@@ -442,7 +442,8 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
           (setq buffer-read-only t)
           (goto-char (point-min))
           (full-gtd-ui--restore-point-anchor anchor))
-      (pop-to-buffer buffer-name)
+      (switch-to-buffer buffer-name)
+      (delete-other-windows)
       (full-gtd-horizons-view-mode 1))))
 
 (defun full-gtd-horizons--data-row-boundaries ()

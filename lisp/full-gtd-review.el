@@ -844,7 +844,8 @@ Returns list of entry lists suitable for table display."
     (full-gtd-review--create-table-buffer buffer-name sections)
     (with-current-buffer buffer-name
       (setq full-gtd-review--current-view-type 'daily))
-    (pop-to-buffer buffer-name)
+    (switch-to-buffer buffer-name)
+    (delete-other-windows)
     (full-gtd-review-view-mode 1)))
 
 (defun full-gtd-review--weekly ()
@@ -905,7 +906,8 @@ Returns list of entry lists suitable for table display."
     (full-gtd-review--create-table-buffer buffer-name sections)
     (with-current-buffer buffer-name
       (setq full-gtd-review--current-view-type 'weekly))
-    (pop-to-buffer buffer-name)
+    (switch-to-buffer buffer-name)
+    (delete-other-windows)
     (full-gtd-review-view-mode 1)))
 
 (defun full-gtd-review--quit-or-return ()
