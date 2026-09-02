@@ -198,7 +198,7 @@ Supports multiple values separated by semicolon."
       (let* ((entry (full-gtd-table-entry-at-point))
              (id (car entry))
              (file (cdr entry)))
-        (unless id
+        (unless (and id (not (string= id "")))
           (error "No project or action found at point"))
         (unless (string= file "action.org")
           (error "Horizons are only editable for actions in action.org"))
@@ -306,7 +306,7 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
   "Insert table row for no-project ACTION.
 ACTION is an entry from `full-gtd-core-filter-entries'."
   (let* ((head (nth 0 action))
-         (id (or (nth 1 action) ""))
+         (id (or (nth 7 action) ""))
          (status (nth 2 action))
          (context (nth 10 action))
          (l3 (or (nth 11 action) ""))
@@ -492,11 +492,26 @@ ACTION is an entry from `full-gtd-core-filter-entries'."
   :interactive nil)
 
 (defun full-gtd-horizons--goto-project-at-point ()
-  "Show project task sub-view for project at point."
+  "Show project task sub-view for project at point.
+For no-project actions, jump to the source entry in action.org."
   (interactive)
   (let ((project (full-gtd-horizons--get-project-at-point)))
-    (when project
-      (full-gtd-project-utils--show-project-tasks project))))
+    (if project
+        (full-gtd-project-utils--show-project-tasks project)
+      (let* ((entry (full-gtd-table-entry-at-point))
+             (id (car entry))
+             (file (cdr entry)))
+        (when (and id file)
+          (let ((file-path (expand-file-name file full-gtd-init-base-directory)))
+            (find-file file-path)
+            (catch 'found
+              (org-map-entries
+               (lambda ()
+                 (when (string= (org-entry-get nil "ID") id)
+                   (org-fold-show-entry)
+                   (recenter)
+                   (throw 'found t)))
+               nil nil))))))))
 
 ;; Horizon editing keybindings are now in full-gtd-horizons-view-mode-map
 

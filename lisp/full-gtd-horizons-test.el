@@ -81,7 +81,9 @@
                (should-not (search-forward-regexp "L4\\|L5\\|L6" (line-end-position) t))
                (goto-char (point-min))
                (search-forward "** No-Project Actions")
-               (should (search-forward "No project task" nil t))))
+               (should (search-forward "No project task" nil t))
+               (beginning-of-line)
+               (should (search-forward-regexp "Personal" (line-end-position) t))))
   :teardown (kill-buffer "*Full-GTD Horizon View*"))
 
 (full-gtd-test-define-story full-gtd-horizons-test-view-shows-multi-horizon-projects
@@ -719,8 +721,36 @@
   :asserts (progn
              (should (full-gtd-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
-                      ":L3_AREA: NewArea")))
+                      ":L3_AREA: NewArea"))
+             (with-current-buffer "*Full-GTD Horizon View*"
+               (goto-char (point-min))
+               (search-forward "NoProject Task")
+               (beginning-of-line)
+               (should (search-forward-regexp "NewArea" (line-end-position) t))))
   :teardown (kill-buffer "*Full-GTD Horizon View*"))
+
+(full-gtd-test-define-story full-gtd-horizons-test-ret-jumps-to-no-project-action
+  "Press RET on no-project action row jumps to source entry."
+  :setup (full-gtd-init-initialize)
+  :files (("action.org" "* TODO NoProject Task\n:PROPERTIES:\n:ID: no-proj-ret-1\n:END:\n"))
+  :mock nil
+  :body (progn
+          (full-gtd-horizons-view)
+          (with-current-buffer "*Full-GTD Horizon View*"
+            (goto-char (point-min))
+            (search-forward "NoProject Task")
+            (beginning-of-line)
+            (full-gtd-horizons--goto-project-at-point)))
+  :asserts (progn
+             (let ((buf (get-file-buffer (expand-file-name "action.org" full-gtd-init-base-directory))))
+               (should buf)
+               (when buf
+                 (with-current-buffer buf
+                   (should (looking-at-p "\\*+ TODO NoProject Task"))))))
+  :teardown (progn
+              (kill-buffer "*Full-GTD Horizon View*")
+              (let ((buf (get-file-buffer (expand-file-name "action.org" full-gtd-init-base-directory))))
+                (when buf (kill-buffer buf)))))
 
 (provide 'full-gtd-horizons-test)
 
