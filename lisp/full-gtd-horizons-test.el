@@ -8,6 +8,7 @@
 
 (require 'ert)
 (require 'full-gtd)
+(require 'full-gtd-table)
 (require 'full-gtd-utils-test)
 
 (full-gtd-test-define-story full-gtd-horizons-test-view-shows-project-matrix
@@ -700,6 +701,25 @@
                    (search-forward heading)
                    (forward-line 1)
                    (should (get-char-property (line-beginning-position) 'invisible))))))
+  :teardown (kill-buffer "*Full-GTD Horizon View*"))
+
+(full-gtd-test-define-story full-gtd-horizons-test-edit-l3-on-no-project-action
+  "Press 3 on no-project action row edits its L3 Area."
+  :setup (full-gtd-init-initialize)
+  :files (("action.org" "* TODO NoProject Task\n:PROPERTIES:\n:ID: no-proj-1\n:L3_AREA: OldArea\n:END:\n"))
+  :mock (((symbol-function 'read-string) (lambda (&rest _) "NewArea"))
+         ((symbol-function 'full-gtd-core-read-property-with-completion) (lambda (&rest _) "NewArea")))
+  :body (progn
+          (full-gtd-horizons-view)
+          (with-current-buffer "*Full-GTD Horizon View*"
+            (goto-char (point-min))
+            (search-forward "NoProject Task")
+            (beginning-of-line)
+            (full-gtd-horizons--edit-area-at-point)))
+  :asserts (progn
+             (should (full-gtd-test-file-contains-p
+                      (expand-file-name "action.org" full-gtd-init-base-directory)
+                      ":L3_AREA: NewArea")))
   :teardown (kill-buffer "*Full-GTD Horizon View*"))
 
 (provide 'full-gtd-horizons-test)

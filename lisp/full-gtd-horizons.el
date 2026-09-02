@@ -189,9 +189,26 @@ Supports multiple values separated by semicolon."
     (_ (error "Internal: unknown horizon level %S" level))))
 
 (defun full-gtd-horizons--edit-area-at-point ()
-  "Edit L3 Area horizon for project at point."
+  "Edit L3 Area horizon for project at point, or for no-project action."
   (interactive)
-  (full-gtd-horizons--edit-horizon-at-point 'area))
+  (let ((project (full-gtd-horizons--get-project-at-point)))
+    (if project
+        (full-gtd-horizons--edit-horizon-at-point 'area project)
+      ;; No-project action: edit its own L3_AREA property
+      (let* ((entry (full-gtd-table-entry-at-point))
+             (id (car entry))
+             (file (cdr entry)))
+        (unless id
+          (error "No project or action found at point"))
+        (unless (string= file "action.org")
+          (error "Horizons are only editable for actions in action.org"))
+        (let* ((property "L3_AREA")
+               (new-value (full-gtd-core-read-property-with-completion
+                           "L3 Area (empty to remove): "
+                           'l3 "")))
+          (full-gtd-horizons--set-single-entry-property id property new-value)
+          (message "Set L3 Area for action %s" id)
+          (full-gtd-horizons--view))))))
 
 (defun full-gtd-horizons--edit-goal-at-point ()
   "Edit L4 Goal horizon for project at point."
@@ -288,11 +305,12 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
   "Insert table row for no-project ACTION.
 ACTION is an entry from `full-gtd-core-filter-entries'."
   (let* ((head (nth 0 action))
+         (id (or (nth 1 action) ""))
          (status (nth 2 action))
          (context (nth 10 action))
          (l3 (or (nth 11 action) ""))
          (l3-display (string-join (full-gtd-core--split-values l3) "; ")))
-    (full-gtd-table-insert-row head nil "action.org"
+    (full-gtd-table-insert-row head id "action.org"
                                (list status context l3-display))))
 
 (defun full-gtd-horizons--view ()
@@ -532,6 +550,25 @@ this after PROJECT is set/removed but before moving the entry."
               (if value
                   (org-entry-put nil level value)
                 (org-delete-property level)))))))))
+
+(defun full-gtd-horizons--set-single-entry-property (id property value)
+  "Set PROPERTY to VALUE for the action with ID in action.org.
+If VALUE is empty or nil, remove PROPERTY.
+Returns count of modified entries."
+  (let ((count 0)
+        (file-path (expand-file-name "action.org" full-gtd-init-base-directory)))
+    (when (and file-path (file-exists-p file-path))
+      (full-gtd-state--with-transaction '("action.org")
+        (full-gtd-state--with-file-buffer "action.org"
+          (org-map-entries
+           (lambda ()
+             (when (string= (org-entry-get nil "ID") id)
+               (if (and (stringp value) (not (string= value "")))
+                   (org-entry-put nil property value)
+                 (org-delete-property property))
+               (setq count (1+ count))))
+           nil nil))))
+    count))
 
 (provide 'full-gtd-horizons)
 
