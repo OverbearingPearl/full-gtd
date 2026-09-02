@@ -225,9 +225,10 @@ Supports multiple values separated by semicolon."
 Prompts for Purpose first, then immediately prompts for Principle."
   (interactive)
   (let ((project (full-gtd-horizons--get-project-at-point)))
-    (when project
-      (full-gtd-horizons--edit-horizon-at-point 'purpose project)
-      (full-gtd-horizons--edit-horizon-at-point 'principle project))))
+    (unless project
+      (error "Horizons are managed at project level.  Use M-x full-gtd-horizons-view to edit them"))
+    (full-gtd-horizons--edit-horizon-at-point 'purpose project)
+    (full-gtd-horizons--edit-horizon-at-point 'principle project)))
 
 (defun full-gtd-horizons--edit-principle-at-point ()
   "Edit L6 Principle horizon for project at point."
