@@ -372,7 +372,7 @@ ACTION is an entry from `full-gtd-core-filter-entries'."
         (erase-buffer)
         (org-mode)
         (setq-local header-line-format
-                    "Horizon View | 3=L3, 4=L4, 5=L5, 6=L6 | A=archive | RET=project actions | g=refresh | q=quit")
+                    "Horizon View | n/p/j/k=move | 3=L3, 4=L4, 5=L5, 6=L6 | A=archive | RET=project actions | g=refresh | q=quit")
 
         (insert "#+TITLE: Horizon Alignment View\n\n")
 

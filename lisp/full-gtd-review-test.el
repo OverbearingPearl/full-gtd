@@ -1032,6 +1032,20 @@
       (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*"))
       (delete-directory full-gtd-init-base-directory t))))
 
+(full-gtd-test-define-story full-gtd-review-test-horizon-header-lists-navigation-keys
+  "Horizon view header documents all row navigation keys."
+  :setup (full-gtd-init-initialize)
+  :files (("action.org" ""))
+  :mock nil
+  :body (full-gtd-horizons-view)
+  :asserts (with-current-buffer "*Full-GTD Horizon View*"
+             (should
+              (string-match-p
+               (regexp-quote "n/p/j/k=move")
+               (format-mode-line header-line-format))))
+  :teardown (full-gtd-test-cleanup-buffers
+             '("*Full-GTD Horizon View*")))
+
 (full-gtd-test-define-story full-gtd-review-test-empty-sections-folded
   "Empty review sections are automatically folded; non-empty sections stay visible."
   :setup (full-gtd-init-initialize)
