@@ -885,6 +885,34 @@
                           (expand-file-name "action.org" full-gtd-init-base-directory))))
                 (when buf (kill-buffer buf)))))
 
+(full-gtd-test-define-story full-gtd-review-test-project-view-returns-to-origin
+  "Quitting a project sub-view returns to the view that opened it."
+  :setup (progn
+           (full-gtd-init-initialize)
+           (get-buffer-create "*Full-GTD Weekly Review*")
+           (get-buffer-create "*Full-GTD Horizon View*"))
+  :files (("action.org" ""))
+  :mock nil
+  :body (let (returned-buffer)
+          (cl-letf (((symbol-function
+                      'full-gtd-project-utils--collect-project-entries)
+                     (lambda (_project) nil))
+                    ((symbol-function 'pop-to-buffer)
+                     (lambda (buffer-or-name &rest _)
+                       (setq returned-buffer (get-buffer buffer-or-name)))))
+            (with-current-buffer "*Full-GTD Horizon View*"
+              (full-gtd-project-utils--show-project-tasks "OriginProj"))
+            (with-current-buffer "*Full-GTD Project: OriginProj*"
+              (call-interactively (key-binding (kbd "q"))))
+            (should
+             (eq returned-buffer
+                 (get-buffer "*Full-GTD Horizon View*")))))
+  :asserts t
+  :teardown (full-gtd-test-cleanup-buffers
+             '("*Full-GTD Weekly Review*"
+               "*Full-GTD Horizon View*"
+               "*Full-GTD Project: OriginProj*")))
+
 (full-gtd-test-define-story full-gtd-review-test-project-view-mode-enabled-and-quit
   "Project sub-view enables its view mode; quit returns to weekly review."
   :setup (full-gtd-init-initialize)

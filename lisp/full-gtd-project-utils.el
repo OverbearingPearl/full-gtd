@@ -116,11 +116,14 @@ action belongs to any other project alongside PROJECT."
 PROJ-NAME is a string naming the project to display.
 Creates and pops to buffer *Full-GTD Project: PROJ-NAME*."
   (let* ((buffer-name (format "*Full-GTD Project: %s*" proj-name))
-         (entries (full-gtd-project-utils--collect-project-entries proj-name)))
+         (entries (full-gtd-project-utils--collect-project-entries proj-name))
+         (parent-buffer (current-buffer)))
     (with-current-buffer (get-buffer-create buffer-name)
       (setq buffer-read-only nil)
       (erase-buffer)
       (org-mode)
+      ;; Set after `org-mode', which clears ordinary buffer-local variables.
+      (setq-local full-gtd-project-utils--parent-buffer parent-buffer)
       (insert (format "* %s\n" proj-name))
       (full-gtd-table-insert-header
        '("Headline" "Status" "Scheduled" "Deadline" "Context"
@@ -198,6 +201,9 @@ Returns list of entry lists, as returned by `full-gtd-core-filter-entries'."
 
 ;;;; Project task sub-view mode
 
+(defvar-local full-gtd-project-utils--parent-buffer nil
+  "Buffer from which the current project task sub-view was opened.")
+
 (defun full-gtd-project-utils--goto-task-at-point ()
   "Jump to the task at point in its source file."
   (interactive)
@@ -211,14 +217,12 @@ Returns list of entry lists, as returned by `full-gtd-core-filter-entries'."
           (org-back-to-heading))))))
 
 (defun full-gtd-project-utils--quit-or-return ()
-  "Kill the project sub-view buffer and return to its parent view.
-Parent is the weekly review or horizon view buffer when present."
+  "Kill the project sub-view buffer and return to its parent view."
   (interactive)
-  (kill-buffer)
-  (cond ((get-buffer "*Full-GTD Weekly Review*")
-         (pop-to-buffer "*Full-GTD Weekly Review*"))
-        ((get-buffer "*Full-GTD Horizon View*")
-         (pop-to-buffer "*Full-GTD Horizon View*"))))
+  (let ((parent-buffer full-gtd-project-utils--parent-buffer))
+    (kill-buffer)
+    (when (buffer-live-p parent-buffer)
+      (pop-to-buffer parent-buffer))))
 
 (full-gtd-table-define-navigators "full-gtd-project-utils")
 
