@@ -167,7 +167,7 @@ Horizons flow from high levels down: Purpose (L6) → Vision (L5) → Goals (L4)
 
 This matrix format makes it easy to spot "orphaned" projects (no horizon alignment) and incomplete vertical chains at a glance.
 
-Navigation in the horizon view uses the same keys as review mode: `n`/`p` or `j`/`k` to move between rows, `RET` to view project tasks, `g` to refresh, `q` to quit. Press `3`–`6` to edit the corresponding horizon level (L3–L6, where `6` edits both Purpose and Principle sequentially). Press `A` to archive the project with the same rules as in Review (all actions DONE, no shared projects).
+Navigation in the horizon view uses the same keys as review mode: `n`/`p` or `j`/`k` to move between rows, and `f`/`l` or `b`/`h` to move one table column right or left. Use `RET` to view project tasks, `g` to refresh, and `q` to quit. Press `3`–`6` to edit the corresponding horizon level (L3–L6, where `6` edits both Purpose and Principle sequentially). Press `A` to archive the project with the same rules as in Review (all actions DONE, no shared projects).
 
 ### 4. Review Cycles
 - **Daily Review** (`full-gtd-review-daily`) – Today’s scheduled tasks, completed today, next actions, and inbox.
@@ -175,7 +175,7 @@ Navigation in the horizon view uses the same keys as review mode: `n`/`p` or `j`
 
 Both reviews use a unified table interface with keyboard shortcuts for navigation, editing properties, marking tasks complete, and jumping to source entries. Shortcuts: `c` (context), `D` (delegated), `s` (scheduled), `d` (deadline), `r` (rename), `P` (project), `C` (complete), `a` (activate a someday/maybe entry in weekly review), `A` (archive project), `e` (edit notes), and `3`-`6` (horizons L3-L6, where `6` edits both Purpose and Principle sequentially). Archiving (`A`) moves a project to `archive.org` only when all its actions are DONE and no action belongs to other projects.
 
-Project task sub-views (opened with `RET` on a project row) share the same navigation keys: `n`/`p` or `j`/`k` to move between rows, `RET` to jump to the source entry, and `q` to return to the parent view (weekly review or horizon view).
+Project task sub-views (opened with `RET` on a project row) share the same navigation keys: `n`/`p` or `j`/`k` move between rows, `f`/`l` move one column right, `b`/`h` move one column left, `RET` jumps to the source entry, and `q` returns to the parent view (weekly review or horizon view).
 
 ### 5. Do/Work Phase
 The Do phase uses **single-card execution** (`full-gtd-do`). Instead of browsing a long list, you tell the system your current conditions—**context** (e.g., @office, @home), **available time** (minutes), and **energy level** (high/normal/low)—and it **pushes the single most optimal task** based on a scoring algorithm:

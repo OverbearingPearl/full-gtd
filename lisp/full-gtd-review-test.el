@@ -10,6 +10,7 @@
 (require 'full-gtd)
 (require 'full-gtd-utils-test)
 (require 'full-gtd-project-utils)
+(require 'full-gtd-table)
 
 (full-gtd-test-define-story full-gtd-review-test-user-views-daily-sections
   "Daily review shows Today, Next Actions, and Inbox in separate tables."
@@ -821,7 +822,7 @@
   :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
 
 (full-gtd-test-define-story full-gtd-review-test-user-navigates-project-view-rows
-  "n/p commands move between task rows in the project sub-view."
+  "Navigation commands move between task rows and table columns."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task A\n:PROPERTIES:\n:ID: pnav-1\n:PROJECT: NavProj\n:END:\n* TODO Task B\n:PROPERTIES:\n:ID: pnav-2\n:PROJECT: NavProj\n:END:\n* TODO Task C\n:PROPERTIES:\n:ID: pnav-3\n:PROJECT: NavProj\n:END:\n"))
   :mock nil
@@ -848,7 +849,16 @@
             (call-interactively (key-binding (kbd "p")))
             (should (string-match-p "Task B"
                                     (buffer-substring (line-beginning-position)
-                                                      (line-end-position))))))
+                                                      (line-end-position))))
+            (should (= (org-table-current-column) 1))
+            (call-interactively (key-binding (kbd "f")))
+            (should (= (org-table-current-column) 2))
+            (call-interactively (key-binding (kbd "l")))
+            (should (= (org-table-current-column) 3))
+            (call-interactively (key-binding (kbd "h")))
+            (should (= (org-table-current-column) 2))
+            (call-interactively (key-binding (kbd "b")))
+            (should (= (org-table-current-column) 1))))
   :asserts t
   :teardown (full-gtd-test-cleanup-buffers
              '("*Full-GTD Weekly Review*" "*Full-GTD Project: NavProj*")))
@@ -943,6 +953,18 @@
                   (eq (lookup-key map (kbd "RET"))
                       'full-gtd-project-utils--goto-task-at-point))
                  (should
+                  (eq (lookup-key map (kbd "f"))
+                      'full-gtd-project-utils--next-column))
+                 (should
+                  (eq (lookup-key map (kbd "l"))
+                      'full-gtd-project-utils--next-column))
+                 (should
+                  (eq (lookup-key map (kbd "b"))
+                      'full-gtd-project-utils--previous-column))
+                 (should
+                  (eq (lookup-key map (kbd "h"))
+                      'full-gtd-project-utils--previous-column))
+                 (should
                   (eq (lookup-key map (kbd "q"))
                       'full-gtd-project-utils--quit-or-return)))
                (call-interactively (key-binding (kbd "q"))))
@@ -1033,16 +1055,21 @@
       (delete-directory full-gtd-init-base-directory t))))
 
 (full-gtd-test-define-story full-gtd-review-test-horizon-header-lists-navigation-keys
-  "Horizon view header documents all row navigation keys."
+  "Horizon view header documents row and column navigation keys."
   :setup (full-gtd-init-initialize)
   :files (("action.org" ""))
   :mock nil
   :body (full-gtd-horizons-view)
   :asserts (with-current-buffer "*Full-GTD Horizon View*"
-             (should
-              (string-match-p
-               (regexp-quote "n/p/j/k=move")
-               (format-mode-line header-line-format))))
+             (let ((header (format-mode-line header-line-format)))
+               (should
+                (string-match-p
+                 (regexp-quote "n/p/j/k=rows")
+                 header))
+               (should
+                (string-match-p
+                 (regexp-quote "f/b/h/l=columns")
+                 header))))
   :teardown (full-gtd-test-cleanup-buffers
              '("*Full-GTD Horizon View*")))
 

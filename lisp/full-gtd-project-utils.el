@@ -11,8 +11,9 @@
 ;; Shared utilities for archiving projects and viewing project tasks.
 ;; Used by both full-gtd-horizons and full-gtd-review to avoid
 ;; circular dependencies.
-;; The project task sub-view provides table navigation (n/p/j/k),
-;; source jump (RET), and quit (q) via `full-gtd-project-utils-view-mode'.
+;; The project task sub-view provides row navigation (n/p/j/k),
+;; column navigation (f/b/h/l), source jump (RET), and quit (q) via
+;; `full-gtd-project-utils-view-mode'.
 
 ;;; Code:
 
@@ -141,7 +142,7 @@ Creates and pops to buffer *Full-GTD Project: PROJ-NAME*."
       (setq-local full-gtd-review--current-view-type 'project)
       (setq-local full-gtd-review--current-project proj-name)
       (setq-local header-line-format
-                  "Project Tasks | n/p/j/k: move | RET: jump | q: return")
+                  "Project Tasks | n/p/j/k: rows | f/b/h/l: columns | RET: jump | q: return")
       ;; Enable after `org-mode': changing major mode resets buffer-local
       ;; minor mode variables.
       (full-gtd-project-utils-view-mode 1)
@@ -233,6 +234,10 @@ Returns list of entry lists, as returned by `full-gtd-core-filter-entries'."
     (define-key map (kbd "p") #'full-gtd-project-utils--previous-row)
     (define-key map (kbd "j") #'full-gtd-project-utils--next-row)
     (define-key map (kbd "k") #'full-gtd-project-utils--previous-row)
+    (define-key map (kbd "f") #'full-gtd-project-utils--next-column)
+    (define-key map (kbd "l") #'full-gtd-project-utils--next-column)
+    (define-key map (kbd "b") #'full-gtd-project-utils--previous-column)
+    (define-key map (kbd "h") #'full-gtd-project-utils--previous-column)
     (define-key map (kbd "RET") #'full-gtd-project-utils--goto-task-at-point)
     map)
   "Keymap for `full-gtd-project-utils-view-mode'.")

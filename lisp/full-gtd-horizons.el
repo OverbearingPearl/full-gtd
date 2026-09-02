@@ -372,7 +372,7 @@ ACTION is an entry from `full-gtd-core-filter-entries'."
         (erase-buffer)
         (org-mode)
         (setq-local header-line-format
-                    "Horizon View | n/p/j/k=move | 3=L3, 4=L4, 5=L5, 6=L6 | A=archive | RET=project actions | g=refresh | q=quit")
+                    "Horizon View | n/p/j/k=rows | f/b/h/l=columns | 3=L3, 4=L4, 5=L5, 6=L6 | A=archive | RET=project actions | g=refresh | q=quit")
 
         (insert "#+TITLE: Horizon Alignment View\n\n")
 
@@ -477,6 +477,10 @@ ACTION is an entry from `full-gtd-core-filter-entries'."
     (define-key map (kbd "p") #'full-gtd-horizons--previous-row)
     (define-key map (kbd "j") #'full-gtd-horizons--next-row)
     (define-key map (kbd "k") #'full-gtd-horizons--previous-row)
+    (define-key map (kbd "f") #'full-gtd-horizons--next-column)
+    (define-key map (kbd "l") #'full-gtd-horizons--next-column)
+    (define-key map (kbd "b") #'full-gtd-horizons--previous-column)
+    (define-key map (kbd "h") #'full-gtd-horizons--previous-column)
     (define-key map (kbd "3") #'full-gtd-horizons--edit-area-at-point)
     (define-key map (kbd "4") #'full-gtd-horizons--edit-goal-at-point)
     (define-key map (kbd "5") #'full-gtd-horizons--edit-vision-at-point)

@@ -11,6 +11,33 @@
 (require 'full-gtd-table)
 (require 'full-gtd-utils-test)
 
+(ert-deftest full-gtd-horizons-test-navigation-keymap ()
+  "Horizon view provides row and column navigation keys."
+  (should
+   (eq (lookup-key full-gtd-horizons-view-mode-map (kbd "n"))
+       'full-gtd-horizons--next-row))
+  (should
+   (eq (lookup-key full-gtd-horizons-view-mode-map (kbd "p"))
+       'full-gtd-horizons--previous-row))
+  (should
+   (eq (lookup-key full-gtd-horizons-view-mode-map (kbd "j"))
+       'full-gtd-horizons--next-row))
+  (should
+   (eq (lookup-key full-gtd-horizons-view-mode-map (kbd "k"))
+       'full-gtd-horizons--previous-row))
+  (should
+   (eq (lookup-key full-gtd-horizons-view-mode-map (kbd "f"))
+       'full-gtd-horizons--next-column))
+  (should
+   (eq (lookup-key full-gtd-horizons-view-mode-map (kbd "l"))
+       'full-gtd-horizons--next-column))
+  (should
+   (eq (lookup-key full-gtd-horizons-view-mode-map (kbd "b"))
+       'full-gtd-horizons--previous-column))
+  (should
+   (eq (lookup-key full-gtd-horizons-view-mode-map (kbd "h"))
+       'full-gtd-horizons--previous-column)))
+
 (full-gtd-test-define-story full-gtd-horizons-test-view-shows-project-matrix
   "Horizon view shows projects in matrix with L6-L3 columns."
   :setup (full-gtd-init-initialize)

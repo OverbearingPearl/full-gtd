@@ -238,10 +238,13 @@ point-max backward, skipping all non-data lines."
 
 (defmacro full-gtd-table-define-navigators (prefix)
   "Define table navigation commands for PREFIX.
-Creates PREFIX--next-row, PREFIX--previous-row, and
-PREFIX--skip-line-p using structural line-type detection."
+Creates row and column navigation commands plus PREFIX--skip-line-p.
+Row navigation uses structural line-type detection.  Column navigation
+moves exactly one Org table cell without crossing into another row."
   (let ((next-fn (intern (concat prefix "--next-row")))
         (prev-fn (intern (concat prefix "--previous-row")))
+        (next-column-fn (intern (concat prefix "--next-column")))
+        (prev-column-fn (intern (concat prefix "--previous-column")))
         (skip-fn (intern (concat prefix "--skip-line-p"))))
     `(progn
        (defun ,skip-fn ()
@@ -268,7 +271,30 @@ PREFIX--skip-line-p using structural line-type detection."
              (forward-line -1)
              (while (and (not (bobp)) (,skip-fn))
                (forward-line -1))
-             (org-table-goto-column 1)))))))
+             (org-table-goto-column 1))))
+       (defun ,next-column-fn ()
+         "Move to the next column without leaving the current table row."
+         (interactive)
+         (if (not (eq (full-gtd-table-line-type) 'data))
+             (beep)
+           (let* ((current-column (max 1 (org-table-current-column)))
+                  (column-count
+                   (1- (cl-count
+                        ?|
+                        (buffer-substring-no-properties
+                         (line-beginning-position) (line-end-position))))))
+             (if (>= current-column column-count)
+                 (beep)
+               (org-table-goto-column (1+ current-column))))))
+       (defun ,prev-column-fn ()
+         "Move to the previous column without leaving the current table row."
+         (interactive)
+         (if (not (eq (full-gtd-table-line-type) 'data))
+             (beep)
+           (let ((current-column (max 1 (org-table-current-column))))
+             (if (<= current-column 1)
+                 (beep)
+               (org-table-goto-column (1- current-column)))))))))
 
 ;;;; Anchoring and point restoration
 

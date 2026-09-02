@@ -171,6 +171,39 @@ tables share the same buffer and column positions."
           (cl-some #'identity properties))
         (full-gtd-test-table--display-state (point) field-end))))))
 
+(full-gtd-table-define-navigators "full-gtd-test-table")
+
+(ert-deftest full-gtd-table-column-navigation-stays-in-row ()
+  "Horizontal navigation moves one column and never crosses a row boundary."
+  (with-temp-buffer
+    (org-mode)
+    (full-gtd-table-insert-header '("First" "Second" "Third"))
+    (full-gtd-table-insert-row
+     "Task"
+     "task-id"
+     "action.org"
+     '("Value 2" "Value 3"))
+    (full-gtd-table-finalize)
+    (goto-char (point-min))
+    (while (not (eq (full-gtd-table-line-type) 'data))
+      (forward-line 1))
+    (let ((row (line-number-at-pos)))
+      (org-table-goto-column 1)
+      (full-gtd-test-table--next-column)
+      (should (= (org-table-current-column) 2))
+      (full-gtd-test-table--next-column)
+      (should (= (org-table-current-column) 3))
+      (full-gtd-test-table--next-column)
+      (should (= (org-table-current-column) 3))
+      (should (= (line-number-at-pos) row))
+      (full-gtd-test-table--previous-column)
+      (should (= (org-table-current-column) 2))
+      (full-gtd-test-table--previous-column)
+      (should (= (org-table-current-column) 1))
+      (full-gtd-test-table--previous-column)
+      (should (= (org-table-current-column) 1))
+      (should (= (line-number-at-pos) row)))))
+
 (ert-deftest full-gtd-table-width-cookie-row-is-not-data ()
   "Width-cookie rows must be excluded from table navigation."
   (with-temp-buffer

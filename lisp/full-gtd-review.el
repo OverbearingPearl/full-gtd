@@ -37,6 +37,10 @@
     (define-key map (kbd "p") #'full-gtd-review--previous-row)
     (define-key map (kbd "j") #'full-gtd-review--next-row)
     (define-key map (kbd "k") #'full-gtd-review--previous-row)
+    (define-key map (kbd "f") #'full-gtd-review--next-column)
+    (define-key map (kbd "l") #'full-gtd-review--next-column)
+    (define-key map (kbd "b") #'full-gtd-review--previous-column)
+    (define-key map (kbd "h") #'full-gtd-review--previous-column)
     (define-key map (kbd "RET") #'full-gtd-review--goto-task-at-point)
     (define-key map (kbd "g") #'full-gtd-review--refresh-view)
     ;; Property editing with defaults
@@ -508,9 +512,9 @@ META is an alist with keys :entry-map and :entry-index."
       (org-mode)
       (setq-local header-line-format
                   (pcase full-gtd-review--current-view-type
-                    ('daily "Daily Review | n/p/j/k: move | RET: jump | c/s/d/D/r/e/P: property | C: complete | A: archive | g: refresh | q: quit")
-                    ('weekly "Weekly Review | n/p/j/k: move | RET: jump | c/s/d/D/r/e/P/3-6: property | C: complete | a: activate someday | A: archive | g: refresh | q: quit")
-                    (_ "Review | n/p/j/k: move | RET: jump | c/s/d/D/r/e/P/3-6: property | C: complete | A: archive | g: refresh | q: quit")))
+                    ('daily "Daily Review | n/p/j/k: rows | f/b/h/l: columns | RET: jump | c/s/d/D/r/e/P: property | C: complete | A: archive | g: refresh | q: quit")
+                    ('weekly "Weekly Review | n/p/j/k: rows | f/b/h/l: columns | RET: jump | c/s/d/D/r/e/P/3-6: property | C: complete | a: activate someday | A: archive | g: refresh | q: quit")
+                    (_ "Review | n/p/j/k: rows | f/b/h/l: columns | RET: jump | c/s/d/D/r/e/P/3-6: property | C: complete | A: archive | g: refresh | q: quit")))
       (setq full-gtd-review--entry-map entry-map)
       (if (null sections-data)
           (insert "(No entries to review)\n")
