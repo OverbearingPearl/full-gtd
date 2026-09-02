@@ -59,6 +59,8 @@ A complete [Getting Things Done](https://gettingthingsdone.com/) implementation 
   └─────────────────────────────┘    └──────────────────────────────┘
 </pre>
 
+See it in action: [Watch demo](https://github.com/user-attachments/assets/194d80d7-f561-4c60-bff8-e427d3f6c49b)
+
 ## Why Full-GTD?
 
 Existing Emacs GTD packages handle lists and agendas well, but omit two pillars of Allen's original model:
