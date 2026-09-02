@@ -264,9 +264,9 @@
              (with-current-buffer (get-file-buffer (expand-file-name "action.org" full-gtd-init-base-directory))
                (should (looking-at-p "\\*+ TODO Jump target"))))
   :teardown (progn
-             (kill-buffer "*Full-GTD Weekly Review*")
-             (let ((buf (get-file-buffer (expand-file-name "action.org" full-gtd-init-base-directory))))
-               (when buf (kill-buffer buf)))))
+              (kill-buffer "*Full-GTD Weekly Review*")
+              (let ((buf (get-file-buffer (expand-file-name "action.org" full-gtd-init-base-directory))))
+                (when buf (kill-buffer buf)))))
 
 (full-gtd-test-define-story full-gtd-review-test-user-sets-deadline-with-keybinding
   "Press 's' in review buffer to set deadline for task at point."
@@ -818,6 +818,108 @@
              (beginning-of-line)
              (should (string-match-p "Task two"
                                      (buffer-substring (line-beginning-position) (line-end-position)))))
+  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
+
+(full-gtd-test-define-story full-gtd-review-test-user-navigates-project-view-rows
+  "n/p commands move between task rows in the project sub-view."
+  :setup (full-gtd-init-initialize)
+  :files (("action.org" "* TODO Task A\n:PROPERTIES:\n:ID: pnav-1\n:PROJECT: NavProj\n:END:\n* TODO Task B\n:PROPERTIES:\n:ID: pnav-2\n:PROJECT: NavProj\n:END:\n* TODO Task C\n:PROPERTIES:\n:ID: pnav-3\n:PROJECT: NavProj\n:END:\n"))
+  :mock nil
+  :body (progn
+          (full-gtd-review-weekly)
+          (with-current-buffer "*Full-GTD Weekly Review*"
+            (goto-char (point-min))
+            (search-forward "** Projects - Active")
+            (search-forward "NavProj")
+            (beginning-of-line)
+            (full-gtd-review--goto-task-at-point))
+          (with-current-buffer "*Full-GTD Project: NavProj*"
+            (goto-char (point-min))
+            (search-forward "Task A")
+            (beginning-of-line)
+            (call-interactively (key-binding (kbd "n")))
+            (should (string-match-p "Task B"
+                                    (buffer-substring (line-beginning-position)
+                                                      (line-end-position))))
+            (call-interactively (key-binding (kbd "n")))
+            (should (string-match-p "Task C"
+                                    (buffer-substring (line-beginning-position)
+                                                      (line-end-position))))
+            (call-interactively (key-binding (kbd "p")))
+            (should (string-match-p "Task B"
+                                    (buffer-substring (line-beginning-position)
+                                                      (line-end-position))))))
+  :asserts t
+  :teardown (full-gtd-test-cleanup-buffers
+             '("*Full-GTD Weekly Review*" "*Full-GTD Project: NavProj*")))
+
+(full-gtd-test-define-story full-gtd-review-test-user-jumps-to-source-from-project-view
+  "RET command in project sub-view jumps to the task in its source file."
+  :setup (full-gtd-init-initialize)
+  :files (("action.org" "* TODO Jump me\n:PROPERTIES:\n:ID: pjump-1\n:PROJECT: JumpProj\n:END:\n"))
+  :mock nil
+  :body (progn
+          (full-gtd-review-weekly)
+          (with-current-buffer "*Full-GTD Weekly Review*"
+            (goto-char (point-min))
+            (search-forward "** Projects - Active")
+            (search-forward "JumpProj")
+            (beginning-of-line)
+            (full-gtd-review--goto-task-at-point))
+          (with-current-buffer "*Full-GTD Project: JumpProj*"
+            (goto-char (point-min))
+            (search-forward "Jump me")
+            (beginning-of-line)
+            (call-interactively (key-binding (kbd "RET")))))
+  :asserts (progn
+             (should (get-file-buffer
+                      (expand-file-name "action.org" full-gtd-init-base-directory)))
+             (with-current-buffer
+                 (get-file-buffer
+                  (expand-file-name "action.org" full-gtd-init-base-directory))
+               (should (looking-at-p "\\*+ TODO Jump me"))))
+  :teardown (progn
+              (full-gtd-test-cleanup-buffers
+               '("*Full-GTD Weekly Review*" "*Full-GTD Project: JumpProj*"))
+              (let ((buf (get-file-buffer
+                          (expand-file-name "action.org" full-gtd-init-base-directory))))
+                (when buf (kill-buffer buf)))))
+
+(full-gtd-test-define-story full-gtd-review-test-project-view-mode-enabled-and-quit
+  "Project sub-view enables its view mode; quit returns to weekly review."
+  :setup (full-gtd-init-initialize)
+  :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: pmode-1\n:PROJECT: ModeProj\n:END:\n"))
+  :mock nil
+  :body (progn
+          (full-gtd-review-weekly)
+          (with-current-buffer "*Full-GTD Weekly Review*"
+            (goto-char (point-min))
+            (search-forward "** Projects - Active")
+            (search-forward "ModeProj")
+            (beginning-of-line)
+            (full-gtd-review--goto-task-at-point)))
+  :asserts (progn
+             (with-current-buffer "*Full-GTD Project: ModeProj*"
+               (should
+                (bound-and-true-p full-gtd-project-utils-view-mode))
+               (let ((map
+                      (symbol-value
+                       'full-gtd-project-utils-view-mode-map)))
+                 (should
+                  (eq (lookup-key map (kbd "n"))
+                      'full-gtd-project-utils--next-row))
+                 (should
+                  (eq (lookup-key map (kbd "p"))
+                      'full-gtd-project-utils--previous-row))
+                 (should
+                  (eq (lookup-key map (kbd "RET"))
+                      'full-gtd-project-utils--goto-task-at-point))
+                 (should
+                  (eq (lookup-key map (kbd "q"))
+                      'full-gtd-project-utils--quit-or-return)))
+               (call-interactively (key-binding (kbd "q"))))
+             (should-not (get-buffer "*Full-GTD Project: ModeProj*"))
+             (should (get-buffer "*Full-GTD Weekly Review*")))
   :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
 
 (ert-deftest full-gtd-review-test-weekly-shows-reference ()

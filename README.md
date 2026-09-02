@@ -167,13 +167,15 @@ Horizons flow from high levels down: Purpose (L6) → Vision (L5) → Goals (L4)
 
 This matrix format makes it easy to spot "orphaned" projects (no horizon alignment) and incomplete vertical chains at a glance.
 
-Navigation in the horizon view uses the same keys as review mode: `n`/`p` or `j`/`k` to move between rows, `RET` to view project tasks, `g` to refresh, `q` to quit. Press `3`–`6` to edit the corresponding horizon level (L3–L6) for the project at point. Press `A` to archive the project with the same rules as in Review (all actions DONE, no shared projects).
+Navigation in the horizon view uses the same keys as review mode: `n`/`p` or `j`/`k` to move between rows, `RET` to view project tasks, `g` to refresh, `q` to quit. Press `3`–`6` to edit the corresponding horizon level (L3–L6, where `6` edits both Purpose and Principle sequentially). Press `A` to archive the project with the same rules as in Review (all actions DONE, no shared projects).
 
 ### 4. Review Cycles
 - **Daily Review** (`full-gtd-review-daily`) – Today’s scheduled tasks, completed today, next actions, and inbox.
 - **Weekly Review** (`full-gtd-review-weekly`) – Comprehensive 10‑section review: inbox, overdue, upcoming deadlines, completed, delegated, next actions, stuck/active projects, no‑project actions, and someday/maybe.
 
 Both reviews use a unified table interface with keyboard shortcuts for navigation, editing properties, marking tasks complete, and jumping to source entries. Shortcuts: `c` (context), `D` (delegated), `s` (scheduled), `d` (deadline), `r` (rename), `P` (project), `C` (complete), `a` (activate a someday/maybe entry in weekly review), `A` (archive project), `e` (edit notes), and `3`-`6` (horizons L3-L6, where `6` edits both Purpose and Principle sequentially). Archiving (`A`) moves a project to `archive.org` only when all its actions are DONE and no action belongs to other projects.
+
+Project task sub-views (opened with `RET` on a project row) share the same navigation keys: `n`/`p` or `j`/`k` to move between rows, `RET` to jump to the source entry, and `q` to return to the parent view (weekly review or horizon view).
 
 ### 5. Do/Work Phase
 The Do phase uses **single-card execution** (`full-gtd-do`). Instead of browsing a long list, you tell the system your current conditions—**context** (e.g., @office, @home), **available time** (minutes), and **energy level** (high/normal/low)—and it **pushes the single most optimal task** based on a scoring algorithm:
@@ -212,7 +214,7 @@ This design eliminates decision fatigue—you don't choose from a list, the syst
 
 > “Your mind is for having ideas, not holding them.” — David Allen
 
-Most GTD software becomes a todo‑list app with extra steps. Full‑GTD stays close to the book because **Allen designed GTD as a complete system, not a feature set**:
+Most GTD software becomes a todo‑list app with extra steps. Full-GTD stays close to the book because **Allen designed GTD as a complete system, not a feature set**:
 
 - **Capture must be frictionless** – One key, no categorization, no thinking.
 - **The Natural Planning Model is not optional** – It’s how projects actually get done.
@@ -220,7 +222,7 @@ Most GTD software becomes a todo‑list app with extra steps. Full‑GTD stays c
 - **Review is the engine** – Without weekly review, GTD decays into a mess of stale lists. The tool enforces the habit.
 - **Engage needs focus** – A long next-actions list is overwhelming. Single-card execution with smart prioritization helps you pick the right next thing and finish the session with momentum.
 
-Emacs is the right host because GTD is fundamentally **text and structure**. Org‑mode gives us outlines, tags, links, and agenda views. Full‑GTD adds the **workflow layer** on top.
+Emacs is the right host because GTD is fundamentally **text and structure**. Org‑mode gives us outlines, tags, links, and agenda views. Full-GTD adds the **workflow layer** on top.
 
 ## Installation
 

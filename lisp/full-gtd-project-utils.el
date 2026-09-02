@@ -11,6 +11,8 @@
 ;; Shared utilities for archiving projects and viewing project tasks.
 ;; Used by both full-gtd-horizons and full-gtd-review to avoid
 ;; circular dependencies.
+;; The project task sub-view provides table navigation (n/p/j/k),
+;; source jump (RET), and quit (q) via `full-gtd-project-utils-view-mode'.
 
 ;;; Code:
 
@@ -135,6 +137,11 @@ Creates and pops to buffer *Full-GTD Project: PROJ-NAME*."
       (setq buffer-read-only t)
       (setq-local full-gtd-review--current-view-type 'project)
       (setq-local full-gtd-review--current-project proj-name)
+      (setq-local header-line-format
+                  "Project Tasks | n/p/j/k: move | RET: jump | q: return")
+      ;; Enable after `org-mode': changing major mode resets buffer-local
+      ;; minor mode variables.
+      (full-gtd-project-utils-view-mode 1)
       (goto-char (point-min)))
     (pop-to-buffer buffer-name)))
 
@@ -188,6 +195,50 @@ Returns list of entry lists, as returned by `full-gtd-core-filter-entries'."
        (let ((proj (nth 5 e)))
          (or (null proj) (string= proj ""))))
      entries)))
+
+;;;; Project task sub-view mode
+
+(defun full-gtd-project-utils--goto-task-at-point ()
+  "Jump to the task at point in its source file."
+  (interactive)
+  (let ((entry (full-gtd-table-entry-at-point)))
+    (when entry
+      (let ((id (car entry))
+            (file (cdr entry)))
+        (find-file (expand-file-name file full-gtd-init-base-directory))
+        (goto-char (point-min))
+        (when (re-search-forward (concat ":ID:[ \t]+" (regexp-quote id)) nil t)
+          (org-back-to-heading))))))
+
+(defun full-gtd-project-utils--quit-or-return ()
+  "Kill the project sub-view buffer and return to its parent view.
+Parent is the weekly review or horizon view buffer when present."
+  (interactive)
+  (kill-buffer)
+  (cond ((get-buffer "*Full-GTD Weekly Review*")
+         (pop-to-buffer "*Full-GTD Weekly Review*"))
+        ((get-buffer "*Full-GTD Horizon View*")
+         (pop-to-buffer "*Full-GTD Horizon View*"))))
+
+(full-gtd-table-define-navigators "full-gtd-project-utils")
+
+(defvar full-gtd-project-utils-view-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "q") #'full-gtd-project-utils--quit-or-return)
+    (define-key map (kbd "n") #'full-gtd-project-utils--next-row)
+    (define-key map (kbd "p") #'full-gtd-project-utils--previous-row)
+    (define-key map (kbd "j") #'full-gtd-project-utils--next-row)
+    (define-key map (kbd "k") #'full-gtd-project-utils--previous-row)
+    (define-key map (kbd "RET") #'full-gtd-project-utils--goto-task-at-point)
+    map)
+  "Keymap for `full-gtd-project-utils-view-mode'.")
+
+(define-minor-mode full-gtd-project-utils-view-mode
+  "Minor mode for the project task sub-view."
+  :init-value nil
+  :lighter " Full-Project"
+  :keymap full-gtd-project-utils-view-mode-map
+  :interactive nil)
 
 (provide 'full-gtd-project-utils)
 
