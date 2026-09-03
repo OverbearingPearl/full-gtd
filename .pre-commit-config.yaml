@@ -27,6 +27,12 @@ repos:
                     (defun p/indent (s)
                       (mapconcat (lambda (line) (concat \"    \" line))
                                  (split-string s \"\n\" t) \"\n\"))
+                    (defun p/git-toplevel ()
+                      \"Return the toplevel directory of the git repository.\"
+                      (with-temp-buffer
+                        (call-process \"git\" nil t nil
+                                      \"rev-parse\" \"--show-toplevel\")
+                        (string-trim (buffer-string))))
                     (defun p/check-file (file)
                       (setq file (expand-file-name file))
                       (let ((buf (find-file file))
@@ -49,10 +55,11 @@ repos:
                                 (setq failed t))
                             (princ \"  checkdoc: OK\n\")))
                         ;; package-lint
-                        (let ((root (or (locate-dominating-file file \".git\")
-                                        default-directory)))
+                        (let* ((root (p/git-toplevel))
+                               (name (file-name-nondirectory
+                                      (directory-file-name root))))
                           (setq package-lint-main-file
-                                (expand-file-name \"full-gtd.el\" root)))
+                                (expand-file-name (concat name \".el\") root)))
                         (when (get-buffer \"*Package-Lint*\")
                           (kill-buffer \"*Package-Lint*\"))
                         (package-lint-current-buffer)
@@ -199,21 +206,23 @@ repos:
                         (when (buffer-live-p buf) (kill-buffer buf))
                         failed))
                     (let* ((failed-any nil)
+                           ;; Derive repo name from git, not from cwd.
+                           (git-root (p/git-toplevel))
                            (repository-name
                             (file-name-nondirectory
-                             (directory-file-name default-directory)))
+                             (directory-file-name git-root)))
                            (lisp-directory
-                            (expand-file-name \"lisp\" default-directory))
+                            (expand-file-name \"lisp\" git-root))
                            (lisp-production-files nil)
                            (lisp-test-files nil)
                            (root-production-file
                             (expand-file-name
                              (concat repository-name \".el\")
-                             default-directory))
+                             git-root))
                            (root-test-file
                             (expand-file-name
                              (concat repository-name \"-test.el\")
-                             default-directory))
+                             git-root))
                            ordered-files)
                       (dolist (file
                                (sort
@@ -224,11 +233,14 @@ repos:
                           (if (string-suffix-p \"-test.el\" file)
                               (push file lisp-test-files)
                             (push file lisp-production-files))))
+                      (unless (file-exists-p root-production-file)
+                        (princ (format \"error: required main file `%s` not found in repository root\n\"
+                                       root-production-file))
+                        (kill-emacs 1))
                       (setq ordered-files
                             (append
                              (nreverse lisp-production-files)
-                             (when (file-exists-p root-production-file)
-                               (list root-production-file))
+                             (list root-production-file)
                              (nreverse lisp-test-files)
                              (when (file-exists-p root-test-file)
                                (list root-test-file))))
