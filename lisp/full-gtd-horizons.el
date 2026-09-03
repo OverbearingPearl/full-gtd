@@ -12,15 +12,16 @@
 ;; Hierarchy: L6 Purpose -> L5 Vision -> L4 Goal -> L3 Area -> Projects -> Actions.
 ;; L6 contains both Purpose and Principle (edited together via key '6' in review mode);
 ;; Principle requires Purpose to be set first.
-;; Provides horizon alignment matrix view for reviewing vertical alignment.
+;; Provides horizon alignment star-map view for reviewing vertical
+;; alignment.
 ;;
-;; The horizon view displays projects in a matrix format:
-;; - Rows: Projects (grouped by alignment status)
-;; - Columns: L6 Purpose, L5 Vision, L4 Goal, L3 Area
-;; - Empty cells indicate gaps in vertical alignment
-;; - No-project actions shown separately (L3 Area only)
+;; The horizon view displays each project as a star map: its horizon
+;; levels are listed above the project name and its actions below it.
+;; Projects are grouped by alignment status.  Press TAB to cycle the
+;; action fold (collapsed -> todo -> all) of the block at point.
+;; No-project actions are shown in a separate table (L3 Area only).
 ;;
-;; In the matrix view, press 'A' to archive a completed project.
+;; In the star map, press 'A' to archive a completed project.
 
 ;;; Code:
 
@@ -32,6 +33,7 @@
 (require 'full-gtd-state)
 (require 'full-gtd-project-utils)
 (require 'full-gtd-table)
+(require 'full-gtd-map)
 
 (defun full-gtd-horizons--get-project-horizon (project property)
   "Get horizon PROPERTY value for PROJECT from any of its actions.
@@ -280,27 +282,49 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
           (push proj partial)))))
     (list (nreverse critical) (nreverse partial) (nreverse aligned) (nreverse multi))))
 
-(defun full-gtd-horizons--insert-project-row (proj)
-  "Insert table row for PROJ."
-  (let* ((name (car proj))
-         (total (nth 0 (cdr proj)))
-         (todo (nth 1 (cdr proj)))
-         (done (nth 2 (cdr proj)))
-         (l6-purpose (or (nth 3 (cdr proj)) ""))
-         (l6-principle (or (nth 4 (cdr proj)) ""))
-         (l5 (or (nth 5 (cdr proj)) ""))
-         (l4 (or (nth 6 (cdr proj)) ""))
-         (l3 (or (nth 7 (cdr proj)) "")))
-    (let ((l6-purpose-display (string-join (full-gtd-core--split-values l6-purpose) "; "))
-          (l6-principle-display (string-join (full-gtd-core--split-values l6-principle) "; "))
-          (l5-display (string-join (full-gtd-core--split-values l5) "; "))
-          (l4-display (string-join (full-gtd-core--split-values l4) "; "))
-          (l3-display (string-join (full-gtd-core--split-values l3) "; ")))
-      (full-gtd-table-insert-row
-       name nil "action.org"
-       (list total todo done l6-purpose-display l6-principle-display
-             l5-display l4-display l3-display)
-       t))))
+(defvar-local full-gtd-horizons--map-fold-states nil
+  "Alist ((PROJECT-NAME . STATE) ...) for star-map action folding.
+STATE is `collapsed', `todo' or `all'.  Permanent so fold states
+survive the `org-mode' setup performed by every view refresh.")
+
+(put 'full-gtd-horizons--map-fold-states 'permanent-local t)
+
+(defun full-gtd-horizons--collect-project-actions ()
+  "Read action.org and return actions grouped by project.
+Delegates to `full-gtd-domain--group-actions-by-project' over all
+entries.  Call once per view render and pass the result to
+`full-gtd-horizons--project-actions' to avoid repeated file reads."
+  (let ((file-path (expand-file-name "action.org" full-gtd-init-base-directory)))
+    (when (file-exists-p file-path)
+      (full-gtd-domain--group-actions-by-project
+       (full-gtd-core-filter-entries file-path nil)))))
+
+(defun full-gtd-horizons--project-actions (project &optional grouped)
+  "Return the action alists of PROJECT in entry order.
+GROUPED is an optional preloaded result of
+`full-gtd-horizons--collect-project-actions'; when nil, action.org
+is read.  Returns the empty list when PROJECT has no actions."
+  (let ((actions (or grouped
+                     (full-gtd-horizons--collect-project-actions))))
+    (or (cdr (assoc project actions)) '())))
+
+(defun full-gtd-horizons--insert-project-map-list (project-list grouped-actions)
+  "Insert each project in PROJECT-LIST as a star-map block.
+GROUPED-ACTIONS is a preloaded grouped action alist (see
+`full-gtd-horizons--collect-project-actions').  Fold state comes
+from `full-gtd-horizons--map-fold-states', defaulting to
+`collapsed'."
+  (dolist (proj project-list)
+    (let* ((project-name (car proj))
+           (fold (or (cdr (assoc project-name
+                                 full-gtd-horizons--map-fold-states))
+                     'collapsed)))
+      (full-gtd-map--insert-block
+       (full-gtd-map--render-block
+        project-name
+        (cdr proj)
+        (full-gtd-horizons--project-actions project-name grouped-actions)
+        fold)))))
 
 (defun full-gtd-horizons--insert-no-project-row (action)
   "Insert table row for no-project ACTION.
@@ -315,8 +339,11 @@ ACTION is an entry from `full-gtd-core-filter-entries'."
                                (list status context l3-display))))
 
 (defun full-gtd-horizons--view ()
-  "Display horizon alignment matrix view."
+  "Display horizon alignment star-map view."
   (let* ((buffer-name "*Full-GTD Horizon View*")
+         (map-anchor (when (get-buffer buffer-name)
+                       (with-current-buffer (get-buffer buffer-name)
+                         (full-gtd-map--anchor-at-point))))
          (anchor (when (get-buffer buffer-name)
                    (with-current-buffer (get-buffer buffer-name)
                      (full-gtd-table-anchor-at-point))))
@@ -331,10 +358,7 @@ ACTION is an entry from `full-gtd-core-filter-entries'."
          (orphaned (length critical))
          (partial-count (length partial))
          (aligned-count (length aligned))
-         (project-header-columns
-          '("Project" "Total" "Todo" "Done"
-            ("L6 Purpose" . 20) ("L6 Principle" . 20)
-            ("L5 Vision" . 20) ("L4 Goal" . 20) ("L3 Area" . 20)))
+         (grouped-actions (full-gtd-horizons--collect-project-actions))
          (empty-heading-markers '()))
     ;; Calculate health score based on action-level horizon coverage
     (let ((health-score
@@ -372,7 +396,7 @@ ACTION is an entry from `full-gtd-core-filter-entries'."
         (erase-buffer)
         (org-mode)
         (setq-local header-line-format
-                    "Horizon View | n/p/j/k=rows | f/b/h/l=columns | 3=L3, 4=L4, 5=L5, 6=L6 | A=archive | RET=project actions | g=refresh | q=quit")
+                    "Horizon View | n/p/j/k=rows | f/b/h/l=columns | TAB=fold actions | 3=L3, 4=L4, 5=L5, 6=L6 | A=archive | RET=project actions | g=refresh | q=quit")
 
         (insert "#+TITLE: Horizon Alignment View\n\n")
 
@@ -386,12 +410,9 @@ ACTION is an entry from `full-gtd-core-filter-entries'."
           (insert "** Critical: Projects Without Any Horizon\n")
           (unless critical
             (push heading-marker empty-heading-markers))
-          (full-gtd-table-insert-header project-header-columns)
           (if (null critical)
-              (insert "| (No entries) | | | | | | | | |\n")
-            (dolist (proj critical)
-              (full-gtd-horizons--insert-project-row proj)))
-          (full-gtd-table-finalize)
+              (insert "  (No entries)\n")
+            (full-gtd-horizons--insert-project-map-list critical grouped-actions))
           (insert "\n"))
 
         ;; Partial: L3 only
@@ -399,12 +420,9 @@ ACTION is an entry from `full-gtd-core-filter-entries'."
           (insert "** Partial: Projects Missing Higher Horizons\n")
           (unless partial
             (push heading-marker empty-heading-markers))
-          (full-gtd-table-insert-header project-header-columns)
           (if (null partial)
-              (insert "| (No entries) | | | | | | | | |\n")
-            (dolist (proj partial)
-              (full-gtd-horizons--insert-project-row proj)))
-          (full-gtd-table-finalize)
+              (insert "  (No entries)\n")
+            (full-gtd-horizons--insert-project-map-list partial grouped-actions))
           (insert "\n"))
 
         ;; Aligned: Complete
@@ -412,12 +430,9 @@ ACTION is an entry from `full-gtd-core-filter-entries'."
           (insert "** Aligned Projects\n")
           (unless aligned
             (push heading-marker empty-heading-markers))
-          (full-gtd-table-insert-header project-header-columns)
           (if (null aligned)
-              (insert "| (No entries) | | | | | | | | |\n")
-            (dolist (proj aligned)
-              (full-gtd-horizons--insert-project-row proj)))
-          (full-gtd-table-finalize)
+              (insert "  (No entries)\n")
+            (full-gtd-horizons--insert-project-map-list aligned grouped-actions))
           (insert "\n"))
 
         ;; Multi-horizon
@@ -425,12 +440,9 @@ ACTION is an entry from `full-gtd-core-filter-entries'."
           (insert "** Multi-Horizon Projects\n")
           (unless multi
             (push heading-marker empty-heading-markers))
-          (full-gtd-table-insert-header project-header-columns)
           (if (null multi)
-              (insert "| (No entries) | | | | | | | | |\n")
-            (dolist (proj multi)
-              (full-gtd-horizons--insert-project-row proj)))
-          (full-gtd-table-finalize)
+              (insert "  (No entries)\n")
+            (full-gtd-horizons--insert-project-map-list multi grouped-actions))
           (insert "\n"))
 
         ;; No-project actions
@@ -456,7 +468,9 @@ ACTION is an entry from `full-gtd-core-filter-entries'."
               (set-marker marker nil)))
           (setq buffer-read-only t)
           (goto-char (point-min))
-          (full-gtd-table-restore-point-anchor anchor))
+          (if map-anchor
+              (full-gtd-map--goto-anchor map-anchor)
+            (full-gtd-table-restore-point-anchor anchor)))
       (switch-to-buffer buffer-name)
       (delete-other-windows)
       (full-gtd-horizons-view-mode 1))))
@@ -467,6 +481,36 @@ ACTION is an entry from `full-gtd-core-filter-entries'."
   "Refresh the horizon alignment view."
   (interactive)
   (full-gtd-horizons--view))
+
+(defun full-gtd-horizons--toggle-actions ()
+  "Cycle the action fold of the star-map block at point.
+Cycle order: collapsed -> todo -> all -> collapsed.  Switching to
+`todo' falls back to `all' when the project has no pending action.
+The view is refreshed and point moves into the toggled block."
+  (interactive)
+  (let ((project (full-gtd-table-project-at-point)))
+    (unless project
+      (user-error "No project block at point"))
+    (let* ((actions (full-gtd-horizons--project-actions project))
+           (state (or (cdr (assoc project full-gtd-horizons--map-fold-states))
+                      'collapsed))
+           (next-state
+            (pcase state
+              ('collapsed (if (> (full-gtd-map--todo-count actions) 0)
+                              'todo
+                            'all))
+              ('todo 'all)
+              ('all 'collapsed)
+              (_ 'collapsed))))
+      ;; Project names are strings, so `alist-get' must compare with
+      ;; `equal' to update the existing fold entry instead of appending
+      ;; a new one on every toggle.
+      (setf (alist-get project full-gtd-horizons--map-fold-states
+                       nil nil #'equal)
+            next-state)
+      (full-gtd-horizons--view)
+      (or (full-gtd-map--goto-anchor (list project 'action))
+          (full-gtd-map--goto-anchor (list project 'ellipsis))))))
 
 (defvar full-gtd-horizons-view-mode-map
   (let ((map (make-sparse-keymap)))
@@ -486,6 +530,8 @@ ACTION is an entry from `full-gtd-core-filter-entries'."
     (define-key map (kbd "5") #'full-gtd-horizons--edit-vision-at-point)
     (define-key map (kbd "6") #'full-gtd-horizons--edit-purpose-at-point)
     (define-key map (kbd "A") #'full-gtd-horizons--archive-project-at-point)
+    (define-key map (kbd "TAB") #'full-gtd-horizons--toggle-actions)
+    (define-key map (kbd "<tab>") #'full-gtd-horizons--toggle-actions)
     map))
 
 (define-minor-mode full-gtd-horizons-view-mode
@@ -495,27 +541,42 @@ ACTION is an entry from `full-gtd-core-filter-entries'."
   :keymap full-gtd-horizons-view-mode-map
   :interactive nil)
 
+(defun full-gtd-horizons--jump-to-entry (id file)
+  "Open FILE at the entry with ID.
+Shows the heading and recenters when the ID is found."
+  (find-file (expand-file-name file full-gtd-init-base-directory))
+  (goto-char (point-min))
+  (when (re-search-forward (concat ":ID:[ \t]+" (regexp-quote id)) nil t)
+    (org-back-to-heading)
+    (org-fold-show-entry)
+    (recenter)))
+
 (defun full-gtd-horizons--goto-project-at-point ()
-  "Show project task sub-view for project at point.
-For no-project actions, jump to the source entry in action.org."
+  "Dispatch RET on horizon view rows.
+On a project row, open the project task sub-view.  On an action
+row, jump to the source entry in action.org.  On an ellipsis row,
+toggle the action fold.  On a horizon row, hint at the editing
+keys.  On any other row (the No-Project table), jump to the
+source entry."
   (interactive)
-  (let ((project (full-gtd-horizons--get-project-at-point)))
-    (if project
-        (full-gtd-project-utils--show-project-tasks project)
-      (let* ((entry (full-gtd-table-entry-at-point))
-             (id (car entry))
-             (file (cdr entry)))
-        (when (and id file)
-          (let ((file-path (expand-file-name file full-gtd-init-base-directory)))
-            (find-file file-path)
-            (catch 'found
-              (org-map-entries
-               (lambda ()
-                 (when (string= (org-entry-get nil "ID") id)
-                   (org-fold-show-entry)
-                   (recenter)
-                   (throw 'found t)))
-               nil nil))))))))
+  (let ((project (full-gtd-table-project-at-point))
+        (kind (full-gtd-map-kind-at-point)))
+    (pcase kind
+      ('ellipsis
+       (full-gtd-horizons--toggle-actions))
+      ('project
+       (when project
+         (full-gtd-project-utils--show-project-tasks project)))
+      ('action
+       (let ((id (full-gtd-table--prop-at-point full-gtd-table-prop-id)))
+         (when (and id project)
+           (full-gtd-horizons--jump-to-entry id "action.org"))))
+      ('horizon
+       (message "Press 3/4/5/6 to edit this horizon"))
+      (_
+       (let ((entry (full-gtd-table-entry-at-point)))
+         (when entry
+           (full-gtd-horizons--jump-to-entry (car entry) (cdr entry))))))))
 
 ;; Horizon editing keybindings are now in full-gtd-horizons-view-mode-map
 
