@@ -24,7 +24,7 @@
 ;; - Daily & weekly reviews with table editing and jump-to-source.
 ;; - Single-card Do sessions with smart prioritization (urgency,
 ;;   horizons, context).
-;; - Horizon matrix view that spot orphaned projects immediately.
+;; - Horizon star-map view that spots orphaned projects immediately.
 ;; - Planning workflow enforces Purpose → Vision → Goal → Project →
 ;;   Next Action.
 
@@ -53,6 +53,7 @@
 (require 'full-gtd-core)
 (require 'full-gtd-review)
 (require 'full-gtd-do)
+(require 'full-gtd-map)
 (require 'full-gtd-horizons)
 (require 'full-gtd-planning)
 
