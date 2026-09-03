@@ -136,7 +136,7 @@ By default, data is stored in `~/.full-gtd/`. You can customize this with `full-
 
 ### 1. Capture & Inbox Processing
 One‑key capture (`full-gtd-capture`) with automatic timestamp and unique ID. 
-Inbox processing (`full-gtd-process-inbox`) presents a **staging table** with visual highlighting, using **single‑key destination selection** (`a`ction/`r`ef/`s`omeday/`t`rash/e`x`ecute/`c`larify) with an **optional clarify step** (rename + notes) and **hybrid date input** (`a`/`t`/`w` shortcuts or free‑form). Contexts complete from existing values with **inheritance across the session**.
+Inbox processing (`full-gtd-process-inbox`) presents a **staging table** with visual highlighting, using **single‑key destination selection** (`a`ction/`r`ef/`s`omeday/`t`rash/e`x`ecute/`c`larify) with an **optional clarify step** (rename + notes) and **hybrid date input** (`t`/`T`/`w`/`h` shortcuts or free‑form). Contexts complete from existing values with **inheritance across the session**.
 
 ### 2. Natural Planning Model
 `M‑x full-gtd-planning-start` enforces David Allen’s five‑step project thinking:
@@ -145,7 +145,7 @@ Inbox processing (`full-gtd-process-inbox`) presents a **staging table** with vi
 2. **Principle** (L6) – What standards must we keep? (Optional: press RET to skip)
 3. **Vision** (L5) – What does success look like?
 4. **Brainstorming** – Dump all ideas into a temporary buffer
-5. **Organizing** – Force‑complete every brainstorm item via **staging buffer** with visual highlighting and **single‑key selection** (`n`ext/`r`ef/`s`omeday/`t`rash/`c`larify). The optional **clarify** step (`c`) allows renaming and adding notes before final classification. A **session‑wide default context** is set once and auto‑applied to all Next Actions; if omitted, context is prompted per‑item using the same completion flow as inbox processing.
+5. **Organizing** – Force‑complete every brainstorm item via **staging buffer** with visual highlighting and **single‑key selection** (`a`ction/`r`ef/`s`omeday/`t`rash/e`x`ecute/`c`larify). The optional **clarify** step (`c`) allows renaming and adding notes before final classification. A **session‑wide default context** is set once and auto‑applied to all Next Actions; if omitted, context is prompted per‑item using the same completion flow as inbox processing.
 6. **Next Actions** – At least one physical next action is required
 
 The workflow cannot be skipped; it ensures every project has a clear outcome and at least one concrete next step.
@@ -158,16 +158,16 @@ Horizons are stored as Org properties (`L3_AREA` … `L6_PURPOSE`) and obey stri
 - **L5 Vision** – 3‑5 year picture
 - **L6 Purpose & Principle** – Life purpose and guiding principles
 
-Horizons flow from high levels down: Purpose (L6) → Vision (L5) → Goals (L4) → Areas (L3) → Projects → Actions. The horizon view (`full‑gtd‑horizons‑view`) displays a **matrix alignment view**:
+Horizons flow from high levels down: Purpose (L6) → Vision (L5) → Goals (L4) → Areas (L3) → Projects → Actions. The horizon view (`full‑gtd‑horizons‑view`) renders each project as a **star map**, grouped into sections by alignment status (Critical/Partial/Aligned/Multi-Horizon):
 
-- **Rows**: Projects grouped by alignment status (Critical/Partial/Aligned/Multi-Horizon)
-- **Columns**: L6 Purpose → L5 Vision → L4 Goal → L3 Area
-- **Empty cells**: Indicate gaps in vertical alignment
-- **No-project actions**: Shown separately with L3 Area only
+- **Above the project name**: its L6 Purpose/Principle → L5 Vision → L4 Goal → L3 Area values, one per line
+- **Below the project name**: its actions, one per line
+- **Missing horizons**: simply absent from the map, so gaps in vertical alignment stand out
+- **No-project actions**: shown separately in a table with L3 Area only
 
-This matrix format makes it easy to spot "orphaned" projects (no horizon alignment) and incomplete vertical chains at a glance.
+This layout makes it easy to spot "orphaned" projects (no horizon alignment) and incomplete vertical chains at a glance.
 
-Navigation in the horizon view uses the same keys as review mode: `n`/`p` or `j`/`k` to move between rows, and `f`/`l` or `b`/`h` to move one table column right or left. Use `RET` to view project tasks, `g` to refresh, and `q` to quit. Press `3`–`6` to edit the corresponding horizon level (L3–L6, where `6` edits both Purpose and Principle sequentially). Press `A` to archive the project with the same rules as in Review (all actions DONE, no shared projects).
+Navigation in the horizon view uses the same keys as review mode: `n`/`p` or `j`/`k` to move between rows, and `f`/`l` or `b`/`h` to move one table column right or left. Press `TAB` to cycle the action fold of the star map at point (collapsed → pending → all). Use `RET` to view project tasks, jump to an action's source entry on an action row, or toggle the fold on an ellipsis row; `g` refreshes and `q` quits. Press `3`–`6` to edit the corresponding horizon level (L3–L6, where `6` edits both Purpose and Principle sequentially). Press `A` to archive the project with the same rules as in Review (all actions DONE, no shared projects).
 
 ### 4. Review Cycles
 - **Daily Review** (`full-gtd-review-daily`) – Today’s scheduled tasks, completed today, next actions, and inbox.
@@ -196,6 +196,7 @@ Session commands:
 | `s` | Skip (push next without state change) |
 | `z` | Snooze to tomorrow |
 | `r` | Rename current task |
+| `e` | Edit notes for current task |
 | `RET` | Jump to source entry |
 | `c` | Change conditions (context/time/energy) |
 | `q` | Quit session |

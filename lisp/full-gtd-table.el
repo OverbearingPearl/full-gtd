@@ -219,18 +219,18 @@ belong to header column descriptors and are implemented by Org."
 
 (defun full-gtd-table-data-row-boundaries ()
   "Return (FIRST-DATA-ROW . LAST-DATA-ROW) buffer positions.
-Locates data rows by scanning from point-min forward and from
-point-max backward, skipping all non-data lines."
+Locates navigation rows by scanning from point-min forward and from
+point-max backward, skipping all lines without ID/PROJECT text props."
   (save-excursion
     (goto-char (point-min))
     (while (and (not (eobp))
-                (not (eq (full-gtd-table-line-type) 'data)))
+                (not (full-gtd-table--line-data-p)))
       (forward-line 1))
     (let ((first-data (line-beginning-position)))
       (goto-char (point-max))
       (forward-line -1)
       (while (and (not (bobp))
-                  (not (eq (full-gtd-table-line-type) 'data)))
+                  (not (full-gtd-table--line-data-p)))
         (forward-line -1))
       (cons first-data (line-beginning-position)))))
 
@@ -239,8 +239,9 @@ point-max backward, skipping all non-data lines."
 (defmacro full-gtd-table-define-navigators (prefix)
   "Define table navigation commands for PREFIX.
 Creates row and column navigation commands plus PREFIX--skip-line-p.
-Row navigation uses structural line-type detection.  Column navigation
-moves exactly one Org table cell without crossing into another row."
+Row navigation uses text properties (ID/PROJECT) rather than
+line-type, so it also works on non-table lines such as star-map
+rows.  Column navigation is only meaningful inside Org tables."
   (let ((next-fn (intern (concat prefix "--next-row")))
         (prev-fn (intern (concat prefix "--previous-row")))
         (next-column-fn (intern (concat prefix "--next-column")))
@@ -249,7 +250,7 @@ moves exactly one Org table cell without crossing into another row."
     `(progn
        (defun ,skip-fn ()
          "Return non-nil if current line should be skipped during navigation."
-         (not (eq (full-gtd-table-line-type) 'data)))
+         (not (full-gtd-table--line-data-p)))
        (defun ,next-fn ()
          "Move to the next data row in the table."
          (interactive)
@@ -260,7 +261,8 @@ moves exactly one Org table cell without crossing into another row."
              (forward-line 1)
              (while (and (not (eobp)) (,skip-fn))
                (forward-line 1))
-             (org-table-goto-column 1))))
+             (when (eq (full-gtd-table-line-type) 'data)
+               (org-table-goto-column 1)))))
        (defun ,prev-fn ()
          "Move to the previous data row in the table."
          (interactive)
@@ -271,7 +273,8 @@ moves exactly one Org table cell without crossing into another row."
              (forward-line -1)
              (while (and (not (bobp)) (,skip-fn))
                (forward-line -1))
-             (org-table-goto-column 1))))
+             (when (eq (full-gtd-table-line-type) 'data)
+               (org-table-goto-column 1)))))
        (defun ,next-column-fn ()
          "Move to the next column without leaving the current table row."
          (interactive)

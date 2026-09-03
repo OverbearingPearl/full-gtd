@@ -217,6 +217,35 @@ tables share the same buffer and column positions."
     (forward-line 1)
     (should (eq (full-gtd-table-line-type) 'separator))))
 
+(ert-deftest full-gtd-table-row-navigation-supports-property-backed-text ()
+  "Row navigation supports non-table lines carrying row metadata."
+  (with-temp-buffer
+    (insert "Header\n")
+    (let ((start (point)))
+      (insert "Project A\n")
+      (put-text-property
+       start (1- (point)) full-gtd-table-prop-project "Project A"))
+    (insert "Separator\n")
+    (let ((start (point)))
+      (insert "Project B\n")
+      (put-text-property
+       start (1- (point)) full-gtd-table-prop-project "Project B"))
+    (goto-char (point-min))
+    (search-forward "Project A")
+    (beginning-of-line)
+    (full-gtd-test-table--next-row)
+    (should
+     (string=
+      (buffer-substring-no-properties
+       (line-beginning-position) (line-end-position))
+      "Project B"))
+    (full-gtd-test-table--previous-row)
+    (should
+     (string=
+      (buffer-substring-no-properties
+       (line-beginning-position) (line-end-position))
+      "Project A"))))
+
 (provide 'full-gtd-table-test)
 
 ;;; full-gtd-table-test.el ends here

@@ -216,6 +216,54 @@ are omitted from the result."
                 result))))
     (nreverse result)))
 
+(defun full-gtd-domain--group-actions-by-project (entries)
+  "Group ENTRIES by their PROJECT property.
+
+ENTRIES are the extended entry lists produced by
+`full-gtd-core-filter-entries'.
+
+Only entries with a non-nil PROJECT are included.  Multi-project
+entries are duplicated under each project name.  Each value is a
+plist:
+
+\\(PROJECT ((status STATUS)
+             (done-p DONE-P)
+             (headline HEADLINE)
+             (id ID)
+             (context CONTEXT)) ...)
+
+The result alist preserves the original order of ENTRIES within
+each project."
+  (let ((project-actions '())
+        (order '()))
+    (dolist (entry entries)
+      (let* ((status (or (nth 2 entry) ""))
+             (done-p (member status org-done-keywords))
+             (headline (nth 0 entry))
+             (id (or (nth 7 entry) ""))
+             (context (or (nth 10 entry) ""))
+             (project-string (or (nth 5 entry) "")))
+        (when-let ((projects (full-gtd-domain--split-values project-string)))
+          (dolist (project projects)
+            (let ((existing (assoc project project-actions)))
+              (unless existing
+                (setq existing (cons project '()))
+                (push existing project-actions)
+                (push project order))
+              (push (list (cons 'status status)
+                          (cons 'done-p done-p)
+                          (cons 'headline headline)
+                          (cons 'id id)
+                          (cons 'context context))
+                    (cdr existing)))))))
+    ;; Preserve first-appearance order.
+    (let ((result '()))
+      (dolist (project (nreverse order))
+        (push (cons project
+                    (nreverse (cdr (assoc project project-actions))))
+              result))
+      (nreverse result))))
+
 (provide 'full-gtd-domain)
 
 ;;; full-gtd-domain.el ends here
