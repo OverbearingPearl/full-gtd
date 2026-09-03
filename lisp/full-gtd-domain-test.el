@@ -200,6 +200,63 @@
          (result (full-gtd-domain--compute-entry-horizons '("ProjA") entries)))
     (should (null result))))
 
+;;;; Group actions by project
+
+(defun full-gtd-domain-test--make-entry (headline status id project &optional context)
+  "Build an entry list in `full-gtd-core-filter-entries' shape.
+HEADLINE, STATUS, and ID are strings.  PROJECT is a project string,
+possibly nil for no-project entries.  CONTEXT defaults to \"\"."
+  (list headline "@tag" status nil nil project "2026-01-01" id
+        "action.org" nil (or context "") nil nil nil nil))
+
+(ert-deftest full-gtd-domain-test-group-actions-single-project ()
+  "Actions of one project are grouped and preserve order."
+  (let* ((org-done-keywords '("DONE"))
+         (entries
+          (list
+           (full-gtd-domain-test--make-entry "A" "TODO" "id-a" "ProjA")
+           (full-gtd-domain-test--make-entry "B" "DONE" "id-b" "ProjA")))
+         (result (full-gtd-domain--group-actions-by-project entries)))
+    (should (= (length result) 1))
+    (should (string= (caar result) "ProjA"))
+    (let ((actions (cdar result)))
+      (should (= (length actions) 2))
+      (should (string= (cdr (assq 'headline (car actions))) "A"))
+      (should (string= (cdr (assq 'headline (cadr actions))) "B"))
+      (should (string= (cdr (assq 'status (car actions))) "TODO"))
+      (should (cdr (assq 'done-p (cadr actions)))))))
+
+(ert-deftest full-gtd-domain-test-group-actions-multi-project-duplicates ()
+  "An entry shared by multiple projects appears under each project."
+  (let* ((org-done-keywords '("DONE"))
+         (entries
+          (list
+           (full-gtd-domain-test--make-entry "Shared" "TODO" "id-1" "Alpha; Beta")))
+         (result (full-gtd-domain--group-actions-by-project entries)))
+    (should (= (length result) 2))
+    (should (string= (caar result) "Alpha"))
+    (should (string= (caadr result) "Beta"))
+    (dolist (pair result)
+      (should (= (length (cdr pair)) 1))
+      (should (string= (cdr (assq 'id (car (cdr pair)))) "id-1")))))
+
+(ert-deftest full-gtd-domain-test-group-actions-excludes-no-project ()
+  "Entries without PROJECT are omitted from the result."
+  (let* ((entries
+          (list
+           (full-gtd-domain-test--make-entry "NoProj" "TODO" "id-x" nil)
+           (full-gtd-domain-test--make-entry "WithProj" "TODO" "id-y" "ProjA")))
+         (result (full-gtd-domain--group-actions-by-project entries)))
+    (should (= (length result) 1))
+    (should (string= (caar result) "ProjA"))
+    (should (= (length (cdar result)) 1))
+    (should (string= (cdr (assq 'headline (car (cdar result)))) "WithProj"))))
+
+(ert-deftest full-gtd-domain-test-group-actions-empty-list ()
+  "Empty input yields empty alist."
+  (should (null (full-gtd-domain--group-actions-by-project nil)))
+  (should (null (full-gtd-domain--group-actions-by-project '()))))
+
 (provide 'full-gtd-domain-test)
 
 ;;; full-gtd-domain-test.el ends here
