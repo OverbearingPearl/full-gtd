@@ -104,6 +104,67 @@ CONTEXT is the optional context tag."
       (should (eq (full-gtd-map-kind-at-point) 'horizon))
       (should (eq (full-gtd-map-level-at-point) 'purpose)))))
 
+(ert-deftest full-gtd-map-test-horizon-single-tree-across-levels ()
+  "All horizon rows form an open branch: ┌ first, ├ for the rest.
+The branch never closes with └──; actions keep the closed form."
+  (let* ((stats (list 1 1 0 "P" "" "V" "G" "A1; A2"))
+         (rows (full-gtd-map--horizon-lines stats)))
+    (should (= 5 (length rows)))
+    (should (string-match-p "┌──" (car (nth 0 rows))))
+    (should (string-match-p "├──" (car (nth 1 rows))))
+    (should (string-match-p "├──" (car (nth 2 rows))))
+    (should (string-match-p "├──" (car (nth 3 rows))))
+    (should (string-match-p "├──" (car (nth 4 rows))))
+    (should-not (string-match-p "└──" (mapconcat #'car rows "\n")))
+    (let ((single (full-gtd-map--horizon-lines
+                   (list 1 1 0 "" "" "" "" "Only"))))
+      (should (= 1 (length single)))
+      (should (string-match-p "┌──" (car (car single)))))))
+
+(ert-deftest full-gtd-map-test-action-indent-deeper-than-horizon ()
+  "Action tree lines are indented deeper than horizon tree lines."
+  (let* ((horizon-row
+          (car (full-gtd-map--horizon-lines
+                (list 1 1 0 "P" "" "V" "G" "A"))))
+         (action-row
+          (car (full-gtd-map--action-lines
+                (list (full-gtd-map-test--action "TODO" nil "A" "i1"))
+                'all)))
+         (horizon-glyph (string-match-p "[┌├└]" (car horizon-row)))
+         (action-glyph (string-match-p "[┌├└]" (car action-row))))
+    (should (< horizon-glyph action-glyph))))
+
+(ert-deftest full-gtd-map-test-block-framing ()
+  "Block is framed: top rule, left rule on content rows, bottom rule."
+  (let* ((block (full-gtd-map--render-block
+                 "P" (full-gtd-map-test--stats)
+                 (list (full-gtd-map-test--action "TODO" nil "A" "i1"))
+                 'todo))
+         (rows (car block))
+         (text (mapconcat #'car rows "\n")))
+    (should (string-prefix-p "╔═" (car (car rows))))
+    (should (string-prefix-p "╚═" (car (car (reverse rows)))))
+    (should-not (string-match-p "\n[^║╔╚]" text))))
+
+(ert-deftest full-gtd-map-test-action-branch-closes-with-tee ()
+  "Action rows form a closing branch: ├── first, └── last.
+The first action continues from the project line, so it uses ├──
+instead of ┌──."
+  (let* ((actions (list (full-gtd-map-test--action "TODO" nil "A" "i1")
+                        (full-gtd-map-test--action "TODO" nil "B" "i2")
+                        (full-gtd-map-test--action "TODO" nil "C" "i3")))
+         (rows (full-gtd-map--action-lines actions 'all)))
+    (should (= 3 (length rows)))
+    (should (string-match-p "├──" (car (nth 0 rows))))
+    (should (string-match-p "├──" (car (nth 1 rows))))
+    (should (string-match-p "└──" (car (nth 2 rows))))
+    (should-not (string-match-p "┌──" (mapconcat #'car rows "\n")))
+    (let ((single (full-gtd-map--action-lines
+                   (list (full-gtd-map-test--action "TODO" nil "A" "i1"))
+                   'all)))
+      (should (= 1 (length single)))
+      (should (string-match-p "└──" (car (car single)))))))
+
 (provide 'full-gtd-map-test)
 
 ;;; full-gtd-map-test.el ends here

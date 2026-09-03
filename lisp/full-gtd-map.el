@@ -13,7 +13,9 @@
 ;; name; horizon levels are listed above it, actions below it.  All
 ;; relations are rendered as left-aligned column edges.  Layout is
 ;; deliberately not a tree: only each node's relation to the central
-;; project is displayed.
+;; project is displayed.  Each block is drawn inside a frame of top
+;; and bottom rules plus a left rule, so consecutive projects are
+;; clearly separated.
 
 ;;; Code:
 
@@ -41,47 +43,64 @@
   "Return number of non-done entries in ACTIONS."
   (cl-count-if-not #'full-gtd-map--action-done-p actions))
 
-(defun full-gtd-map--tree-lines (n)
-  "Return tree prefixes for N consecutive rows.
-First line uses ┌──, middle lines ├──, last line └──.
-For N=1, uses └── (a single leaf).  For N<=0, returns the empty list."
-  (cond
-   ((<= n 0) '())
-   ((= n 1) '("  └── "))
-   (t (append (list "  ┌── ")
-              (make-list (- n 2) "  ├── ")
-              (list "  └── ")))))
+(defun full-gtd-map--close-tree-lines (n &optional indent)
+  "Return closing tree prefixes for N consecutive rows.
+The first line uses ├── because the project line above continues
+into the branch, middle lines use ├──, and the last line closes
+the block with └──.  For N=1, uses └── (a single leaf).  For
+N<=0, returns the empty list.  Each prefix is indented by INDENT
+spaces (default 2)."
+  (let ((pad (make-string (or indent 2) ?\s)))
+    (cond
+     ((<= n 0) '())
+     ((= n 1) (list (concat pad "└── ")))
+     (t (append (make-list (1- n) (concat pad "├── "))
+                (list (concat pad "└── ")))))))
 
-(defun full-gtd-map--horizon-row (prefix label value kind)
-  "Build a row cons with PREFIX, horizon LABEL and VALUE.
-KIND is a level symbol (e.g. `area')."
-  (let ((text (format "%s%-14s%s" prefix label value)))
-    (cons text (list :kind 'horizon :level kind))))
+(defun full-gtd-map--open-tree-lines (n &optional indent)
+  "Return open-ended tree prefixes for N consecutive rows.
+First line uses ┌── and every following line uses ├──; the branch
+is never closed with └── because the project line continues the
+block below the horizons.  For N=1, returns a single ┌── line.
+For N<=0, returns the empty list.  Each prefix is indented by
+INDENT spaces (default 2)."
+  (let ((pad (make-string (or indent 2) ?\s)))
+    (cond
+     ((<= n 0) '())
+     ((= n 1) (list (concat pad "┌── ")))
+     (t (cons (concat pad "┌── ")
+              (make-list (1- n) (concat pad "├── ")))))))
+
+(defun full-gtd-map--horizon-row (prefix cell)
+  "Build a row cons with PREFIX for horizon CELL.
+CELL is a (LABEL VALUE KIND) list; KIND is a level symbol
+\(e.g. `area')."
+  (let ((text (format "%s%-14s%s"
+                      prefix (nth 0 cell) (nth 1 cell))))
+    (cons text (list :kind 'horizon :level (nth 2 cell)))))
 
 (defun full-gtd-map--horizon-lines (stats)
   "Return map rows for horizon STATS.
 STATS is the (TOTAL TODO DONE L6P L6PR L5 L4 L3) list as produced by
 `full-gtd-project-utils--collect-project-statistics'.  For each
 level, one row per value is emitted; empty levels are omitted.
-The returned collection is (TEXT . PROPS) pairs."
-  (let ((levels (list (list "L6 Purpose" 'purpose (or (nth 3 stats) ""))
+All horizon rows of one project form an open branch: the first row
+uses ┌── and every other row uses ├──; the branch is not closed
+because the project line continues below.  The returned collection
+is (TEXT . PROPS) pairs."
+  (let ((cells '()))
+    (dolist (lv (list (list "L6 Purpose" 'purpose (or (nth 3 stats) ""))
                       (list "L6 Principle" 'principle (or (nth 4 stats) ""))
                       (list "L5 Vision" 'vision (or (nth 5 stats) ""))
                       (list "L4 Goal" 'goal (or (nth 6 stats) ""))
                       (list "L3 Area" 'area (or (nth 7 stats) ""))))
-        (all-rows '()))
-    (dolist (lv levels)
-      (let* ((label (nth 0 lv))
-             (kind (nth 1 lv))
-             (raw (nth 2 lv)))
-        (when-let ((values (full-gtd-domain--split-values raw)))
-          (let* ((prefixes (full-gtd-map--tree-lines (length values)))
-                 (rows (cl-mapcar
-                        (lambda (prefix value)
-                          (full-gtd-map--horizon-row prefix label value kind))
-                        prefixes values)))
-            (setq all-rows (nconc all-rows rows))))))
-    all-rows))
+      (dolist (value (full-gtd-domain--split-values (nth 2 lv)))
+        (push (list (nth 0 lv) value (nth 1 lv)) cells)))
+    (setq cells (nreverse cells))
+    (when cells
+      (cl-mapcar #'full-gtd-map--horizon-row
+                 (full-gtd-map--open-tree-lines (length cells))
+                 cells))))
 
 (defun full-gtd-map--action-row (prefix action)
   "Build a row cons with PREFIX for ACTION.
@@ -103,15 +122,20 @@ ACTION is an action alist as produced by
 FOLD is `collapsed', `todo' or `all'.  The semantics:
     collapsed -> a single `└── …' ellipsis row
     todo      -> all non-DONE actions
-    all       -> all actions."
+    all       -> all actions.
+Action rows are indented deeper than horizon rows."
   (if (or (null actions)
           (eq fold 'collapsed))
-      (list (cons "  └── …" (list :kind 'ellipsis)))
+      (list (cons "    └── …" (list :kind 'ellipsis)))
     (let* ((visible (if (eq fold 'todo)
                         (cl-remove-if #'full-gtd-map--action-done-p actions)
                       actions))
-           (prefixes (full-gtd-map--tree-lines (length visible))))
+           (prefixes (full-gtd-map--close-tree-lines (length visible) 4)))
       (cl-mapcar #'full-gtd-map--action-row prefixes visible))))
+
+(defun full-gtd-map--frame-row (row)
+  "Return ROW with the left frame rule `║ ' prepended to its text."
+  (cons (concat "║ " (car row)) (cdr row)))
 
 (defun full-gtd-map--render-block (name stats actions fold)
   "Render a complete star-map block for project NAME.
@@ -119,7 +143,10 @@ STATS is the project statistics list (TOTAL TODO DONE L6P L6PR L5
 L4 L3).  ACTIONS is a list of action alists (see
 `full-gtd-domain--group-actions-by-project').  FOLD is `collapsed',
 `todo' or `all'.  Return (ROWS . NAME), where ROWS is a list of
-\\(TEXT . PROPS) elements."
+\\(TEXT . PROPS) elements.  The block is framed by a top rule
+`╔═...', a bottom rule `╚═...' and a left rule `║ ' spanning
+horizons through actions, so consecutive project blocks stay
+clearly separated."
   (let* ((horizon-rows (full-gtd-map--horizon-lines stats))
          (action-rows (if (and (eq fold 'todo)
                                (= (full-gtd-map--todo-count actions) 0))
@@ -127,13 +154,15 @@ L4 L3).  ACTIONS is a list of action alists (see
                         (full-gtd-map--action-lines actions fold)))
          (project-text (format "Project: %s (%d/%d done)"
                                name (nth 2 stats) (nth 0 stats)))
-         (sep (make-string (+ 4 (string-width project-text)) ?═))
+         (rule (make-string (+ 4 (string-width project-text)) ?═))
          (line-rows (append
-                     horizon-rows
-                     (list (cons sep '()))
-                     (list (cons project-text (list :kind 'project)))
-                     (list (cons sep '()))
-                     action-rows)))
+                     (list (cons (concat "╔" rule) '()))
+                     (mapcar #'full-gtd-map--frame-row
+                             (append horizon-rows
+                                     (list (cons project-text
+                                                 (list :kind 'project)))
+                                     action-rows))
+                     (list (cons (concat "╚" rule) '())))))
     (cons line-rows name)))
 
 (defun full-gtd-map--insert-block (block)
