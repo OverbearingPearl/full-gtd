@@ -154,7 +154,13 @@ clearly separated."
                         (full-gtd-map--action-lines actions fold)))
          (project-text (format "Project: %s (%d/%d done)"
                                name (nth 2 stats) (nth 0 stats)))
-         (rule (make-string (+ 4 (string-width project-text)) ?─))
+         ;; Frame width follows the widest row in the block, not just
+         ;; the project line, so long horizon values stay inside.
+         (rule (make-string
+                (+ 4 (apply #'max (string-width project-text)
+                            (mapcar (lambda (row) (string-width (car row)))
+                                    (append horizon-rows action-rows))))
+                ?─))
          (line-rows (append
                      (list (cons (concat "╭" rule) '()))
                      (mapcar #'full-gtd-map--frame-row
