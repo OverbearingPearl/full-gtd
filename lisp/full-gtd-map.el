@@ -134,8 +134,8 @@ Action rows are indented deeper than horizon rows."
       (cl-mapcar #'full-gtd-map--action-row prefixes visible))))
 
 (defun full-gtd-map--frame-row (row)
-  "Return ROW with the left frame rule `║ ' prepended to its text."
-  (cons (concat "║ " (car row)) (cdr row)))
+  "Return ROW with the left frame rule `│ ' prepended to its text."
+  (cons (concat "│ " (car row)) (cdr row)))
 
 (defun full-gtd-map--render-block (name stats actions fold)
   "Render a complete star-map block for project NAME.
@@ -143,8 +143,8 @@ STATS is the project statistics list (TOTAL TODO DONE L6P L6PR L5
 L4 L3).  ACTIONS is a list of action alists (see
 `full-gtd-domain--group-actions-by-project').  FOLD is `collapsed',
 `todo' or `all'.  Return (ROWS . NAME), where ROWS is a list of
-\\(TEXT . PROPS) elements.  The block is framed by a top rule
-`╔═...', a bottom rule `╚═...' and a left rule `║ ' spanning
+\\(TEXT . PROPS) elements.  The block is framed by a rounded top
+rule `╭─...', a bottom rule `╰─...' and a left rule `│ ' spanning
 horizons through actions, so consecutive project blocks stay
 clearly separated."
   (let* ((horizon-rows (full-gtd-map--horizon-lines stats))
@@ -154,15 +154,15 @@ clearly separated."
                         (full-gtd-map--action-lines actions fold)))
          (project-text (format "Project: %s (%d/%d done)"
                                name (nth 2 stats) (nth 0 stats)))
-         (rule (make-string (+ 4 (string-width project-text)) ?═))
+         (rule (make-string (+ 4 (string-width project-text)) ?─))
          (line-rows (append
-                     (list (cons (concat "╔" rule) '()))
+                     (list (cons (concat "╭" rule) '()))
                      (mapcar #'full-gtd-map--frame-row
                              (append horizon-rows
                                      (list (cons project-text
                                                  (list :kind 'project)))
                                      action-rows))
-                     (list (cons (concat "╚" rule) '())))))
+                     (list (cons (concat "╰" rule) '())))))
     (cons line-rows name)))
 
 (defun full-gtd-map--insert-block (block)

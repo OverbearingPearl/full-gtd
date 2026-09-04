@@ -142,9 +142,9 @@ The branch never closes with └──; actions keep the closed form."
                  'todo))
          (rows (car block))
          (text (mapconcat #'car rows "\n")))
-    (should (string-prefix-p "╔═" (car (car rows))))
-    (should (string-prefix-p "╚═" (car (car (reverse rows)))))
-    (should-not (string-match-p "\n[^║╔╚]" text))))
+    (should (string-prefix-p "╭─" (car (car rows))))
+    (should (string-prefix-p "╰─" (car (car (reverse rows)))))
+    (should-not (string-match-p "\n[^│╭╰]" text))))
 
 (ert-deftest full-gtd-map-test-action-branch-closes-with-tee ()
   "Action rows form a closing branch: ├── first, └── last.
