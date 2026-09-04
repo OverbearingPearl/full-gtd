@@ -17,6 +17,7 @@
 
 (require 'org)
 (require 'cl-lib)
+(require 'calendar)
 (require 'full-gtd-init)
 (require 'full-gtd-core)
 
@@ -86,15 +87,25 @@ Optional CONTEXT-FILTER boosts matching contexts."
         (l5 (plist-get action :l5))
         (l6 (plist-get action :l6))
         (delegated (plist-get action :delegated)))
-    ;; Urgency: deadline
+    ;; Urgency: deadline (based on whole calendar days, ignoring clock time)
     (when deadline
-      (let ((days (full-gtd-do--days-until deadline)))
+      (let* ((deadline-time (and deadline (condition-case nil
+                                              (org-time-string-to-time deadline)
+                                            (error nil))))
+             (today-time (current-time))
+             (day-diff (when deadline-time
+                         (let* ((dt (decode-time deadline-time))
+                                (dn (decode-time today-time))
+                                (date-deadline (list (nth 4 dt) (nth 3 dt) (nth 5 dt)))
+                                (date-today (list (nth 4 dn) (nth 3 dn) (nth 5 dn))))
+                           (- (calendar-absolute-from-gregorian date-deadline)
+                              (calendar-absolute-from-gregorian date-today))))))
         (cond
-         ((null days) nil)
-         ((< days 0) (setq score (+ score (cdr (assq 'overdue full-gtd-do--score-weights)))))
-         ((<= days 1) (setq score (+ score (cdr (assq 'deadline-1d full-gtd-do--score-weights)))))
-         ((<= days 3) (setq score (+ score (cdr (assq 'deadline-3d full-gtd-do--score-weights)))))
-         ((<= days 7) (setq score (+ score (cdr (assq 'deadline-7d full-gtd-do--score-weights))))))))
+         ((null day-diff) nil)
+         ((< day-diff 0) (setq score (+ score (cdr (assq 'overdue full-gtd-do--score-weights)))))
+         ((<= day-diff 1) (setq score (+ score (cdr (assq 'deadline-1d full-gtd-do--score-weights)))))
+         ((<= day-diff 3) (setq score (+ score (cdr (assq 'deadline-3d full-gtd-do--score-weights)))))
+         ((<= day-diff 7) (setq score (+ score (cdr (assq 'deadline-7d full-gtd-do--score-weights))))))))
     ;; Urgency: scheduled today
     (when (and scheduled
                (string-match-p (format-time-string "<%F" (current-time)) scheduled))
