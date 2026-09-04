@@ -57,7 +57,7 @@ jobs:
                   Current download count:
                   <strong style="font-size:24px;color:#1976d2;">${{ steps.fetch.outputs.download_count }}</strong>
                 </p>
-                <p style="color:#777;font-size:13px;">Retrieved daily at 09:00 UTC from melpa.org.</p>
+                <p style="color:#777;font-size:13px;">Retrieved daily at 03:30 UTC from melpa.org.</p>
               </div>
             </div>
 
