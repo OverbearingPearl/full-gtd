@@ -218,6 +218,8 @@ repos:
                             (expand-file-name \"lisp\" git-root))
                            (lisp-production-files nil)
                            (lisp-test-files nil)
+                           (lisp-dir-files (when (file-directory-p lisp-directory)
+                                             (directory-files lisp-directory t nil t)))
                            (root-production-file
                             (expand-file-name
                              (concat repository-name \".el\")
@@ -229,7 +231,7 @@ repos:
                            ordered-files)
                       (dolist (file
                                (sort
-                                (directory-files lisp-directory t nil t)
+                                lisp-dir-files
                                 #'string<))
                         (when (and (file-regular-p file)
                                    (string-suffix-p \".el\" file))
