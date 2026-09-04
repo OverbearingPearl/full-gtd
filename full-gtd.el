@@ -38,13 +38,13 @@
 
 (require 'cl-lib)
 
-(eval-and-compile
-  (defvar full-gtd--package-root
-    (or (and load-file-name (file-name-directory load-file-name))
-        default-directory)
-    "Root directory of Full-GTD package source.")
-  (when full-gtd--package-root
-    (add-to-list 'load-path (expand-file-name "lisp" full-gtd--package-root))))
+(defvar full-gtd--package-root
+  (or (and load-file-name (file-name-directory load-file-name))
+      default-directory)
+  "Root directory of Full-GTD package source.")
+
+(when full-gtd--package-root
+  (add-to-list 'load-path (expand-file-name "lisp" full-gtd--package-root)))
 
 (require 'full-gtd-init)
 (require 'full-gtd-table)
