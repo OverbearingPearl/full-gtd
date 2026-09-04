@@ -2,7 +2,8 @@ name: MELPA Download Stats
 
 on:
   schedule:
-    - cron: '0 9 * * *'   # 09:00 UTC daily
+    - cron: '30 3 * * *'
+      timezone: 'UTC'
   workflow_dispatch:
 
 jobs:
