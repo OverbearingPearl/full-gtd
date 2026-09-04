@@ -818,6 +818,97 @@
             (should (search-forward "…" nil t))))
   :teardown (kill-buffer "*Full-GTD Horizon View*"))
 
+(full-gtd-test-define-story full-gtd-horizons-test-refresh-rebuilds-view
+  "Refreshing the horizon view rebuilds it from current file data."
+  :setup (full-gtd-init-initialize)
+  :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: refresh-1\n:PROJECT: RefreshProj\n:L3_AREA: Stale\n:END:\n"))
+  :mock nil
+  :body (progn
+          (full-gtd-horizons-view)
+          (full-gtd-core-with-entry-at-id "refresh-1" "action.org"
+            (org-entry-put nil "L3_AREA" "Updated"))
+          (with-current-buffer "*Full-GTD Horizon View*"
+            (full-gtd-horizons--refresh))
+          (with-current-buffer "*Full-GTD Horizon View*"
+            (goto-char (point-min))
+            (should (search-forward "Updated" nil t))
+            (should-not (search-forward "Stale" nil t))))
+  :asserts t
+  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Horizon View*")))
+
+(full-gtd-test-define-story full-gtd-horizons-test-edit-goal-sets-l4
+  "Press 4 sets the L4 Goal for the project at point."
+  :setup (full-gtd-init-initialize)
+  :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: goal-edit-1\n:PROJECT: GoalProj\n:L3_AREA: Work\n:END:\n"))
+  :mock (((symbol-function 'full-gtd-core-read-property-with-completion)
+          (lambda (&rest _) "NewGoal")))
+  :body (progn
+          (full-gtd-horizons-view)
+          (with-current-buffer "*Full-GTD Horizon View*"
+            (goto-char (point-min))
+            (search-forward "GoalProj")
+            (beginning-of-line)
+            (full-gtd-horizons--edit-goal-at-point)))
+  :asserts (should (full-gtd-test-file-contains-p
+                    (expand-file-name "action.org" full-gtd-init-base-directory)
+                    ":L4_GOAL: NewGoal"))
+  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Horizon View*")))
+
+(full-gtd-test-define-story full-gtd-horizons-test-edit-vision-sets-l5
+  "Press 5 sets the L5 Vision when L4 Goal is already present."
+  :setup (full-gtd-init-initialize)
+  :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: vision-edit-1\n:PROJECT: VisionProj\n:L3_AREA: Work\n:L4_GOAL: Goal\n:END:\n"))
+  :mock (((symbol-function 'full-gtd-core-read-property-with-completion)
+          (lambda (&rest _) "NewVision")))
+  :body (progn
+          (full-gtd-horizons-view)
+          (with-current-buffer "*Full-GTD Horizon View*"
+            (goto-char (point-min))
+            (search-forward "VisionProj")
+            (beginning-of-line)
+            (full-gtd-horizons--edit-vision-at-point)))
+  :asserts (should (full-gtd-test-file-contains-p
+                    (expand-file-name "action.org" full-gtd-init-base-directory)
+                    ":L5_VISION: NewVision"))
+  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Horizon View*")))
+
+(full-gtd-test-define-story full-gtd-horizons-test-edit-purpose-errors-without-project
+  "Press 6 without a project row signals an error."
+  :setup (full-gtd-init-initialize)
+  :files (("action.org" "* TODO Orphan task\n:PROPERTIES:\n:ID: np-err-1\n:END:\n"))
+  :mock nil
+  :body (progn
+          (full-gtd-horizons-view)
+          (with-current-buffer "*Full-GTD Horizon View*"
+            (goto-char (point-min))
+            (search-forward "Orphan task")
+            (beginning-of-line)
+            (should-error (full-gtd-horizons--edit-purpose-at-point)
+                          :type 'error)))
+  :asserts t
+  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Horizon View*")))
+
+(full-gtd-test-define-story full-gtd-horizons-test-archive-errors-without-project
+  "Archive key without a project row signals an error."
+  :setup (full-gtd-init-initialize)
+  :files (("action.org" "* TODO Orphan task\n:PROPERTIES:\n:ID: np-arch-1\n:END:\n"))
+  :mock nil
+  :body (progn
+          (full-gtd-horizons-view)
+          (with-current-buffer "*Full-GTD Horizon View*"
+            (goto-char (point-min))
+            (search-forward "Orphan task")
+            (beginning-of-line)
+            (should-error (full-gtd-horizons--archive-project-at-point)
+                          :type 'error)))
+  :asserts t
+  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Horizon View*")))
+
+(ert-deftest full-gtd-horizons-test-level-conversions-reject-unknown ()
+  "Unknown horizon levels fail fast in both conversion helpers."
+  (should-error (full-gtd-horizons--level-to-property 'bogus) :type 'error)
+  (should-error (full-gtd-horizons--level-to-symbol 'bogus) :type 'error))
+
 (provide 'full-gtd-horizons-test)
 
 ;;; full-gtd-horizons-test.el ends here

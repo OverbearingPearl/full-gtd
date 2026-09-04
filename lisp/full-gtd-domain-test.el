@@ -257,6 +257,36 @@ possibly nil for no-project entries.  CONTEXT defaults to \"\"."
   (should (null (full-gtd-domain--group-actions-by-project nil)))
   (should (null (full-gtd-domain--group-actions-by-project '()))))
 
+(ert-deftest full-gtd-domain-test-collect-project-candidates ()
+  "Project candidates are deduplicated PROJECT values, sorted."
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+    (unwind-protect
+        (progn
+          (write-region "* TODO A\n:PROPERTIES:\n:ID: cand-a\n:PROJECT: Alpha; Beta\n:END:\n* TODO B\n:PROPERTIES:\n:ID: cand-b\n:PROJECT: Beta\n:END:\n* DONE C\n:PROPERTIES:\n:ID: cand-c\n:PROJECT: Gamma\n:END:\n"
+                        nil
+                        (expand-file-name "action.org" full-gtd-init-base-directory))
+          (should (equal (full-gtd-domain--collect-project-candidates)
+                         '("Alpha" "Beta" "Gamma"))))
+      (delete-directory full-gtd-init-base-directory t))))
+
+(ert-deftest full-gtd-domain-test-collect-delegate-candidates ()
+  "Delegate candidates are deduplicated DELEGATED values, sorted."
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+    (unwind-protect
+        (progn
+          (write-region "* TODO A\n:PROPERTIES:\n:ID: cand-d\n:DELEGATED: Bob\n:END:\n* TODO B\n:PROPERTIES:\n:ID: cand-e\n:DELEGATED: Alice\n:END:\n"
+                        nil
+                        (expand-file-name "action.org" full-gtd-init-base-directory))
+          (should (equal (full-gtd-domain--collect-delegate-candidates)
+                         '("Alice" "Bob"))))
+      (delete-directory full-gtd-init-base-directory t))))
+
+(ert-deftest full-gtd-domain-test-collect-horizon-candidates-invalid-level ()
+  "Invalid horizon levels should signal an error."
+  (should-error
+   (full-gtd-domain--collect-horizon-candidates "L2_AREA")
+   :type 'error))
+
 (provide 'full-gtd-domain-test)
 
 ;;; full-gtd-domain-test.el ends here

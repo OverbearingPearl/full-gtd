@@ -443,6 +443,195 @@ This verifies deletion decision reads PROJECT from the source entry (not from ca
       (should view-type-checked)
       (kill-buffer "*Full-GTD: Do Session*"))))
 
+;;;; Additional branch coverage
+
+(ert-deftest full-gtd-do-test-days-until-nil-and-invalid ()
+  "Nil or unparseable dates return nil instead of crashing."
+  (should (null (full-gtd-do--days-until nil)))
+  (should (null (full-gtd-do--days-until "not-a-date"))))
+
+(ert-deftest full-gtd-do-test-format-date-relative-labels ()
+  "Format-date annotates overdue and near dates; distant or bad input passes through."
+  (let ((overdue (format-time-string "<%F>"
+                                     (time-subtract (current-time) (* 3 24 3600))))
+        (later-today (format-time-string "<%F %H:%M>"
+                                         (time-add (current-time) 1800)))
+        (soon (format-time-string "<%F>"
+                                  (time-add (current-time) (* 5 24 3600))))
+        (far (format-time-string "<%F>"
+                                 (time-add (current-time) (* 30 24 3600)))))
+    (should (string-match-p "overdue" (full-gtd-do--format-date overdue)))
+    (should (string-match-p "in [0-9]+ days"
+                            (full-gtd-do--format-date later-today)))
+    (should (string-match-p "in [0-9]+ days" (full-gtd-do--format-date soon)))
+    (should (string= far (full-gtd-do--format-date far)))
+    (should (string= "bogus" (full-gtd-do--format-date "bogus")))))
+
+(ert-deftest full-gtd-do-test-score-deadline-buckets ()
+  "Deadline scoring maps each distance onto its configured weight."
+  (let ((half-day (format-time-string "<%F>" (time-add (current-time) 43200)))
+        (two-days (format-time-string "<%F>"
+                                      (time-add (current-time) (* 2 24 3600))))
+        (five-days (format-time-string "<%F>"
+                                       (time-add (current-time) (* 5 24 3600))))
+        (overdue (format-time-string "<%F>"
+                                     (time-subtract (current-time) (* 2 24 3600)))))
+    (should (= (full-gtd-do--score-action (list :deadline overdue)) 100))
+    (should (= (full-gtd-do--score-action (list :deadline half-day)) 50))
+    (should (= (full-gtd-do--score-action (list :deadline two-days)) 30))
+    (should (= (full-gtd-do--score-action (list :deadline five-days)) 15))))
+
+(ert-deftest full-gtd-do-test-score-horizons-and-empty-strings ()
+  "Empty-string fields score nothing; set horizons and project add weight."
+  (should (= (full-gtd-do--score-action
+              (list :l3 "" :l4 "" :l5 "" :l6 "" :project "" :delegated ""))
+             0))
+  (should (= (full-gtd-do--score-action
+              (list :l3 "A" :l4 "B" :l5 "C" :l6 "D" :project "P"))
+             55)))
+
+(ert-deftest full-gtd-do-test-score-scheduled-today-and-past ()
+  "Only today's schedule earns the bonus; past schedules earn no penalty."
+  (let ((today (format-time-string "<%F>" (current-time)))
+        (past (format-time-string "<%F>"
+                                  (time-subtract (current-time) (* 3 24 3600)))))
+    (should (= (full-gtd-do--score-action (list :scheduled today)) 20))
+    (should (= (full-gtd-do--score-action (list :scheduled past)) 0))))
+
+(ert-deftest full-gtd-do-test-score-context-multi-value ()
+  "Context bonus applies when the filter matches any listed context."
+  (let ((action (list :context "@office,@home")))
+    (should (= (full-gtd-do--score-action action "home") 10))
+    (should (= (full-gtd-do--score-action action "car") 0))))
+
+(full-gtd-test-define-story full-gtd-do-test-session-help-and-quit
+  "Help prints the command hint; quit closes the session window."
+  :setup (full-gtd-init-initialize)
+  :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: hq-1\n:END:\n"))
+  :mock (((symbol-function 'completing-read) (lambda (&rest _) ""))
+         ((symbol-function 'read-string) (lambda (&rest _) "")))
+  :body (progn
+          (full-gtd-do)
+          (with-current-buffer "*Full-GTD: Do Session*"
+            (full-gtd-do--session-help)
+            (should full-gtd-do-session-mode)
+            (full-gtd-do--session-quit)))
+  :asserts (should (get-buffer "*Full-GTD: Do Session*"))
+  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD: Do Session*")))
+
+(full-gtd-test-define-story full-gtd-do-test-session-done-continues-same-conditions
+  "Done on the last action re-collects with the same conditions when confirmed."
+  :setup (full-gtd-init-initialize)
+  :files (("action.org" "* TODO Only task\n:PROPERTIES:\n:ID: cont-1\n:PROJECT: Test\n:END:\n"))
+  :mock (((symbol-function 'completing-read) (lambda (&rest _) ""))
+         ((symbol-function 'read-string) (lambda (&rest _) ""))
+         ((symbol-function 'read-char-choice) (lambda (&rest _) ?y)))
+  :body (progn
+          (full-gtd-do)
+          (with-current-buffer "*Full-GTD: Do Session*"
+            (full-gtd-do--session-done)
+            (goto-char (point-min))
+            (should (search-forward "Session Complete" nil t))))
+  :asserts (should (full-gtd-test-file-contains-p
+                    (expand-file-name "action.org" full-gtd-init-base-directory)
+                    "* DONE Only task"))
+  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD: Do Session*")))
+
+(full-gtd-test-define-story full-gtd-do-test-session-done-decline-changes-conditions
+  "Declining the continuation prompt opens the change-conditions prompts."
+  :setup (full-gtd-init-initialize)
+  :files (("action.org" "* TODO Only task\n:PROPERTIES:\n:ID: cont-2\n:PROJECT: Test\n:END:\n"))
+  :mock (((symbol-function 'completing-read) (lambda (&rest _) ""))
+         ((symbol-function 'read-string) (lambda (&rest _) ""))
+         ((symbol-function 'read-char-choice) (lambda (&rest _) ?n))
+         ((symbol-function 'full-gtd-do--prompt-conditions)
+          (lambda () (list "nomatch" nil nil))))
+  :body (progn
+          (full-gtd-do)
+          (with-current-buffer "*Full-GTD: Do Session*"
+            (full-gtd-do--session-done)
+            (goto-char (point-min))
+            (should (search-forward "nomatch" nil t))))
+  :asserts (should (full-gtd-test-file-contains-p
+                    (expand-file-name "action.org" full-gtd-init-base-directory)
+                    "* DONE Only task"))
+  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD: Do Session*")))
+
+(full-gtd-test-define-story full-gtd-do-test-session-skip-continues-same-conditions
+  "Skip on the last action re-collects the still-pending task when confirmed."
+  :setup (full-gtd-init-initialize)
+  :files (("action.org" "* TODO Recurring\n:PROPERTIES:\n:ID: cont-3\n:END:\n"))
+  :mock (((symbol-function 'completing-read) (lambda (&rest _) ""))
+         ((symbol-function 'read-string) (lambda (&rest _) ""))
+         ((symbol-function 'read-char-choice) (lambda (&rest _) ?y)))
+  :body (progn
+          (full-gtd-do)
+          (with-current-buffer "*Full-GTD: Do Session*"
+            (full-gtd-do--session-skip)
+            (goto-char (point-min))
+            (should (search-forward "* Recurring" nil t))))
+  :asserts (should (full-gtd-test-file-contains-p
+                    (expand-file-name "action.org" full-gtd-init-base-directory)
+                    "* TODO Recurring"))
+  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD: Do Session*")))
+
+(full-gtd-test-define-story full-gtd-do-test-session-snooze-decline-changes-conditions
+  "Declining after a snooze re-filters with the newly entered conditions."
+  :setup (full-gtd-init-initialize)
+  :files (("action.org" "* TODO Later\n:PROPERTIES:\n:ID: cont-4\n:END:\n"))
+  :mock (((symbol-function 'completing-read) (lambda (&rest _) ""))
+         ((symbol-function 'read-string) (lambda (&rest _) ""))
+         ((symbol-function 'read-char-choice) (lambda (&rest _) ?n))
+         ((symbol-function 'full-gtd-do--prompt-conditions)
+          (lambda () (list "nomatch" nil nil))))
+  :body (progn
+          (full-gtd-do)
+          (with-current-buffer "*Full-GTD: Do Session*"
+            (full-gtd-do--session-snooze)
+            (goto-char (point-min))
+            (should (search-forward "Session Complete" nil t))))
+  :asserts (should (full-gtd-test-file-contains-p
+                    (expand-file-name "action.org" full-gtd-init-base-directory)
+                    (format "SCHEDULED: <%s"
+                            (format-time-string "%F"
+                                                (time-add (current-time) (* 24 3600))))))
+  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD: Do Session*")))
+
+(full-gtd-test-define-story full-gtd-do-test-session-renders-full-details
+  "Card renders every populated field, notes, and the singular backlog form."
+  :setup (full-gtd-init-initialize)
+  :files (("action.org"
+           (concat "* TODO Detailed task :office:\n"
+                   (format "DEADLINE: <%s> SCHEDULED: <%s>\n"
+                           (format-time-string "%F %a" (time-add (current-time) (* 2 24 3600)))
+                           (format-time-string "%F %a" (time-add (current-time) (* 5 24 3600))))
+                   ":PROPERTIES:\n:ID: full-card-1\n:PROJECT: DetailProj\n:DELEGATED: Alice\n:CREATED: 2026-01-01\n"
+                   ":L3_AREA: Work\n:L4_GOAL: Goal\n:L5_VISION: Vision\n:L6_PURPOSE: Purpose\n:END:\n"
+                   "\nBody note line\n")))
+  :mock (((symbol-function 'completing-read) (lambda (&rest _) ""))
+         ((symbol-function 'read-string) (lambda (&rest _) "")))
+  :body (progn
+          (full-gtd-do)
+          (with-current-buffer "*Full-GTD: Do Session*"
+            (goto-char (point-min))
+            (should (search-forward "* Detailed task" nil t))
+            (should (search-forward "Backlog: 1 task remaining" nil t))
+            (should (search-forward "| Project" nil t))
+            (should (search-forward "| Context" nil t))
+            (should (search-forward "| Deadline" nil t))
+            (should (search-forward "| Scheduled" nil t))
+            (should (search-forward "| Delegated" nil t))
+            (should (search-forward "| Created" nil t))
+            (should (search-forward "L6 Purpose" nil t))
+            (should (search-forward "L5 Vision" nil t))
+            (should (search-forward "L4 Goal" nil t))
+            (should (search-forward "L3 Area" nil t))
+            (should (search-forward "Body note line" nil t))))
+  :asserts (should (full-gtd-test-file-contains-p
+                    (expand-file-name "action.org" full-gtd-init-base-directory)
+                    ":L6_PURPOSE: Purpose"))
+  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD: Do Session*")))
+
 (provide 'full-gtd-do-test)
 
 ;;; full-gtd-do-test.el ends here

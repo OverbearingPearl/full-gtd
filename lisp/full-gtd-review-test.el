@@ -1061,15 +1061,9 @@
   :mock nil
   :body (full-gtd-horizons-view)
   :asserts (with-current-buffer "*Full-GTD Horizon View*"
-             (let ((header (format-mode-line header-line-format)))
-               (should
-                (string-match-p
-                 (regexp-quote "n/p/j/k=rows")
-                 header))
-               (should
-                (string-match-p
-                 (regexp-quote "f/b/h/l=columns")
-                 header))))
+             (should (stringp header-line-format))
+             (should (string-match-p "n/p/j/k=rows" header-line-format))
+             (should (string-match-p "f/b/h/l=columns" header-line-format)))
   :teardown (full-gtd-test-cleanup-buffers
              '("*Full-GTD Horizon View*")))
 
@@ -1107,6 +1101,215 @@
                    (forward-line 1)
                    (should (get-char-property (line-beginning-position) 'invisible))))))
   :teardown (kill-buffer "*Full-GTD Weekly Review*"))
+
+(full-gtd-test-define-story full-gtd-review-test-user-archives-project-from-review-view
+  "Press A on a stuck project row archives the completed project."
+  :setup (full-gtd-init-initialize)
+  :files (("action.org" "* DONE Task 1\n:PROPERTIES:\n:ID: rev-ar-1\n:PROJECT: RevArchProj\n:END:\n"))
+  :mock nil
+  :body (progn
+          (full-gtd-review-weekly)
+          (with-current-buffer "*Full-GTD Weekly Review*"
+            (goto-char (point-min))
+            (search-forward "** Projects - Stuck")
+            (search-forward "RevArchProj")
+            (beginning-of-line)
+            (full-gtd-review--archive-project-at-point)))
+  :asserts (progn
+             (should-not (full-gtd-test-file-contains-p-bool
+                          (expand-file-name "action.org" full-gtd-init-base-directory)
+                          ":PROJECT: RevArchProj"))
+             (should (file-exists-p
+                      (expand-file-name "archive.org" full-gtd-init-base-directory))))
+  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
+
+(full-gtd-test-define-story full-gtd-review-test-archive-blocked-with-todo-from-review
+  "Archive from the review view fails while TODO actions remain."
+  :setup (full-gtd-init-initialize)
+  :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: rev-ar-2\n:PROJECT: RevBlockedProj\n:END:\n"))
+  :mock nil
+  :body (progn
+          (full-gtd-review-weekly)
+          (with-current-buffer "*Full-GTD Weekly Review*"
+            (goto-char (point-min))
+            (search-forward "** Projects - Active")
+            (search-forward "RevBlockedProj")
+            (beginning-of-line)
+            (should-error (full-gtd-review--archive-project-at-point)
+                          :type 'error)))
+  :asserts (should (full-gtd-test-file-contains-p-bool
+                    (expand-file-name "action.org" full-gtd-init-base-directory)
+                    ":PROJECT: RevBlockedProj"))
+  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
+
+(full-gtd-test-define-story full-gtd-review-test-archive-errors-when-action-file-missing
+  "Archiving without action.org fails fast."
+  :setup nil
+  :files nil
+  :mock nil
+  :body (should-error (full-gtd-project-utils--archive-project "AnyProj")
+                      :type 'error)
+  :asserts t
+  :teardown nil)
+
+(full-gtd-test-define-story full-gtd-review-test-archive-errors-when-no-entries
+  "Archiving a project without entries fails and creates no archive file."
+  :setup (full-gtd-init-initialize)
+  :files (("action.org" "* TODO Unrelated\n:PROPERTIES:\n:ID: ar-none-1\n:PROJECT: Other\n:END:\n"))
+  :mock nil
+  :body (should-error (full-gtd-project-utils--archive-project "GhostProj")
+                      :type 'error)
+  :asserts (should-not (file-exists-p
+                        (expand-file-name "archive.org" full-gtd-init-base-directory)))
+  :teardown nil)
+
+(full-gtd-test-define-story full-gtd-review-test-user-edits-project-at-point
+  "Press P to re-link the task; horizons resync from the new project."
+  :setup (full-gtd-init-initialize)
+  :files (("action.org" "* TODO Lonely task\n:PROPERTIES:\n:ID: edit-proj-1\n:PROJECT: OldProj\n:END:\n* TODO Peer task\n:PROPERTIES:\n:ID: edit-proj-2\n:PROJECT: NewProj\n:L3_AREA: Work\n:END:\n"))
+  :mock (((symbol-function 'full-gtd-core-read-property-with-completion)
+          (lambda (&rest _) "NewProj")))
+  :body (progn
+          (full-gtd-review-weekly)
+          (with-current-buffer "*Full-GTD Weekly Review*"
+            (goto-char (point-min))
+            (search-forward "** action.org - Next Actions")
+            (search-forward "Lonely task")
+            (beginning-of-line)
+            (full-gtd-review--edit-project-at-point)))
+  :asserts (progn
+             (should (full-gtd-test-file-contains-p
+                      (expand-file-name "action.org" full-gtd-init-base-directory)
+                      ":PROJECT: NewProj"))
+             (should (full-gtd-test-file-contains-p
+                      (expand-file-name "action.org" full-gtd-init-base-directory)
+                      ":L3_AREA: Work")))
+  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
+
+(full-gtd-test-define-story full-gtd-review-test-user-removes-project-clears-horizons
+  "Empty project input removes PROJECT and its inherited horizons."
+  :setup (full-gtd-init-initialize)
+  :files (("action.org" "* TODO Lonely task\n:PROPERTIES:\n:ID: rm-proj-1\n:PROJECT: OldProj\n:L3_AREA: Work\n:L4_GOAL: Goal\n:END:\n"))
+  :mock (((symbol-function 'full-gtd-core-read-property-with-completion)
+          (lambda (&rest _) "")))
+  :body (progn
+          (full-gtd-review-weekly)
+          (with-current-buffer "*Full-GTD Weekly Review*"
+            (goto-char (point-min))
+            (search-forward "** action.org - Next Actions")
+            (search-forward "Lonely task")
+            (beginning-of-line)
+            (full-gtd-review--edit-project-at-point)))
+  :asserts (progn
+             (should-not (full-gtd-test-file-contains-p-bool
+                          (expand-file-name "action.org" full-gtd-init-base-directory)
+                          ":PROJECT:"))
+             (should-not (full-gtd-test-file-contains-p-bool
+                          (expand-file-name "action.org" full-gtd-init-base-directory)
+                          ":L3_AREA:"))
+             (should-not (full-gtd-test-file-contains-p-bool
+                          (expand-file-name "action.org" full-gtd-init-base-directory)
+                          ":L4_GOAL:")))
+  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
+
+(full-gtd-test-define-story full-gtd-review-test-user-removes-delegated-and-date
+  "Empty delegated input removes DELEGATED and DELEGATED_DATE together."
+  :setup (full-gtd-init-initialize)
+  :files (("action.org" "* TODO Waiting task\n:PROPERTIES:\n:ID: rm-del-1\n:DELEGATED: Bob\n:DELEGATED_DATE: 2026-01-01\n:END:\n"))
+  :mock (((symbol-function 'full-gtd-core-read-property-with-completion)
+          (lambda (&rest _) "")))
+  :body (progn
+          (full-gtd-review-weekly)
+          (with-current-buffer "*Full-GTD Weekly Review*"
+            (goto-char (point-min))
+            (search-forward "** action.org - Delegated")
+            (search-forward "Waiting task")
+            (beginning-of-line)
+            (full-gtd-review--edit-delegated-at-point)))
+  :asserts (progn
+             (should-not (full-gtd-test-file-contains-p-bool
+                          (expand-file-name "action.org" full-gtd-init-base-directory)
+                          ":DELEGATED:"))
+             (should-not (full-gtd-test-file-contains-p-bool
+                          (expand-file-name "action.org" full-gtd-init-base-directory)
+                          ":DELEGATED_DATE:")))
+  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
+
+(full-gtd-test-define-story full-gtd-review-test-refresh-view-rebuilds-project-subview
+  "Refresh inside a project sub-view rebuilds the project table."
+  :setup (full-gtd-init-initialize)
+  :files (("action.org" "* TODO Task A\n:PROPERTIES:\n:ID: rv-refresh-1\n:PROJECT: RefreshP\n:END:\n"))
+  :mock nil
+  :body (progn
+          (full-gtd-review-weekly)
+          (with-current-buffer "*Full-GTD Weekly Review*"
+            (goto-char (point-min))
+            (search-forward "** Projects - Active")
+            (search-forward "RefreshP")
+            (beginning-of-line)
+            (full-gtd-review--goto-task-at-point))
+          (with-current-buffer "*Full-GTD Project: RefreshP*"
+            (full-gtd-review--refresh-view)
+            (goto-char (point-min))
+            (should (search-forward "Task A" nil t))))
+  :asserts t
+  :teardown (full-gtd-test-cleanup-buffers
+             '("*Full-GTD Weekly Review*" "*Full-GTD Project: RefreshP*")))
+
+(ert-deftest full-gtd-review-test-refresh-view-unknown-type-hints ()
+  "Refreshing an unrecognized view only reports it."
+  (with-temp-buffer
+    (setq-local full-gtd-review--current-view-type 'bogus)
+    (should (progn (full-gtd-review--refresh-view) t))))
+
+(ert-deftest full-gtd-review-test-should-delete-empty-project ()
+  "Entries whose PROJECT is empty count as no-project for deletion."
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+    (unwind-protect
+        (progn
+          (write-region "* TODO Task\n:PROPERTIES:\n:ID: empty-proj-del-1\n:PROJECT:\n:END:\n"
+                        nil
+                        (expand-file-name "action.org" full-gtd-init-base-directory))
+          (should (full-gtd-review--should-delete-on-completion-p
+                   "empty-proj-del-1" "action.org")))
+      (delete-directory full-gtd-init-base-directory t))))
+
+(ert-deftest full-gtd-review-test-upcoming-deadline-window-boundaries ()
+  "Upcoming-deadline predicate accepts only dates within the next 7 days."
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+    (unwind-protect
+        (progn
+          (write-region (concat "* TODO Soon\nDEADLINE: <"
+                                (format-time-string "%F"
+                                                    (time-add (current-time) (* 3 24 3600)))
+                                ">\n:PROPERTIES:\n:ID: up-1\n:END:\n"
+                                "* TODO Far\nDEADLINE: <"
+                                (format-time-string "%F"
+                                                    (time-add (current-time) (* 30 24 3600)))
+                                ">\n:PROPERTIES:\n:ID: up-2\n:END:\n"
+                                "* TODO Undated\n:PROPERTIES:\n:ID: up-3\n:END:\n"
+                                "* TODO Past\nDEADLINE: <"
+                                (format-time-string "%F"
+                                                    (time-subtract (current-time) (* 2 24 3600)))
+                                ">\n:PROPERTIES:\n:ID: up-4\n:END:\n")
+                        nil
+                        (expand-file-name "action.org" full-gtd-init-base-directory))
+          (let ((soon nil) (far nil) (undated nil) (past nil))
+            (full-gtd-core-with-entry-at-id "up-1" "action.org"
+              (setq soon (full-gtd-review--entry-upcoming-deadline-p)))
+            (full-gtd-core-with-entry-at-id "up-2" "action.org"
+              (setq far (full-gtd-review--entry-upcoming-deadline-p)))
+            (full-gtd-core-with-entry-at-id "up-3" "action.org"
+              (setq undated (full-gtd-review--entry-upcoming-deadline-p)))
+            (full-gtd-core-with-entry-at-id "up-4" "action.org"
+              (setq past (full-gtd-review--entry-upcoming-deadline-p)))
+            (should soon)
+            (should-not far)
+            (should-not undated)
+            (should-not past)))
+      (let ((buf (get-file-buffer (expand-file-name "action.org" full-gtd-init-base-directory))))
+        (when buf (kill-buffer buf)))
+      (delete-directory full-gtd-init-base-directory t))))
 
 (provide 'full-gtd-review-test)
 

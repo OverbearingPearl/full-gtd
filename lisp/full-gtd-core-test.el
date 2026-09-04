@@ -335,6 +335,65 @@
         (when buf (kill-buffer buf)))
       (delete-directory full-gtd-init-base-directory t))))
 
+(ert-deftest full-gtd-core-test-date-week-quick ()
+  "Pressing 'w' returns the date one week from today."
+  (cl-letf (((symbol-function 'read-key) (lambda () ?w)))
+    (should (string= (full-gtd-core-read-date 'schedule)
+                     (format-time-string "%F"
+                                         (time-add (current-time) (* 7 24 3600)))))))
+
+(ert-deftest full-gtd-core-test-date-hour-quick-schedule-only ()
+  "'h' returns a one-hour-ahead timestamp for schedules."
+  (cl-letf (((symbol-function 'read-key) (lambda () ?h)))
+    (should (string-match-p "^[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\} [0-2][0-9]:[0-5][0-9]$"
+                            (full-gtd-core-read-date 'schedule)))))
+
+(ert-deftest full-gtd-core-test-date-hour-invalid-for-deadline-retries ()
+  "'h' is invalid for deadlines; the prompt loops until a valid key."
+  (let ((keys '(?h ?t)))
+    (cl-letf (((symbol-function 'read-key) (lambda () (pop keys))))
+      (should (string= (full-gtd-core-read-date 'deadline)
+                       (format-time-string "%F")))
+      (should-not keys))))
+
+(ert-deftest full-gtd-core-test-date-custom-invalid-input-retries ()
+  "Invalid custom dates are rejected and the prompt loops."
+  (let ((keys '(?1 ?t))
+        (reads 0))
+    (cl-letf (((symbol-function 'read-key) (lambda () (pop keys)))
+              ((symbol-function 'read-string)
+               (lambda (&rest _) (setq reads (1+ reads)) "garbage")))
+      (should (string= (full-gtd-core-read-date 'deadline)
+                       (format-time-string "%F")))
+      (should (= reads 1)))))
+
+(ert-deftest full-gtd-core-test-date-custom-input-quit ()
+  "Pressing \\[keyboard-quit] during custom date input signals quit."
+  (cl-letf (((symbol-function 'read-key) (lambda () ?5))
+            ((symbol-function 'read-string) (lambda (&rest _) (signal 'quit nil))))
+    (should (condition-case nil
+                (progn (full-gtd-core-read-date 'schedule) nil)
+              (quit t)))))
+
+(ert-deftest full-gtd-core-test-read-property-unknown-type-errors ()
+  "Unknown property types fail fast."
+  (should-error (full-gtd-core-read-property-with-completion "X: " 'bogus)
+                :type 'error))
+
+(ert-deftest full-gtd-core-test-get-entry-notes-residual-after-end-marker ()
+  "Text left on the :END: line is recovered as the entry notes."
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+    (unwind-protect
+        (progn
+          (write-region "* TODO Task\n:PROPERTIES:\n:ID: residual-1\n:END:Residual text\n"
+                        nil
+                        (expand-file-name "action.org" full-gtd-init-base-directory))
+          (full-gtd-core-with-entry-at-id "residual-1" "action.org"
+            (should (string= (full-gtd-core--get-entry-notes) "Residual text"))))
+      (let ((buf (get-file-buffer (expand-file-name "action.org" full-gtd-init-base-directory))))
+        (when buf (kill-buffer buf)))
+      (delete-directory full-gtd-init-base-directory t))))
+
 (provide 'full-gtd-core-test)
 
 ;;; full-gtd-core-test.el ends here

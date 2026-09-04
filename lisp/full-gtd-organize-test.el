@@ -583,6 +583,128 @@
       (should (null (cdr (assoc 'schedule result))))
       (should (null (cdr (assoc 'deadline result)))))))
 
+;;; Unit tests for destination keys, clarify prompts, and property parsing
+
+(ert-deftest full-gtd-inbox-test-read-destination-key-valid ()
+  "Single letter keys select their destination; case is folded."
+  (cl-letf (((symbol-function 'read-key-sequence) (lambda (&optional _) "a")))
+    (should (= (full-gtd-inbox--read-destination-key "Task") ?a)))
+  (cl-letf (((symbol-function 'read-key-sequence) (lambda (&optional _) "R")))
+    (should (= (full-gtd-inbox--read-destination-key "Task") ?r))))
+
+(ert-deftest full-gtd-inbox-test-read-destination-key-quit ()
+  "The destination prompt must exit with a quit signal when \\[keyboard-quit] is pressed."
+  (cl-letf (((symbol-function 'read-key-sequence) (lambda (&optional _) "\C-g")))
+    (should (condition-case nil
+                (progn (full-gtd-inbox--read-destination-key "Task") nil)
+              (quit t)))))
+
+(ert-deftest full-gtd-inbox-test-read-destination-key-invalid-retries ()
+  "Invalid single keys re-prompt until a valid destination arrives."
+  (let ((keys '("q" "s")))
+    (cl-letf (((symbol-function 'read-key-sequence) (lambda (&optional _) (pop keys))))
+      (should (= (full-gtd-inbox--read-destination-key "Task") ?s))
+      (should-not keys))))
+
+(ert-deftest full-gtd-inbox-test-read-destination-key-multi-key-executes ()
+  "Multi-key sequences run immediately, then the prompt continues."
+  (let ((keys '("\C-u\C-u" "a"))
+        (executed 0))
+    (cl-letf (((symbol-function 'read-key-sequence) (lambda (&optional _) (pop keys)))
+              ((symbol-function 'execute-kbd-macro)
+               (lambda (&rest _) (setq executed (1+ executed)))))
+      (should (= (full-gtd-inbox--read-destination-key "Task") ?a))
+      (should (= executed 1))
+      (should-not keys))))
+
+(ert-deftest full-gtd-inbox-test-read-destination-key-multi-key-error-recovers ()
+  "Errors from executed multi-key commands do not abort processing."
+  (let ((keys '("\C-u\C-u" "r"))
+        (executed 0))
+    (cl-letf (((symbol-function 'read-key-sequence) (lambda (&optional _) (pop keys)))
+              ((symbol-function 'execute-kbd-macro)
+               (lambda (&rest _) (setq executed (1+ executed)) (error "Boom"))))
+      (should (= (full-gtd-inbox--read-destination-key "Task") ?r))
+      (should (= executed 1))
+      (should-not keys))))
+
+(ert-deftest full-gtd-inbox-test-clarify-entry-keeps-headline-on-empty-input ()
+  "Empty headline input keeps the original headline."
+  (let ((inputs '("" "note text")))
+    (cl-letf (((symbol-function 'read-string) (lambda (&rest _) (pop inputs))))
+      (should (equal (full-gtd-inbox--clarify-entry "Original")
+                     (cons nil "note text"))))))
+
+(ert-deftest full-gtd-inbox-test-clarify-entry-trims-and-clears-notes ()
+  "Headline is trimmed; whitespace-only notes are cleared to nil."
+  (let ((inputs '("  Refined headline  " "   ")))
+    (cl-letf (((symbol-function 'read-string) (lambda (&rest _) (pop inputs))))
+      (should (equal (full-gtd-inbox--clarify-entry "Raw")
+                     (cons "Refined headline" nil))))))
+
+(ert-deftest full-gtd-inbox-test-clarify-entry-defaults-notes ()
+  "Existing notes are offered as the default and kept on input."
+  (let ((inputs '("" "kept notes"))
+        (initial-seen nil))
+    (cl-letf (((symbol-function 'read-string)
+               (lambda (_prompt &optional initial &rest _)
+                 (setq initial-seen initial)
+                 (pop inputs))))
+      (should (equal (full-gtd-inbox--clarify-entry "Raw" "kept notes")
+                     (cons nil "kept notes")))
+      (should (string= initial-seen "kept notes")))))
+
+(ert-deftest full-gtd-inbox-test-read-project-uses-completion-helper ()
+  "Project input goes through the shared completion helper."
+  (let ((calls '()))
+    (cl-letf (((symbol-function 'full-gtd-core-read-property-with-completion)
+               (lambda (prompt type &optional _initial)
+                 (push (list prompt type) calls)
+                 "ProjA; ProjB")))
+      (should (string= (full-gtd-inbox--read-project) "ProjA; ProjB"))
+      (should (equal (car calls)
+                     '("Project [RET none, TAB complete]: " project))))))
+
+(ert-deftest full-gtd-inbox-test-read-delegate-uses-completion-helper ()
+  "Delegate input goes through the shared completion helper."
+  (let ((calls '()))
+    (cl-letf (((symbol-function 'full-gtd-core-read-property-with-completion)
+               (lambda (prompt type &optional _initial)
+                 (push (list prompt type) calls)
+                 "John Smith")))
+      (should (string= (full-gtd-inbox--read-delegate) "John Smith"))
+      (should (equal (car calls)
+                     '("Delegated to [RET none, TAB complete]: " delegate))))))
+
+(ert-deftest full-gtd-inbox-test-parse-properties-string-at-tag ()
+  "When a value begins with @, the @ is stripped and the remainder is added as a tag."
+  (with-temp-buffer
+    (org-mode)
+    (insert "* Test entry\n")
+    (goto-char (point-min))
+    (full-gtd-inbox--parse-properties-string "@office")
+    (should (equal (org-get-tags) '("office")))))
+
+(ert-deftest full-gtd-inbox-test-parse-properties-string-plain-word ()
+  "Plain word components become tags verbatim."
+  (with-temp-buffer
+    (org-mode)
+    (insert "* Test entry\n")
+    (goto-char (point-min))
+    (full-gtd-inbox--parse-properties-string "office")
+    (should (equal (org-get-tags) '("office")))))
+
+(full-gtd-test-define-story full-gtd-organize-test-user-processes-missing-inbox-file
+  "Processing without an inbox file reports an empty inbox instead of failing."
+  :setup nil
+  :files nil
+  :mock nil
+  :body (full-gtd-process-inbox)
+  :asserts (with-current-buffer "*Full-GTD: Inbox*"
+             (goto-char (point-min))
+             (should (search-forward "(Inbox is empty" nil t)))
+  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD: Inbox*")))
+
 (provide 'full-gtd-organize-test)
 
 ;;; full-gtd-organize-test.el ends here

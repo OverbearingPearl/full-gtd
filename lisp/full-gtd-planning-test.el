@@ -1119,17 +1119,59 @@
            '("Purpose" "" "Vision" "Goal" "Area" "@ctx")))
          ((symbol-function 'recursive-edit)
           (lambda ()
-            ;; Simulate C-c C-k: set abort flag and return
-            ;; (as if exit-recursive-edit was called within recursive-edit)
+            ;; Simulate C-c C-k by invoking the buffer-local binding.
             (when-let ((buf (get-buffer "*Full-GTD Brainstorm*")))
               (with-current-buffer buf
-                (setq-local brainstorm-abort t))))))
+                (let ((cmd (lookup-key (current-local-map) (kbd "C-c C-k"))))
+                  (should (functionp cmd))
+                  ;; The binding throws 'exit outside a real recursive
+                  ;; edit; swallowing that keeps the abort flag set.
+                  (condition-case nil
+                      (funcall cmd)
+                    (error nil))))))))
   :body (condition-case nil
             (full-gtd-planning--ask-brainstorm "AbortBrainstorm")
           (quit :caught))
   :asserts (progn
              (should-not (get-buffer "*Full-GTD Brainstorm*")))
   :teardown nil)
+
+(ert-deftest full-gtd-planning-test-ask-horizon-required-retries-empty ()
+  "Required horizons reject empty input and prompt again."
+  (let ((inputs '("" "" "RealValue"))
+        (calls 0))
+    (cl-letf (((symbol-function 'full-gtd-core-read-property-with-completion)
+               (lambda (&rest _) (setq calls (1+ calls)) (pop inputs))))
+      (should (string= (full-gtd-planning--ask-horizon 6 "Purpose" nil)
+                       "RealValue"))
+      (should (= calls 3)))))
+
+(ert-deftest full-gtd-planning-test-ask-horizon-normalizes-multi-values ()
+  "Semicolon-separated horizon input is normalized before storage."
+  (cl-letf (((symbol-function 'full-gtd-core-read-property-with-completion)
+             (lambda (&rest _) "A；B ; C")))
+    (should (string= (full-gtd-planning--ask-horizon 4 "Goal" t)
+                     "A; B; C"))))
+
+(ert-deftest full-gtd-planning-test-ask-horizon-falls-back-to-read-string ()
+  "Horizon levels without a completion type fall back to plain input."
+  (let ((prompt-seen nil))
+    (cl-letf (((symbol-function 'read-string)
+               (lambda (prompt &rest _)
+                 (setq prompt-seen prompt)
+                 "FreeText")))
+      (should (string= (full-gtd-planning--ask-horizon 9 "Custom" nil)
+                       "FreeText"))
+      (should (string-match-p "Custom" prompt-seen)))))
+
+(ert-deftest full-gtd-planning-test-select-project-rejects-multi-names ()
+  "Planning rejects semicolon-separated project names."
+  (let ((inputs '("Alpha; Beta" "Solo Project")))
+    (cl-letf (((symbol-function 'read-string) (lambda (&rest _) (pop inputs)))
+              ((symbol-function 'full-gtd-planning--project-exists-p)
+               (lambda (_) nil)))
+      (should (string= (full-gtd-planning--select-project) "Solo Project"))
+      (should-not inputs))))
 
 (provide 'full-gtd-planning-test)
 

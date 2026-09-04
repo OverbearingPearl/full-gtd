@@ -157,8 +157,8 @@ Returns list of strings."
   "Collect horizon candidates for LEVEL.
 LEVEL is one of: L3_AREA, L4_GOAL, L5_VISION, L6_PURPOSE,
 L6_PRINCIPLE."
-  (cl-assert (member level '("L3_AREA" "L4_GOAL" "L5_VISION" "L6_PURPOSE" "L6_PRINCIPLE" "PRINCIPLE"))
-             t "Internal: invalid horizon level %s" level)
+  (unless (member level '("L3_AREA" "L4_GOAL" "L5_VISION" "L6_PURPOSE" "L6_PRINCIPLE" "PRINCIPLE"))
+    (error "Internal: invalid horizon level %s" level))
   (full-gtd-domain--collect-unique-properties level))
 
 (defun full-gtd-domain--compute-project-horizon (project level entries)

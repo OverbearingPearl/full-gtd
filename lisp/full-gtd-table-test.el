@@ -246,6 +246,44 @@ tables share the same buffer and column positions."
        (line-beginning-position) (line-end-position))
       "Project A"))))
 
+(ert-deftest full-gtd-table-row-lookup-by-id-and-project ()
+  "Entry and project row lookups move point to the matching row."
+  (with-temp-buffer
+    (org-mode)
+    (full-gtd-table-insert-header '("Headline" "Status"))
+    (full-gtd-table-insert-row "Task A" "id-a" "action.org" '("TODO"))
+    (full-gtd-table-insert-row "Task B" "id-b" "someday.org" '("TODO"))
+    (full-gtd-table-insert-row "ProjX" nil "action.org" '("3") t)
+    (goto-char (point-min))
+    (should (full-gtd-table--goto-entry "id-b" "someday.org"))
+    (should (string-match-p
+             "Task B"
+             (buffer-substring (line-beginning-position) (line-end-position))))
+    (goto-char (point-min))
+    (should (full-gtd-table--goto-project "ProjX"))
+    (should (string-match-p
+             "ProjX"
+             (buffer-substring (line-beginning-position) (line-end-position))))
+    (should-not (full-gtd-table--goto-entry "missing" "action.org"))))
+
+(ert-deftest full-gtd-table-restore-point-anchor-project-only ()
+  "Anchors without an entry ID restore via project lookup."
+  (with-temp-buffer
+    (org-mode)
+    (full-gtd-table-insert-header '("Project" "Total"))
+    (full-gtd-table-insert-row "ProjA" nil "action.org" '("1") t)
+    (full-gtd-table-insert-row "ProjB" nil "action.org" '("2") t)
+    (goto-char (point-min))
+    (search-forward "ProjA")
+    (let ((anchor (full-gtd-table-anchor-at-point)))
+      (should anchor)
+      (should (null (nth 0 anchor)))
+      (goto-char (point-max))
+      (full-gtd-table-restore-point-anchor anchor)
+      (should (string-match-p
+               "ProjA"
+               (buffer-substring (line-beginning-position) (line-end-position)))))))
+
 (provide 'full-gtd-table-test)
 
 ;;; full-gtd-table-test.el ends here
