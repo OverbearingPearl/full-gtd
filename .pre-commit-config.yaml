@@ -147,6 +147,9 @@ repos:
                                     banned-errors))
                              ((string-match-p (rx symbol-start \"ignore-errors\" symbol-end) banned-line)
                               (push (format \"banned construct `ignore-errors` (line %d)\" banned-line-num)
+                                    banned-errors))
+                             ((string-match-p (rx symbol-start \"eval-and-compile\" symbol-end) banned-line)
+                              (push (format \"banned construct `eval-and-compile` (line %d)\" banned-line-num)
                                     banned-errors))))
                           (if banned-errors
                               (progn
