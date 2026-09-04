@@ -146,6 +146,25 @@ The branch never closes with └──; actions keep the closed form."
     (should (string-prefix-p "╰─" (car (car (reverse rows)))))
     (should-not (string-match-p "\n[^│╭╰]" text))))
 
+(ert-deftest full-gtd-map-test-frame-closed-right ()
+  "Block frame is closed on all four sides with equal row widths.
+Rule lines end with the rounded corners, content rows end with the
+right rule, and every line shares the same display width so CJK
+text cannot misalign the right edge."
+  (let* ((stats (list 2 1 1 "长目的 Purpose" "" "Vision" "Goal" "Work"))
+         (block (full-gtd-map--render-block
+                 "P" stats
+                 (list (full-gtd-map-test--action "TODO" nil "A" "i1"))
+                 'todo))
+         (lines (mapcar #'car (car block))))
+    (should (string-suffix-p "╮" (car lines)))
+    (should (string-suffix-p "╯" (car (last lines))))
+    (dolist (line (cdr (butlast lines)))
+      (should (string-suffix-p "│" line)))
+    (let ((w (string-width (car lines))))
+      (dolist (line lines)
+        (should (= w (string-width line)))))))
+
 (ert-deftest full-gtd-map-test-action-branch-closes-with-tee ()
   "Action rows form a closing branch: ├── first, └── last.
 The first action continues from the project line, so it uses ├──
