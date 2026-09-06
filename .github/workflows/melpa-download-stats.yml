@@ -2,7 +2,7 @@ name: MELPA Download Stats
 
 on:
   schedule:
-    - cron: '23 3 * * *'
+    - cron: '25 23 * * *'
       timezone: 'UTC'
   workflow_dispatch:
 
@@ -10,6 +10,10 @@ jobs:
   fetch-download-stats:
     runs-on: ubuntu-latest
     steps:
+      - name: Get actual run time
+        id: run_time
+        run: echo "run_time=$(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> "$GITHUB_OUTPUT"
+
       - name: Fetch MELPA download count
         id: fetch
         run: |
@@ -57,7 +61,7 @@ jobs:
                   Current download count:
                   <strong style="font-size:24px;color:#1976d2;">${{ steps.fetch.outputs.download_count }}</strong>
                 </p>
-                <p style="color:#777;font-size:13px;">Retrieved daily at 03:23 UTC from melpa.org.</p>
+                <p style="color:#777;font-size:13px;">Retrieved at ${{ steps.run_time.outputs.run_time }}.</p>
               </div>
             </div>
 
@@ -74,4 +78,6 @@ jobs:
           to: ${{ secrets.NOTIFY_EMAIL }}
           from: ${{ secrets.SMTP_USER }}
           html_body: |
-            <p>The daily MELPA download stats workflow failed. Please check GitHub Actions logs.</p>
+            <p>The daily MELPA download stats workflow failed.</p>
+            <p>Execution time: ${{ steps.run_time.outputs.run_time }}.</p>
+            <p>Please check GitHub Actions logs.</p>
