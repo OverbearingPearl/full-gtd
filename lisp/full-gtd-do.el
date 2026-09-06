@@ -49,21 +49,23 @@ Decrements when actions are completed, unchanged when skipped.")
 
 (defconst full-gtd-do--score-weights
   '((overdue . 100)
-    (deadline-1d . 50)
-    (deadline-3d . 30)
-    (deadline-7d . 15)
+    (deadline-today . 80)
+    (deadline-tomorrow . 60)
+    (deadline-2-3d . 40)
+    (deadline-4-7d . 20)
     (scheduled-today . 20)
     (l6-purpose . 20)
     (l5-vision . 15)
     (l4-goal . 10)
     (l3-area . 5)
-    (project . 5)
-    (context-match . 10))
+    (project . 5))
   "Weights for action priority scoring.")
 
 (defun full-gtd-do--days-until (date-string)
   "Return number of days until DATE-STRING, or nil if not a date.
-DATE-STRING should be an Org date or timestamp."
+DATE-STRING should be an Org date or timestamp.
+Uses natural day difference (ignoring clock time) for consistency
+with deadline scoring in `full-gtd-do--score-action`."
   (when date-string
     (let ((time (condition-case err
                     (org-time-string-to-time date-string)
@@ -72,15 +74,18 @@ DATE-STRING should be an Org date or timestamp."
                             date-string (error-message-string err))
                    nil))))
       (when time
-        (/ (- (float-time time) (float-time (current-time))) 86400.0)))))
+        (let* ((dt (decode-time time))
+               (dn (decode-time (current-time)))
+               (date-target (list (nth 4 dt) (nth 3 dt) (nth 5 dt)))
+               (date-today (list (nth 4 dn) (nth 3 dn) (nth 5 dn))))
+          (- (calendar-absolute-from-gregorian date-target)
+             (calendar-absolute-from-gregorian date-today)))))))
 
-(defun full-gtd-do--score-action (action &optional context-filter)
-  "Calculate priority score for ACTION plist.
-Optional CONTEXT-FILTER boosts matching contexts."
+(defun full-gtd-do--score-action (action)
+  "Calculate priority score for ACTION plist."
   (let ((score 0)
         (deadline (plist-get action :deadline))
         (scheduled (plist-get action :scheduled))
-        (context (plist-get action :context))
         (project (plist-get action :project))
         (l3 (plist-get action :l3))
         (l4 (plist-get action :l4))
@@ -103,9 +108,10 @@ Optional CONTEXT-FILTER boosts matching contexts."
         (cond
          ((null day-diff) nil)
          ((< day-diff 0) (setq score (+ score (cdr (assq 'overdue full-gtd-do--score-weights)))))
-         ((<= day-diff 1) (setq score (+ score (cdr (assq 'deadline-1d full-gtd-do--score-weights)))))
-         ((<= day-diff 3) (setq score (+ score (cdr (assq 'deadline-3d full-gtd-do--score-weights)))))
-         ((<= day-diff 7) (setq score (+ score (cdr (assq 'deadline-7d full-gtd-do--score-weights))))))))
+         ((= day-diff 0) (setq score (+ score (cdr (assq 'deadline-today full-gtd-do--score-weights)))))
+         ((= day-diff 1) (setq score (+ score (cdr (assq 'deadline-tomorrow full-gtd-do--score-weights)))))
+         ((<= day-diff 3) (setq score (+ score (cdr (assq 'deadline-2-3d full-gtd-do--score-weights)))))
+         ((<= day-diff 7) (setq score (+ score (cdr (assq 'deadline-4-7d full-gtd-do--score-weights))))))))
     ;; Urgency: scheduled today
     (when (and scheduled
                (string-match-p (format-time-string "<%F" (current-time)) scheduled))
@@ -122,11 +128,6 @@ Optional CONTEXT-FILTER boosts matching contexts."
     ;; Project presence
     (when (and project (not (string= project "")))
       (setq score (+ score (cdr (assq 'project full-gtd-do--score-weights)))))
-    ;; Context match
-    (when (and context-filter context)
-      (let ((ctxs (full-gtd-do--split-contexts context)))
-        (when (member context-filter ctxs)
-          (setq score (+ score (cdr (assq 'context-match full-gtd-do--score-weights)))))))
     ;; Penalties
     ;; Delegated tasks: -100 points
     (when (and delegated (not (string= delegated "")))
@@ -201,14 +202,13 @@ CONTEXT-FILTER is a normalized context string (without @)."
      (full-gtd-do--context-matches-p action context))
    actions))
 
-(defun full-gtd-do--sort-actions (actions context-filter)
+(defun full-gtd-do--sort-actions (actions)
   "Sort ACTIONS by priority score, highest first.
-CONTEXT-FILTER is used for context-match bonus.
 When scores are equal, earlier CREATED timestamps sort first."
   (sort (copy-sequence actions)
         (lambda (a b)
-          (let ((score-a (full-gtd-do--score-action a context-filter))
-                (score-b (full-gtd-do--score-action b context-filter)))
+          (let ((score-a (full-gtd-do--score-action a))
+                (score-b (full-gtd-do--score-action b)))
             (if (= score-a score-b)
                 (let ((created-a (plist-get a :created))
                       (created-b (plist-get b :created)))
@@ -295,7 +295,7 @@ When scores are equal, earlier CREATED timestamps sort first."
               (l4 (plist-get action :l4))
               (l5 (plist-get action :l5))
               (l6 (plist-get action :l6))
-              (score (full-gtd-do--score-action action full-gtd-do--session-context)))
+              (score (full-gtd-do--score-action action)))
           (insert "#+TITLE: Full-GTD Do Session\n\n")
           (insert (format "* %s\n\n" headline))
           (when full-gtd-do--session-total-count
@@ -473,7 +473,7 @@ ENERGY is the energy level string, or nil for any."
                        (_ (list #'full-gtd-core-entry-todo-p))))
          (actions (full-gtd-do--collect-actions predicates))
          (filtered (full-gtd-do--filter-actions actions context))
-         (sorted (full-gtd-do--sort-actions filtered context)))
+         (sorted (full-gtd-do--sort-actions filtered)))
     (setq full-gtd-do--session-actions sorted
           full-gtd-do--session-context context
           full-gtd-do--session-total-count (length sorted)
@@ -502,7 +502,7 @@ CONTEXT, TIME-BUDGET, and ENERGY are optional initial filters."
                        (_ (list #'full-gtd-core-entry-todo-p))))
          (actions (full-gtd-do--collect-actions predicates))
          (filtered (full-gtd-do--filter-actions actions context))
-         (sorted (full-gtd-do--sort-actions filtered context))
+         (sorted (full-gtd-do--sort-actions filtered))
          (buffer (get-buffer-create buffer-name)))
     (with-current-buffer buffer
       (setq full-gtd-do--session-actions sorted

@@ -29,14 +29,12 @@
     (should (> (full-gtd-do--score-action with-l6) (full-gtd-do--score-action base)))
     (should (> (full-gtd-do--score-action with-l3) (full-gtd-do--score-action base)))))
 
-(ert-deftest full-gtd-do-test-score-context-match ()
-  "Context match bonus applies when filter matches."
-  (let* ((action (list :headline "A" :context "@office"))
-         (score-no-filter (full-gtd-do--score-action action nil))
-         (score-match (full-gtd-do--score-action action "office"))
-         (score-mismatch (full-gtd-do--score-action action "home")))
-    (should (> score-match score-no-filter))
-    (should (= score-mismatch score-no-filter))))
+(ert-deftest full-gtd-do-test-score-context-no-bonus ()
+  "Context tag does not affect raw score."
+  (let ((no-ctx (list :headline "A"))
+        (with-ctx (list :headline "B" :context "@office")))
+    (should (= (full-gtd-do--score-action no-ctx)
+               (full-gtd-do--score-action with-ctx)))))
 
 (ert-deftest full-gtd-do-test-score-delegated-penalty ()
   "Delegated actions receive -100 penalty."
@@ -60,7 +58,7 @@
   (let* ((action-a (list :headline "A" :deadline nil))
          (tomorrow (format-time-string "%F" (time-add (current-time) (* 24 3600))))
          (action-b (list :headline "B" :deadline (format "<%s>" tomorrow)))
-         (sorted (full-gtd-do--sort-actions (list action-a action-b) nil)))
+         (sorted (full-gtd-do--sort-actions (list action-a action-b))))
     (should (string= (plist-get (car sorted) :headline) "B"))))
 
 ;;;; Story tests for session workflow
@@ -454,14 +452,13 @@ This verifies deletion decision reads PROJECT from the source entry (not from ca
   "Format-date annotates overdue and near dates; distant or bad input passes through."
   (let ((overdue (format-time-string "<%F>"
                                      (time-subtract (current-time) (* 3 24 3600))))
-        (later-today (format-time-string "<%F %H:%M>"
-                                         (time-add (current-time) 1800)))
+        (later-today (format-time-string "<%F 23:59>" (current-time)))
         (soon (format-time-string "<%F>"
                                   (time-add (current-time) (* 5 24 3600))))
         (far (format-time-string "<%F>"
                                  (time-add (current-time) (* 30 24 3600)))))
     (should (string-match-p "overdue" (full-gtd-do--format-date overdue)))
-    (should (string-match-p "in [0-9]+ days"
+    (should (string-match-p "(today)"
                             (full-gtd-do--format-date later-today)))
     (should (string-match-p "in [0-9]+ days" (full-gtd-do--format-date soon)))
     (should (string= far (full-gtd-do--format-date far)))
@@ -469,7 +466,7 @@ This verifies deletion decision reads PROJECT from the source entry (not from ca
 
 (ert-deftest full-gtd-do-test-score-deadline-buckets ()
   "Deadline scoring maps each distance onto its configured weight."
-  (let ((half-day (format-time-string "<%F>" (time-add (current-time) 43200)))
+  (let ((half-day (format-time-string "<%F>" (current-time)))
         (two-days (format-time-string "<%F>"
                                       (time-add (current-time) (* 2 24 3600))))
         (five-days (format-time-string "<%F>"
@@ -477,9 +474,9 @@ This verifies deletion decision reads PROJECT from the source entry (not from ca
         (overdue (format-time-string "<%F>"
                                      (time-subtract (current-time) (* 2 24 3600)))))
     (should (= (full-gtd-do--score-action (list :deadline overdue)) 100))
-    (should (= (full-gtd-do--score-action (list :deadline half-day)) 50))
-    (should (= (full-gtd-do--score-action (list :deadline two-days)) 30))
-    (should (= (full-gtd-do--score-action (list :deadline five-days)) 15))))
+    (should (= (full-gtd-do--score-action (list :deadline half-day)) 80))
+    (should (= (full-gtd-do--score-action (list :deadline two-days)) 40))
+    (should (= (full-gtd-do--score-action (list :deadline five-days)) 20))))
 
 (ert-deftest full-gtd-do-test-score-horizons-and-empty-strings ()
   "Empty-string fields score nothing; set horizons and project add weight."
@@ -498,11 +495,12 @@ This verifies deletion decision reads PROJECT from the source entry (not from ca
     (should (= (full-gtd-do--score-action (list :scheduled today)) 20))
     (should (= (full-gtd-do--score-action (list :scheduled past)) 0))))
 
-(ert-deftest full-gtd-do-test-score-context-multi-value ()
-  "Context bonus applies when the filter matches any listed context."
-  (let ((action (list :context "@office,@home")))
-    (should (= (full-gtd-do--score-action action "home") 10))
-    (should (= (full-gtd-do--score-action action "car") 0))))
+(ert-deftest full-gtd-do-test-score-context-multi-no-bonus ()
+  "Multiple contexts do not add score."
+  (let ((plain (list :headline "A"))
+        (multi (list :headline "B" :context "@office,@home")))
+    (should (= (full-gtd-do--score-action plain)
+               (full-gtd-do--score-action multi)))))
 
 (full-gtd-test-define-story full-gtd-do-test-session-help-and-quit
   "Help prints the command hint; quit closes the session window."
