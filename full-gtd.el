@@ -6,7 +6,7 @@
 ;; URL: https://github.com/OverbearingPearl/full-gtd
 ;; Version: 1.1.2
 ;; Package-Requires: ((emacs "29.1") (org "9.3"))
-;; Keywords: outlines, tools, convenience, org, todo, gtd, calendar
+;; Keywords: outlines, tools, convenience, calendar
 ;; SPDX-License-Identifier: MIT
 
 ;;; Commentary:

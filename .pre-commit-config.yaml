@@ -9,6 +9,7 @@ repos:
           --eval "(progn
                     (require 'checkdoc)
                     (require 'package-lint)
+                    (require 'finder)
                     (setq checkdoc-autofix-flag 'never
                           p/errors '())
                     (advice-add 'checkdoc-create-error :before
@@ -198,6 +199,25 @@ repos:
                                         found)
                                 (push (format \"missing meta line `%s` in non-test file\" prefix)
                                       meta-errors))))
+                          ;; validate Keywords against finder-known-keywords
+                          (when (not is-test)
+                            (let ((known (mapcar (lambda (kw)
+                                                    (downcase (symbol-name (car kw))))
+                                                  finder-known-keywords)))
+                              (dolist (pair header-lines)
+                                (when (string-prefix-p \";; Keywords:\" (cdr pair))
+                                  (let* ((raw (string-trim (substring (cdr pair)
+                                                                      (length \";; Keywords:\"))))
+                                         (kws (split-string raw \"[[:space:],;]+\" t)))
+                                    (if (null kws)
+                                        (push (format \"empty Keywords: line (line %d)\" (car pair))
+                                              meta-errors)
+                                      (dolist (kw kws)
+                                        (unless (member (downcase kw) known)
+                                          (push (format \"unknown keyword `%s` (line %d).  Known keywords: %s\"
+                                                        kw (car pair)
+                                                        (mapconcat #'identity known \", \"))
+                                                meta-errors)))))))))
                           (if meta-errors
                               (progn
                                 (princ \"  meta-info: issue(s)\\n\")
