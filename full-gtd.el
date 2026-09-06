@@ -4,7 +4,7 @@
 ;; Author: OverbearingPearl <OverbearingPearl@outlook.com>
 ;; Assisted-by: DeepSeek:deepseek-v4-flash, GLM:glm-5.3-flash, Laguna:laguna-s-2.1
 ;; URL: https://github.com/OverbearingPearl/full-gtd
-;; Version: 1.1.1
+;; Version: 1.1.2
 ;; Package-Requires: ((emacs "29.1") (org "9.3"))
 ;; Keywords: outlines, tools, convenience, org, todo, gtd, calendar
 ;; SPDX-License-Identifier: MIT
