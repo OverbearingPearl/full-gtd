@@ -54,6 +54,14 @@ jobs:
           echo "=== Running melpazoid ===" >> build-logs.txt
           make -C ~/melpazoid 2>&1 | sed -r "s/\x1B\[[0-9;]*[mGK]//g" | tee -a build-logs.txt
 
+          # Treat any melpazoid suggestions as a build failure.
+          # The section header "with [melpazoid]" only appears when
+          # melpazoid has at least one issue to report.
+          if grep -nE 'with \[melpazoid\]' build-logs.txt; then
+            echo "::error::Melpazoid suggestions detected; failing the build."
+            exit 1
+          fi
+
       - name: Build release package
         id: build_release
         if: success() && github.event_name == 'push' && github.ref_type == 'tag'
