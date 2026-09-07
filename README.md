@@ -209,7 +209,7 @@ This design eliminates decision fatigue—you don't choose from a list, the syst
 - **Property system** – All GTD metadata (context, delegated, scheduled, deadline, project, horizons) are standard Org properties.
 - **Table‑driven UI** – Staging, review, and work views are built on Org tables with text‑property navigation.
 - **Input sanitization** – Newlines, control characters, and pipe symbols are escaped to maintain Org syntax integrity.
-- **Hybrid date input** – Schedule and deadline dates accept `t` (today), `T` (tomorrow), `w` (next week), `h` (next hour, schedule only), or free‑form `YYYY-MM-DD`.
+- **Hybrid date input** – Schedule and deadline dates accept `t` (today), `T` (tomorrow), `w` (next week), `h` (next hour, schedule only), relative offsets such as `+1h`, `+4d`, `+5w` (always from current time), or free‑form `YYYY-MM-DD`.
 
 ## Design Philosophy
 

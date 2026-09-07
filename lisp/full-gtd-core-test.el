@@ -394,6 +394,47 @@
         (when buf (kill-buffer buf)))
       (delete-directory full-gtd-init-base-directory t))))
 
+(ert-deftest full-gtd-core-test-parse-relative-offset-valid ()
+  "Parse valid offset spec."
+  (should (equal (full-gtd-core--parse-relative-offset "+1h") (cons 3600 "h")))
+  (should (equal (full-gtd-core--parse-relative-offset "4d") (cons (* 4 86400) "d")))
+  (should (equal (full-gtd-core--parse-relative-offset "+5w") (cons (* 5 604800) "w")))
+  (should (equal (full-gtd-core--parse-relative-offset "0h") (cons 0 "h"))))
+
+(ert-deftest full-gtd-core-test-parse-relative-offset-invalid ()
+  "Reject invalid offset spec."
+  (should (null (full-gtd-core--parse-relative-offset "h")))
+  (should (null (full-gtd-core--parse-relative-offset "+1x")))
+  (should (null (full-gtd-core--parse-relative-offset "1.5h")))
+  (should (null (full-gtd-core--parse-relative-offset "")))
+  (should (null (full-gtd-core--parse-relative-offset nil))))
+
+(ert-deftest full-gtd-core-test-date-offset-hour-schedule ()
+  "Pressing '+' with +1h adds one hour for schedules."
+  (cl-letf (((symbol-function 'read-key) (lambda () ?+))
+            ((symbol-function 'read-string) (lambda (&rest _) "+1h"))
+            ((symbol-function 'current-time) (lambda () (encode-time 0 0 12 1 1 2026))))
+    (should (string= (full-gtd-core-read-date 'schedule)
+                     "2026-01-01 13:00"))))
+
+(ert-deftest full-gtd-core-test-date-offset-day-deadline ()
+  "Pressing '+' with +4d adds four days for deadlines."
+  (cl-letf (((symbol-function 'read-key) (lambda () ?+))
+            ((symbol-function 'read-string) (lambda (&rest _) "+4d"))
+            ((symbol-function 'current-time) (lambda () (encode-time 0 0 12 1 1 2026))))
+    (should (string= (full-gtd-core-read-date 'deadline)
+                     "2026-01-05"))))
+
+(ert-deftest full-gtd-core-test-date-offset-invalid-retries ()
+  "Invalid offset loops back, allowing a later valid key (t)."
+  (let ((keys '(?+ ?t)))
+    (cl-letf (((symbol-function 'read-key) (lambda () (pop keys)))
+              ((symbol-function 'read-string) (lambda (&rest _) "bad"))
+              ((symbol-function 'current-time) (lambda () (encode-time 0 0 12 1 1 2026))))
+      (should (string= (full-gtd-core-read-date 'deadline)
+                       "2026-01-01")))
+    (should-not keys)))
+
 (provide 'full-gtd-core-test)
 
 ;;; full-gtd-core-test.el ends here

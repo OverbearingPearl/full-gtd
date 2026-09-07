@@ -140,25 +140,56 @@ Delegate to state layer for transactional file operations."
   (declare (indent 2))
   `(full-gtd-state--with-entry-at-id ,id ,file ,@body))
 
+(defun full-gtd-core--parse-relative-offset (spec)
+  "Parse SPEC such as \"+1h\", \"4d\", or \"+5w\".
+Return cons (SECONDS . UNIT) where UNIT is \"h\", \"d\" or \"w\",
+or nil when SPEC cannot be parsed."
+  (when (and (stringp spec)
+             (string-match "\\`\\+?\\([0-9]+\\)\\([hdw]\\)\\'" spec))
+    (let* ((amount (string-to-number (match-string 1 spec)))
+           (unit (match-string 2 spec))
+           (seconds (* amount (pcase unit
+                                ("h" 3600)
+                                ("d" 86400)
+                                ("w" 604800)))))
+      (cons seconds unit))))
+
 (defun full-gtd-core-read-date (prompt-type)
-  "Hybrid date input for PROMPT-TYPE: letter=quick, number=free-form, RET=skip.
+  "Read a date using hybrid keyboard input.
 PROMPT-TYPE is \\='schedule or \\='deadline for display.
 Quick keys: t (today), T (tomorrow), w (week), h (hour, schedule only).
+Relative offset examples: +1h, +4d, +5w (always based on current time).
 Returns date string or nil if skipped.
 Signals \\='quit if user presses \\`C-g\\'."
   (catch 'done
     (let (result)
       (while (not result)
         (if (eq prompt-type 'schedule)
-            (message "[Schedule] Quick: [t]oday, [T]omorrow, [w]eek, [h]our | Custom: <YYYY-MM-DD> or <YYYY-MM-DD HH:MM> | [RET] Skip: ")
-          (message "[Deadline] Quick: [t]oday, [T]omorrow, [w]eek | Custom: <YYYY-MM-DD> | [RET] Skip: "))
+            (message "[Schedule] Quick: [t]oday, [T]omorrow, [w]eek, [h]our | Offset: +1h/+4d/+5w | Custom: <YYYY-MM-DD> or <YYYY-MM-DD HH:MM> | [RET] Skip: ")
+          (message "[Deadline] Quick: [t]oday, [T]omorrow, [w]eek | Offset: +1h/+4d/+5w | Custom: <YYYY-MM-DD> | [RET] Skip: "))
         (let ((key (read-key)))
           (cond
-           ((eq key ?t) (setq result (format-time-string "%F")))
+           ((eq key ?t) (setq result (format-time-string "%F" (current-time))))
            ((eq key ?T) (setq result (format-time-string "%F" (time-add (current-time) (* 24 3600)))))
            ((eq key ?w) (setq result (format-time-string "%F" (time-add (current-time) (* 7 24 3600)))))
            ((and (eq prompt-type 'schedule) (eq key ?h))
             (setq result (format-time-string "%F %R" (time-add (current-time) 3600))))
+           ((eq key ?+)
+            (condition-case nil
+                (let* ((spec (minibuffer-with-setup-hook
+                                 (lambda () (select-window (minibuffer-window)))
+                               (read-string "Relative offset (+1h/+4d/+5w): ")))
+                       (parsed (full-gtd-core--parse-relative-offset spec)))
+                  (if parsed
+                      (let* ((seconds (car parsed))
+                             (unit (cdr parsed))
+                             (target (time-add (current-time) seconds)))
+                        (if (and (eq prompt-type 'schedule) (string= unit "h"))
+                            (setq result (format-time-string "%F %R" target))
+                          (setq result (format-time-string "%F" target))))
+                    (message "Invalid offset, use +1h/+4d/+5w")
+                    (sit-for 0.5)))
+              (quit (signal 'quit nil))))
            ((eq key ?\r) (throw 'done nil))
            ((and (>= key ?0) (<= key ?9))
             (condition-case nil
