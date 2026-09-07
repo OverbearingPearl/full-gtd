@@ -37,7 +37,9 @@ jobs:
       - name: Install
         run: |
           sudo apt-get update && sudo apt-get install -y emacs
-          git clone https://github.com/riscy/melpazoid.git ~/melpazoid
+          git clone -b develop https://github.com/riscy/melpazoid.git ~/melpazoid
+          python -m pip install --upgrade pip
+          pip install mypy
 
       - name: Initialize build log
         run: echo "=== Starting MELPA Build Test ===" > build-logs.txt
