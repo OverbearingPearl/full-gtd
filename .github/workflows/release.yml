@@ -50,7 +50,7 @@ jobs:
           LOCAL_REPO: ${{ github.workspace }}
           RECIPE: (${{ steps.pkg.outputs.package_name }} :fetcher github :repo "${{ github.repository }}")
           WARN_IS_ERROR: true
-          EXIST_OK: false
+          EXIST_OK: true
         run: |
           set -o pipefail
           echo "=== Running melpazoid ===" >> build-logs.txt
