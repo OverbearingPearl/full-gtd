@@ -225,7 +225,62 @@ repos:
                                   (princ (format \"    %s\\n\" e)))
                                 (setq failed t))
                             (princ \"  meta-info: OK\\n\")))
-                        (princ (format \"  => %s\n\" (if failed \"FAILED\" \"ok\")))
+                        ;; module-name and filename consistency
+                        (let ((file-base (file-name-base file))
+                              (module-errors '()))
+                          (let ((found nil))
+                            (goto-char (point-min))
+                            (when (re-search-forward
+                                   (format \"(provide[[:space:]]+'%s[[:space:]]*)\"
+                                           (regexp-quote file-base))
+                                   nil t)
+                              (setq found t))
+                            (goto-char (point-min))
+                            (when (re-search-forward
+                                   (format \"(provide[[:space:]]+%s[[:space:]]*)\"
+                                           (regexp-quote file-base))
+                                   nil t)
+                              (setq found t))
+                            (unless found
+                              (push (format \"missing (provide '%s) to match filename\" file-base)
+                                    module-errors)))
+                          (if module-errors
+                              (progn
+                                (princ \"  module-name-consistency: issue(s)\\n\")
+                                (dolist (e (nreverse module-errors))
+                                  (princ (format \"    %s\\n\" e)))
+                                (setq failed t))
+                            (princ \"  module-name-consistency: OK\\n\")))
+                        ;; prefix coherence for definitions
+                        (let ((file-base (file-name-base file))
+                              (expected-prefix (concat (file-name-base file) \"-\"))
+                              (prefix-errors '())
+                              (def-kinds '(defun defmacro defvar defcustom defconst defalias cl-defun cl-defmacro ert-deftest)))
+                          (save-excursion
+                            (goto-char (point-min))
+                            (condition-case nil
+                                (while t
+                                  (let* ((pos (point))
+                                         (line (line-number-at-pos pos))
+                                         (form (read (current-buffer))))
+                                    (when (and (listp form)
+                                               (memq (car form) def-kinds))
+                                      (let ((name (cadr form)))
+                                        (when (and (symbolp name)
+                                                   (not (string-prefix-p expected-prefix
+                                                                          (symbol-name name))))
+                                          (push (format \"`%s' at line %d must start with prefix `%s'\"
+                                                        name line expected-prefix)
+                                                prefix-errors))))))
+                              (end-of-file nil)))
+                          (if prefix-errors
+                              (progn
+                                (princ \"  module-prefix: issue(s)\\n\")
+                                (dolist (e (nreverse prefix-errors))
+                                  (princ (format \"    %s\\n\" e)))
+                                (setq failed t))
+                            (princ \"  module-prefix: OK\\n\")))
+                        (princ (format \"  => %s\n\" (if failed \"FAILED\" \"OK\")))
                         (when (buffer-live-p buf) (kill-buffer buf))
                         failed))
                     (let* ((failed-any nil)
