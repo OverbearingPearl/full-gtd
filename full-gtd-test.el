@@ -80,8 +80,8 @@ every ERT test defined in the Lisp directory."
           (load-file full-path)))))
   ;; Use batch-compatible function to ensure output is visible in terminal
   (if noninteractive
-      (ert-run-tests-batch-and-exit)
-    (ert t)))
+      (ert-run-tests-batch-and-exit "full-gtd-")
+    (ert "full-gtd-")))
 
 (provide 'full-gtd-test)
 
