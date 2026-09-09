@@ -34,6 +34,32 @@ repos:
                         (call-process \"git\" nil t nil
                                       \"rev-parse\" \"--show-toplevel\")
                         (string-trim (buffer-string))))
+                    (defun p/heading-comment-errors ()
+                      \"Return a list of style errors for ;;; heading comments.\"
+                      (let ((lines (split-string (buffer-string) \"\\n\"))
+                            (errors nil))
+                        (when (and lines (string-empty-p (car (last lines))))
+                          (setq lines (butlast lines)))
+                        (dotimes (i (length lines))
+                          (when (and (string-match-p \"^[ \\t]*;;;\" (nth i lines))
+                                     (not (string-match-p \"^[ \\t]*;;;###\" (nth i lines))))
+                            (let ((prev-blank
+                                   (or (= i 0)
+                                       (string-match-p \"^[ \\t]*$\"
+                                                       (nth (1- i) lines))
+                                       (string-match-p \"^[ \\t]*;;\"
+                                                       (nth (1- i) lines))))
+                                  (next-blank
+                                   (or (= i (1- (length lines)))
+                                       (string-match-p \"^[ \\t]*$\"
+                                                       (nth (1+ i) lines))
+                                       (string-match-p \"^[ \\t]*;;\"
+                                                       (nth (1+ i) lines)))))
+                              (unless (and prev-blank next-blank)
+                                (push (format \"heading comment (;;;) at line %d must be surrounded by blank lines\"
+                                              (1+ i))
+                                      errors)))))
+                        (nreverse errors)))
                     (defun p/check-file (file)
                       (setq file (expand-file-name file))
                       (let ((buf (find-file file))
@@ -134,6 +160,15 @@ repos:
                                   (princ (format \"    %s\\n\" e)))
                                 (setq failed t))
                             (princ \"  format-check: OK\\n\")))
+                        ;; heading-comment check
+                        (let ((hc-errors (p/heading-comment-errors)))
+                          (if hc-errors
+                              (progn
+                                (princ \"  heading-comment: issue(s)\\n\")
+                                (dolist (e (nreverse hc-errors))
+                                  (princ (format \"    %s\\n\" e)))
+                                (setq failed t))
+                            (princ \"  heading-comment: OK\\n\")))
                         ;; banned-construct check
                         (let ((banned-errors nil)
                               (banned-line-num 0))
@@ -176,15 +211,27 @@ repos:
                                (meta-errors nil)
                                (forbidden '(\";; Copyright\" \";; Author\" \";; Assisted-by\" \";; URL\" \";; Version\" \";; Package-Requires\" \";; Keywords\" \";; SPDX-License-Identifier\"))
                                (required '(\";; Copyright\" \";; Author\" \";; Assisted-by\" \";; URL\" \";; SPDX-License-Identifier\")))
-                               ;; ;;; Commentary is required in all files
+                               ;; ;;; Commentary is required and non-empty
                                (dolist (prefix '(\";;; Commentary\"))
-                                 (unless (let ((found nil))
-                                           (dolist (pair header-lines)
-                                             (when (string-match-p (concat \"^\" (regexp-quote prefix)) (cdr pair))
-                                               (setq found t)))
-                                           found)
-                                   (push (format \"missing meta line `%s` in file\" prefix)
-                                         meta-errors)))
+                                 (let ((commentary-idx nil)
+                                       (has-body nil))
+                                   (dotimes (i (length header-lines))
+                                     (when (and (null commentary-idx)
+                                                (string-match-p (concat \"^\" (regexp-quote prefix))
+                                                                (cdr (nth i header-lines))))
+                                       (setq commentary-idx i)))
+                                   (unless commentary-idx
+                                     (push (format \"missing meta line `%s` in file\" prefix)
+                                           meta-errors))
+                                   (when commentary-idx
+                                     (let ((tail (nthcdr (1+ commentary-idx) header-lines)))
+                                       (dolist (pair tail)
+                                         (when (and (string-prefix-p \";;\" (cdr pair))
+                                                    (not (string-prefix-p \";;;\" (cdr pair))))
+                                           (setq has-body t)))
+                                       (unless has-body
+                                         (push (format \"`%s` has no descriptive content (empty Commentary)\" prefix)
+                                               meta-errors))))))
                           (if is-test
                               (dolist (pair header-lines)
                                 (dolist (prefix forbidden)
