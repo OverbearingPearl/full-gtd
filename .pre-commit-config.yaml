@@ -53,8 +53,9 @@ repos:
                                    (or (= i (1- (length lines)))
                                        (string-match-p \"^[ \\t]*$\"
                                                        (nth (1+ i) lines))
-                                       (string-match-p \"^[ \\t]*;;\"
-                                                       (nth (1+ i) lines)))))
+                                       (let ((n (nth (1+ i) lines)))
+                                         (and (string-match-p \"^[ \\t]*;;\" n)
+                                              (not (string-match-p \"^[ \\t]*;;;\" n)))))))
                               (unless (and prev-blank next-blank)
                                 (push (format \"heading comment (;;;) at line %d must be surrounded by blank lines\"
                                               (1+ i))
