@@ -64,7 +64,10 @@ repos:
                     (defun p/check-file (file)
                       (setq file (expand-file-name file))
                       (let ((buf (find-file file))
-                            (failed nil))
+                            (failed nil)
+                            ;; Collect output; only failing files are printed.
+                            (report-buf (generate-new-buffer \" *p-check*\")))
+                        (let ((standard-output report-buf))
                         (dolist (b '(\"*Warnings*\" \"*Compile-Log*\" \"*Messages*\"))
                           (when (get-buffer b)
                             (with-current-buffer b
@@ -328,7 +331,12 @@ repos:
                                   (princ (format \"    %s\\n\" e)))
                                 (setq failed t))
                             (princ \"  module-prefix: OK\\n\")))
-                        (princ (format \"  => %s\n\" (if failed \"FAILED\" \"OK\")))
+                        (princ (format \"  => %s\n\" (if failed \"FAILED\" \"OK\"))))
+                        ;; Only failing files produce output; passing files stay silent.
+                        (when failed
+                          (with-current-buffer report-buf
+                            (princ (buffer-string))))
+                        (kill-buffer report-buf)
                         (when (buffer-live-p buf) (kill-buffer buf))
                         failed))
                     (let* ((failed-any nil)
