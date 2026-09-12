@@ -34,6 +34,50 @@ repos:
                         (call-process \"git\" nil t nil
                                       \"rev-parse\" \"--show-toplevel\")
                         (string-trim (buffer-string))))
+                    (defconst p/blank-line-rx
+                      (rx line-start (* (any blank)) line-end)
+                      \"Regexp matching an empty or blank-only line.\")
+                    (defconst p/trailing-blank-rx
+                      (rx (+ (any blank)) line-end)
+                      \"Regexp matching trailing blanks at end of line.\")
+                    (defconst p/comment-rx
+                      (rx line-start (* (any blank)) \";;\")
+                      \"Regexp matching a line whose first non-blank text is `;;'.\")
+                    (defconst p/h3-comment-rx
+                      (rx line-start (* (any blank)) \";;;\")
+                      \"Regexp matching a level-three (`;;;') comment line.\")
+                    (defconst p/autoload-cookie-rx
+                      (rx line-start (* (any blank)) \";;;###\")
+                      \"Regexp matching an autoload cookie line.\")
+                    (defconst p/keyword-sep-rx
+                      (rx (+ (any space \",;\")))
+                      \"Regexp matching separators in the `Keywords:' meta line.\")
+                    (defun p/blank-line-p (s)
+                      \"Return non-nil if S is empty or contains only blanks.\"
+                      (string-match-p p/blank-line-rx s))
+                    (defun p/h3-comment-p (s)
+                      \"Return non-nil if S is a `;;;' comment but not an autoload cookie.\"
+                      (and (string-match-p p/h3-comment-rx s)
+                           (not (string-match-p p/autoload-cookie-rx s))))
+                    (defun p/meta-line-p (line prefix &optional allow-indent)
+                      \"Return non-nil if LINE starts with PREFIX; leading blanks allowed when ALLOW-INDENT is non-nil.\"
+                      (string-prefix-p prefix
+                                       (if allow-indent
+                                           (string-trim-left line)
+                                         line)))
+                    (defun p/provide-p (file-base)
+                      \"Return non-nil if the current buffer provides FILE-BASE, quoted or unquoted.\"
+                      (let ((name (regexp-quote file-base)))
+                        (save-excursion
+                          (goto-char (point-min))
+                          (or (re-search-forward
+                               (format \"(provide[[:space:]]+'%s[[:space:]]*)\" name)
+                               nil t)
+                              (progn
+                                (goto-char (point-min))
+                                (re-search-forward
+                                 (format \"(provide[[:space:]]+%s[[:space:]]*)\" name)
+                                 nil t))))))
                     (defun p/heading-comment-errors ()
                       \"Return a list of style errors for ;;; heading comments.\"
                       (let ((lines (split-string (buffer-string) \"\\n\"))
@@ -41,21 +85,18 @@ repos:
                         (when (and lines (string-empty-p (car (last lines))))
                           (setq lines (butlast lines)))
                         (dotimes (i (length lines))
-                          (when (and (string-match-p \"^[ \\t]*;;;\" (nth i lines))
-                                     (not (string-match-p \"^[ \\t]*;;;###\" (nth i lines))))
+                          (when (p/h3-comment-p (nth i lines))
                             (let ((prev-blank
                                    (or (= i 0)
-                                       (string-match-p \"^[ \\t]*$\"
-                                                       (nth (1- i) lines))
-                                       (string-match-p \"^[ \\t]*;;\"
+                                       (p/blank-line-p (nth (1- i) lines))
+                                       (string-match-p p/comment-rx
                                                        (nth (1- i) lines))))
                                   (next-blank
                                    (or (= i (1- (length lines)))
-                                       (string-match-p \"^[ \\t]*$\"
-                                                       (nth (1+ i) lines))
+                                       (p/blank-line-p (nth (1+ i) lines))
                                        (let ((n (nth (1+ i) lines)))
-                                         (and (string-match-p \"^[ \\t]*;;\" n)
-                                              (not (string-match-p \"^[ \\t]*;;;\" n)))))))
+                                         (and (string-match-p p/comment-rx n)
+                                              (not (string-match-p p/h3-comment-rx n)))))))
                               (unless (and prev-blank next-blank)
                                 (push (format \"heading comment (;;;) at line %d must be surrounded by blank lines\"
                                               (1+ i))
@@ -103,18 +144,25 @@ repos:
                         (lisp-business . (lisp-business)))
                       \"Allowed require targets per module class; see `p/module-class'.\")
                     (defun p/file-top-level-requires (file)
-                      \"Return feature symbols of all top-level (require ...) forms in FILE.\"
+                      \"Return feature symbols of all top-level (require ...) forms in FILE.
+                      Accepts both (require 'feature) and (require feature).\"
                       (with-temp-buffer
                         (insert-file-contents file)
                         (goto-char (point-min))
                         (let ((requires '()))
                           (condition-case nil
                               (while t
-                                (let ((form (read (current-buffer))))
-                                  (when (and (consp form)
-                                             (eq (car form) 'require)
-                                             (symbolp (cadr form)))
-                                    (push (cadr form) requires))))
+                                (let* ((form (read (current-buffer)))
+                                       (arg (and (consp form)
+                                                 (eq (car form) 'require)
+                                                 (cadr form))))
+                                  ;; `read' turns (require 'x) into
+                                  ;; (require (quote x)); unwrap that quote.
+                                  (when arg
+                                    (when (and (consp arg) (eq (car arg) 'quote))
+                                      (setq arg (cadr arg)))
+                                    (when (symbolp arg)
+                                      (push arg requires)))))
                             (end-of-file nil))
                           (nreverse requires))))
                     (defun p/dependency-errors (files)
@@ -226,11 +274,11 @@ repos:
                             (setq lines (butlast lines)))
                           (dolist (line lines)
                             (setq line-num (1+ line-num))
-                            (when (and (not (string-match-p \"^[ \\t]*$\" line))
-                                       (string-match-p \"[ \\t]+$\" line))
+                            (when (and (not (p/blank-line-p line))
+                                       (string-match-p p/trailing-blank-rx line))
                               (push (format \"trailing whitespace (line %d)\" line-num)
                                     format-errors))
-                            (if (string-match-p \"^[ \\t]*$\" line)
+                            (if (p/blank-line-p line)
                                 (progn
                                   (when (= blank-run 0)
                                     (setq last-blank-start line-num))
@@ -295,8 +343,8 @@ repos:
                                   (dolist (line (split-string (buffer-string) \"\\n\"))
                                     (setq line-num (1+ line-num))
                                     (when in-header
-                                      (if (or (string-match-p \"^[ \\t]*$\" line)
-                                              (string-match-p \"^;;\" line))
+                                      (if (or (p/blank-line-p line)
+                                              (string-prefix-p \";;\" line))
                                           (push (cons line-num line) lines)
                                         (setq in-header nil))))
                                   (nreverse lines)))
@@ -309,8 +357,8 @@ repos:
                                        (has-body nil))
                                    (dotimes (i (length header-lines))
                                      (when (and (null commentary-idx)
-                                                (string-match-p (concat \"^\" (regexp-quote prefix))
-                                                                (cdr (nth i header-lines))))
+                                                (p/meta-line-p (cdr (nth i header-lines))
+                                                               prefix))
                                        (setq commentary-idx i)))
                                    (unless commentary-idx
                                      (push (format \"missing meta line `%s` in file\" prefix)
@@ -327,13 +375,13 @@ repos:
                           (if is-test
                               (dolist (pair header-lines)
                                 (dolist (prefix forbidden)
-                                  (when (string-match-p (concat \"^[ \\t]*\" (regexp-quote prefix)) (cdr pair))
+                                  (when (p/meta-line-p (cdr pair) prefix t)
                                     (push (format \"forbidden meta line `%s` in test file (line %d)\" prefix (car pair))
                                           meta-errors))))
                             (dolist (prefix required)
                               (unless (let ((found nil))
                                         (dolist (pair header-lines)
-                                          (when (string-match-p (concat \"^\" (regexp-quote prefix)) (cdr pair))
+                                          (when (p/meta-line-p (cdr pair) prefix)
                                             (setq found t)))
                                         found)
                                 (push (format \"missing meta line `%s` in non-test file\" prefix)
@@ -347,7 +395,7 @@ repos:
                                 (when (string-prefix-p \";; Keywords:\" (cdr pair))
                                   (let* ((raw (string-trim (substring (cdr pair)
                                                                       (length \";; Keywords:\"))))
-                                         (kws (split-string raw \"[[:space:],;]+\" t)))
+                                         (kws (split-string raw p/keyword-sep-rx t)))
                                     (if (null kws)
                                         (push (format \"empty Keywords: line (line %d)\" (car pair))
                                               meta-errors)
@@ -367,22 +415,9 @@ repos:
                         ;; module-name and filename consistency
                         (let ((file-base (file-name-base file))
                               (module-errors '()))
-                          (let ((found nil))
-                            (goto-char (point-min))
-                            (when (re-search-forward
-                                   (format \"(provide[[:space:]]+'%s[[:space:]]*)\"
-                                           (regexp-quote file-base))
-                                   nil t)
-                              (setq found t))
-                            (goto-char (point-min))
-                            (when (re-search-forward
-                                   (format \"(provide[[:space:]]+%s[[:space:]]*)\"
-                                           (regexp-quote file-base))
-                                   nil t)
-                              (setq found t))
-                            (unless found
-                              (push (format \"missing (provide '%s) to match filename\" file-base)
-                                    module-errors)))
+                          (unless (p/provide-p file-base)
+                            (push (format \"missing (provide '%s) to match filename\" file-base)
+                                  module-errors))
                           (if module-errors
                               (progn
                                 (princ \"  module-name-consistency: issue(s)\\n\")
@@ -487,6 +522,7 @@ repos:
                             (when (file-exists-p elc)
                               (delete-file elc)))))
                       (when failed-any (kill-emacs 1))))"
+          --eval "(unless (and (fboundp 'p/check-file) (fboundp 'p/dependency-errors)) (error \"pre-commit config error: second --eval form was truncated; nothing after p/provide-p was loaded\"))"
           --
         language: system
         files: \.el$
