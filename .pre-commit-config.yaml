@@ -426,10 +426,19 @@ repos:
                                 (setq failed t))
                             (princ \"  module-name-consistency: OK\\n\")))
                         ;; prefix coherence for definitions
-                        (let ((file-base (file-name-base file))
-                              (expected-prefix (concat (file-name-base file) \"-\"))
-                              (prefix-errors '())
-                              (def-kinds '(defun defmacro defvar defcustom defconst defalias cl-defun cl-defmacro ert-deftest)))
+                        ;; `defcustom' names are public API and follow the
+                        ;; package (`<repo>') prefix per Emacs convention, so
+                        ;; check them against the repo prefix rather than the
+                        ;; file-local prefix.  Other def-kinds stay scoped to
+                        ;; their module.
+                        (let* ((file-base (file-name-base file))
+                               (repo-prefix
+                                (concat (file-name-nondirectory
+                                         (directory-file-name (p/git-toplevel)))
+                                        \"-\"))
+                               (expected-prefix (concat file-base \"-\"))
+                                (prefix-errors '())
+                                (def-kinds '(defun defmacro defvar defcustom defconst defalias cl-defun cl-defmacro ert-deftest)))
                           (save-excursion
                             (goto-char (point-min))
                             (condition-case nil
@@ -439,12 +448,18 @@ repos:
                                          (form (read (current-buffer))))
                                     (when (and (listp form)
                                                (memq (car form) def-kinds))
-                                      (let ((name (cadr form)))
+                                      (let* ((kind (car form))
+                                             (name (cadr form))
+                                             (required-prefix
+                                              (if (eq kind 'defcustom)
+                                                  repo-prefix
+                                                expected-prefix)))
                                         (when (and (symbolp name)
-                                                   (not (string-prefix-p expected-prefix
-                                                                          (symbol-name name))))
+                                                   (not (string-prefix-p
+                                                         required-prefix
+                                                         (symbol-name name))))
                                           (push (format \"`%s' at line %d must start with prefix `%s'\"
-                                                        name line expected-prefix)
+                                                        name line required-prefix)
                                                 prefix-errors))))))
                               (end-of-file nil)))
                           (if prefix-errors
