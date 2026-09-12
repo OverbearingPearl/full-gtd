@@ -5,7 +5,7 @@ repos:
         name: Emacs package lint and byte compile
         entry: >-
           emacs -Q --batch --directory . --directory ./lisp
-          --eval "(package-initialize)"
+          --eval "(progn (require 'package) (setq package-load-list '((full-gtd nil) all)) (package-initialize) (setq load-prefer-newer t) (setq load-path (append (list (expand-file-name \"lisp\") (expand-file-name \".\")) load-path)))"
           --eval "(progn
                     (require 'checkdoc)
                     (require 'package-lint)
@@ -60,6 +60,94 @@ repos:
                                 (push (format \"heading comment (;;;) at line %d must be surrounded by blank lines\"
                                               (1+ i))
                                       errors)))))
+                        (nreverse errors)))
+                    (defvar p/repo-root-cache nil
+                      \"Cached repository toplevel directory.\")
+                    (defun p/repo-root ()
+                      \"Return the repository toplevel directory, cached.\"
+                      (or p/repo-root-cache
+                          (setq p/repo-root-cache (p/git-toplevel))))
+                    (defun p/module-class (file)
+                      \"Return the module class of FILE, or nil if not a repository module.
+                      The classes mirror the repository layout:
+                        `root-main'     -- <repo>.el in the repository root
+                        `root-test'     -- <repo>-test.el in the repository root
+                        `lisp-business' -- lisp/*.el, excluding *-test.el
+                        `lisp-test'     -- lisp/*-test.el\"
+                      (let* ((root (p/repo-root))
+                             (repo-name (file-name-nondirectory
+                                         (directory-file-name root)))
+                             (lisp-dir (expand-file-name \"lisp\" root))
+                             (name (file-name-nondirectory file))
+                             (in-lisp (file-in-directory-p file lisp-dir)))
+                        (cond
+                         ((and (not in-lisp)
+                               (file-equal-p file
+                                             (expand-file-name
+                                              (concat repo-name \".el\") root)))
+                          'root-main)
+                         ((and (not in-lisp)
+                               (file-equal-p file
+                                             (expand-file-name
+                                              (concat repo-name \"-test.el\") root)))
+                          'root-test)
+                         (in-lisp
+                          (if (string-suffix-p \"-test.el\" name)
+                              'lisp-test
+                            'lisp-business))
+                         (t nil))))
+                    (defconst p/module-dependency-rules
+                      '((root-test     . (root-main root-test lisp-business lisp-test))
+                        (lisp-test     . (root-main lisp-business lisp-test))
+                        (root-main     . (lisp-business))
+                        (lisp-business . (lisp-business)))
+                      \"Allowed require targets per module class; see `p/module-class'.\")
+                    (defun p/file-top-level-requires (file)
+                      \"Return feature symbols of all top-level (require ...) forms in FILE.\"
+                      (with-temp-buffer
+                        (insert-file-contents file)
+                        (goto-char (point-min))
+                        (let ((requires '()))
+                          (condition-case nil
+                              (while t
+                                (let ((form (read (current-buffer))))
+                                  (when (and (consp form)
+                                             (eq (car form) 'require)
+                                             (symbolp (cadr form)))
+                                    (push (cadr form) requires))))
+                            (end-of-file nil))
+                          (nreverse requires))))
+                    (defun p/dependency-errors (files)
+                      \"Return dependency-direction errors across all FILES.
+                      FILES must be the complete set of repository .el modules.  Each module
+                      may only require modules whose class is permitted by
+                      `p/module-dependency-rules'.  Requires of features outside this
+                      repository (e.g. built-ins) are ignored.\"
+                      (let* ((root (p/repo-root))
+                             (feature-classes
+                              (let (tbl)
+                                (dolist (f files tbl)
+                                  (let ((class (p/module-class f)))
+                                    (when class
+                                      (push (cons (file-name-base f) class)
+                                            tbl))))))
+                             (errors '()))
+                        (dolist (file files)
+                          (let ((from-class (p/module-class file)))
+                            (when from-class
+                              (dolist (feature (p/file-top-level-requires file))
+                                (let ((to-class
+                                       (cdr (assoc (symbol-name feature)
+                                                   feature-classes))))
+                                  (when to-class
+                                    (unless (memq to-class
+                                                  (cdr (assoc from-class
+                                                              p/module-dependency-rules)))
+                                      (push (format \"%s: %s may not require %s `%s'\"
+                                                    (file-relative-name file root)
+                                                    from-class to-class
+                                                    (symbol-name feature))
+                                            errors))))))))
                         (nreverse errors)))
                     (defun p/check-file (file)
                       (setq file (expand-file-name file))
@@ -380,6 +468,16 @@ repos:
                              (nreverse lisp-test-files)
                              (when (file-exists-p root-test-file)
                                (list root-test-file))))
+                      ;; Global dependency-direction check runs once, before
+                      ;; per-file linting, across the whole module set.  Stay
+                      ;; silent when every require is allowed; print the
+                      ;; concrete violation(s) only when one is detected.
+                      (let ((dep-errors (p/dependency-errors ordered-files)))
+                        (when dep-errors
+                          (princ \"===== dependency-direction =====\n\")
+                          (dolist (e dep-errors)
+                            (princ (format \"  %s\n\" e)))
+                          (setq failed-any t)))
                       (unwind-protect
                           (dolist (file ordered-files)
                             (when (p/check-file file)

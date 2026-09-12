@@ -287,6 +287,29 @@ possibly nil for no-project entries.  CONTEXT defaults to \"\"."
    (full-gtd-domain--collect-horizon-candidates "L2_AREA")
    :type 'error))
 
+;;;; Multi-value predicate
+
+(ert-deftest full-gtd-domain-test-multi-valued-p-true-cases ()
+  "Semicolon-separated values are multi-valued in both scripts."
+  (should (full-gtd-domain--multi-valued-p "A; B"))
+  (should (full-gtd-domain--multi-valued-p "A；B"))
+  (should (full-gtd-domain--multi-valued-p "A; B; C"))
+  (should (full-gtd-domain--multi-valued-p "Work; Personal; Health")))
+
+(ert-deftest full-gtd-domain-test-multi-valued-p-false-cases ()
+  "Single values, blanks, and separator-only input are not multi-valued."
+  (should-not (full-gtd-domain--multi-valued-p "A"))
+  (should-not (full-gtd-domain--multi-valued-p "A;"))
+  (should-not (full-gtd-domain--multi-valued-p "A; ;\t"))
+  (should-not (full-gtd-domain--multi-valued-p ";"))
+  (should-not (full-gtd-domain--multi-valued-p ""))
+  (should-not (full-gtd-domain--multi-valued-p "   "))
+  (should-not (full-gtd-domain--multi-valued-p nil)))
+
+(ert-deftest full-gtd-domain-test-multi-valued-p-returns-boolean ()
+  "The predicate returns t, never the value list."
+  (should (eq (full-gtd-domain--multi-valued-p "A; B") t)))
+
 (provide 'full-gtd-domain-test)
 
 ;;; full-gtd-domain-test.el ends here

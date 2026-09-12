@@ -61,6 +61,43 @@
          (sorted (full-gtd-do--sort-actions (list action-a action-b))))
     (should (string= (plist-get (car sorted) :headline) "B"))))
 
+(ert-deftest full-gtd-do-test-score-multi-valued-horizon-bonus ()
+  "Multi-valued horizons score strictly above single-valued ones."
+  (let ((single (list :l3 "Area" :l4 "Goal" :l5 "Vision" :l6 "Purpose"))
+        (multi (list :l3 "Area1; Area2" :l4 "Goal1; Goal2"
+                     :l5 "Vision1; Vision2" :l6 "Purpose1; Purpose2")))
+    (should (> (full-gtd-do--score-action multi)
+               (full-gtd-do--score-action single)))
+    (should (= (- (full-gtd-do--score-action multi)
+                  (full-gtd-do--score-action single))
+               (* 4 (cdr (assq 'multi-value full-gtd-do--score-weights)))))))
+
+(ert-deftest full-gtd-do-test-score-multi-value-per-level ()
+  "Each multi-valued level earns exactly one bonus; single levels earn none."
+  (let ((bonus (cdr (assq 'multi-value full-gtd-do--score-weights))))
+    (dolist (pair '((:l3 "Work" "Work; Personal")
+                    (:l4 "Goal" "Goal1; Goal2")
+                    (:l5 "Vision" "Vision1; Vision2")
+                    (:l6 "Purpose" "Purpose1; Purpose2")))
+      (let ((single (list (nth 0 pair) (nth 1 pair)))
+            (multi (list (nth 0 pair) (nth 2 pair))))
+        (should (= (- (full-gtd-do--score-action multi)
+                      (full-gtd-do--score-action single))
+                   bonus))))))
+
+(ert-deftest full-gtd-do-test-score-chinese-semicolon-counts-multi ()
+  "Chinese semicolons also mark a level as multi-valued."
+  (should (= (- (full-gtd-do--score-action '(:l3 "工作; 个人"))
+                (full-gtd-do--score-action '(:l3 "工作")))
+             (cdr (assq 'multi-value full-gtd-do--score-weights)))))
+
+(ert-deftest full-gtd-do-test-score-empty-components-not-multi ()
+  "Separators that yield no additional value earn no multi-value bonus."
+  (should (= (full-gtd-do--score-action '(:l3 "Work;"))
+             (full-gtd-do--score-action '(:l3 "Work"))))
+  (should (= (full-gtd-do--score-action '(:l3 "Work; ;\t"))
+             (full-gtd-do--score-action '(:l3 "Work")))))
+
 ;;;; Story tests for session workflow
 
 (full-gtd-utils-test-define-story full-gtd-do-test-session-starts-with-highest-priority

@@ -53,6 +53,15 @@ INPUT must be string or nil."
               (full-gtd-domain--join-values values)
             nil))))))
 
+;;;; Multi-value predicate
+
+(defun full-gtd-domain--multi-valued-p (value)
+  "Return non-nil for a VALUE with more than one semicolon-separated item.
+Empty and whitespace-only components are ignored, so \"A;\" is not
+multi-valued.  Accepts both English (;) and Chinese (；) separators."
+  (let ((values (full-gtd-domain--split-values value)))
+    (and values (cdr values) t)))
+
 ;;;; Horizon validation (migrated from full-gtd-horizons)
 
 (defun full-gtd-domain--check-hierarchy-constraint (existing-horizons level)

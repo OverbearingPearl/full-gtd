@@ -910,6 +910,30 @@ not Multi-Horizon, even when a field is multi-valued."
   (should-error (full-gtd-horizons--level-to-property 'bogus) :type 'error)
   (should-error (full-gtd-horizons--level-to-symbol 'bogus) :type 'error))
 
+(full-gtd-utils-test-define-story full-gtd-horizons-test-multi-valued-project-healthy
+  "A complete multi-valued project is as healthy as a complete single-valued one."
+  :setup (full-gtd-init-initialize)
+  :files (("action.org" (concat "* TODO Single task\n"
+                                ":PROPERTIES:\n:ID: health-single-1\n:PROJECT: SingleProj\n"
+                                ":L6_PURPOSE: Purpose\n:L6_PRINCIPLE: Principle\n"
+                                ":L5_VISION: Vision\n:L4_GOAL: Goal\n:L3_AREA: Work\n:END:\n"
+                                "* TODO Multi task\n"
+                                ":PROPERTIES:\n:ID: health-multi-1\n:PROJECT: MultiProj\n"
+                                ":L6_PURPOSE: P1; P2\n:L6_PRINCIPLE: Pr1; Pr2\n"
+                                ":L5_VISION: V1; V2\n:L4_GOAL: G1; G2\n:L3_AREA: W1; W2\n:END:\n")))
+  :mock nil
+  :body (full-gtd-horizons-view)
+  :asserts (progn
+             (should (get-buffer "*Full-GTD Horizon View*"))
+             (with-current-buffer "*Full-GTD Horizon View*"
+               (goto-char (point-min))
+               (should (search-forward "Health: 100%" nil t))
+               (goto-char (point-min))
+               (should (search-forward "1 Aligned" nil t))
+               (goto-char (point-min))
+               (should (search-forward "1 Multi" nil t))))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Horizon View*")))
+
 (provide 'full-gtd-horizons-test)
 
 ;;; full-gtd-horizons-test.el ends here

@@ -20,6 +20,7 @@
 (require 'calendar)
 (require 'full-gtd-init)
 (require 'full-gtd-core)
+(require 'full-gtd-domain)
 
 ;;;; Session state
 
@@ -58,8 +59,12 @@ Decrements when actions are completed, unchanged when skipped.")
     (l5-vision . 15)
     (l4-goal . 10)
     (l3-area . 5)
-    (project . 5))
-  "Weights for action priority scoring.")
+    (project . 5)
+    (multi-value . 5))
+  "Weights for action priority scoring.
+The `multi-value' weight is added once per horizon level that holds
+several values, so a multi-valued project outranks an otherwise
+identical single-valued one.")
 
 (defun full-gtd-do--days-until (date-string)
   "Return number of days until DATE-STRING, or nil if not a date.
@@ -128,6 +133,13 @@ with deadline scoring in `full-gtd-do--score-action`."
     ;; Project presence
     (when (and project (not (string= project "")))
       (setq score (+ score (cdr (assq 'project full-gtd-do--score-weights)))))
+    ;; Importance: multi-valued horizons.  A project spanning several
+    ;; areas/goals/visions/purposes is more important than an otherwise
+    ;; identical single-valued one, so each multi-valued level adds a
+    ;; bonus on top of its base weight.
+    (dolist (value (list l6 l5 l4 l3))
+      (when (full-gtd-domain--multi-valued-p value)
+        (setq score (+ score (cdr (assq 'multi-value full-gtd-do--score-weights))))))
     ;; Penalties
     ;; Delegated tasks: -100 points
     (when (and delegated (not (string= delegated "")))
