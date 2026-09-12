@@ -10,7 +10,7 @@
 (require 'full-gtd)
 (require 'full-gtd-utils-test)
 
-(full-gtd-test-define-story full-gtd-workflows-test-user-processes-full-gtd-pipeline
+(full-gtd-utils-test-define-story full-gtd-workflows-test-user-processes-full-gtd-pipeline
   "User captures, clarifies, organizes, and completes processing."
   :setup (full-gtd-init-initialize)
   :files nil
@@ -35,23 +35,23 @@
           (full-gtd-capture)
           (full-gtd-process-inbox))
   :asserts (progn
-             (should (full-gtd-test-inbox-empty-p full-gtd-init-base-directory))
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-inbox-empty-p full-gtd-init-base-directory))
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "* TODO Buy gift for mom"))
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "Check Amazon first"))
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":errands:"))
              ;; Verify ID is preserved after processing
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":ID:")))
   :teardown nil)
 
-(full-gtd-test-define-story full-gtd-workflows-test-user-interrupts-processing
+(full-gtd-utils-test-define-story full-gtd-workflows-test-user-interrupts-processing
   "User interrupts processing midway."
   :setup (full-gtd-init-initialize)
   :files (("inbox.org" "* Task to interrupt\n"))
@@ -60,15 +60,15 @@
   :body (progn
          (condition-case err
              (full-gtd-process-inbox)
-           (quit (setq full-gtd-test-caught-error err))))
+           (quit (setq full-gtd-utils-test-caught-error err))))
   :asserts (progn
-           (should (full-gtd-test-file-contains-p
+           (should (full-gtd-utils-test-file-contains-p
                     (expand-file-name "inbox.org" full-gtd-init-base-directory)
                     "* Task to interrupt"))
-           (should (eq (car full-gtd-test-caught-error) 'quit)))
+           (should (eq (car full-gtd-utils-test-caught-error) 'quit)))
   :teardown nil)
 
-(full-gtd-test-define-story full-gtd-workflows-test-user-processes-mixed-destinations
+(full-gtd-utils-test-define-story full-gtd-workflows-test-user-processes-mixed-destinations
   "User processes entries with mixed destinations."
   :setup (full-gtd-init-initialize)
   :files (("inbox.org" "* Action task\n* Reference task\n"))
@@ -84,15 +84,15 @@
               (delegate . "") (project . "")))))
   :body (full-gtd-process-inbox)
   :asserts (progn
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "* TODO Action task"))
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "reference.org" full-gtd-init-base-directory)
                       "* Reference task")))
   :teardown nil)
 
-(full-gtd-test-define-story full-gtd-workflows-test-user-captures-and-processes-two-items
+(full-gtd-utils-test-define-story full-gtd-workflows-test-user-captures-and-processes-two-items
   "User captures two items then processes both."
   :setup (full-gtd-init-initialize)
   :files nil
@@ -111,16 +111,16 @@
           (full-gtd-capture)
           (full-gtd-process-inbox))
   :asserts (progn
-             (should (full-gtd-test-inbox-empty-p full-gtd-init-base-directory))
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-inbox-empty-p full-gtd-init-base-directory))
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "reference.org" full-gtd-init-base-directory)
                       "* First capture"))
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "reference.org" full-gtd-init-base-directory)
                       "* Second capture")))
   :teardown nil)
 
-(full-gtd-test-define-story full-gtd-workflows-test-user-sees-id-preserved-after-processing
+(full-gtd-utils-test-define-story full-gtd-workflows-test-user-sees-id-preserved-after-processing
   "ID is preserved when task is moved from inbox to actions."
   :setup (full-gtd-init-initialize)
   :files nil
@@ -140,18 +140,18 @@
           (full-gtd-process-inbox))
   :asserts (progn
              ;; Task moved to action.org
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "* TODO Test task"))
              ;; ID preserved in action.org
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":ID:"))
              ;; Inbox is empty
-             (should (full-gtd-test-inbox-empty-p full-gtd-init-base-directory)))
+             (should (full-gtd-utils-test-inbox-empty-p full-gtd-init-base-directory)))
   :teardown nil)
 
-(full-gtd-test-define-story full-gtd-workflows-test-user-sees-duplicate-titles-get-different-ids
+(full-gtd-utils-test-define-story full-gtd-workflows-test-user-sees-duplicate-titles-get-different-ids
   "Same title in different files gets different IDs."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Existing task\n:PROPERTIES:\n:ID: existing-id-1\n:END:\n"))
@@ -163,7 +163,7 @@
   :body (full-gtd-capture)
   :asserts (progn
              ;; New entry in inbox
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "inbox.org" full-gtd-init-base-directory)
                       "* Buy milk"))
              ;; New entry has different ID
@@ -175,7 +175,7 @@
                  (should-not (search-forward "existing-id-1" nil t)))))
   :teardown nil)
 
-(full-gtd-test-define-story full-gtd-workflows-test-user-processes-duplicate-titles
+(full-gtd-utils-test-define-story full-gtd-workflows-test-user-processes-duplicate-titles
   "User captures two tasks with same title, both processed correctly."
   :setup (full-gtd-init-initialize)
   :files nil
@@ -198,7 +198,7 @@
           (full-gtd-capture)
           (full-gtd-process-inbox))
   :asserts (progn
-             (should (full-gtd-test-inbox-empty-p full-gtd-init-base-directory))
+             (should (full-gtd-utils-test-inbox-empty-p full-gtd-init-base-directory))
              ;; Should have two tasks in action.org
              (with-temp-buffer
                (insert-file-contents (expand-file-name "action.org" full-gtd-init-base-directory))
@@ -207,7 +207,7 @@
                (should (search-forward "* TODO Task" nil t))))
   :teardown nil)
 
-(full-gtd-test-define-story full-gtd-workflows-test-duplicate-ids-in-file
+(full-gtd-utils-test-define-story full-gtd-workflows-test-duplicate-ids-in-file
   "Malformed file with duplicate IDs should still allow jumping to first match."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task A\n:PROPERTIES:\n:ID: dup-id\n:END:\n* TODO Task B\n:PROPERTIES:\n:ID: dup-id\n:END:\n"))
@@ -226,11 +226,11 @@
                (with-current-buffer buf
                  (should (looking-at-p "\\*+ TODO Task")))))
   :teardown (progn
-              (full-gtd-test-cleanup-buffers '("*Full-GTD: Do Session*"))
+              (full-gtd-utils-test-cleanup-buffers '("*Full-GTD: Do Session*"))
               (let ((buf (get-file-buffer (expand-file-name "action.org" full-gtd-init-base-directory))))
                 (when buf (kill-buffer buf)))))
 
-(full-gtd-test-define-story full-gtd-workflows-test-multi-project-action-inheritance
+(full-gtd-utils-test-define-story full-gtd-workflows-test-multi-project-action-inheritance
   "Action linked to multiple projects inherits horizons from all."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Shared action\n:PROPERTIES:\n:ID: shared-multi-1\n:PROJECT: Alpha; Beta\n:END:\n"))
@@ -251,9 +251,9 @@
                  (should (search-forward "Alpha" nil t))
                  (goto-char active-pos)
                  (should (search-forward "Beta" nil t)))))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
 
-(full-gtd-test-define-story full-gtd-workflows-test-multiple-contexts-on-single-action
+(full-gtd-utils-test-define-story full-gtd-workflows-test-multiple-contexts-on-single-action
   "Action can have multiple context tags."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Multi context task :office:\n:PROPERTIES:\n:ID: multi-ctx-1\n:END:\n"))
@@ -273,9 +273,9 @@
              (with-current-buffer "*Full-GTD: All Actions*"
                (should (search-forward "@office" nil t))
                (should (search-forward "@phone" nil t))))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD: All Actions*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD: All Actions*")))
 
-(full-gtd-test-define-story full-gtd-workflows-test-extreme-whitespace-in-fields
+(full-gtd-utils-test-define-story full-gtd-workflows-test-extreme-whitespace-in-fields
   "Extreme whitespace in various fields should be handled."
   :setup (full-gtd-init-initialize)
   :files (("inbox.org" "*    Task with lots of spaces    \n:PROPERTIES:\n:ID: ws-extreme-1\n:END:\n"))
@@ -298,7 +298,7 @@
              (should-not (string-match-p ":  @office  :" content)))
   :teardown nil)
 
-(full-gtd-test-define-story full-gtd-workflows-test-large-number-entries
+(full-gtd-utils-test-define-story full-gtd-workflows-test-large-number-entries
   "System should handle 100+ entries without significant slowdown."
   :setup (full-gtd-init-initialize)
   :files (("inbox.org" (concat "* Task 1\n:PROPERTIES:\n:ID: perf-1\n:END:\n"
@@ -310,7 +310,7 @@
   :body (let ((start (float-time)))
           (full-gtd-process-inbox)
           (should (< (- (float-time) start) 30.0)))
-  :asserts (should (full-gtd-test-inbox-empty-p full-gtd-init-base-directory))
+  :asserts (should (full-gtd-utils-test-inbox-empty-p full-gtd-init-base-directory))
   :teardown nil)
 
 (provide 'full-gtd-workflows-test)

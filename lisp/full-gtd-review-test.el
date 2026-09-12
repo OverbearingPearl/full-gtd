@@ -12,7 +12,7 @@
 (require 'full-gtd-project-utils)
 (require 'full-gtd-table)
 
-(full-gtd-test-define-story full-gtd-review-test-user-views-daily-sections
+(full-gtd-utils-test-define-story full-gtd-review-test-user-views-daily-sections
   "Daily review shows Today, Next Actions, and Inbox in separate tables."
   :setup (full-gtd-init-initialize)
   :files (("inbox.org" "* New idea\n:PROPERTIES:\n:ID: d-1\n:CREATED: 2026-01-15\n:END:\n")
@@ -88,7 +88,7 @@
                (should (search-forward "Completed today task" nil t))))
   :teardown (kill-buffer "*Full-GTD Daily Review*"))
 
-(full-gtd-test-define-story full-gtd-review-test-user-views-weekly-sections
+(full-gtd-utils-test-define-story full-gtd-review-test-user-views-weekly-sections
   "Weekly review aggregates all lists and action sub-views into separate tables."
   :setup (full-gtd-init-initialize)
   :files (("inbox.org" "* Unprocessed\n:PROPERTIES:\n:ID: w-1\n:END:\n")
@@ -147,7 +147,7 @@
                  (should (equal positions (sort (copy-sequence positions) #'<))))))
   :teardown (kill-buffer "*Full-GTD Weekly Review*"))
 
-(full-gtd-test-define-story full-gtd-review-test-user-edits-context-with-default
+(full-gtd-utils-test-define-story full-gtd-review-test-user-edits-context-with-default
   "Press 'c' to edit context with current value as default."
   :setup (full-gtd-init-initialize)
   :files (("action.org" (concat "* TODO Task with context :home:\nSCHEDULED: <" (format-time-string "%F %a") ">\n:PROPERTIES:\n:ID: edit-ctx-1\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n")))
@@ -166,12 +166,12 @@
             (beginning-of-line)
             (full-gtd-review--edit-context-at-point)))
   :asserts (progn
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":office:")))
   :teardown (kill-buffer "*Full-GTD Daily Review*"))
 
-(full-gtd-test-define-story full-gtd-review-test-user-removes-context-by-empty-input
+(full-gtd-utils-test-define-story full-gtd-review-test-user-removes-context-by-empty-input
   "Press 'c' and delete all to remove context property."
   :setup (full-gtd-init-initialize)
   :files (("action.org" (concat "* TODO Task to clear :home:\nSCHEDULED: <" (format-time-string "%F %a") ">\n:PROPERTIES:\n:ID: edit-ctx-2\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n")))
@@ -189,13 +189,13 @@
             (search-forward "Task to clear")
             (beginning-of-line)
             (full-gtd-review--edit-context-at-point)))
-  :asserts (let ((result (full-gtd-test-file-contains-p
+  :asserts (let ((result (full-gtd-utils-test-file-contains-p
                           (expand-file-name "action.org" full-gtd-init-base-directory)
                           ":home:")))
              (should-not (car result)))
   :teardown (kill-buffer "*Full-GTD Daily Review*"))
 
-(full-gtd-test-define-story full-gtd-review-test-user-edits-delegated-with-default
+(full-gtd-utils-test-define-story full-gtd-review-test-user-edits-delegated-with-default
   "Press 'd' to edit delegated with current value shown."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Delegated task\n:PROPERTIES:\n:ID: edit-del-1\n:DELEGATED: John\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n"))
@@ -214,16 +214,16 @@
             (beginning-of-line)
             (full-gtd-review--edit-delegated-at-point)))
   :asserts (progn
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":DELEGATED:[ \t]+Bob"))
-             (let ((result (full-gtd-test-file-contains-p
+             (let ((result (full-gtd-utils-test-file-contains-p
                             (expand-file-name "action.org" full-gtd-init-base-directory)
                             ":DELEGATED: John")))
                (should-not (car result))))
   :teardown (kill-buffer "*Full-GTD Weekly Review*"))
 
-(full-gtd-test-define-story full-gtd-review-test-user-edits-schedule-with-default
+(full-gtd-utils-test-define-story full-gtd-review-test-user-edits-schedule-with-default
   "Press 't' to edit scheduled date with current value as default."
   :setup (full-gtd-init-initialize)
   :files (("action.org" (concat "* TODO Scheduled task\nSCHEDULED: <" (format-time-string "%F %a") ">\n:PROPERTIES:\n:ID: edit-sch-1\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n")))
@@ -238,16 +238,16 @@
             (beginning-of-line)
             (full-gtd-review--edit-scheduled-at-point)))
   :asserts (progn
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "SCHEDULED: <2026-05-15"))
-             (let ((result (full-gtd-test-file-contains-p
+             (let ((result (full-gtd-utils-test-file-contains-p
                             (expand-file-name "action.org" full-gtd-init-base-directory)
                             "SCHEDULED: <2026-01-01")))
                (should-not (car result))))
   :teardown (kill-buffer "*Full-GTD Daily Review*"))
 
-(full-gtd-test-define-story full-gtd-review-test-user-jumps-to-task-from-table
+(full-gtd-utils-test-define-story full-gtd-review-test-user-jumps-to-task-from-table
   "Press RET to jump to task in source file."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Jump target\n:PROPERTIES:\n:ID: jump-1\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n"))
@@ -269,7 +269,7 @@
               (let ((buf (get-file-buffer (expand-file-name "action.org" full-gtd-init-base-directory))))
                 (when buf (kill-buffer buf)))))
 
-(full-gtd-test-define-story full-gtd-review-test-user-sets-deadline-with-keybinding
+(full-gtd-utils-test-define-story full-gtd-review-test-user-sets-deadline-with-keybinding
   "Press 's' in review buffer to set deadline for task at point."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task for deadline\n:PROPERTIES:\n:ID: dl-1\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n"))
@@ -284,12 +284,12 @@
             (beginning-of-line)
             (full-gtd-review--set-deadline-at-point)))
   :asserts (progn
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "DEADLINE: <2026-05-20")))
   :teardown (kill-buffer "*Full-GTD Weekly Review*"))
 
-(full-gtd-test-define-story full-gtd-review-test-user-edits-task-in-review-window
+(full-gtd-utils-test-define-story full-gtd-review-test-user-edits-task-in-review-window
   "User edits a task directly from review buffer."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Old task name\n:PROPERTIES:\n:ID: edit-old-1\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n"))
@@ -303,16 +303,16 @@
             (beginning-of-line)
             (full-gtd-review--rename-task-at-point)))
   :asserts (progn
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "* TODO Updated task name"))
-             (let ((result (full-gtd-test-file-contains-p
+             (let ((result (full-gtd-utils-test-file-contains-p
                             (expand-file-name "action.org" full-gtd-init-base-directory)
                             "* TODO Old task name")))
                (should-not (car result))))
   :teardown (kill-buffer "*Full-GTD Weekly Review*"))
 
-(full-gtd-test-define-story full-gtd-review-test-user-jumps-across-sections
+(full-gtd-utils-test-define-story full-gtd-review-test-user-jumps-across-sections
   "RET jump works correctly from tasks in different sections and source files."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Today task\nSCHEDULED: <2026-01-15 Thu>\n:PROPERTIES:\n:ID: jump-sec-1\n:END:\n* TODO Next task\n:PROPERTIES:\n:ID: jump-sec-2\n:END:\n")
@@ -335,7 +335,7 @@
               (let ((buf (get-file-buffer (expand-file-name "action.org" full-gtd-init-base-directory))))
                 (when buf (kill-buffer buf)))))
 
-(full-gtd-test-define-story full-gtd-review-test-user-views-project-stats
+(full-gtd-utils-test-define-story full-gtd-review-test-user-views-project-stats
   "Project row displays total, todo, done counts and next deadline."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task 1\n:PROPERTIES:\n:ID: p1-1\n:PROJECT: Website\n:END:\n* DONE Task 2\n:PROPERTIES:\n:ID: p1-2\n:PROJECT: Website\n:END:\n* TODO Task 3\nDEADLINE: <2026-05-20>\n:PROPERTIES:\n:ID: p1-3\n:PROJECT: Website\n:END:\n"))
@@ -352,7 +352,7 @@
                (should (search-forward-regexp "|\\s-*Website\\s-*|\\s-*3\\s-*|\\s-*2\\s-*|\\s-*1\\s-*|\\s-*<2026-05-20[^>]*>\\s-*|" (line-end-position) t))))
   :teardown (kill-buffer "*Full-GTD Weekly Review*"))
 
-(full-gtd-test-define-story full-gtd-review-test-user-jumps-to-project-tasks
+(full-gtd-utils-test-define-story full-gtd-review-test-user-jumps-to-project-tasks
   "Press RET on project row opens project task sub-view."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task A\n:PROPERTIES:\n:ID: proj-a-1\n:PROJECT: Alpha\n:END:\n* TODO Task B\n:PROPERTIES:\n:ID: proj-a-2\n:PROJECT: Alpha\n:END:\n"))
@@ -390,7 +390,7 @@
               (when (get-buffer "*Full-GTD Project: Alpha*")
                 (kill-buffer "*Full-GTD Project: Alpha*"))))
 
-(full-gtd-test-define-story full-gtd-review-test-user-returns-from-project-view
+(full-gtd-utils-test-define-story full-gtd-review-test-user-returns-from-project-view
   "Press q in project sub-view returns to weekly review."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: ret-1\n:PROJECT: Beta\n:END:\n"))
@@ -411,7 +411,7 @@
   :teardown (when (get-buffer "*Full-GTD Weekly Review*")
               (kill-buffer "*Full-GTD Weekly Review*")))
 
-(full-gtd-test-define-story full-gtd-review-test-user-identifies-stuck-project
+(full-gtd-utils-test-define-story full-gtd-review-test-user-identifies-stuck-project
   "Stuck project shows zero todo count."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* DONE Completed task\n:PROPERTIES:\n:ID: stuck-1\n:PROJECT: StuckProj\n:END:\n* Scheduled but no todo\nSCHEDULED: <2026-04-10 Fri>\n:PROPERTIES:\n:ID: stuck-2\n:PROJECT: StuckProj\n:END:\n"))
@@ -428,7 +428,7 @@
                (should (search-forward-regexp "|\\s-*StuckProj\\s-*|\\s-*2\\s-*|\\s-*0\\s-*|\\s-*1\\s-*|" (line-end-position) t))))
   :teardown (kill-buffer "*Full-GTD Weekly Review*"))
 
-(full-gtd-test-define-story full-gtd-review-test-project-exact-match-not-substring
+(full-gtd-utils-test-define-story full-gtd-review-test-project-exact-match-not-substring
   "Project names that are substrings of each other are matched exactly."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* DONE P1 task\n:PROPERTIES:\n:ID: exact-1\n:PROJECT: P1\n:END:\n* TODO P10 task\n:PROPERTIES:\n:ID: exact-2\n:PROJECT: P10\n:END:\n"))
@@ -468,9 +468,9 @@
                (search-forward "P10")
                (beginning-of-line)
                (should (search-forward-regexp "|\\s-*P10\\s-*|\\s-*1\\s-*|\\s-*1\\s-*|\\s-*0\\s-*|" (line-end-position) t))))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
 
-(full-gtd-test-define-story full-gtd-review-test-weekly-no-project-table-no-project-column
+(full-gtd-utils-test-define-story full-gtd-review-test-weekly-no-project-table-no-project-column
   "No Project table should not have Project column and should be after Project sections."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO No project task 1\n:PROPERTIES:\n:ID: np-1\n:CREATED: 2026-01-15\n:END:\n* TODO No project task 2 :home:\nSCHEDULED: <2026-01-20 Fri>\n:PROPERTIES:\n:ID: np-2\n:CREATED: 2026-01-16\n:END:\n* TODO Project task\n:PROPERTIES:\n:ID: p-1\n:PROJECT: TestProject\n:CREATED: 2026-01-17\n:END:\n"))
@@ -521,7 +521,7 @@
                  (forward-line 1))))
   :teardown (kill-buffer "*Full-GTD Weekly Review*"))
 
-(full-gtd-test-define-story full-gtd-review-test-user-renames-task-and-view-updates
+(full-gtd-utils-test-define-story full-gtd-review-test-user-renames-task-and-view-updates
   "Renaming task in review buffer should refresh display."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Old name\n:PROPERTIES:\n:ID: rename-view-1\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\n"))
@@ -537,9 +537,9 @@
              (goto-char (point-min))
              (should (search-forward "New name" nil t))
              (should-not (search-forward "Old name" nil t)))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
 
-(full-gtd-test-define-story full-gtd-review-test-user-completes-no-project-task-deletes
+(full-gtd-utils-test-define-story full-gtd-review-test-user-completes-no-project-task-deletes
   "Completing a task without project property should delete it."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO No project task\n:PROPERTIES:\n:ID: no-proj-1\n:END:\n* TODO Project task\n:PROPERTIES:\n:ID: proj-1\n:PROJECT: Test\n:END:\n"))
@@ -554,16 +554,16 @@
             (full-gtd-review--complete-task-at-point)))
   :asserts (progn
              ;; Verify no-project task is deleted
-             (should-not (full-gtd-test-file-contains-p-bool
+             (should-not (full-gtd-utils-test-file-contains-p-bool
                           (expand-file-name "action.org" full-gtd-init-base-directory)
                           "* TODO No project task"))
              ;; Verify project task remains
-             (should (full-gtd-test-file-contains-p-bool
+             (should (full-gtd-utils-test-file-contains-p-bool
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "* TODO Project task")))
   :teardown (kill-buffer "*Full-GTD Weekly Review*"))
 
-(full-gtd-test-define-story full-gtd-review-test-user-archives-completed-project
+(full-gtd-utils-test-define-story full-gtd-review-test-user-archives-completed-project
   "User can archive a project when all actions are DONE and none are shared."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* DONE Task 1\n:PROPERTIES:\n:ID: ar-1\n:PROJECT: ArchProj\n:END:\n* DONE Task 2\n:PROPERTIES:\n:ID: ar-2\n:PROJECT: ArchProj\n:END:\n"))
@@ -571,7 +571,7 @@
   :body (full-gtd-project-utils--archive-project "ArchProj")
   :asserts (progn
              ;; action.org no longer contains ArchProj entries
-             (let ((result (full-gtd-test-file-contains-p
+             (let ((result (full-gtd-utils-test-file-contains-p
                             (expand-file-name "action.org" full-gtd-init-base-directory)
                             ":PROJECT: ArchProj")))
                (should-not (car result)))
@@ -583,9 +583,9 @@
                (should (string-match-p "\\* ArchProj" content))
                (should (string-match-p "Task 1" content))
                (should (string-match-p "Task 2" content))))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Daily Review*" "*Full-GTD Weekly Review*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Daily Review*" "*Full-GTD Weekly Review*")))
 
-(full-gtd-test-define-story full-gtd-review-test-user-cannot-archive-project-with-todo-actions
+(full-gtd-utils-test-define-story full-gtd-review-test-user-cannot-archive-project-with-todo-actions
   "Archiving fails when project still has non-DONE actions."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* DONE Task 1\n:PROPERTIES:\n:ID: todo-ar-1\n:PROJECT: MixedProj\n:END:\n* TODO Task 2\n:PROPERTIES:\n:ID: todo-ar-2\n:PROJECT: MixedProj\n:END:\n"))
@@ -594,13 +594,13 @@
                       :type 'error)
   :asserts (progn
              ;; action.org still has both entries
-             (should (full-gtd-test-file-contains-p-bool
+             (should (full-gtd-utils-test-file-contains-p-bool
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":PROJECT: MixedProj"))
              (should-not (file-exists-p (expand-file-name "archive.org" full-gtd-init-base-directory))))
   :teardown nil)
 
-(full-gtd-test-define-story full-gtd-review-test-user-cannot-archive-project-with-actions-in-other-projects
+(full-gtd-utils-test-define-story full-gtd-review-test-user-cannot-archive-project-with-actions-in-other-projects
   "Archiving fails when a task belongs to multiple projects."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* DONE Task 1\n:PROPERTIES:\n:ID: multi-ar-1\n:PROJECT: ProjA; ProjB\n:END:\n* DONE Task 2\n:PROPERTIES:\n:ID: multi-ar-2\n:PROJECT: ProjA\n:END:\n"))
@@ -608,13 +608,13 @@
   :body (should-error (full-gtd-project-utils--archive-project "ProjA")
                       :type 'error)
   :asserts (progn
-             (should (full-gtd-test-file-contains-p-bool
+             (should (full-gtd-utils-test-file-contains-p-bool
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "ProjA"))
              (should-not (file-exists-p (expand-file-name "archive.org" full-gtd-init-base-directory))))
   :teardown nil)
 
-(full-gtd-test-define-story full-gtd-review-test-user-activates-someday-entry
+(full-gtd-utils-test-define-story full-gtd-review-test-user-activates-someday-entry
   "Activating a Someday entry re-confirms properties and moves it atomically."
   :setup (full-gtd-init-initialize)
   :files (("someday.org" "* Someday task :home:\n:PROPERTIES:\n:ID: someday-activate-1\n:DELEGATED: Alice\n:PROJECT: Old Project\n:END:\nNotes for later.\n")
@@ -651,40 +651,40 @@
                            '("someday-activate-1" . "someday.org")))
             (full-gtd-review--activate-someday-at-point)))
   :asserts (progn
-             (should-not (full-gtd-test-file-contains-p-bool
+             (should-not (full-gtd-utils-test-file-contains-p-bool
                           (expand-file-name "someday.org" full-gtd-init-base-directory)
                           "someday-activate-1"))
-             (should (full-gtd-test-file-contains-p-bool
+             (should (full-gtd-utils-test-file-contains-p-bool
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "* TODO Someday task"))
-             (should (full-gtd-test-file-contains-p-bool
+             (should (full-gtd-utils-test-file-contains-p-bool
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "Notes for later."))
-             (should (full-gtd-test-file-contains-p-bool
+             (should (full-gtd-utils-test-file-contains-p-bool
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":ID:[ \t]+someday-activate-1"))
-             (should (full-gtd-test-file-contains-p-bool
+             (should (full-gtd-utils-test-file-contains-p-bool
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":office:"))
-             (should (full-gtd-test-file-contains-p-bool
+             (should (full-gtd-utils-test-file-contains-p-bool
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":DELEGATED: Bob"))
-             (should (full-gtd-test-file-contains-p-bool
+             (should (full-gtd-utils-test-file-contains-p-bool
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":PROJECT:[ \t]+New Project"))
-             (should (full-gtd-test-file-contains-p-bool
+             (should (full-gtd-utils-test-file-contains-p-bool
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "SCHEDULED: <2026-02-20"))
-             (should (full-gtd-test-file-contains-p-bool
+             (should (full-gtd-utils-test-file-contains-p-bool
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "DEADLINE: <2026-02-25"))
              (with-current-buffer "*Full-GTD Weekly Review*"
                (goto-char (point-min))
                (search-forward "** someday.org - Someday")
                (should-not (search-forward "Someday task" nil t))))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
 
-(full-gtd-test-define-story full-gtd-review-test-user-activation-empty-removes-properties
+(full-gtd-utils-test-define-story full-gtd-review-test-user-activation-empty-removes-properties
   "Empty activation values remove all confirmable properties."
   :setup (full-gtd-init-initialize)
   :files (("someday.org" "* Someday task :home:\n:PROPERTIES:\n:ID: someday-activate-2\n:DELEGATED: Alice\n:PROJECT: Old Project\n:END:\n"))
@@ -706,30 +706,30 @@
                            '("someday-activate-2" . "someday.org")))
             (full-gtd-review--activate-someday-at-point)))
   :asserts (progn
-             (should (full-gtd-test-file-contains-p-bool
+             (should (full-gtd-utils-test-file-contains-p-bool
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "* TODO Someday task"))
-             (should (full-gtd-test-file-contains-p-bool
+             (should (full-gtd-utils-test-file-contains-p-bool
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "someday-activate-2"))
-             (should-not (full-gtd-test-file-contains-p-bool
+             (should-not (full-gtd-utils-test-file-contains-p-bool
                           (expand-file-name "action.org" full-gtd-init-base-directory)
                           ":home:"))
-             (should-not (full-gtd-test-file-contains-p-bool
+             (should-not (full-gtd-utils-test-file-contains-p-bool
                           (expand-file-name "action.org" full-gtd-init-base-directory)
                           ":DELEGATED:"))
-             (should-not (full-gtd-test-file-contains-p-bool
+             (should-not (full-gtd-utils-test-file-contains-p-bool
                           (expand-file-name "action.org" full-gtd-init-base-directory)
                           ":PROJECT:"))
-             (should-not (full-gtd-test-file-contains-p-bool
+             (should-not (full-gtd-utils-test-file-contains-p-bool
                           (expand-file-name "action.org" full-gtd-init-base-directory)
                           "SCHEDULED:"))
-             (should-not (full-gtd-test-file-contains-p-bool
+             (should-not (full-gtd-utils-test-file-contains-p-bool
                           (expand-file-name "action.org" full-gtd-init-base-directory)
                           "DEADLINE:")))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
 
-(full-gtd-test-define-story full-gtd-review-test-user-rejects-action-activation
+(full-gtd-utils-test-define-story full-gtd-review-test-user-rejects-action-activation
   "Activating a non-Someday action signals an error without modifying files."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Existing action\n:PROPERTIES:\n:ID: existing-action-1\n:END:\n"))
@@ -744,15 +744,15 @@
              (full-gtd-review--activate-someday-at-point)
              :type 'error)))
   :asserts (progn
-             (should (full-gtd-test-file-contains-p-bool
+             (should (full-gtd-utils-test-file-contains-p-bool
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "existing-action-1"))
-             (should-not (full-gtd-test-file-contains-p-bool
+             (should-not (full-gtd-utils-test-file-contains-p-bool
                           (expand-file-name "someday.org" full-gtd-init-base-directory)
                           "existing-action-1")))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
 
-(full-gtd-test-define-story full-gtd-review-test-context-candidates-from-org-tags
+(full-gtd-utils-test-define-story full-gtd-review-test-context-candidates-from-org-tags
   "Context completion candidates should be collected from Org tags, not properties."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Existing action :office:\n:PROPERTIES:\n:ID: ctx-cand-1\n:END:\n"))
@@ -760,7 +760,7 @@
   :asserts t
   :teardown nil)
 
-(full-gtd-test-define-story full-gtd-review-test-user-edits-notes-with-e
+(full-gtd-utils-test-define-story full-gtd-review-test-user-edits-notes-with-e
   "Press e to edit notes (body) for a task in weekly review."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task with notes\n:PROPERTIES:\n:ID: edit-notes-1\n:PROJECT: Test\n:CREATED: 2026-01-15\n:END:\nExisting note\n"))
@@ -775,15 +775,15 @@
             (beginning-of-line)
             (full-gtd-review--edit-notes-at-point)))
   :asserts (progn
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "New note"))
-             (should-not (full-gtd-test-file-contains-p-bool
+             (should-not (full-gtd-utils-test-file-contains-p-bool
                           (expand-file-name "action.org" full-gtd-init-base-directory)
                           "Existing note")))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
 
-(full-gtd-test-define-story full-gtd-review-test-cursor-kept-on-task-row-after-property-edit
+(full-gtd-utils-test-define-story full-gtd-review-test-cursor-kept-on-task-row-after-property-edit
   "Editing a property in weekly review keeps cursor on the same task row."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task one\n:PROPERTIES:\n:ID: cursor-edit-1\n:PROJECT: Test\n:END:\n* TODO Task two\n:PROPERTIES:\n:ID: cursor-edit-2\n:PROJECT: Test\n:END:\n"))
@@ -802,7 +802,7 @@
                                      (buffer-substring (line-beginning-position) (line-end-position)))))
   :teardown (kill-buffer "*Full-GTD Weekly Review*"))
 
-(full-gtd-test-define-story full-gtd-review-test-cursor-moves-to-next-task-after-delete
+(full-gtd-utils-test-define-story full-gtd-review-test-cursor-moves-to-next-task-after-delete
   "Deleting a no-project task in review moves cursor to the next task row."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task one\n:PROPERTIES:\n:ID: cursor-del-1\n:END:\n* TODO Task two\n:PROPERTIES:\n:ID: cursor-del-2\n:END:\n"))
@@ -819,9 +819,9 @@
              (beginning-of-line)
              (should (string-match-p "Task two"
                                      (buffer-substring (line-beginning-position) (line-end-position)))))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
 
-(full-gtd-test-define-story full-gtd-review-test-user-navigates-project-view-rows
+(full-gtd-utils-test-define-story full-gtd-review-test-user-navigates-project-view-rows
   "Navigation commands move between task rows and table columns."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task A\n:PROPERTIES:\n:ID: pnav-1\n:PROJECT: NavProj\n:END:\n* TODO Task B\n:PROPERTIES:\n:ID: pnav-2\n:PROJECT: NavProj\n:END:\n* TODO Task C\n:PROPERTIES:\n:ID: pnav-3\n:PROJECT: NavProj\n:END:\n"))
@@ -860,10 +860,10 @@
             (call-interactively (key-binding (kbd "b")))
             (should (= (org-table-current-column) 1))))
   :asserts t
-  :teardown (full-gtd-test-cleanup-buffers
+  :teardown (full-gtd-utils-test-cleanup-buffers
              '("*Full-GTD Weekly Review*" "*Full-GTD Project: NavProj*")))
 
-(full-gtd-test-define-story full-gtd-review-test-user-jumps-to-source-from-project-view
+(full-gtd-utils-test-define-story full-gtd-review-test-user-jumps-to-source-from-project-view
   "RET command in project sub-view jumps to the task in its source file."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Jump me\n:PROPERTIES:\n:ID: pjump-1\n:PROJECT: JumpProj\n:END:\n"))
@@ -889,13 +889,13 @@
                   (expand-file-name "action.org" full-gtd-init-base-directory))
                (should (looking-at-p "\\*+ TODO Jump me"))))
   :teardown (progn
-              (full-gtd-test-cleanup-buffers
+              (full-gtd-utils-test-cleanup-buffers
                '("*Full-GTD Weekly Review*" "*Full-GTD Project: JumpProj*"))
               (let ((buf (get-file-buffer
                           (expand-file-name "action.org" full-gtd-init-base-directory))))
                 (when buf (kill-buffer buf)))))
 
-(full-gtd-test-define-story full-gtd-review-test-project-view-returns-to-origin
+(full-gtd-utils-test-define-story full-gtd-review-test-project-view-returns-to-origin
   "Quitting a project sub-view returns to the view that opened it."
   :setup (progn
            (full-gtd-init-initialize)
@@ -918,12 +918,12 @@
              (eq returned-buffer
                  (get-buffer "*Full-GTD Horizon View*")))))
   :asserts t
-  :teardown (full-gtd-test-cleanup-buffers
+  :teardown (full-gtd-utils-test-cleanup-buffers
              '("*Full-GTD Weekly Review*"
                "*Full-GTD Horizon View*"
                "*Full-GTD Project: OriginProj*")))
 
-(full-gtd-test-define-story full-gtd-review-test-project-view-mode-enabled-and-quit
+(full-gtd-utils-test-define-story full-gtd-review-test-project-view-mode-enabled-and-quit
   "Project sub-view enables its view mode; quit returns to weekly review."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: pmode-1\n:PROJECT: ModeProj\n:END:\n"))
@@ -970,11 +970,11 @@
                (call-interactively (key-binding (kbd "q"))))
              (should-not (get-buffer "*Full-GTD Project: ModeProj*"))
              (should (get-buffer "*Full-GTD Weekly Review*")))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
 
 (ert-deftest full-gtd-review-test-weekly-shows-reference ()
   "Weekly review includes reference.org section."
-  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-utils-test-" t)))
     (unwind-protect
         (progn
           (full-gtd-init-initialize)
@@ -986,12 +986,12 @@
             (goto-char (point-min))
             (should (search-forward "** reference.org - Reference" nil t))
             (should (search-forward "Interesting article" nil t))))
-      (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*"))
+      (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Weekly Review*"))
       (delete-directory full-gtd-init-base-directory t))))
 
 (ert-deftest full-gtd-review-test-someday-horizon-edit-errors ()
   "Editing horizon on Someday row signals error."
-  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-utils-test-" t)))
     (unwind-protect
         (progn
           (full-gtd-init-initialize)
@@ -1009,12 +1009,12 @@
                        (lambda (&rest _) (error "Unexpected input prompt"))))
               (should-error (full-gtd-horizons--edit-area-at-point)
                             :type 'error))))
-      (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*"))
+      (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Weekly Review*"))
       (delete-directory full-gtd-init-base-directory t))))
 
 (ert-deftest full-gtd-review-test-reference-horizon-edit-errors ()
   "Editing horizon on Reference row signals error."
-  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-utils-test-" t)))
     (unwind-protect
         (progn
           (full-gtd-init-initialize)
@@ -1032,12 +1032,12 @@
                        (lambda (&rest _) (error "Unexpected input prompt"))))
               (should-error (full-gtd-horizons--edit-area-at-point)
                             :type 'error))))
-      (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*"))
+      (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Weekly Review*"))
       (delete-directory full-gtd-init-base-directory t))))
 
 (ert-deftest full-gtd-review-test-someday-complete-errors ()
   "Completing Someday entry signals error."
-  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-utils-test-" t)))
     (unwind-protect
         (progn
           (full-gtd-init-initialize)
@@ -1051,10 +1051,10 @@
             (beginning-of-line)
             (should-error (full-gtd-review--complete-task-at-point)
                           :type 'error)))
-      (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*"))
+      (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Weekly Review*"))
       (delete-directory full-gtd-init-base-directory t))))
 
-(full-gtd-test-define-story full-gtd-review-test-horizon-header-lists-navigation-keys
+(full-gtd-utils-test-define-story full-gtd-review-test-horizon-header-lists-navigation-keys
   "Horizon view header documents row and column navigation keys."
   :setup (full-gtd-init-initialize)
   :files (("action.org" ""))
@@ -1064,10 +1064,10 @@
              (should (stringp header-line-format))
              (should (string-match-p "n/p/j/k=rows" header-line-format))
              (should (string-match-p "f/b/h/l=columns" header-line-format)))
-  :teardown (full-gtd-test-cleanup-buffers
+  :teardown (full-gtd-utils-test-cleanup-buffers
              '("*Full-GTD Horizon View*")))
 
-(full-gtd-test-define-story full-gtd-review-test-empty-sections-folded
+(full-gtd-utils-test-define-story full-gtd-review-test-empty-sections-folded
   "Empty review sections are automatically folded; non-empty sections stay visible."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task 1\n:PROPERTIES:\n:ID: rev-fold-1\n:PROJECT: P\n:END:\n"))
@@ -1102,7 +1102,7 @@
                    (should (get-char-property (line-beginning-position) 'invisible))))))
   :teardown (kill-buffer "*Full-GTD Weekly Review*"))
 
-(full-gtd-test-define-story full-gtd-review-test-user-archives-project-from-review-view
+(full-gtd-utils-test-define-story full-gtd-review-test-user-archives-project-from-review-view
   "Press A on a stuck project row archives the completed project."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* DONE Task 1\n:PROPERTIES:\n:ID: rev-ar-1\n:PROJECT: RevArchProj\n:END:\n"))
@@ -1116,14 +1116,14 @@
             (beginning-of-line)
             (full-gtd-review--archive-project-at-point)))
   :asserts (progn
-             (should-not (full-gtd-test-file-contains-p-bool
+             (should-not (full-gtd-utils-test-file-contains-p-bool
                           (expand-file-name "action.org" full-gtd-init-base-directory)
                           ":PROJECT: RevArchProj"))
              (should (file-exists-p
                       (expand-file-name "archive.org" full-gtd-init-base-directory))))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
 
-(full-gtd-test-define-story full-gtd-review-test-archive-blocked-with-todo-from-review
+(full-gtd-utils-test-define-story full-gtd-review-test-archive-blocked-with-todo-from-review
   "Archive from the review view fails while TODO actions remain."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: rev-ar-2\n:PROJECT: RevBlockedProj\n:END:\n"))
@@ -1137,12 +1137,12 @@
             (beginning-of-line)
             (should-error (full-gtd-review--archive-project-at-point)
                           :type 'error)))
-  :asserts (should (full-gtd-test-file-contains-p-bool
+  :asserts (should (full-gtd-utils-test-file-contains-p-bool
                     (expand-file-name "action.org" full-gtd-init-base-directory)
                     ":PROJECT: RevBlockedProj"))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
 
-(full-gtd-test-define-story full-gtd-review-test-archive-errors-when-action-file-missing
+(full-gtd-utils-test-define-story full-gtd-review-test-archive-errors-when-action-file-missing
   "Archiving without action.org fails fast."
   :setup nil
   :files nil
@@ -1152,7 +1152,7 @@
   :asserts t
   :teardown nil)
 
-(full-gtd-test-define-story full-gtd-review-test-archive-errors-when-no-entries
+(full-gtd-utils-test-define-story full-gtd-review-test-archive-errors-when-no-entries
   "Archiving a project without entries fails and creates no archive file."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Unrelated\n:PROPERTIES:\n:ID: ar-none-1\n:PROJECT: Other\n:END:\n"))
@@ -1163,7 +1163,7 @@
                         (expand-file-name "archive.org" full-gtd-init-base-directory)))
   :teardown nil)
 
-(full-gtd-test-define-story full-gtd-review-test-user-edits-project-at-point
+(full-gtd-utils-test-define-story full-gtd-review-test-user-edits-project-at-point
   "Press P to re-link the task; horizons resync from the new project."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Lonely task\n:PROPERTIES:\n:ID: edit-proj-1\n:PROJECT: OldProj\n:END:\n* TODO Peer task\n:PROPERTIES:\n:ID: edit-proj-2\n:PROJECT: NewProj\n:L3_AREA: Work\n:END:\n"))
@@ -1178,15 +1178,15 @@
             (beginning-of-line)
             (full-gtd-review--edit-project-at-point)))
   :asserts (progn
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":PROJECT: NewProj"))
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":L3_AREA: Work")))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
 
-(full-gtd-test-define-story full-gtd-review-test-user-removes-project-clears-horizons
+(full-gtd-utils-test-define-story full-gtd-review-test-user-removes-project-clears-horizons
   "Empty project input removes PROJECT and its inherited horizons."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Lonely task\n:PROPERTIES:\n:ID: rm-proj-1\n:PROJECT: OldProj\n:L3_AREA: Work\n:L4_GOAL: Goal\n:END:\n"))
@@ -1201,18 +1201,18 @@
             (beginning-of-line)
             (full-gtd-review--edit-project-at-point)))
   :asserts (progn
-             (should-not (full-gtd-test-file-contains-p-bool
+             (should-not (full-gtd-utils-test-file-contains-p-bool
                           (expand-file-name "action.org" full-gtd-init-base-directory)
                           ":PROJECT:"))
-             (should-not (full-gtd-test-file-contains-p-bool
+             (should-not (full-gtd-utils-test-file-contains-p-bool
                           (expand-file-name "action.org" full-gtd-init-base-directory)
                           ":L3_AREA:"))
-             (should-not (full-gtd-test-file-contains-p-bool
+             (should-not (full-gtd-utils-test-file-contains-p-bool
                           (expand-file-name "action.org" full-gtd-init-base-directory)
                           ":L4_GOAL:")))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
 
-(full-gtd-test-define-story full-gtd-review-test-user-removes-delegated-and-date
+(full-gtd-utils-test-define-story full-gtd-review-test-user-removes-delegated-and-date
   "Empty delegated input removes DELEGATED and DELEGATED_DATE together."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Waiting task\n:PROPERTIES:\n:ID: rm-del-1\n:DELEGATED: Bob\n:DELEGATED_DATE: 2026-01-01\n:END:\n"))
@@ -1227,15 +1227,15 @@
             (beginning-of-line)
             (full-gtd-review--edit-delegated-at-point)))
   :asserts (progn
-             (should-not (full-gtd-test-file-contains-p-bool
+             (should-not (full-gtd-utils-test-file-contains-p-bool
                           (expand-file-name "action.org" full-gtd-init-base-directory)
                           ":DELEGATED:"))
-             (should-not (full-gtd-test-file-contains-p-bool
+             (should-not (full-gtd-utils-test-file-contains-p-bool
                           (expand-file-name "action.org" full-gtd-init-base-directory)
                           ":DELEGATED_DATE:")))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Weekly Review*")))
 
-(full-gtd-test-define-story full-gtd-review-test-refresh-view-rebuilds-project-subview
+(full-gtd-utils-test-define-story full-gtd-review-test-refresh-view-rebuilds-project-subview
   "Refresh inside a project sub-view rebuilds the project table."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task A\n:PROPERTIES:\n:ID: rv-refresh-1\n:PROJECT: RefreshP\n:END:\n"))
@@ -1253,7 +1253,7 @@
             (goto-char (point-min))
             (should (search-forward "Task A" nil t))))
   :asserts t
-  :teardown (full-gtd-test-cleanup-buffers
+  :teardown (full-gtd-utils-test-cleanup-buffers
              '("*Full-GTD Weekly Review*" "*Full-GTD Project: RefreshP*")))
 
 (ert-deftest full-gtd-review-test-refresh-view-unknown-type-hints ()
@@ -1264,7 +1264,7 @@
 
 (ert-deftest full-gtd-review-test-should-delete-empty-project ()
   "Entries whose PROJECT is empty count as no-project for deletion."
-  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-utils-test-" t)))
     (unwind-protect
         (progn
           (write-region "* TODO Task\n:PROPERTIES:\n:ID: empty-proj-del-1\n:PROJECT:\n:END:\n"
@@ -1276,7 +1276,7 @@
 
 (ert-deftest full-gtd-review-test-upcoming-deadline-window-boundaries ()
   "Upcoming-deadline predicate accepts only dates within the next 7 days."
-  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-utils-test-" t)))
     (unwind-protect
         (progn
           (write-region (concat "* TODO Soon\nDEADLINE: <"

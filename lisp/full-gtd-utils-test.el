@@ -10,10 +10,10 @@
 (require 'ert)
 (require 'cl-lib)
 
-(defvar full-gtd-test-caught-error nil
+(defvar full-gtd-utils-test-caught-error nil
   "Variable to store caught errors during tests.")
 
-(defun full-gtd-test-file-contains-p (file pattern)
+(defun full-gtd-utils-test-file-contains-p (file pattern)
   "Check FILE for PATTERN and return (FOUND CONTENT).
 FOUND is non-nil if PATTERN found; CONTENT is the file content as string.
 FILE is the file path; PATTERN is the regex pattern to search for."
@@ -28,13 +28,13 @@ FILE is the file path; PATTERN is the regex pattern to search for."
                        (re-search-forward pattern nil t)))))
         (list found content)))))
 
-(defun full-gtd-test-file-contains-p-bool (file pattern)
+(defun full-gtd-utils-test-file-contains-p-bool (file pattern)
   "Check FILE for PATTERN and return t if present, nil otherwise.
 FILE is the file path to check.
 PATTERN is the regex pattern to search for."
-  (car (full-gtd-test-file-contains-p file pattern)))
+  (car (full-gtd-utils-test-file-contains-p file pattern)))
 
-(defun full-gtd-test-file-lacks-p (file pattern)
+(defun full-gtd-utils-test-file-lacks-p (file pattern)
   "Assert that FILE does not contain PATTERN.
 FILE is the file path to check.
 PATTERN is the string to search for."
@@ -44,14 +44,14 @@ PATTERN is the string to search for."
     (let ((case-fold-search nil))
       (not (search-forward pattern nil t)))))
 
-(defun full-gtd-test-inbox-empty-p (base-dir)
+(defun full-gtd-utils-test-inbox-empty-p (base-dir)
   "Check if inbox is visually empty (missing or zero size).
 BASE-DIR is the base directory to check."
   (let ((inbox (expand-file-name "inbox.org" base-dir)))
     (or (not (file-exists-p inbox))
         (= 0 (file-attribute-size (file-attributes inbox))))))
 
-(defun full-gtd-test-cleanup-buffers (buffer-names)
+(defun full-gtd-utils-test-cleanup-buffers (buffer-names)
   "Safely kill all buffers in BUFFER-NAMES, ignoring errors."
   (dolist (name buffer-names)
     (when-let ((buf (get-buffer name)))
@@ -61,13 +61,13 @@ BASE-DIR is the base directory to check."
           (kill-buffer buf)
         (error nil)))))
 
-(defun full-gtd-test-task-exists-p (file title)
+(defun full-gtd-utils-test-task-exists-p (file title)
   "Check if task TITLE exists in FILE.
 FILE is the file path to check.
 TITLE is the task title to search for."
-  (full-gtd-test-file-contains-p file (format "* %s" title)))
+  (full-gtd-utils-test-file-contains-p file (format "* %s" title)))
 
-(defun full-gtd-test--create-files (temp-dir file-specs)
+(defun full-gtd-utils-test--create-files (temp-dir file-specs)
   "Create files in TEMP-DIR from FILE-SPECS.
 Each spec is (FILENAME CONTENT).  CONTENT is a list of lines or a string."
   (dolist (spec file-specs)
@@ -78,7 +78,7 @@ Each spec is (FILENAME CONTENT).  CONTENT is a list of lines or a string."
                     content
                   (mapconcat #'identity content "\n")))))))
 
-(defun full-gtd-test--cleanup (temp-dir)
+(defun full-gtd-utils-test--cleanup (temp-dir)
   "Kill buffers visiting files under TEMP-DIR, then delete TEMP-DIR."
   (dolist (buf (buffer-list))
     (when (and (buffer-file-name buf)
@@ -89,7 +89,7 @@ Each spec is (FILENAME CONTENT).  CONTENT is a list of lines or a string."
   (when (file-directory-p temp-dir)
     (delete-directory temp-dir t)))
 
-(defun full-gtd-test--debug-files (temp-dir file-names)
+(defun full-gtd-utils-test--debug-files (temp-dir file-names)
   "Return multi-line debug string showing contents of files under TEMP-DIR.
 FILE-NAMES is a list of filenames (strings)."
   (mapconcat
@@ -103,7 +103,7 @@ FILE-NAMES is a list of filenames (strings)."
                  "File does not exist"))))
    file-names "\n\n"))
 
-(defmacro full-gtd-test-define-story (name docstring &rest args)
+(defmacro full-gtd-utils-test-define-story (name docstring &rest args)
   "Define a user story test named NAME with DOCSTRING.
 ARGS is a plist with:
 :setup    - Form to run before test.
@@ -121,27 +121,27 @@ ARGS is a plist with:
         (teardown (plist-get args :teardown)))
     `(ert-deftest ,name ()
        ,docstring
-       (let* ((temp-dir (make-temp-file "full-gtd-test-" t))
+       (let* ((temp-dir (make-temp-file "full-gtd-utils-test-" t))
               (full-gtd-init-base-directory temp-dir)
-              (full-gtd-test-caught-error nil))
+              (full-gtd-utils-test-caught-error nil))
          (unwind-protect
              (progn
                ,setup
-               (full-gtd-test--create-files
+               (full-gtd-utils-test--create-files
                 temp-dir
                 (list ,@(mapcar (lambda (spec)
                                   `(cons ,(car spec) ,(cadr spec)))
                                 files)))
                (cl-letf ,mock
                  ,body)
-               (ert-info ((full-gtd-test--debug-files
+               (ert-info ((full-gtd-utils-test--debug-files
                            temp-dir
                            ',(mapcar #'car files)))
                  ,asserts))
            (condition-case nil
                ,teardown
              (error nil))
-           (full-gtd-test--cleanup temp-dir))))))
+           (full-gtd-utils-test--cleanup temp-dir))))))
 
 (provide 'full-gtd-utils-test)
 

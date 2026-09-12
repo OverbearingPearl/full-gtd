@@ -10,7 +10,7 @@
 (require 'full-gtd)
 (require 'full-gtd-utils-test)
 
-(full-gtd-test-define-story full-gtd-clarify-test-user-skips-clarify-entirely
+(full-gtd-utils-test-define-story full-gtd-clarify-test-user-skips-clarify-entirely
   "User processes to reference without clarifying."
   :setup (full-gtd-init-initialize)
   :files (("inbox.org" "* Raw task\n:PROPERTIES:\n:ID: c1\n:END:\n"))
@@ -19,13 +19,13 @@
           (lambda (_current-notes) (error "Should not be called when skipping clarify"))))
   :body (full-gtd-process-inbox)
   :asserts (progn
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "reference.org" full-gtd-init-base-directory)
                       "* Raw task"))
-             (should (full-gtd-test-inbox-empty-p full-gtd-init-base-directory)))
+             (should (full-gtd-utils-test-inbox-empty-p full-gtd-init-base-directory)))
   :teardown nil)
 
-(full-gtd-test-define-story full-gtd-clarify-test-user-clarifies-then-trash
+(full-gtd-utils-test-define-story full-gtd-clarify-test-user-clarifies-then-trash
   "User clarifies title and notes, then trashes."
   :setup (full-gtd-init-initialize)
   :files (("inbox.org" "* Bad idea\n:PROPERTIES:\n:ID: c2\n:END:\n"))
@@ -41,14 +41,14 @@
   :body (full-gtd-process-inbox)
   :asserts (progn
              ;; Verify original moved to trash (inbox empty)
-             (should (full-gtd-test-inbox-empty-p full-gtd-init-base-directory))
+             (should (full-gtd-utils-test-inbox-empty-p full-gtd-init-base-directory))
              ;; Clarified content should not appear in reference or actions
-             (should-not (full-gtd-test-file-contains-p-bool
+             (should-not (full-gtd-utils-test-file-contains-p-bool
                           (expand-file-name "reference.org" full-gtd-init-base-directory)
                           "Worse idea")))
   :teardown nil)
 
-(full-gtd-test-define-story full-gtd-clarify-test-user-clarifies-then-action
+(full-gtd-utils-test-define-story full-gtd-clarify-test-user-clarifies-then-action
   "User clarifies then sends to action."
   :setup (full-gtd-init-initialize)
   :files (("inbox.org" "* Vague task\n:PROPERTIES:\n:ID: c3\n:END:\n"))
@@ -65,18 +65,18 @@
               (delegate . "") (project . "")))))
   :body (full-gtd-process-inbox)
   :asserts (progn
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "* TODO Clear action"))
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "Important notes"))
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":office:")))
   :teardown nil)
 
-(full-gtd-test-define-story full-gtd-clarify-test-user-clears-notes-with-second-clarify
+(full-gtd-utils-test-define-story full-gtd-clarify-test-user-clears-notes-with-second-clarify
   "User can clear existing notes by pressing c again and deleting the default text."
   :setup (full-gtd-init-initialize)
   :files (("inbox.org" "* Task\n:PROPERTIES:\n:ID: c7\n:END:\n"))
@@ -99,13 +99,13 @@
               (delegate . "") (project . "")))))
   :body (full-gtd-process-inbox)
   :asserts (progn
-             (should (full-gtd-test-file-lacks-p
+             (should (full-gtd-utils-test-file-lacks-p
                       (expand-file-name "reference.org" full-gtd-init-base-directory)
                       "Old note"))
-             (should (full-gtd-test-inbox-empty-p full-gtd-init-base-directory)))
+             (should (full-gtd-utils-test-inbox-empty-p full-gtd-init-base-directory)))
   :teardown nil)
 
-(full-gtd-test-define-story full-gtd-clarify-test-user-quits-during-clarify
+(full-gtd-utils-test-define-story full-gtd-clarify-test-user-quits-during-clarify
   "User quits (C-g) during clarify input."
   :setup (full-gtd-init-initialize)
   :files (("inbox.org" "* Task to clarify\n:PROPERTIES:\n:ID: c4\n:END:\n"))
@@ -114,15 +114,15 @@
           (lambda (_headline &optional _current-notes) (signal 'quit nil))))
   :body (condition-case nil
             (full-gtd-process-inbox)
-          (quit (setq full-gtd-test-caught-error 'quit)))
+          (quit (setq full-gtd-utils-test-caught-error 'quit)))
   :asserts (progn
-             (should (eq full-gtd-test-caught-error 'quit))
-             (should (full-gtd-test-file-contains-p
+             (should (eq full-gtd-utils-test-caught-error 'quit))
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "inbox.org" full-gtd-init-base-directory)
                       "* Task to clarify")))  ; Still in inbox
   :teardown nil)
 
-(full-gtd-test-define-story full-gtd-clarify-test-user-quits-during-destination
+(full-gtd-utils-test-define-story full-gtd-clarify-test-user-quits-during-destination
   "User quits at destination selection prompt."
   :setup (full-gtd-init-initialize)
   :files (("inbox.org" "* Task to route\n:PROPERTIES:\n:ID: c5\n:END:\n"))
@@ -132,10 +132,10 @@
           (lambda (_headline) (cons nil nil))))
   :body (condition-case nil
             (full-gtd-process-inbox)
-          (quit (setq full-gtd-test-caught-error 'quit)))
+          (quit (setq full-gtd-utils-test-caught-error 'quit)))
   :asserts (progn
-             (should (eq full-gtd-test-caught-error 'quit))
-             (should (full-gtd-test-file-contains-p
+             (should (eq full-gtd-utils-test-caught-error 'quit))
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "inbox.org" full-gtd-init-base-directory)
                       "* Task to route")))
   :teardown nil)

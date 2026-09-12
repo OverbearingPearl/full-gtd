@@ -24,7 +24,7 @@
 (ert-deftest full-gtd-todo-keywords-test-collect-contexts-custom ()
   "Collect-contexts respects custom NOT_DONE keywords."
   (let* ((org-todo-keywords '((sequence "TODO" "DOING" "DONE")))
-         (full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+         (full-gtd-init-base-directory (make-temp-file "full-gtd-utils-test-" t)))
     (unwind-protect
         (progn
           (write-region "* TODO Office :office:\n:PROPERTIES:\n:ID: t1\n:END:\n* DOING Home :home:\n:PROPERTIES:\n:ID: t2\n:END:\n* DONE Finished :done-ctx:\n:PROPERTIES:\n:ID: t3\n:END:\n"
@@ -40,7 +40,7 @@
 (ert-deftest full-gtd-todo-keywords-test-context-candidates-filter-todo ()
   "Domain-context-candidates excludes custom todo keywords from tags."
   (let* ((org-todo-keywords '((sequence "TODO" "DOING" "DONE")))
-         (full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+         (full-gtd-init-base-directory (make-temp-file "full-gtd-utils-test-" t)))
     (unwind-protect
         (progn
           (write-region "* TODO Task :office:\n:PROPERTIES:\n:ID: t1\n:END:\n* DOING Another :DOING:\n:PROPERTIES:\n:ID: t2\n:END:\n"
@@ -55,7 +55,7 @@
   "Lowercase multi-sequence workflows are handled correctly."
   (let* ((org-todo-keywords '((sequence "todo" "doing" "done")
                               (sequence "waiting" "cancelled")))
-         (full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+         (full-gtd-init-base-directory (make-temp-file "full-gtd-utils-test-" t)))
     (unwind-protect
         (progn
           (write-region "* todo Office :office:\n:PROPERTIES:\n:ID: t1\n:END:\n* waiting Home :home:\n:PROPERTIES:\n:ID: t2\n:END:\n* done Finished :alex:\n:PROPERTIES:\n:ID: t3\n:END:\n"
