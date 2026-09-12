@@ -233,6 +233,15 @@ Delegate to domain layer for pure computation."
 
 ;;;; Unified property reading with completion
 
+(defun full-gtd-core--minibuffer-allow-literal-space ()
+  "Allow typing literal spaces in the active minibuffer.
+Copies the current local keymap and rebinds SPC to
+`self-insert-command', working around the default binding of SPC
+to `minibuffer-complete-word' in completion minibuffer maps."
+  (let ((map (copy-keymap (current-local-map))))
+    (define-key map (kbd "SPC") #'self-insert-command)
+    (use-local-map map)))
+
 (defun full-gtd-core-read-property-with-completion (prompt property-type &optional initial)
   "Read property value with completion.
 PROMPT is the prompt string displayed to the user.
@@ -257,11 +266,15 @@ Project and horizons (L3-L6) support multiple values separated by semicolon."
                 (when initial
                   (full-gtd-domain--join-values
                    (full-gtd-domain--split-values initial))))
-               (values (completing-read-multiple prompt candidates nil nil initial-input)))
+               (values (minibuffer-with-setup-hook
+                           #'full-gtd-core--minibuffer-allow-literal-space
+                         (completing-read-multiple prompt candidates nil nil initial-input))))
           (if values
               (full-gtd-domain--join-values values)
             ""))
-      (string-trim (completing-read prompt candidates nil nil initial)))))
+      (string-trim (minibuffer-with-setup-hook
+                       #'full-gtd-core--minibuffer-allow-literal-space
+                     (completing-read prompt candidates nil nil initial))))))
 
 ;;;; Notes (body) manipulation
 

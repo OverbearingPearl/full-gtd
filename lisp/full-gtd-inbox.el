@@ -127,7 +127,8 @@ Returns alist: ((context . VAL) (schedule . VAL) (deadline . VAL)
 
 (defun full-gtd-inbox--read-context ()
   "Read context with completion from existing actions, allowing free input.
-Supports spaces in context names.  Examples: @office, @home office, @phone."
+Contexts are stored as Org tags, so they must not contain spaces;
+use underscores or hyphens for multi-word contexts (e.g., @home_office)."
   (let* ((default (or full-gtd-inbox--last-context ""))
          (prompt (format "Context [RET %s, TAB complete]: " (if (string= default "") "none" (concat "keep '" default "'"))))
          (input (full-gtd-core-read-property-with-completion prompt 'context default)))
