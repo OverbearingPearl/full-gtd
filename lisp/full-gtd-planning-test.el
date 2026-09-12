@@ -13,7 +13,7 @@
 (require 'full-gtd-utils-test)
 
 ;; Helper to simulate sequential inputs for read-string
-(defun full-gtd-test-planning--make-read-string-mock (inputs)
+(defun full-gtd-planning-test--make-read-string-mock (inputs)
   "Create a mock for `read-string' that cycles through INPUTS."
   (let ((remaining inputs))
     (lambda (prompt &optional _initial _history)
@@ -22,7 +22,7 @@
             (funcall next prompt)
           next)))))
 
-(defun full-gtd-test-planning--make-completing-read-mock (inputs)
+(defun full-gtd-planning-test--make-completing-read-mock (inputs)
   "Create a mock for `completing-read' that cycles through INPUTS."
   (let ((remaining inputs))
     (lambda (prompt &optional _collection _predicate _require-match _initial-input _hist _def _inherit-input-method)
@@ -31,7 +31,7 @@
             (funcall next prompt)
           next)))))
 
-(full-gtd-test-define-story full-gtd-planning-test-user-completes-full-workflow
+(full-gtd-utils-test-define-story full-gtd-planning-test-user-completes-full-workflow
   "User completes natural planning with all fields filled, creating project with horizons and actions."
   :setup (full-gtd-init-initialize)
   :files nil
@@ -71,49 +71,49 @@
   :body (full-gtd-planning-start)
   :asserts (progn
              ;; Verify project actions created in action.org
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "Redesign homepage"))
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "Optimize mobile view"))
              ;; Verify TODO state
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "TODO Redesign homepage"))
              ;; Verify Project property
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":PROJECT: NewWebsite"))
              ;; Verify Horizon properties applied (L3-L6)
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":L6_PURPOSE: Improve user experience"))
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":L6_PRINCIPLE: Keep it simple"))
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":L5_VISION: Industry leader"))
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":L4_GOAL: Launch in Q2"))
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":L3_AREA: Product Development"))
              ;; Verify BOTH actions use default context :design: (no longer per-item)
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":design:"))
              ;; Verify BRAINSTORM property is removed after organizing
-             (should-not (car (full-gtd-test-file-contains-p
+             (should-not (car (full-gtd-utils-test-file-contains-p
                                (expand-file-name "action.org" full-gtd-init-base-directory)
                                ":BRAINSTORM:")))
              ;; Verify inbox is clean
              (let ((inbox-file (expand-file-name "inbox.org" full-gtd-init-base-directory)))
                (when (file-exists-p inbox-file)
-                 (should-not (car (full-gtd-test-file-contains-p inbox-file "Redesign homepage")))
-                 (should-not (car (full-gtd-test-file-contains-p inbox-file "Optimize mobile view")))))
+                 (should-not (car (full-gtd-utils-test-file-contains-p inbox-file "Redesign homepage")))
+                 (should-not (car (full-gtd-utils-test-file-contains-p inbox-file "Optimize mobile view")))))
              ;; Verify summary buffer exists
              (let ((summary-buffer (get-buffer "*Full-GTD Planning Summary*")))
                (should summary-buffer)
@@ -128,7 +128,7 @@
               (when (get-buffer "*Full-GTD Planning Summary*")
                 (kill-buffer "*Full-GTD Planning Summary*"))))
 
-(full-gtd-test-define-story full-gtd-planning-test-user-skips-optional-fields
+(full-gtd-utils-test-define-story full-gtd-planning-test-user-skips-optional-fields
   "Principle and Area can be empty, others are mandatory."
   :setup (full-gtd-init-initialize)
   :files nil
@@ -165,25 +165,25 @@
   :body (full-gtd-planning-start)
   :asserts (progn
              ;; Verify L6_PURPOSE exists
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":L6_PURPOSE: Just do it"))
              ;; Verify L6_PRINCIPLE does NOT exist
-             (let ((result (full-gtd-test-file-contains-p
+             (let ((result (full-gtd-utils-test-file-contains-p
                             (expand-file-name "action.org" full-gtd-init-base-directory)
                             ":L6_PRINCIPLE:")))
                (should-not (car result)))
              ;; Verify L3_AREA does NOT exist
-             (let ((result (full-gtd-test-file-contains-p
+             (let ((result (full-gtd-utils-test-file-contains-p
                             (expand-file-name "action.org" full-gtd-init-base-directory)
                             ":L3_AREA:")))
                (should-not (car result)))
              ;; Verify L5_VISION exists
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":L5_VISION: A vision"))
              ;; But Goal must exist
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":L4_GOAL: Ship it")))
   :teardown (progn
@@ -193,7 +193,7 @@
               (when (get-buffer "*Full-GTD Brainstorm Organize*")
                 (kill-buffer "*Full-GTD Brainstorm Organize*"))))
 
-(full-gtd-test-define-story full-gtd-planning-test-user-forced-to-organize-all-items
+(full-gtd-utils-test-define-story full-gtd-planning-test-user-forced-to-organize-all-items
   "User must organize all brainstorm items before proceeding, no skipping allowed."
   :setup (full-gtd-init-initialize)
   :files nil
@@ -231,32 +231,32 @@
   :body (full-gtd-planning-start)
   :asserts (progn
              ;; Verify Idea 1 went to reference.org
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "reference.org" full-gtd-init-base-directory)
                       "Idea 1"))
              ;; Verify Idea 2 went to someday.org
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "someday.org" full-gtd-init-base-directory)
                       "Idea 2"))
              ;; Verify Idea 3 went to action.org as TODO with default context
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "TODO Idea 3"))
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":office:"))
              ;; Verify no items remain in inbox
              (let ((inbox-file (expand-file-name "inbox.org" full-gtd-init-base-directory)))
                (when (file-exists-p inbox-file)
-                 (should-not (car (full-gtd-test-file-contains-p inbox-file "Idea 1")))
-                 (should-not (car (full-gtd-test-file-contains-p inbox-file "Idea 2")))
-                 (should-not (car (full-gtd-test-file-contains-p inbox-file "Idea 3"))))))
+                 (should-not (car (full-gtd-utils-test-file-contains-p inbox-file "Idea 1")))
+                 (should-not (car (full-gtd-utils-test-file-contains-p inbox-file "Idea 2")))
+                 (should-not (car (full-gtd-utils-test-file-contains-p inbox-file "Idea 3"))))))
   :teardown (progn
               (when (get-buffer "*Full-GTD Planning*") (kill-buffer "*Full-GTD Planning*"))
               (when (get-buffer "*Full-GTD Planning Summary*")
                 (kill-buffer "*Full-GTD Planning Summary*"))))
 
-(full-gtd-test-define-story full-gtd-planning-test-user-forced-to-create-next-action
+(full-gtd-utils-test-define-story full-gtd-planning-test-user-forced-to-create-next-action
   "If all brainstorm items go to Trash/Ref/Someday, user is forced to create one Next Action."
   :setup (full-gtd-init-initialize)
   :files nil
@@ -289,23 +289,23 @@
   :body (full-gtd-planning-start)
   :asserts (progn
              ;; Verify the forced action exists
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "Forced next action"))
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "TODO Forced next action"))
              ;; Verify discarded ideas are NOT in action.org
-             (let ((result1 (full-gtd-test-file-contains-p
+             (let ((result1 (full-gtd-utils-test-file-contains-p
                              (expand-file-name "action.org" full-gtd-init-base-directory)
                              "Bad idea 1"))
-                   (result2 (full-gtd-test-file-contains-p
+                   (result2 (full-gtd-utils-test-file-contains-p
                              (expand-file-name "action.org" full-gtd-init-base-directory)
                              "Bad idea 2")))
                (should-not (car result1))
                (should-not (car result2)))
              ;; But they should be handled (one in reference, one deleted)
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "reference.org" full-gtd-init-base-directory)
                       "Bad idea 2")))
   :teardown (progn
@@ -313,7 +313,7 @@
               (when (get-buffer "*Full-GTD Planning Summary*")
                 (kill-buffer "*Full-GTD Planning Summary*"))))
 
-(full-gtd-test-define-story full-gtd-planning-test-user-provides-required-fields
+(full-gtd-utils-test-define-story full-gtd-planning-test-user-provides-required-fields
   "Purpose, Vision, and Goal cannot be empty; code loops until valid input."
   :setup (full-gtd-init-initialize)
   :files nil
@@ -350,17 +350,17 @@
   :body (full-gtd-planning-start)
   :asserts (progn
              ;; Verify the valid values were eventually accepted and written
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":L6_PURPOSE: Valid Purpose"))
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":L5_VISION: Valid Vision"))
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":L4_GOAL: Valid Goal"))
              ;; Verify L3_AREA does NOT exist
-             (let ((result (full-gtd-test-file-contains-p
+             (let ((result (full-gtd-utils-test-file-contains-p
                             (expand-file-name "action.org" full-gtd-init-base-directory)
                             ":L3_AREA:")))
                (should-not (car result))))
@@ -369,7 +369,7 @@
               (when (get-buffer "*Full-GTD Planning Summary*")
                 (kill-buffer "*Full-GTD Planning Summary*"))))
 
-(full-gtd-test-define-story full-gtd-planning-test-user-trashes-item-removes-completely
+(full-gtd-utils-test-define-story full-gtd-planning-test-user-trashes-item-removes-completely
   "Trash destination removes item completely without creating file entry."
   :setup (full-gtd-init-initialize)
   :files nil
@@ -398,22 +398,22 @@
   :body (full-gtd-planning-start)
   :asserts (progn
              ;; Verify NOT in action.org
-             (let ((result (full-gtd-test-file-contains-p
+             (let ((result (full-gtd-utils-test-file-contains-p
                             (expand-file-name "action.org" full-gtd-init-base-directory)
                             "Trash me")))
                (should-not (car result)))
              ;; Verify NOT in reference.org
-             (let ((result (full-gtd-test-file-contains-p
+             (let ((result (full-gtd-utils-test-file-contains-p
                             (expand-file-name "reference.org" full-gtd-init-base-directory)
                             "Trash me")))
                (should-not (car result)))
              ;; Verify NOT in someday.org
-             (let ((result (full-gtd-test-file-contains-p
+             (let ((result (full-gtd-utils-test-file-contains-p
                             (expand-file-name "someday.org" full-gtd-init-base-directory)
                             "Trash me")))
                (should-not (car result)))
              ;; But forced next action should exist (since trashed item doesn't count)
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "TODO Forced next action")))
   :teardown (progn
@@ -421,7 +421,7 @@
               (when (get-buffer "*Full-GTD Planning Summary*")
                 (kill-buffer "*Full-GTD Planning Summary*"))))
 
-(full-gtd-test-define-story full-gtd-planning-test-user-skips-context-for-action
+(full-gtd-utils-test-define-story full-gtd-planning-test-user-skips-context-for-action
   "Context can be skipped for Next Action (empty string)."
   :setup (full-gtd-init-initialize)
   :files nil
@@ -451,7 +451,7 @@
                 (insert "Action without context\n"))))))
   :body (full-gtd-planning-start)
   :asserts (progn
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "Action without context"))
              ;; Should not have empty context tag or malformed tags
@@ -469,7 +469,7 @@
               (when (get-buffer "*Full-GTD Brainstorm Organize*")
                 (kill-buffer "*Full-GTD Brainstorm Organize*"))))
 
-(full-gtd-test-define-story full-gtd-planning-test-user-rejected-for-duplicate-project
+(full-gtd-utils-test-define-story full-gtd-planning-test-user-rejected-for-duplicate-project
   "Planning must reject existing project names and force new name."
   :setup (progn
            (full-gtd-init-initialize)
@@ -511,7 +511,7 @@
   :body (full-gtd-planning-start)
   :asserts (progn
              ;; Verify new project was created
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":PROJECT: NewUniqueProject"))
              ;; Verify ExistingProject still exists
@@ -525,7 +525,7 @@
               (when (get-buffer "*Full-GTD Planning Summary*")
                 (kill-buffer "*Full-GTD Planning Summary*"))))
 
-(full-gtd-test-define-story full-gtd-planning-test-user-creates-project-without-brainstorm
+(full-gtd-utils-test-define-story full-gtd-planning-test-user-creates-project-without-brainstorm
   "Natural planning with no brainstorm items should still create project."
   :setup (full-gtd-init-initialize)
   :files nil
@@ -570,7 +570,7 @@
               (when (get-buffer "*Full-GTD Planning Summary*") (kill-buffer "*Full-GTD Planning Summary*"))
               (when (get-buffer "*Full-GTD: Inbox*") (kill-buffer "*Full-GTD: Inbox*"))))
 
-(full-gtd-test-define-story full-gtd-planning-test-user-quits-during-organize
+(full-gtd-utils-test-define-story full-gtd-planning-test-user-quits-during-organize
   "User quits (C-g) during organize phase, staging buffer should be cleaned."
   :setup (full-gtd-init-initialize)
   :files nil
@@ -597,13 +597,13 @@
                 (insert "Idea to organize\n"))))))
   :body (condition-case nil
             (full-gtd-planning-start)
-          (quit (setq full-gtd-test-caught-error 'quit)))
+          (quit (setq full-gtd-utils-test-caught-error 'quit)))
   :asserts (progn
-             (should (eq full-gtd-test-caught-error 'quit))
+             (should (eq full-gtd-utils-test-caught-error 'quit))
              ;; Verify staging buffer is killed
              (should-not (get-buffer "*Full-GTD Brainstorm Organize*"))
              ;; Verify brainstorm item remains in inbox (not partially processed)
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "inbox.org" full-gtd-init-base-directory)
                       "Idea to organize")))
   :teardown (progn
@@ -611,7 +611,7 @@
               (when (get-buffer "*Full-GTD Brainstorm*") (kill-buffer "*Full-GTD Brainstorm*"))
               (when (get-buffer "*Full-GTD Brainstorm Organize*") (kill-buffer "*Full-GTD Brainstorm Organize*"))))
 
-(full-gtd-test-define-story full-gtd-planning-test-user-clarifies-brainstorm-item
+(full-gtd-utils-test-define-story full-gtd-planning-test-user-clarifies-brainstorm-item
   "User clarifies a brainstorm item before organizing to next action."
   :setup (full-gtd-init-initialize)
   :files nil
@@ -647,13 +647,13 @@
                 (insert "Raw idea\n"))))))
   :body (full-gtd-planning-start)
   :asserts (progn
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "* TODO Clarified idea"))
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "Important notes"))
-             (should-not (full-gtd-test-file-contains-p-bool
+             (should-not (full-gtd-utils-test-file-contains-p-bool
                           (expand-file-name "action.org" full-gtd-init-base-directory)
                           "Raw idea")))
   :teardown (progn
@@ -662,7 +662,7 @@
               (when (get-buffer "*Full-GTD Planning Summary*") (kill-buffer "*Full-GTD Planning Summary*"))
               (when (get-buffer "*Full-GTD Brainstorm Organize*") (kill-buffer "*Full-GTD Brainstorm Organize*"))))
 
-(full-gtd-test-define-story full-gtd-planning-test-isolates-other-project-brainstorms
+(full-gtd-utils-test-define-story full-gtd-planning-test-isolates-other-project-brainstorms
   "Brainstorm items from other projects remain untouched during organize."
   :setup (progn
            (full-gtd-init-initialize)
@@ -698,15 +698,15 @@
   :body (full-gtd-planning-start)
   :asserts (progn
              ;; Verify new project's item was processed (moved to actions)
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "New project idea"))
              ;; Verify old project's item remains in inbox
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "inbox.org" full-gtd-init-base-directory)
                       "Old brainstorm idea"))
              ;; Verify old project's item still has BRAINSTORM property
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "inbox.org" full-gtd-init-base-directory)
                       ":BRAINSTORM: t")))
   :teardown (progn
@@ -714,7 +714,7 @@
               (when (get-buffer "*Full-GTD Planning Summary*") (kill-buffer "*Full-GTD Planning Summary*"))
               (when (get-buffer "*Full-GTD Brainstorm Organize*") (kill-buffer "*Full-GTD Brainstorm Organize*"))))
 
-(full-gtd-test-define-story full-gtd-planning-test-user-selects-brainstorm-project-from-completion
+(full-gtd-utils-test-define-story full-gtd-planning-test-user-selects-brainstorm-project-from-completion
   "User selects an existing brainstorm project from completion list, existing items pre-populated."
   :setup (progn
            (full-gtd-init-initialize)
@@ -763,17 +763,17 @@
   :body (full-gtd-planning-start)
   :asserts (progn
              ;; Verify all items (existing + new) were processed to actions
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "Existing idea 1"))
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "Existing idea 2"))
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "New project idea"))
              ;; Verify project association
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":PROJECT: ExistingBrainstormProject")))
   :teardown (progn
@@ -782,7 +782,7 @@
               (when (get-buffer "*Full-GTD Planning Summary*") (kill-buffer "*Full-GTD Planning Summary*"))
               (when (get-buffer "*Full-GTD: Inbox*") (kill-buffer "*Full-GTD: Inbox*"))))
 
-(full-gtd-test-define-story full-gtd-planning-test-new-project-no-preload
+(full-gtd-utils-test-define-story full-gtd-planning-test-new-project-no-preload
   "New project without existing brainstorm items starts with empty buffer."
   :setup (full-gtd-init-initialize)
   :files nil
@@ -815,7 +815,7 @@
                 (insert "Fresh idea\n"))))))
   :body (full-gtd-planning-start)
   :asserts (progn
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "Fresh idea")))
   :teardown (progn
@@ -823,7 +823,7 @@
               (when (get-buffer "*Full-GTD Brainstorm*") (kill-buffer "*Full-GTD Brainstorm*"))
               (when (get-buffer "*Full-GTD Planning Summary*") (kill-buffer "*Full-GTD Planning Summary*"))))
 
-(full-gtd-test-define-story full-gtd-planning-test-proj-name-with-space
+(full-gtd-utils-test-define-story full-gtd-planning-test-proj-name-with-space
   "Project name containing spaces should be handled correctly."
   :setup (full-gtd-init-initialize)
   :files nil
@@ -860,18 +860,18 @@
   :body (full-gtd-planning-start)
   :asserts (progn
              ;; Verify project name with space is preserved
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":PROJECT: Website Redesign"))
              ;; Verify action is created
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "Action item")))
   :teardown (progn
               (when (get-buffer "*Full-GTD Planning*") (kill-buffer "*Full-GTD Planning*"))
               (when (get-buffer "*Full-GTD Planning Summary*") (kill-buffer "*Full-GTD Planning Summary*"))))
 
-(full-gtd-test-define-story full-gtd-planning-test-user-sets-multiple-purposes
+(full-gtd-utils-test-define-story full-gtd-planning-test-user-sets-multiple-purposes
   "User can set multiple purposes separated by semicolon."
   :setup (full-gtd-init-initialize)
   :files nil
@@ -907,7 +907,7 @@
   :body (full-gtd-planning-start)
   :asserts (progn
              ;; Verify multiple purposes stored as semicolon-separated
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":L6_PURPOSE: Purpose1; Purpose2"))
              ;; Verify summary displays comma-separated
@@ -919,7 +919,7 @@
               (when (get-buffer "*Full-GTD Planning*") (kill-buffer "*Full-GTD Planning*"))
               (when (get-buffer "*Full-GTD Planning Summary*") (kill-buffer "*Full-GTD Planning Summary*"))))
 
-(full-gtd-test-define-story full-gtd-planning-test-project-with-spaces-around-name
+(full-gtd-utils-test-define-story full-gtd-planning-test-project-with-spaces-around-name
   "Project name with leading/trailing spaces should be trimmed."
   :setup (full-gtd-init-initialize)
   :files nil
@@ -966,7 +966,7 @@
               (when (get-buffer "*Full-GTD Planning*") (kill-buffer "*Full-GTD Planning*"))
               (when (get-buffer "*Full-GTD Planning Summary*") (kill-buffer "*Full-GTD Planning Summary*"))))
 
-(full-gtd-test-define-story full-gtd-planning-test-multiple-purposes-with-mixed-separators
+(full-gtd-utils-test-define-story full-gtd-planning-test-multiple-purposes-with-mixed-separators
   "Multiple purposes with mixed separators and whitespace."
   :setup (full-gtd-init-initialize)
   :files nil
@@ -1002,14 +1002,14 @@
   :body (full-gtd-planning-start)
   :asserts (progn
              ;; Verify multiple purposes stored correctly
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":L6_PURPOSE: Purpose1; Purpose2; Purpose3")))
   :teardown (progn
               (when (get-buffer "*Full-GTD Planning*") (kill-buffer "*Full-GTD Planning*"))
               (when (get-buffer "*Full-GTD Planning Summary*") (kill-buffer "*Full-GTD Planning Summary*"))))
 
-(full-gtd-test-define-story full-gtd-planning-test-empty-brainstorm-after-trim
+(full-gtd-utils-test-define-story full-gtd-planning-test-empty-brainstorm-after-trim
   "Brainstorm items that are whitespace-only after trim should be ignored."
   :setup (full-gtd-init-initialize)
   :files nil
@@ -1044,14 +1044,14 @@
                             (buffer-string))))
              ;; Whitespace-only entries should not be captured
              (should-not (string-match-p ":BRAINSTORM: t" content))
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "Forced action")))
   :teardown (progn
               (when (get-buffer "*Full-GTD Planning*") (kill-buffer "*Full-GTD Planning*"))
               (when (get-buffer "*Full-GTD Planning Summary*") (kill-buffer "*Full-GTD Planning Summary*"))))
 
-(full-gtd-test-define-story full-gtd-planning-test-existing-project-with-space-detected
+(full-gtd-utils-test-define-story full-gtd-planning-test-existing-project-with-space-detected
   "Existing project with space in name should be detected correctly."
   :setup (progn
            (full-gtd-init-initialize)
@@ -1100,22 +1100,22 @@
   :body (full-gtd-planning-start)
   :asserts (progn
              ;; Verify new project was created (after first was rejected)
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":PROJECT: New Project Name")))
   :teardown (progn
               (when (get-buffer "*Full-GTD Planning*") (kill-buffer "*Full-GTD Planning*"))
               (when (get-buffer "*Full-GTD Planning Summary*") (kill-buffer "*Full-GTD Planning Summary*"))))
 
-(full-gtd-test-define-story full-gtd-planning-test-user-aborts-brainstorm-cleans-buffer
+(full-gtd-utils-test-define-story full-gtd-planning-test-user-aborts-brainstorm-cleans-buffer
   "User aborts brainstorm with C-c C-k, *Full-GTD Brainstorm* buffer must be killed."
   :setup (full-gtd-init-initialize)
   :files nil
   :mock (((symbol-function 'completing-read)
-          (full-gtd-test-planning--make-completing-read-mock
+          (full-gtd-planning-test--make-completing-read-mock
            '("AbortBrainstorm")))
          ((symbol-function 'read-string)
-          (full-gtd-test-planning--make-read-string-mock
+          (full-gtd-planning-test--make-read-string-mock
            '("Purpose" "" "Vision" "Goal" "Area" "@ctx")))
          ((symbol-function 'recursive-edit)
           (lambda ()

@@ -41,7 +41,7 @@
    (eq (lookup-key full-gtd-horizons-view-mode-map (kbd "TAB"))
        'full-gtd-horizons--toggle-actions)))
 
-(full-gtd-test-define-story full-gtd-horizons-test-view-shows-project-matrix
+(full-gtd-utils-test-define-story full-gtd-horizons-test-view-shows-project-matrix
   "Horizon view shows projects in matrix with L6-L3 columns."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Project task\n:PROPERTIES:\n:ID: p-1\n:PROJECT: TestProject\n:L3_AREA: Work\n:L4_GOAL: Goal1\n:L5_VISION: Vision1\n:L6_PURPOSE: Purpose1\n:END:\n"))
@@ -59,7 +59,7 @@
                (should (search-forward "Project: TestProject (0/1 done)" nil t))))
   :teardown (kill-buffer "*Full-GTD Horizon View*"))
 
-(full-gtd-test-define-story full-gtd-horizons-test-view-shows-critical-gaps
+(full-gtd-utils-test-define-story full-gtd-horizons-test-view-shows-critical-gaps
   "Projects without any horizon appear in Critical section."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task1\n:PROPERTIES:\n:ID: gap-1\n:PROJECT: NoHorizonProject\n:END:\n* TODO Task2\n:PROPERTIES:\n:ID: gap-2\n:PROJECT: HasHorizonProject\n:L3_AREA: Work\n:L4_GOAL: Goal1\n:L5_VISION: Vision1\n:L6_PURPOSE: Purpose1\n:END:\n"))
@@ -76,7 +76,7 @@
                (should (search-forward "HasHorizonProject" nil t))))
   :teardown (kill-buffer "*Full-GTD Horizon View*"))
 
-(full-gtd-test-define-story full-gtd-horizons-test-view-shows-partial-alignment
+(full-gtd-utils-test-define-story full-gtd-horizons-test-view-shows-partial-alignment
   "Projects with only L3 appear in Partial section."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: partial-1\n:PROJECT: PartialProject\n:L3_AREA: Work\n:END:\n"))
@@ -91,7 +91,7 @@
                (should (search-forward "Project: PartialProject" nil t))))
   :teardown (kill-buffer "*Full-GTD Horizon View*"))
 
-(full-gtd-test-define-story full-gtd-horizons-test-view-shows-no-project-actions
+(full-gtd-utils-test-define-story full-gtd-horizons-test-view-shows-no-project-actions
   "No-project actions shown in separate table with L3 only."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO No project task\n:PROPERTIES:\n:ID: np-1\n:L3_AREA: Personal\n:END:\n"))
@@ -113,7 +113,7 @@
                (should (search-forward-regexp "Personal" (line-end-position) t))))
   :teardown (kill-buffer "*Full-GTD Horizon View*"))
 
-(full-gtd-test-define-story full-gtd-horizons-test-view-shows-multi-horizon-projects
+(full-gtd-utils-test-define-story full-gtd-horizons-test-view-shows-multi-horizon-projects
   "Projects with incomplete horizons and multiple values shown in dedicated section."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: multi-1\n:PROJECT: MultiProject\n:L3_AREA: Work; Personal\n:L4_GOAL: Goal1; Goal2\n:END:\n"))
@@ -131,7 +131,7 @@
                (should (search-forward "Project: MultiProject" nil t))))
   :teardown (kill-buffer "*Full-GTD Horizon View*"))
 
-(full-gtd-test-define-story full-gtd-horizons-test-view-edits-l6-at-point
+(full-gtd-utils-test-define-story full-gtd-horizons-test-view-edits-l6-at-point
   "Press 6 to edit L6 Purpose in horizon view."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: edit-l6-1\n:PROJECT: EditProject\n:L3_AREA: Work\n:L4_GOAL: Goal1\n:L5_VISION: Vision1\n:L6_PURPOSE: OldPurpose\n:END:\n"))
@@ -145,12 +145,12 @@
             (beginning-of-line)
             (full-gtd-horizons--edit-purpose-at-point)))
   :asserts (progn
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":L6_PURPOSE: NewPurpose")))
   :teardown (kill-buffer "*Full-GTD Horizon View*"))
 
-(full-gtd-test-define-story full-gtd-horizons-test-view-jumps-to-project-actions
+(full-gtd-utils-test-define-story full-gtd-horizons-test-view-jumps-to-project-actions
   "Press RET on project row to view its actions."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task A\n:PROPERTIES:\n:ID: jump-1\n:PROJECT: JumpProject\n:L3_AREA: Work\n:END:\n* TODO Task B\n:PROPERTIES:\n:ID: jump-2\n:PROJECT: JumpProject\n:END:\n"))
@@ -171,7 +171,7 @@
               (when (get-buffer "*Full-GTD Project: JumpProject*")
                 (kill-buffer "*Full-GTD Project: JumpProject*"))))
 
-(full-gtd-test-define-story full-gtd-horizons-test-view-shows-health-dashboard
+(full-gtd-utils-test-define-story full-gtd-horizons-test-view-shows-health-dashboard
   "Top of view shows health statistics."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO T1\n:PROPERTIES:\n:ID: h-1\n:PROJECT: P1\n:END:\n* TODO T2\n:PROPERTIES:\n:ID: h-2\n:PROJECT: P2\n:L3_AREA: Work\n:END:\n* TODO T3\n:PROPERTIES:\n:ID: h-3\n:PROJECT: P3\n:L3_AREA: Work\n:L4_GOAL: G1\n:L5_VISION: V1\n:L6_PURPOSE: Purpose1\n:END:\n"))
@@ -186,7 +186,7 @@
              (should (search-forward-regexp "1 Aligned" nil t)))
   :teardown (kill-buffer "*Full-GTD Horizon View*"))
 
-(full-gtd-test-define-story full-gtd-horizons-test-edit-applies-to-all-project-actions
+(full-gtd-utils-test-define-story full-gtd-horizons-test-edit-applies-to-all-project-actions
   "Editing horizon in view applies to all actions of that project."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task 1\n:PROPERTIES:\n:ID: t1\n:PROJECT: TestProject\n:END:\n* TODO Task 2\n:PROPERTIES:\n:ID: t2\n:PROJECT: TestProject\n:END:\n"))
@@ -208,7 +208,7 @@
                    (should (= count 2))))))
   :teardown (kill-buffer "*Full-GTD Horizon View*"))
 
-(full-gtd-test-define-story full-gtd-horizons-test-clearing-l3-removes-from-all-actions
+(full-gtd-utils-test-define-story full-gtd-horizons-test-clearing-l3-removes-from-all-actions
   "Clearing L3 from project removes it from all project actions."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task 1\n:PROPERTIES:\n:ID: cascade-1\n:PROJECT: TestProj\n:L3_AREA: Work\n:END:\n"))
@@ -225,9 +225,9 @@
                              (expand-file-name "action.org" full-gtd-init-base-directory))
                             (buffer-string))))
              (should-not (string-match-p ":L3_AREA:" content)))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Horizon View*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Horizon View*")))
 
-(full-gtd-test-define-story full-gtd-horizons-test-constraint-rejects-vision-without-goal
+(full-gtd-utils-test-define-story full-gtd-horizons-test-constraint-rejects-vision-without-goal
   "User is blocked when attempting to set Vision (L5) without Goal (L4)."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: constraint-1\n:PROJECT: ConstraintProj\n:L3_AREA: Area\n:END:\n"))
@@ -241,17 +241,17 @@
             (condition-case err
                 (progn
                   (full-gtd-horizons--edit-vision-at-point)
-                  (setq full-gtd-test-caught-error nil))
-              (error (setq full-gtd-test-caught-error (error-message-string err))))))
+                  (setq full-gtd-utils-test-caught-error nil))
+              (error (setq full-gtd-utils-test-caught-error (error-message-string err))))))
   :asserts (progn
-             (should (stringp full-gtd-test-caught-error))
-             (should (string-match-p "L4 Goal must be set first" full-gtd-test-caught-error))
-             (should-not (car (full-gtd-test-file-contains-p
+             (should (stringp full-gtd-utils-test-caught-error))
+             (should (string-match-p "L4 Goal must be set first" full-gtd-utils-test-caught-error))
+             (should-not (car (full-gtd-utils-test-file-contains-p
                                (expand-file-name "action.org" full-gtd-init-base-directory)
                                ":L5_VISION:"))))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Horizon View*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Horizon View*")))
 
-(full-gtd-test-define-story full-gtd-horizons-test-constraint-rejects-purpose-without-vision
+(full-gtd-utils-test-define-story full-gtd-horizons-test-constraint-rejects-purpose-without-vision
   "User is blocked when attempting to set Purpose (L6) without Vision (L5)."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: constraint-2\n:PROJECT: ConstraintProj2\n:L3_AREA: Area\n:L4_GOAL: Goal\n:END:\n"))
@@ -265,17 +265,17 @@
             (condition-case err
                 (progn
                   (full-gtd-horizons--edit-purpose-at-point)
-                  (setq full-gtd-test-caught-error nil))
-              (error (setq full-gtd-test-caught-error (error-message-string err))))))
+                  (setq full-gtd-utils-test-caught-error nil))
+              (error (setq full-gtd-utils-test-caught-error (error-message-string err))))))
   :asserts (progn
-             (should (stringp full-gtd-test-caught-error))
-             (should (string-match-p "L5 Vision must be set first" full-gtd-test-caught-error))
-             (should-not (car (full-gtd-test-file-contains-p
+             (should (stringp full-gtd-utils-test-caught-error))
+             (should (string-match-p "L5 Vision must be set first" full-gtd-utils-test-caught-error))
+             (should-not (car (full-gtd-utils-test-file-contains-p
                                (expand-file-name "action.org" full-gtd-init-base-directory)
                                ":L6_PURPOSE:"))))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Horizon View*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Horizon View*")))
 
-(full-gtd-test-define-story full-gtd-horizons-test-constraint-rejects-principle-without-purpose
+(full-gtd-utils-test-define-story full-gtd-horizons-test-constraint-rejects-principle-without-purpose
   "User is blocked when attempting to set L6 Principle without L6 Purpose."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: constraint-3\n:PROJECT: ConstraintProj3\n:L3_AREA: Area\n:L4_GOAL: Goal\n:L5_VISION: Vision\n:END:\n"))
@@ -289,17 +289,17 @@
             (condition-case err
                 (progn
                   (full-gtd-horizons--edit-principle-at-point)
-                  (setq full-gtd-test-caught-error nil))
-              (error (setq full-gtd-test-caught-error (error-message-string err))))))
+                  (setq full-gtd-utils-test-caught-error nil))
+              (error (setq full-gtd-utils-test-caught-error (error-message-string err))))))
   :asserts (progn
-             (should (stringp full-gtd-test-caught-error))
-             (should (string-match-p "L6 Purpose must be set first" full-gtd-test-caught-error))
-             (should-not (car (full-gtd-test-file-contains-p
+             (should (stringp full-gtd-utils-test-caught-error))
+             (should (string-match-p "L6 Purpose must be set first" full-gtd-utils-test-caught-error))
+             (should-not (car (full-gtd-utils-test-file-contains-p
                                (expand-file-name "action.org" full-gtd-init-base-directory)
                                ":L6_PRINCIPLE:"))))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Horizon View*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Horizon View*")))
 
-(full-gtd-test-define-story full-gtd-horizons-test-principle-allows-multiple-purposes
+(full-gtd-utils-test-define-story full-gtd-horizons-test-principle-allows-multiple-purposes
   "Setting Principle passes when any Purpose exists in multi-value."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: multi-purpose-1\n:PROJECT: MultiPurposeProj\n:L3_AREA: Area\n:L4_GOAL: Goal\n:L5_VISION: Vision\n:L6_PURPOSE: P1; P2\n:END:\n"))
@@ -313,12 +313,12 @@
             (beginning-of-line)
             (full-gtd-horizons--edit-principle-at-point)))
   :asserts (progn
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":L6_PRINCIPLE: PrincipleValue")))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Horizon View*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Horizon View*")))
 
-(full-gtd-test-define-story full-gtd-horizons-test-user-edits-project-with-mixed-horizon-values
+(full-gtd-utils-test-define-story full-gtd-horizons-test-user-edits-project-with-mixed-horizon-values
   "Editing project horizon when tasks have different existing values."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task1\n:PROPERTIES:\n:ID: mixed-1\n:PROJECT: MixedProj\n:L3_AREA: OldArea1\n:END:\n* TODO Task2\n:PROPERTIES:\n:ID: mixed-2\n:PROJECT: MixedProj\n:L3_AREA: OldArea2\n:END:\n* TODO Task3\n:PROPERTIES:\n:ID: mixed-3\n:PROJECT: MixedProj\n:END:\n"))
@@ -338,11 +338,11 @@
                    (while (re-search-forward ":L3_AREA: +NewArea" nil t)
                      (cl-incf count))
                    (should (= count 3))))
-               (should-not (car (full-gtd-test-file-contains-p file ":L3_AREA: +OldArea1")))
-               (should-not (car (full-gtd-test-file-contains-p file ":L3_AREA: +OldArea2")))))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Horizon View*")))
+               (should-not (car (full-gtd-utils-test-file-contains-p file ":L3_AREA: +OldArea1")))
+               (should-not (car (full-gtd-utils-test-file-contains-p file ":L3_AREA: +OldArea2")))))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Horizon View*")))
 
-(full-gtd-test-define-story full-gtd-horizons-test-multi-project-task-cascading
+(full-gtd-utils-test-define-story full-gtd-horizons-test-multi-project-task-cascading
   "Editing horizon for one project does not affect other projects sharing the same task."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO SharedTask\n:PROPERTIES:\n:ID: multi-proj-1\n:PROJECT: ProjA; ProjB\n:L3_AREA: OldArea\n:END:\n"))
@@ -365,9 +365,9 @@
                    (let ((value (car areas)))
                      (should (string-match-p "OldArea" value))
                      (should (string-match-p "NewArea" value)))))))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Horizon View*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Horizon View*")))
 
-(full-gtd-test-define-story full-gtd-horizons-test-atomic-rollback-on-constraint-failure
+(full-gtd-utils-test-define-story full-gtd-horizons-test-atomic-rollback-on-constraint-failure
   "When hierarchy constraint fails, no partial horizon changes are applied."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task1\n:PROPERTIES:\n:ID: atomic-1\n:PROJECT: AtomicProj\n:L3_AREA: Area\n:END:\n* TODO Task2\n:PROPERTIES:\n:ID: atomic-2\n:PROJECT: AtomicProj\n:L3_AREA: Area\n:END:\n"))
@@ -381,22 +381,22 @@
             (condition-case err
                 (progn
                   (full-gtd-horizons--edit-vision-at-point)
-                  (setq full-gtd-test-caught-error nil))
-              (error (setq full-gtd-test-caught-error (error-message-string err))))))
+                  (setq full-gtd-utils-test-caught-error nil))
+              (error (setq full-gtd-utils-test-caught-error (error-message-string err))))))
   :asserts (progn
-             (should (stringp full-gtd-test-caught-error))
-             (should (string-match-p "L4 Goal must be set first" full-gtd-test-caught-error))
+             (should (stringp full-gtd-utils-test-caught-error))
+             (should (string-match-p "L4 Goal must be set first" full-gtd-utils-test-caught-error))
              (let ((file (expand-file-name "action.org" full-gtd-init-base-directory)))
-               (should-not (car (full-gtd-test-file-contains-p file ":L5_VISION:")))
+               (should-not (car (full-gtd-utils-test-file-contains-p file ":L5_VISION:")))
                (with-temp-buffer
                  (insert-file-contents file)
                  (let ((count 0))
                    (while (re-search-forward ":L3_AREA: +Area" nil t)
                      (cl-incf count))
                    (should (= count 2))))))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Horizon View*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Horizon View*")))
 
-(full-gtd-test-define-story full-gtd-horizons-test-multiple-values-shown-in-cell
+(full-gtd-utils-test-define-story full-gtd-horizons-test-multiple-values-shown-in-cell
   "Multiple horizon values shown semicolon-separated in matrix cell."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: multi-horizon-1\n:PROJECT: MultiHorizonProj\n:L6_PURPOSE: PurposeA; PurposeB\n:L5_VISION: VisionA; VisionB\n:L4_GOAL: GoalA; GoalB\n:L3_AREA: AreaA; AreaB\n:END:\n"))
@@ -418,7 +418,7 @@
                (should (search-forward "Project: MultiHorizonProj" nil t))))
   :teardown (kill-buffer "*Full-GTD Horizon View*"))
 
-(full-gtd-test-define-story full-gtd-horizons-test-user-edits-multiple-values
+(full-gtd-utils-test-define-story full-gtd-horizons-test-user-edits-multiple-values
   "Editing L3 preserves and extends all existing values through crm."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO EditTask\n:PROPERTIES:\n:ID: edit-multi-1\n:PROJECT: EditProj\n:L3_AREA: 学习成长; 工作事业; 自我实现\n:END:\n"))
@@ -435,12 +435,12 @@
             (beginning-of-line)
             (full-gtd-horizons--edit-area-at-point)))
   :asserts (progn
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":L3_AREA: 学习成长; 工作事业; 自我实现; 健康生活")))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Horizon View*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Horizon View*")))
 
-(full-gtd-test-define-story full-gtd-horizons-test-mixed-separators-normalized-in-view
+(full-gtd-utils-test-define-story full-gtd-horizons-test-mixed-separators-normalized-in-view
   "Horizon values with mixed semicolons normalized for display."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: mix-sep-1\n:PROJECT: MixProj\n:L3_AREA: AreaVal\n:L4_GOAL: GoalVal\n:L5_VISION: VisionValue\n:L6_PURPOSE: P1; P2 ； P3\t;\tP4\n:END:\n"))
@@ -458,7 +458,7 @@
                (should (search-forward "Project: MixProj" nil t))))
   :teardown (kill-buffer "*Full-GTD Horizon View*"))
 
-(full-gtd-test-define-story full-gtd-horizons-test-multiple-projects-shown-as-multi-horizon
+(full-gtd-utils-test-define-story full-gtd-horizons-test-multiple-projects-shown-as-multi-horizon
   "Project with complete horizons and multiple values shown in Aligned section."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: multi-ph-1\n:PROJECT: MultiProj\n:L3_AREA: Area1; Area2\n:L4_GOAL: Goal1; Goal2\n:L5_VISION: Vision1\n:L6_PURPOSE: Purpose1\n:END:\n"))
@@ -472,7 +472,7 @@
                (should (search-forward "MultiProj" nil t))))
   :teardown (kill-buffer "*Full-GTD Horizon View*"))
 
-(full-gtd-test-define-story full-gtd-horizons-test-complete-multi-valued-in-aligned-section
+(full-gtd-utils-test-define-story full-gtd-horizons-test-complete-multi-valued-in-aligned-section
   "Complete L3-L6 project with multiple values appears in Aligned, not Multi-Horizon."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: complete-multi-1\n:PROJECT: CompleteMultiProj\n:L3_AREA: Work; Personal\n:L4_GOAL: Goal1; Goal2\n:L5_VISION: VisionA; VisionB\n:L6_PURPOSE: Purpose1\n:END:\n"))
@@ -489,7 +489,7 @@
                (should-not (search-forward "CompleteMultiProj" (save-excursion (search-forward "** No-Project Actions") (point)) t))))
   :teardown (kill-buffer "*Full-GTD Horizon View*"))
 
-(full-gtd-test-define-story full-gtd-horizons-test-whitespace-only-values-ignored
+(full-gtd-utils-test-define-story full-gtd-horizons-test-whitespace-only-values-ignored
   "Horizon values that are whitespace-only should be ignored in display."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: ws-val-1\n:PROJECT: WSProj\n:L3_AREA: ValidArea;   ; \t ;AnotherArea\n:L4_GOAL: GoalVal\n:L5_VISION: VisionVal\n:L6_PURPOSE: PurposeVal\n:END:\n"))
@@ -506,7 +506,7 @@
                (should-not (search-forward-regexp "L3 Area[ \t]*;" nil t))))
   :teardown (kill-buffer "*Full-GTD Horizon View*"))
 
-(full-gtd-test-define-story full-gtd-horizons-test-empty-horizon-shown-as-partial
+(full-gtd-utils-test-define-story full-gtd-horizons-test-empty-horizon-shown-as-partial
   "Project with some empty horizons shown in Partial section."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task1\n:PROPERTIES:\n:ID: empty-inherit-1\n:PROJECT: PartialProj\n:L3_AREA: WorkArea\n:L4_GOAL: \n:L5_VISION: \n:L6_PURPOSE: \n:END:\n"))
@@ -521,7 +521,7 @@
                (should (search-forward "Project: PartialProj" nil t))))
   :teardown (kill-buffer "*Full-GTD Horizon View*"))
 
-(full-gtd-test-define-story full-gtd-horizons-test-user-archives-project-from-view
+(full-gtd-utils-test-define-story full-gtd-horizons-test-user-archives-project-from-view
   "User can archive project from horizon view."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* DONE Task 1\n:PROPERTIES:\n:ID: h-ar-1\n:PROJECT: ArchHorizonProj\n:END:\n* DONE Task 2\n:PROPERTIES:\n:ID: h-ar-2\n:PROJECT: ArchHorizonProj\n:END:\n"))
@@ -534,7 +534,7 @@
             (beginning-of-line)
             (full-gtd-horizons--archive-project-at-point)))
   :asserts (progn
-             (should-not (car (full-gtd-test-file-contains-p
+             (should-not (car (full-gtd-utils-test-file-contains-p
                                (expand-file-name "action.org" full-gtd-init-base-directory)
                                ":PROJECT: ArchHorizonProj")))
              (should (file-exists-p (expand-file-name "archive.org" full-gtd-init-base-directory)))
@@ -544,9 +544,9 @@
                (should (string-match-p "\\* ArchHorizonProj" content))
                (should (string-match-p "Task 1" content))
                (should (string-match-p "Task 2" content))))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Horizon View*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Horizon View*")))
 
-(full-gtd-test-define-story full-gtd-horizons-test-user-cannot-archive-project-with-todo-actions
+(full-gtd-utils-test-define-story full-gtd-horizons-test-user-cannot-archive-project-with-todo-actions
   "Archiving fails in horizon view when project has TODO actions."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* DONE Task 1\n:PROPERTIES:\n:ID: h-todo-1\n:PROJECT: MixedHorizonProj\n:END:\n* TODO Task 2\n:PROPERTIES:\n:ID: h-todo-2\n:PROJECT: MixedHorizonProj\n:END:\n"))
@@ -560,13 +560,13 @@
             (should-error (full-gtd-horizons--archive-project-at-point)
                           :type 'error)))
   :asserts (progn
-             (should (full-gtd-test-file-contains-p-bool
+             (should (full-gtd-utils-test-file-contains-p-bool
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":PROJECT: MixedHorizonProj"))
              (should-not (file-exists-p (expand-file-name "archive.org" full-gtd-init-base-directory))))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Horizon View*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Horizon View*")))
 
-(full-gtd-test-define-story full-gtd-horizons-test-user-cannot-archive-project-with-shared-actions
+(full-gtd-utils-test-define-story full-gtd-horizons-test-user-cannot-archive-project-with-shared-actions
   "Archiving fails in horizon view when a task belongs to multiple projects."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* DONE Task 1\n:PROPERTIES:\n:ID: h-shared-1\n:PROJECT: SharedHorizonProj; OtherProj\n:END:\n* DONE Task 2\n:PROPERTIES:\n:ID: h-shared-2\n:PROJECT: SharedHorizonProj\n:END:\n"))
@@ -580,13 +580,13 @@
             (should-error (full-gtd-horizons--archive-project-at-point)
                           :type 'error)))
   :asserts (progn
-             (should (full-gtd-test-file-contains-p-bool
+             (should (full-gtd-utils-test-file-contains-p-bool
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "SharedHorizonProj"))
              (should-not (file-exists-p (expand-file-name "archive.org" full-gtd-init-base-directory))))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Horizon View*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Horizon View*")))
 
-(full-gtd-test-define-story full-gtd-horizons-test-user-renames-after-jumping-to-project
+(full-gtd-utils-test-define-story full-gtd-horizons-test-user-renames-after-jumping-to-project
   "Renaming a task in a project sub-view reached from Horizons RET should refresh correctly."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task A\n:PROPERTIES:\n:ID: jump-1\n:PROJECT: JumpProject\n:L3_AREA: Work\n:END:\n* TODO Task B\n:PROPERTIES:\n:ID: jump-2\n:PROJECT: JumpProject\n:END:\n"))
@@ -611,7 +611,7 @@
               (when (get-buffer "*Full-GTD Project: JumpProject*")
                 (kill-buffer "*Full-GTD Project: JumpProject*"))))
 
-(full-gtd-test-define-story full-gtd-horizons-test-sync-project-change-single
+(full-gtd-utils-test-define-story full-gtd-horizons-test-sync-project-change-single
   "Action becomes part of single project; horizons become intersection of that project."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Existing 1\n:PROPERTIES:\n:ID: ex-1\n:PROJECT: ProjA\n:L3_AREA: Area1; Area2\n:L4_GOAL: Goal1\n:END:\n* TODO Existing 2\n:PROPERTIES:\n:ID: ex-2\n:PROJECT: ProjA\n:L3_AREA: Area2; Area3\n:L4_GOAL: Goal1; Goal2\n:END:\n"))
@@ -627,7 +627,7 @@
   :asserts t
   :teardown nil)
 
-(full-gtd-test-define-story full-gtd-horizons-test-sync-project-change-multi
+(full-gtd-utils-test-define-story full-gtd-horizons-test-sync-project-change-multi
   "Action becomes part of multiple projects; horizons become union of per-project horizons."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Existing A\n:PROPERTIES:\n:ID: ex-a\n:PROJECT: ProjA\n:L3_AREA: Area1; Area2\n:END:\n* TODO Existing B\n:PROPERTIES:\n:ID: ex-b\n:PROJECT: ProjB\n:L3_AREA: Area2; Area3\n:END:\n"))
@@ -641,7 +641,7 @@
   :asserts t
   :teardown nil)
 
-(full-gtd-test-define-story full-gtd-horizons-test-sync-clears-when-only-action
+(full-gtd-utils-test-define-story full-gtd-horizons-test-sync-clears-when-only-action
   "Action is the only action in project → horizons cleared."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Other project\n:PROPERTIES:\n:ID: other-1\n:PROJECT: OtherProj\n:L3_AREA: AreaX\n:END:\n"))
@@ -656,7 +656,7 @@
   :asserts t
   :teardown nil)
 
-(full-gtd-test-define-story full-gtd-horizons-test-sync-clears-when-no-project
+(full-gtd-utils-test-define-story full-gtd-horizons-test-sync-clears-when-no-project
   "Action without project → horizons cleared."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Existing\n:PROPERTIES:\n:ID: ex-np\n:PROJECT: ProjA\n:L3_AREA: Area1\n:END:\n"))
@@ -670,7 +670,7 @@
   :asserts t
   :teardown nil)
 
-(full-gtd-test-define-story full-gtd-horizons-test-set-horizon-unions-multiple-project-values
+(full-gtd-utils-test-define-story full-gtd-horizons-test-set-horizon-unions-multiple-project-values
   "When editing a horizon for a task shared by multiple projects, the result should be a value-level union with duplicates removed."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: union-1\n:PROJECT: ProjA; ProjB\n:L3_AREA: AreaA; AreaB\n:END:\n"))
@@ -684,15 +684,15 @@
             (beginning-of-line)
             (full-gtd-horizons--edit-area-at-point)))
   :asserts (progn
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":L3_AREA: AreaC; AreaA; AreaB"))
-             (should-not (full-gtd-test-file-contains-p-bool
+             (should-not (full-gtd-utils-test-file-contains-p-bool
                           (expand-file-name "action.org" full-gtd-init-base-directory)
                           "AreaA; AreaA")))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Horizon View*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Horizon View*")))
 
-(full-gtd-test-define-story full-gtd-horizons-test-cursor-kept-on-project-row-after-edit
+(full-gtd-utils-test-define-story full-gtd-horizons-test-cursor-kept-on-project-row-after-edit
   "Editing a horizon in horizon view keeps cursor on the same project row."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: cursor-horizon-1\n:PROJECT: TestProj\n:L3_AREA: Work\n:END:\n"))
@@ -711,7 +711,7 @@
                                      (buffer-substring (line-beginning-position) (line-end-position)))))
   :teardown (kill-buffer "*Full-GTD Horizon View*"))
 
-(full-gtd-test-define-story full-gtd-horizons-test-empty-sections-folded
+(full-gtd-utils-test-define-story full-gtd-horizons-test-empty-sections-folded
   "Empty horizon sections are automatically folded; non-empty sections stay visible."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: fold-test-1\n:PROJECT: FullProj\n:L3_AREA: Work\n:L4_GOAL: Goal\n:L5_VISION: Vision\n:L6_PURPOSE: Purpose\n:END:\n"))
@@ -739,7 +739,7 @@
                    (should (get-char-property (line-beginning-position) 'invisible))))))
   :teardown (kill-buffer "*Full-GTD Horizon View*"))
 
-(full-gtd-test-define-story full-gtd-horizons-test-edit-l3-on-no-project-action
+(full-gtd-utils-test-define-story full-gtd-horizons-test-edit-l3-on-no-project-action
   "Press 3 on no-project action row edits its L3 Area."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO NoProject Task\n:PROPERTIES:\n:ID: no-proj-1\n:L3_AREA: OldArea\n:END:\n"))
@@ -753,7 +753,7 @@
             (beginning-of-line)
             (full-gtd-horizons--edit-area-at-point)))
   :asserts (progn
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       ":L3_AREA: NewArea"))
              (with-current-buffer "*Full-GTD Horizon View*"
@@ -763,7 +763,7 @@
                (should (search-forward-regexp "NewArea" (line-end-position) t))))
   :teardown (kill-buffer "*Full-GTD Horizon View*"))
 
-(full-gtd-test-define-story full-gtd-horizons-test-ret-jumps-to-no-project-action
+(full-gtd-utils-test-define-story full-gtd-horizons-test-ret-jumps-to-no-project-action
   "Press RET on no-project action row jumps to source entry."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO NoProject Task\n:PROPERTIES:\n:ID: no-proj-ret-1\n:END:\n"))
@@ -786,7 +786,7 @@
               (let ((buf (get-file-buffer (expand-file-name "action.org" full-gtd-init-base-directory))))
                 (when buf (kill-buffer buf)))))
 
-(full-gtd-test-define-story full-gtd-horizons-test-tab-toggles-action-fold
+(full-gtd-utils-test-define-story full-gtd-horizons-test-tab-toggles-action-fold
   "TAB cycles the star-map action fold: collapsed -> todo -> all."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task A\n:PROPERTIES:\n:ID: fold-1\n:PROJECT: FoldProj\n:END:\n* DONE Task B\n:PROPERTIES:\n:ID: fold-2\n:PROJECT: FoldProj\n:END:\n"))
@@ -818,7 +818,7 @@
             (should (search-forward "…" nil t))))
   :teardown (kill-buffer "*Full-GTD Horizon View*"))
 
-(full-gtd-test-define-story full-gtd-horizons-test-refresh-rebuilds-view
+(full-gtd-utils-test-define-story full-gtd-horizons-test-refresh-rebuilds-view
   "Refreshing the horizon view rebuilds it from current file data."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: refresh-1\n:PROJECT: RefreshProj\n:L3_AREA: Stale\n:END:\n"))
@@ -834,9 +834,9 @@
             (should (search-forward "Updated" nil t))
             (should-not (search-forward "Stale" nil t))))
   :asserts t
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Horizon View*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Horizon View*")))
 
-(full-gtd-test-define-story full-gtd-horizons-test-edit-goal-sets-l4
+(full-gtd-utils-test-define-story full-gtd-horizons-test-edit-goal-sets-l4
   "Press 4 sets the L4 Goal for the project at point."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: goal-edit-1\n:PROJECT: GoalProj\n:L3_AREA: Work\n:END:\n"))
@@ -849,12 +849,12 @@
             (search-forward "GoalProj")
             (beginning-of-line)
             (full-gtd-horizons--edit-goal-at-point)))
-  :asserts (should (full-gtd-test-file-contains-p
+  :asserts (should (full-gtd-utils-test-file-contains-p
                     (expand-file-name "action.org" full-gtd-init-base-directory)
                     ":L4_GOAL: NewGoal"))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Horizon View*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Horizon View*")))
 
-(full-gtd-test-define-story full-gtd-horizons-test-edit-vision-sets-l5
+(full-gtd-utils-test-define-story full-gtd-horizons-test-edit-vision-sets-l5
   "Press 5 sets the L5 Vision when L4 Goal is already present."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: vision-edit-1\n:PROJECT: VisionProj\n:L3_AREA: Work\n:L4_GOAL: Goal\n:END:\n"))
@@ -867,12 +867,12 @@
             (search-forward "VisionProj")
             (beginning-of-line)
             (full-gtd-horizons--edit-vision-at-point)))
-  :asserts (should (full-gtd-test-file-contains-p
+  :asserts (should (full-gtd-utils-test-file-contains-p
                     (expand-file-name "action.org" full-gtd-init-base-directory)
                     ":L5_VISION: NewVision"))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Horizon View*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Horizon View*")))
 
-(full-gtd-test-define-story full-gtd-horizons-test-edit-purpose-errors-without-project
+(full-gtd-utils-test-define-story full-gtd-horizons-test-edit-purpose-errors-without-project
   "Press 6 without a project row signals an error."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Orphan task\n:PROPERTIES:\n:ID: np-err-1\n:END:\n"))
@@ -886,9 +886,9 @@
             (should-error (full-gtd-horizons--edit-purpose-at-point)
                           :type 'error)))
   :asserts t
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Horizon View*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Horizon View*")))
 
-(full-gtd-test-define-story full-gtd-horizons-test-archive-errors-without-project
+(full-gtd-utils-test-define-story full-gtd-horizons-test-archive-errors-without-project
   "Archive key without a project row signals an error."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Orphan task\n:PROPERTIES:\n:ID: np-arch-1\n:END:\n"))
@@ -902,7 +902,7 @@
             (should-error (full-gtd-horizons--archive-project-at-point)
                           :type 'error)))
   :asserts t
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD Horizon View*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD Horizon View*")))
 
 (ert-deftest full-gtd-horizons-test-level-conversions-reject-unknown ()
   "Unknown horizon levels fail fast in both conversion helpers."

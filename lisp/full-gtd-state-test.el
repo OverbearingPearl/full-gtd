@@ -12,13 +12,13 @@
 
 (ert-deftest full-gtd-state-test-with-file-buffer-creates-and-saves ()
   "With-file-buffer creates file and saves modifications."
-  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-utils-test-" t)))
     (unwind-protect
         (progn
           (full-gtd-state--with-file-buffer "action.org"
             (insert "* TODO Test\n"))
           (should (file-exists-p (expand-file-name "action.org" full-gtd-init-base-directory)))
-          (should (full-gtd-test-file-contains-p-bool
+          (should (full-gtd-utils-test-file-contains-p-bool
                    (expand-file-name "action.org" full-gtd-init-base-directory)
                    "* TODO Test")))
       (let ((buf (get-file-buffer (expand-file-name "action.org" full-gtd-init-base-directory))))
@@ -27,7 +27,7 @@
 
 (ert-deftest full-gtd-state-test-transaction-commits-on-success ()
   "Transaction saves changes when body succeeds."
-  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-utils-test-" t)))
     (unwind-protect
         (let ((file (expand-file-name "action.org" full-gtd-init-base-directory)))
           (write-region "* TODO Before\n" nil file)
@@ -35,14 +35,14 @@
             (full-gtd-state--with-file-buffer "action.org"
               (goto-char (point-max))
               (insert "* TODO After\n")))
-          (should (full-gtd-test-file-contains-p-bool file "* TODO After")))
+          (should (full-gtd-utils-test-file-contains-p-bool file "* TODO After")))
       (let ((buf (get-file-buffer (expand-file-name "action.org" full-gtd-init-base-directory))))
         (when buf (kill-buffer buf)))
       (delete-directory full-gtd-init-base-directory t))))
 
 (ert-deftest full-gtd-state-test-transaction-rolls-back-on-error ()
   "Transaction restores original file content when body signals error."
-  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-utils-test-" t)))
     (unwind-protect
         (let ((file (expand-file-name "action.org" full-gtd-init-base-directory)))
           (write-region "* TODO Original\n" nil file)
@@ -52,8 +52,8 @@
                (goto-char (point-max))
                (insert "* TODO Modified\n")
                (error "Simulated failure"))))
-          (should (full-gtd-test-file-contains-p-bool file "* TODO Original"))
-          (should-not (full-gtd-test-file-contains-p-bool file "* TODO Modified"))
+          (should (full-gtd-utils-test-file-contains-p-bool file "* TODO Original"))
+          (should-not (full-gtd-utils-test-file-contains-p-bool file "* TODO Modified"))
           (should-not (get-file-buffer file)))
       (let ((buf (get-file-buffer (expand-file-name "action.org" full-gtd-init-base-directory))))
         (when buf (kill-buffer buf)))
@@ -61,7 +61,7 @@
 
 (ert-deftest full-gtd-state-test-transaction-rolls-back-on-quit ()
   "Transaction restores original file content when body signals quit."
-  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-utils-test-" t)))
     (unwind-protect
         (let ((file (expand-file-name "action.org" full-gtd-init-base-directory)))
           (write-region "* TODO Original\n" nil file)
@@ -71,15 +71,15 @@
                   (insert "* TODO Modified\n")
                   (signal 'quit nil)))
             (quit nil))
-          (should (full-gtd-test-file-contains-p-bool file "* TODO Original"))
-          (should-not (full-gtd-test-file-contains-p-bool file "* TODO Modified")))
+          (should (full-gtd-utils-test-file-contains-p-bool file "* TODO Original"))
+          (should-not (full-gtd-utils-test-file-contains-p-bool file "* TODO Modified")))
       (let ((buf (get-file-buffer (expand-file-name "action.org" full-gtd-init-base-directory))))
         (when buf (kill-buffer buf)))
       (delete-directory full-gtd-init-base-directory t))))
 
 (ert-deftest full-gtd-state-test-entry-at-id-found ()
   "With-entry-at-id navigates to correct entry."
-  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-utils-test-" t)))
     (unwind-protect
         (progn
           (write-region "* TODO Task 1\n:PROPERTIES:\n:ID: id-1\n:END:\n* TODO Task 2\n:PROPERTIES:\n:ID: id-2\n:END:\n"
@@ -93,7 +93,7 @@
 
 (ert-deftest full-gtd-state-test-entry-at-id-missing ()
   "With-entry-at-id signals error when ID not found."
-  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-utils-test-" t)))
     (unwind-protect
         (progn
           (write-region "* TODO Task\n:PROPERTIES:\n:ID: id-1\n:END:\n"
@@ -109,7 +109,7 @@
 
 (ert-deftest full-gtd-state-test-entry-at-id-found-and-executes-body ()
   "With-entry-at-id navigates to correct entry and executes body."
-  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-utils-test-" t)))
     (unwind-protect
         (progn
           (write-region "* TODO Task 1\n:PROPERTIES:\n:ID: id-1\n:END:\n* TODO Task 2\n:PROPERTIES:\n:ID: id-2\n:END:\n"
@@ -125,7 +125,7 @@
 
 (ert-deftest full-gtd-state-test-transaction-empty-files-list ()
   "With-transaction with empty files list executes body without error."
-  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-utils-test-" t)))
     (unwind-protect
         (progn
           (full-gtd-state--with-transaction '()
@@ -139,7 +139,7 @@
 
 (ert-deftest full-gtd-state-test-rollback-deletes-created-file ()
   "Rollback deletes a file that did not exist at snapshot time."
-  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-utils-test-" t)))
     (unwind-protect
         (let* ((file "new.org")
                (path (expand-file-name file full-gtd-init-base-directory))
@@ -151,7 +151,7 @@
 
 (ert-deftest full-gtd-state-test-rollback-missing-file-noop ()
   "Rollback is a no-op when snapshot was nil and file is absent."
-  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-utils-test-" t)))
     (unwind-protect
         (let* ((file "ghost.org")
                (path (expand-file-name file full-gtd-init-base-directory))
@@ -162,7 +162,7 @@
 
 (ert-deftest full-gtd-state-test-rollback-restores-without-visiting-buffer ()
   "Rollback restores file content even when no buffer visits it."
-  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-utils-test-" t)))
     (unwind-protect
         (let* ((file "action.org")
                (path (expand-file-name file full-gtd-init-base-directory))
@@ -172,13 +172,13 @@
                   (full-gtd-state--snapshot file))))
           (write-region "* TODO Modified\n" nil path)
           (full-gtd-state--rollback (list snapshot))
-          (should (full-gtd-test-file-contains-p-bool path "* TODO Original"))
+          (should (full-gtd-utils-test-file-contains-p-bool path "* TODO Original"))
           (should-not (get-file-buffer path)))
       (delete-directory full-gtd-init-base-directory t))))
 
 (ert-deftest full-gtd-state-test-rollback-kills-visiting-buffer ()
   "Rollback kills visiting buffers and clears their modified flag."
-  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-utils-test-" t)))
     (unwind-protect
         (let* ((file "action.org")
                (path (expand-file-name file full-gtd-init-base-directory))
@@ -192,7 +192,7 @@
             (set-buffer-modified-p t))
           (full-gtd-state--rollback (list snapshot))
           (should-not (buffer-live-p buf))
-          (should (full-gtd-test-file-contains-p-bool path "* TODO Original")))
+          (should (full-gtd-utils-test-file-contains-p-bool path "* TODO Original")))
       (delete-directory full-gtd-init-base-directory t))))
 
 ;;; Macro definition body coverage

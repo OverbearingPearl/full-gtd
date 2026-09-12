@@ -11,7 +11,7 @@
 (require 'org)
 (require 'full-gtd-table)
 
-(defun full-gtd-test-table--display-state (start end)
+(defun full-gtd-table-test--display-state (start end)
   "Return display-related properties between START and END."
   (let ((position start)
         (state '()))
@@ -22,7 +22,7 @@
       (setq position (1+ position)))
     (nreverse state)))
 
-(ert-deftest full-gtd-table-width-cookie-preserves-complete-content ()
+(ert-deftest full-gtd-table-test-width-cookie-preserves-complete-content ()
   "A constrained column must retain its complete buffer contents."
   (with-temp-buffer
     (org-mode)
@@ -49,7 +49,7 @@
               "This unconstrained value must remain fully visible")
              (buffer-substring-no-properties (point-min) (point-max))))))
 
-(ert-deftest full-gtd-table-width-cookie-can-toggle-without-changing-text ()
+(ert-deftest full-gtd-table-test-width-cookie-can-toggle-without-changing-text ()
   "Org column-width toggling must only change the display layer."
   (with-temp-buffer
     (org-mode)
@@ -77,7 +77,7 @@
               (search-forward "|")
               (1- (point))))
            (display-before
-            (full-gtd-test-table--display-state field-start field-end)))
+            (full-gtd-table-test--display-state field-start field-end)))
       (should
        (cl-some (lambda (properties)
                   (cl-some #'identity properties))
@@ -87,12 +87,12 @@
                      (buffer-substring-no-properties (point-min) (point-max))))
       (should-not
        (equal display-before
-              (full-gtd-test-table--display-state field-start field-end)))
+              (full-gtd-table-test--display-state field-start field-end)))
       (org-table-toggle-column-width)
       (should (equal text-before
                      (buffer-substring-no-properties (point-min) (point-max)))))))
 
-(ert-deftest full-gtd-table-finalize-does-not-expand-org-width-columns ()
+(ert-deftest full-gtd-table-test-finalize-does-not-expand-org-width-columns ()
   "Finalization must preserve the constrained state created by Org."
   (with-temp-buffer
     (org-mode)
@@ -110,7 +110,7 @@
         (full-gtd-table-finalize))
       (should (= toggle-count 0)))))
 
-(ert-deftest full-gtd-table-finalize-shrinks-columns-in-multiple-tables ()
+(ert-deftest full-gtd-table-test-finalize-shrinks-columns-in-multiple-tables ()
   "Every table in a buffer must independently start in a shrunk state.
 This reproduces the Weekly Review / Horizon View scenario where many
 tables share the same buffer and column positions."
@@ -137,13 +137,13 @@ tables share the same buffer and column positions."
                 (search-forward "|")
                 (1- (point))))
              (display-state
-              (full-gtd-test-table--display-state (point) field-end)))
+              (full-gtd-table-test--display-state (point) field-end)))
         (should
          (cl-some (lambda (properties)
                     (cl-some #'identity properties))
                   display-state))))))
 
-(ert-deftest full-gtd-table-shrink-buffer-restores-constrained-display ()
+(ert-deftest full-gtd-table-test-shrink-buffer-restores-constrained-display ()
   "Final buffer shrinking must restore width constraints after post-processing."
   (with-temp-buffer
     (org-mode)
@@ -169,11 +169,11 @@ tables share the same buffer and column positions."
        (cl-some
         (lambda (properties)
           (cl-some #'identity properties))
-        (full-gtd-test-table--display-state (point) field-end))))))
+        (full-gtd-table-test--display-state (point) field-end))))))
 
-(full-gtd-table-define-navigators "full-gtd-test-table")
+(full-gtd-table-define-navigators "full-gtd-table-test")
 
-(ert-deftest full-gtd-table-column-navigation-stays-in-row ()
+(ert-deftest full-gtd-table-test-column-navigation-stays-in-row ()
   "Horizontal navigation moves one column and never crosses a row boundary."
   (with-temp-buffer
     (org-mode)
@@ -189,22 +189,22 @@ tables share the same buffer and column positions."
       (forward-line 1))
     (let ((row (line-number-at-pos)))
       (org-table-goto-column 1)
-      (full-gtd-test-table--next-column)
+      (full-gtd-table-test--next-column)
       (should (= (org-table-current-column) 2))
-      (full-gtd-test-table--next-column)
+      (full-gtd-table-test--next-column)
       (should (= (org-table-current-column) 3))
-      (full-gtd-test-table--next-column)
+      (full-gtd-table-test--next-column)
       (should (= (org-table-current-column) 3))
       (should (= (line-number-at-pos) row))
-      (full-gtd-test-table--previous-column)
+      (full-gtd-table-test--previous-column)
       (should (= (org-table-current-column) 2))
-      (full-gtd-test-table--previous-column)
+      (full-gtd-table-test--previous-column)
       (should (= (org-table-current-column) 1))
-      (full-gtd-test-table--previous-column)
+      (full-gtd-table-test--previous-column)
       (should (= (org-table-current-column) 1))
       (should (= (line-number-at-pos) row)))))
 
-(ert-deftest full-gtd-table-width-cookie-row-is-not-data ()
+(ert-deftest full-gtd-table-test-width-cookie-row-is-not-data ()
   "Width-cookie rows must be excluded from table navigation."
   (with-temp-buffer
     (org-mode)
@@ -217,7 +217,7 @@ tables share the same buffer and column positions."
     (forward-line 1)
     (should (eq (full-gtd-table-line-type) 'separator))))
 
-(ert-deftest full-gtd-table-row-navigation-supports-property-backed-text ()
+(ert-deftest full-gtd-table-test-row-navigation-supports-property-backed-text ()
   "Row navigation supports non-table lines carrying row metadata."
   (with-temp-buffer
     (insert "Header\n")
@@ -233,20 +233,20 @@ tables share the same buffer and column positions."
     (goto-char (point-min))
     (search-forward "Project A")
     (beginning-of-line)
-    (full-gtd-test-table--next-row)
+    (full-gtd-table-test--next-row)
     (should
      (string=
       (buffer-substring-no-properties
        (line-beginning-position) (line-end-position))
       "Project B"))
-    (full-gtd-test-table--previous-row)
+    (full-gtd-table-test--previous-row)
     (should
      (string=
       (buffer-substring-no-properties
        (line-beginning-position) (line-end-position))
       "Project A"))))
 
-(ert-deftest full-gtd-table-row-lookup-by-id-and-project ()
+(ert-deftest full-gtd-table-test-row-lookup-by-id-and-project ()
   "Entry and project row lookups move point to the matching row."
   (with-temp-buffer
     (org-mode)
@@ -266,7 +266,7 @@ tables share the same buffer and column positions."
              (buffer-substring (line-beginning-position) (line-end-position))))
     (should-not (full-gtd-table--goto-entry "missing" "action.org"))))
 
-(ert-deftest full-gtd-table-restore-point-anchor-project-only ()
+(ert-deftest full-gtd-table-test-restore-point-anchor-project-only ()
   "Anchors without an entry ID restore via project lookup."
   (with-temp-buffer
     (org-mode)

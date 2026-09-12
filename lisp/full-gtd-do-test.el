@@ -63,7 +63,7 @@
 
 ;;;; Story tests for session workflow
 
-(full-gtd-test-define-story full-gtd-do-test-session-starts-with-highest-priority
+(full-gtd-utils-test-define-story full-gtd-do-test-session-starts-with-highest-priority
   "Session presents the highest priority action first."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Low priority\n:PROPERTIES:\n:ID: low-1\n:END:\n* TODO High priority\nDEADLINE: <2026-01-20 Mon>\n:PROPERTIES:\n:ID: high-1\n:END:\n"))
@@ -75,9 +75,9 @@
              (with-current-buffer "*Full-GTD: Do Session*"
                (goto-char (point-min))
                (should (search-forward "* High priority" nil t))))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD: Do Session*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD: Do Session*")))
 
-(full-gtd-test-define-story full-gtd-do-test-session-completes-action
+(full-gtd-utils-test-define-story full-gtd-do-test-session-completes-action
   "Done command marks action complete and advances."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO First task\n:PROPERTIES:\n:ID: first-1\n:PROJECT: Test\n:END:\n* TODO Second task\n:PROPERTIES:\n:ID: second-1\n:PROJECT: Test\n:END:\n"))
@@ -88,15 +88,15 @@
           (with-current-buffer "*Full-GTD: Do Session*"
             (full-gtd-do--session-done)))
   :asserts (progn
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "* DONE First task"))
              (with-current-buffer "*Full-GTD: Do Session*"
                (goto-char (point-min))
                (should (search-forward "* Second task" nil t))))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD: Do Session*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD: Do Session*")))
 
-(full-gtd-test-define-story full-gtd-do-test-session-snoozes-action
+(full-gtd-utils-test-define-story full-gtd-do-test-session-snoozes-action
   "Snooze command reschedules action to tomorrow and advances."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Snooze me\n:PROPERTIES:\n:ID: snooze-1\n:END:\n* TODO Next task\n:PROPERTIES:\n:ID: next-1\n:END:\n"))
@@ -108,15 +108,15 @@
             (full-gtd-do--session-snooze)))
   :asserts (progn
              (let ((tomorrow (format-time-string "%F" (time-add (current-time) (* 24 3600)))))
-               (should (full-gtd-test-file-contains-p
+               (should (full-gtd-utils-test-file-contains-p
                         (expand-file-name "action.org" full-gtd-init-base-directory)
                         (format "SCHEDULED: <%s" tomorrow))))
              (with-current-buffer "*Full-GTD: Do Session*"
                (goto-char (point-min))
                (should (search-forward "* Next task" nil t))))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD: Do Session*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD: Do Session*")))
 
-(full-gtd-test-define-story full-gtd-do-test-session-skip-keeps-mode-active
+(full-gtd-utils-test-define-story full-gtd-do-test-session-skip-keeps-mode-active
   "Skip command keeps minor mode active for subsequent keyboard shortcuts."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO First task\n:PROPERTIES:\n:ID: first-1\n:END:\n* TODO Second task\n:PROPERTIES:\n:ID: second-1\n:END:\n"))
@@ -132,9 +132,9 @@
   :asserts (with-current-buffer "*Full-GTD: Do Session*"
              (goto-char (point-min))
              (should (search-forward "* Second task" nil t)))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD: Do Session*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD: Do Session*")))
 
-(full-gtd-test-define-story full-gtd-do-test-session-context-filter
+(full-gtd-utils-test-define-story full-gtd-do-test-session-context-filter
   "Context filter shows only matching actions."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Office task :office:\n:PROPERTIES:\n:ID: office-1\n:END:\n* TODO Home task :home:\n:PROPERTIES:\n:ID: home-1\n:END:\n"))
@@ -146,9 +146,9 @@
                (goto-char (point-min))
                (should (search-forward "* Office task" nil t))
                (should-not (search-forward "* Home task" nil t))))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD: Do Session*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD: Do Session*")))
 
-(full-gtd-test-define-story full-gtd-do-test-session-empty-actions
+(full-gtd-utils-test-define-story full-gtd-do-test-session-empty-actions
   "Empty actions file shows session complete."
   :setup (full-gtd-init-initialize)
   :files (("action.org" ""))
@@ -160,9 +160,9 @@
              (with-current-buffer "*Full-GTD: Do Session*"
                (goto-char (point-min))
                (should (search-forward "Session Complete" nil t))))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD: Do Session*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD: Do Session*")))
 
-(full-gtd-test-define-story full-gtd-do-test-session-delegated-view
+(full-gtd-utils-test-define-story full-gtd-do-test-session-delegated-view
   "Delegated session shows delegated TODO tasks."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Delegated task\n:PROPERTIES:\n:ID: del-1\n:DELEGATED: John\n:END:\n* TODO Own task\n:PROPERTIES:\n:ID: own-1\n:END:\n* DONE Delegated done\n:PROPERTIES:\n:ID: del-done-1\n:DELEGATED: Jane\n:END:\n"))
@@ -180,9 +180,9 @@
                (should (search-forward "John" nil t))
                (should-not (search-forward "* Own task" nil t))
                (should-not (search-forward "* Delegated done" nil t))))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD: Delegated Session*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD: Delegated Session*")))
 
-(full-gtd-test-define-story full-gtd-do-test-session-today-view
+(full-gtd-utils-test-define-story full-gtd-do-test-session-today-view
   "Today session shows tasks scheduled for today."
   :setup (full-gtd-init-initialize)
   :files (("action.org" (format "* TODO Today task\nSCHEDULED: <%s>\n:PROPERTIES:\n:ID: today-1\n:END:\n* TODO Later task\nSCHEDULED: <%s>\n:PROPERTIES:\n:ID: later-1\n:END:\n"
@@ -200,9 +200,9 @@
                (goto-char (point-min))
                (should (search-forward "* Today task" nil t))
                (should-not (search-forward "* Later task" nil t))))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD: Today Session*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD: Today Session*")))
 
-(full-gtd-test-define-story full-gtd-do-test-session-rename-action
+(full-gtd-utils-test-define-story full-gtd-do-test-session-rename-action
   "Rename command updates task headline."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Old name\n:PROPERTIES:\n:ID: rename-1\n:END:\n"))
@@ -216,15 +216,15 @@
           (with-current-buffer "*Full-GTD: Do Session*"
             (full-gtd-do--session-rename)))
   :asserts (progn
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "* TODO New name"))
-             (should-not (full-gtd-test-file-contains-p-bool
+             (should-not (full-gtd-utils-test-file-contains-p-bool
                           (expand-file-name "action.org" full-gtd-init-base-directory)
                           "* TODO Old name")))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD: Do Session*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD: Do Session*")))
 
-(full-gtd-test-define-story full-gtd-do-test-session-change-conditions
+(full-gtd-utils-test-define-story full-gtd-do-test-session-change-conditions
   "Change conditions refreshes session with new filters."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Office task :office:\n:PROPERTIES:\n:ID: ctx-office-1\n:END:\n* TODO Home task :home:\n:PROPERTIES:\n:ID: ctx-home-1\n:END:\n"))
@@ -240,9 +240,9 @@
              (goto-char (point-min))
              (should (search-forward "* Home task" nil t))
              (should-not (search-forward "* Office task" nil t)))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD: Do Session*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD: Do Session*")))
 
-(full-gtd-test-define-story full-gtd-do-test-session-edit-notes
+(full-gtd-utils-test-define-story full-gtd-do-test-session-edit-notes
   "Press e to edit notes (body) for current action."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: edit-notes-do-1\n:END:\nOld note\n"))
@@ -254,15 +254,15 @@
           (with-current-buffer "*Full-GTD: Do Session*"
             (full-gtd-do--edit-notes)))
   :asserts (progn
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "Updated note"))
-             (should-not (full-gtd-test-file-contains-p-bool
+             (should-not (full-gtd-utils-test-file-contains-p-bool
                           (expand-file-name "action.org" full-gtd-init-base-directory)
                           "Old note")))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD: Do Session*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD: Do Session*")))
 
-(full-gtd-test-define-story full-gtd-do-test-session-shows-notes
+(full-gtd-utils-test-define-story full-gtd-do-test-session-shows-notes
   "Session displays notes from source file."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task with notes\n:PROPERTIES:\n:ID: show-notes-1\n:END:\nImportant note content\n"))
@@ -274,9 +274,9 @@
              (with-current-buffer "*Full-GTD: Do Session*"
                (goto-char (point-min))
                (should (search-forward "Important note content" nil t))))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD: Do Session*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD: Do Session*")))
 
-(full-gtd-test-define-story full-gtd-do-test-session-jump-to-source
+(full-gtd-utils-test-define-story full-gtd-do-test-session-jump-to-source
   "Jump command opens source file at task."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Jump target\n:PROPERTIES:\n:ID: jump-1\n:END:\n"))
@@ -292,11 +292,11 @@
                (with-current-buffer buf
                  (should (looking-at-p "\\*+ TODO Jump target")))))
   :teardown (progn
-              (full-gtd-test-cleanup-buffers '("*Full-GTD: Do Session*"))
+              (full-gtd-utils-test-cleanup-buffers '("*Full-GTD: Do Session*"))
               (let ((buf (get-file-buffer (expand-file-name "action.org" full-gtd-init-base-directory))))
                 (when buf (kill-buffer buf)))))
 
-(full-gtd-test-define-story full-gtd-do-test-session-backlog-count
+(full-gtd-utils-test-define-story full-gtd-do-test-session-backlog-count
   "Backlog count is displayed and decrements on done but not skip."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO First task\n:PROPERTIES:\n:ID: first-1\n:PROJECT: Test\n:END:\n* TODO Second task\n:PROPERTIES:\n:ID: second-1\n:PROJECT: Test\n:END:\n* TODO Third task\n:PROPERTIES:\n:ID: third-1\n:PROJECT: Test\n:END:\n"))
@@ -321,16 +321,16 @@
   :asserts (progn
              (should (get-buffer "*Full-GTD: Do Session*"))
              ;; Verify first task is still TODO (skipped)
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "* TODO First task"))
              ;; Verify second task is DONE
-             (should (full-gtd-test-file-contains-p
+             (should (full-gtd-utils-test-file-contains-p
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "* DONE Second task")))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD: Do Session*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD: Do Session*")))
 
-(full-gtd-test-define-story full-gtd-do-test-session-completes-no-project-task-deletes
+(full-gtd-utils-test-define-story full-gtd-do-test-session-completes-no-project-task-deletes
   "Done command on no-project task should delete it."
   :setup (full-gtd-init-initialize)
   :files (("action.org" (format "* TODO No project task\nDEADLINE: <%s>\n:PROPERTIES:\n:ID: no-proj-1\n:END:\n* TODO Project task\n:PROPERTIES:\n:ID: proj-1\n:PROJECT: Test\n:END:\n"
@@ -344,20 +344,20 @@
             (full-gtd-do--session-done)))
   :asserts (progn
              ;; Verify no-project task is deleted
-             (should-not (full-gtd-test-file-contains-p-bool
+             (should-not (full-gtd-utils-test-file-contains-p-bool
                           (expand-file-name "action.org" full-gtd-init-base-directory)
                           "* TODO No project task"))
              ;; Verify project task remains
-             (should (full-gtd-test-file-contains-p-bool
+             (should (full-gtd-utils-test-file-contains-p-bool
                       (expand-file-name "action.org" full-gtd-init-base-directory)
                       "* TODO Project task"))
              ;; Session should advance to next task
              (with-current-buffer "*Full-GTD: Do Session*"
                (goto-char (point-min))
                (should (search-forward "* Project task" nil t))))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD: Do Session*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD: Do Session*")))
 
-(full-gtd-test-define-story full-gtd-do-test-session-deletes-task-when-project-removed-after-start
+(full-gtd-utils-test-define-story full-gtd-do-test-session-deletes-task-when-project-removed-after-start
   "Done deletes a task whose PROJECT is removed after the session starts.
 This verifies deletion decision reads PROJECT from the source entry (not from cached session plist)."
   :setup (full-gtd-init-initialize)
@@ -378,13 +378,13 @@ This verifies deletion decision reads PROJECT from the source entry (not from ca
   :asserts (progn
              ;; Verify it is deleted because PROJECT is now missing in the source entry.
              (should-not
-              (full-gtd-test-file-contains-p-bool
+              (full-gtd-utils-test-file-contains-p-bool
                (expand-file-name "action.org" full-gtd-init-base-directory)
                "Task losing project"))
              (with-current-buffer "*Full-GTD: Do Session*"
                (goto-char (point-min))
                (should (search-forward "* Remaining project task" nil t))))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD: Do Session*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD: Do Session*")))
 
 ;; Note: Navigation test removed - single-card push mode doesn't support manual next/previous.
 
@@ -502,7 +502,7 @@ This verifies deletion decision reads PROJECT from the source entry (not from ca
     (should (= (full-gtd-do--score-action plain)
                (full-gtd-do--score-action multi)))))
 
-(full-gtd-test-define-story full-gtd-do-test-session-help-and-quit
+(full-gtd-utils-test-define-story full-gtd-do-test-session-help-and-quit
   "Help prints the command hint; quit closes the session window."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: hq-1\n:END:\n"))
@@ -515,9 +515,9 @@ This verifies deletion decision reads PROJECT from the source entry (not from ca
             (should full-gtd-do-session-mode)
             (full-gtd-do--session-quit)))
   :asserts (should (get-buffer "*Full-GTD: Do Session*"))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD: Do Session*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD: Do Session*")))
 
-(full-gtd-test-define-story full-gtd-do-test-session-done-continues-same-conditions
+(full-gtd-utils-test-define-story full-gtd-do-test-session-done-continues-same-conditions
   "Done on the last action re-collects with the same conditions when confirmed."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Only task\n:PROPERTIES:\n:ID: cont-1\n:PROJECT: Test\n:END:\n"))
@@ -530,12 +530,12 @@ This verifies deletion decision reads PROJECT from the source entry (not from ca
             (full-gtd-do--session-done)
             (goto-char (point-min))
             (should (search-forward "Session Complete" nil t))))
-  :asserts (should (full-gtd-test-file-contains-p
+  :asserts (should (full-gtd-utils-test-file-contains-p
                     (expand-file-name "action.org" full-gtd-init-base-directory)
                     "* DONE Only task"))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD: Do Session*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD: Do Session*")))
 
-(full-gtd-test-define-story full-gtd-do-test-session-done-decline-changes-conditions
+(full-gtd-utils-test-define-story full-gtd-do-test-session-done-decline-changes-conditions
   "Declining the continuation prompt opens the change-conditions prompts."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Only task\n:PROPERTIES:\n:ID: cont-2\n:PROJECT: Test\n:END:\n"))
@@ -550,12 +550,12 @@ This verifies deletion decision reads PROJECT from the source entry (not from ca
             (full-gtd-do--session-done)
             (goto-char (point-min))
             (should (search-forward "nomatch" nil t))))
-  :asserts (should (full-gtd-test-file-contains-p
+  :asserts (should (full-gtd-utils-test-file-contains-p
                     (expand-file-name "action.org" full-gtd-init-base-directory)
                     "* DONE Only task"))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD: Do Session*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD: Do Session*")))
 
-(full-gtd-test-define-story full-gtd-do-test-session-skip-continues-same-conditions
+(full-gtd-utils-test-define-story full-gtd-do-test-session-skip-continues-same-conditions
   "Skip on the last action re-collects the still-pending task when confirmed."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Recurring\n:PROPERTIES:\n:ID: cont-3\n:END:\n"))
@@ -568,12 +568,12 @@ This verifies deletion decision reads PROJECT from the source entry (not from ca
             (full-gtd-do--session-skip)
             (goto-char (point-min))
             (should (search-forward "* Recurring" nil t))))
-  :asserts (should (full-gtd-test-file-contains-p
+  :asserts (should (full-gtd-utils-test-file-contains-p
                     (expand-file-name "action.org" full-gtd-init-base-directory)
                     "* TODO Recurring"))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD: Do Session*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD: Do Session*")))
 
-(full-gtd-test-define-story full-gtd-do-test-session-snooze-decline-changes-conditions
+(full-gtd-utils-test-define-story full-gtd-do-test-session-snooze-decline-changes-conditions
   "Declining after a snooze re-filters with the newly entered conditions."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Later\n:PROPERTIES:\n:ID: cont-4\n:END:\n"))
@@ -588,14 +588,14 @@ This verifies deletion decision reads PROJECT from the source entry (not from ca
             (full-gtd-do--session-snooze)
             (goto-char (point-min))
             (should (search-forward "Session Complete" nil t))))
-  :asserts (should (full-gtd-test-file-contains-p
+  :asserts (should (full-gtd-utils-test-file-contains-p
                     (expand-file-name "action.org" full-gtd-init-base-directory)
                     (format "SCHEDULED: <%s"
                             (format-time-string "%F"
                                                 (time-add (current-time) (* 24 3600))))))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD: Do Session*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD: Do Session*")))
 
-(full-gtd-test-define-story full-gtd-do-test-session-renders-full-details
+(full-gtd-utils-test-define-story full-gtd-do-test-session-renders-full-details
   "Card renders every populated field, notes, and the singular backlog form."
   :setup (full-gtd-init-initialize)
   :files (("action.org"
@@ -625,10 +625,10 @@ This verifies deletion decision reads PROJECT from the source entry (not from ca
             (should (search-forward "L4 Goal" nil t))
             (should (search-forward "L3 Area" nil t))
             (should (search-forward "Body note line" nil t))))
-  :asserts (should (full-gtd-test-file-contains-p
+  :asserts (should (full-gtd-utils-test-file-contains-p
                     (expand-file-name "action.org" full-gtd-init-base-directory)
                     ":L6_PURPOSE: Purpose"))
-  :teardown (full-gtd-test-cleanup-buffers '("*Full-GTD: Do Session*")))
+  :teardown (full-gtd-utils-test-cleanup-buffers '("*Full-GTD: Do Session*")))
 
 (provide 'full-gtd-do-test)
 

@@ -215,7 +215,7 @@
 
 (ert-deftest full-gtd-core-test-get-set-entry-notes ()
   "Get and set entry notes using body manipulation."
-  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-utils-test-" t)))
     (unwind-protect
         (progn
           (write-region "* TODO Test\n:PROPERTIES:\n:ID: notes-1\n:END:\nInitial body\n"
@@ -233,7 +233,7 @@
 
 (ert-deftest full-gtd-core-test-entry-notes-bounds-with-subheadings ()
   "Test that entry notes bounds correctly exclude subheadings."
-  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-utils-test-" t)))
     (unwind-protect
         (progn
           (write-region "* TODO Test entry with subheadings\n:PROPERTIES:\n:ID: notes-sub-1\n:END:\nThis is the main body text.\n\n** Subheading 1\nContent under subheading 1.\n\n** Subheading 2\nContent under subheading 2.\n"
@@ -250,7 +250,7 @@
 
 (ert-deftest full-gtd-core-test-entry-notes-bounds-without-subheadings ()
   "Test that entry notes bounds work correctly for entries without subheadings."
-  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-utils-test-" t)))
     (unwind-protect
         (progn
           (write-region "* TODO Simple entry\n:PROPERTIES:\n:ID: notes-simple-1\n:END:\nThis is the main body text.\n\nSome more notes here.\n"
@@ -265,7 +265,7 @@
 
 (ert-deftest full-gtd-core-test-entry-notes-bounds-with-sibling ()
   "Test that entry notes bounds correctly stop before sibling heading."
-  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-utils-test-" t)))
     (unwind-protect
         (progn
           (write-region "* TODO First entry\n:PROPERTIES:\n:ID: notes-sibling-1\n:END:\nThis is the body of first entry.\n\n* TODO Second entry\n:PROPERTIES:\n:ID: notes-sibling-2\n:END:\nThis is second entry.\n"
@@ -281,7 +281,7 @@
 
 (ert-deftest full-gtd-core-test-entry-notes-bounds-empty-notes ()
   "Test that empty notes return nil."
-  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-utils-test-" t)))
     (unwind-protect
         (progn
           (write-region "* TODO Empty notes entry\n:PROPERTIES:\n:ID: notes-empty-1\n:END:\n"
@@ -296,7 +296,7 @@
 
 (ert-deftest full-gtd-core-test-entry-notes-bounds-empty-with-sibling ()
   "Test that empty notes with sibling heading returns correct bounds."
-  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-utils-test-" t)))
     (unwind-protect
         (progn
           (write-region "* TODO Empty entry\n:PROPERTIES:\n:ID: empty-sib-1\n:END:\n* TODO Next sibling\n:PROPERTIES:\n:ID: empty-sib-2\n:END:\nBody of sibling\n"
@@ -317,7 +317,7 @@
 
 (ert-deftest full-gtd-core-test-set-entry-notes-meta-end-same-line ()
   "Setting notes when :END: is directly followed by text inserts a newline."
-  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-utils-test-" t)))
     (unwind-protect
         (progn
           (write-region "* TODO Task\n:PROPERTIES:\n:ID: same-line-1\n:END:Existing text\n"
@@ -382,7 +382,7 @@
 
 (ert-deftest full-gtd-core-test-get-entry-notes-residual-after-end-marker ()
   "Text left on the :END: line is recovered as the entry notes."
-  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-utils-test-" t)))
     (unwind-protect
         (progn
           (write-region "* TODO Task\n:PROPERTIES:\n:ID: residual-1\n:END:Residual text\n"

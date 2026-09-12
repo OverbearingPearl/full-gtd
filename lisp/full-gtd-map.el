@@ -133,13 +133,14 @@ Action rows are indented deeper than horizon rows."
            (prefixes (full-gtd-map--close-tree-lines (length visible) 4)))
       (cl-mapcar #'full-gtd-map--action-row prefixes visible))))
 
-(defun full-gtd-map--frame-row (row width)
+(defun full-gtd-map--frame-row (row inner-width)
   "Return ROW framed by left `│ ' and right ` │' rules.
-WIDTH is the display width of the widest row text in the block.
-Text is padded with spaces so the right rule aligns across rows
-\(CJK-safe via `string-width')."
+INNER-WIDTH is the display width available to text plus padding
+between the two interior space characters.  Text is padded with
+spaces so the right rule aligns across rows (CJK-safe via
+`string-width')."
   (let* ((text (car row))
-         (pad (max 0 (- (+ width 2) (string-width text)))))
+         (pad (max 0 (- inner-width (string-width text)))))
     (cons (concat "│ " text (make-string pad ?\s) " │")
           (cdr row))))
 
@@ -160,16 +161,31 @@ stay clearly separated."
                         (full-gtd-map--action-lines actions fold)))
          (project-text (format "Project: %s (%d/%d done)"
                                name (nth 2 stats) (nth 0 stats)))
-         ;; Frame width follows the widest row in the block, not just
-         ;; the project line, so long horizon values stay inside.
-         (width (apply #'max (string-width project-text)
-                       (mapcar (lambda (row) (string-width (car row)))
-                               (append horizon-rows action-rows))))
-         (rule (make-string (+ 4 width) ?─))
+         ;; Display width (in cells) of the widest row content.
+         (max-content (apply #'max (string-width project-text)
+                             (mapcar (lambda (row) (string-width (car row)))
+                                     (append horizon-rows action-rows))))
+         ;; Box-drawing glyphs are East Asian Ambiguous: one cell wide in
+         ;; Western locales, two cells wide in CJK locales -- and Emacs
+         ;; does not give every glyph in that block the same width (a
+         ;; rounded corner may measure 1 cell while the side rule measures
+         ;; 2).  Measure each glyph instead of assuming, then solve for the
+         ;; dash count that makes a rule row exactly as wide as a content
+         ;; row:
+         ;;   rule row    = 2 * corner + n * dash
+         ;;   content row = 2 * side   + 2 + inner-width
+         ;; so pick the smallest n with inner-width >= max-content.
+         (dash-width (string-width "─"))
+         (side-width (string-width "│"))
+         (corner-width (string-width "╭"))
+         (frame-extra (- (* 2 side-width) (* 2 corner-width)))
+         (n-dashes (ceiling (+ max-content 2 frame-extra) dash-width))
+         (inner-width (- (* n-dashes dash-width) 2 frame-extra))
+         (rule (make-string n-dashes ?─))
          (line-rows (append
                      (list (cons (concat "╭" rule "╮") '()))
                      (mapcar (lambda (row)
-                               (full-gtd-map--frame-row row width))
+                               (full-gtd-map--frame-row row inner-width))
                              (append horizon-rows
                                      (list (cons project-text
                                                  (list :kind 'project)))

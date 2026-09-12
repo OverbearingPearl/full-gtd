@@ -259,7 +259,7 @@ possibly nil for no-project entries.  CONTEXT defaults to \"\"."
 
 (ert-deftest full-gtd-domain-test-collect-project-candidates ()
   "Project candidates are deduplicated PROJECT values, sorted."
-  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-utils-test-" t)))
     (unwind-protect
         (progn
           (write-region "* TODO A\n:PROPERTIES:\n:ID: cand-a\n:PROJECT: Alpha; Beta\n:END:\n* TODO B\n:PROPERTIES:\n:ID: cand-b\n:PROJECT: Beta\n:END:\n* DONE C\n:PROPERTIES:\n:ID: cand-c\n:PROJECT: Gamma\n:END:\n"
@@ -271,7 +271,7 @@ possibly nil for no-project entries.  CONTEXT defaults to \"\"."
 
 (ert-deftest full-gtd-domain-test-collect-delegate-candidates ()
   "Delegate candidates are deduplicated DELEGATED values, sorted."
-  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-test-" t)))
+  (let ((full-gtd-init-base-directory (make-temp-file "full-gtd-utils-test-" t)))
     (unwind-protect
         (progn
           (write-region "* TODO A\n:PROPERTIES:\n:ID: cand-d\n:DELEGATED: Bob\n:END:\n* TODO B\n:PROPERTIES:\n:ID: cand-e\n:DELEGATED: Alice\n:END:\n"
