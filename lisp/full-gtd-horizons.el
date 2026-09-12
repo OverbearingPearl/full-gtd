@@ -248,7 +248,10 @@ Prompts for Purpose first, then immediately prompts for Principle."
 
 (defun full-gtd-horizons--classify-projects (projects)
   "Classify PROJECTS into categories based on horizon alignment.
-Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
+Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of
+projects.  MULTI holds fully aligned projects that span several
+values at one or more levels; a project missing a higher horizon is
+PARTIAL even when a field is multi-valued."
   (let ((critical '())
         (partial '())
         (aligned '())
@@ -275,9 +278,9 @@ Returns (CRITICAL PARTIAL ALIGNED MULTI) where each is a list of projects."
          ((and (not has-l6-purpose) (not has-l6-principle) (not has-l5) (not has-l4) has-l3)
           (push proj partial))
          ((and has-l6-purpose has-l5 has-l4 has-l3)
-          (push proj aligned))
-         (multi-p
-          (push proj multi))
+          ;; Multi = aligned + multi-valued.  Completeness wins over
+          ;; multi-valuedness, so a partial project never lands here.
+          (if multi-p (push proj multi) (push proj aligned)))
          (t
           (push proj partial)))))
     (list (nreverse critical) (nreverse partial) (nreverse aligned) (nreverse multi))))

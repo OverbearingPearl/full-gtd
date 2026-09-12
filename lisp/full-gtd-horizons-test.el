@@ -113,8 +113,9 @@
                (should (search-forward-regexp "Personal" (line-end-position) t))))
   :teardown (kill-buffer "*Full-GTD Horizon View*"))
 
-(full-gtd-utils-test-define-story full-gtd-horizons-test-view-shows-multi-horizon-projects
-  "Projects with incomplete horizons and multiple values shown in dedicated section."
+(full-gtd-utils-test-define-story full-gtd-horizons-test-incomplete-multi-valued-shown-as-partial
+  "Projects with incomplete horizons and multiple values land in Partial,
+not Multi-Horizon, even when a field is multi-valued."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: multi-1\n:PROJECT: MultiProject\n:L3_AREA: Work; Personal\n:L4_GOAL: Goal1; Goal2\n:END:\n"))
   :mock nil
@@ -123,7 +124,7 @@
              (should (get-buffer "*Full-GTD Horizon View*"))
              (with-current-buffer "*Full-GTD Horizon View*"
                (goto-char (point-min))
-               (search-forward "** Multi-Horizon Projects")
+               (search-forward "** Partial: Projects Missing Higher Horizons")
                (should (search-forward-regexp "L4 Goal[ \t]+Goal1" nil t))
                (should (search-forward-regexp "L4 Goal[ \t]+Goal2" nil t))
                (should (search-forward-regexp "L3 Area[ \t]+Work" nil t))
@@ -406,7 +407,7 @@
              (should (get-buffer "*Full-GTD Horizon View*"))
              (with-current-buffer "*Full-GTD Horizon View*"
                (goto-char (point-min))
-               (search-forward "** Aligned Projects")
+               (search-forward "** Multi-Horizon Projects")
                (should (search-forward-regexp "L6 Purpose[ \t]+PurposeA" nil t))
                (should (search-forward-regexp "L6 Purpose[ \t]+PurposeB" nil t))
                (should (search-forward-regexp "L5 Vision[ \t]+VisionA" nil t))
@@ -450,7 +451,7 @@
              (should (get-buffer "*Full-GTD Horizon View*"))
              (with-current-buffer "*Full-GTD Horizon View*"
                (goto-char (point-min))
-               (search-forward "** Aligned Projects")
+               (search-forward "** Multi-Horizon Projects")
                (should (search-forward-regexp "L6 Purpose[ \t]+P1" nil t))
                (should (search-forward-regexp "L6 Purpose[ \t]+P2" nil t))
                (should (search-forward-regexp "L6 Purpose[ \t]+P3" nil t))
@@ -459,7 +460,7 @@
   :teardown (kill-buffer "*Full-GTD Horizon View*"))
 
 (full-gtd-utils-test-define-story full-gtd-horizons-test-multiple-projects-shown-as-multi-horizon
-  "Project with complete horizons and multiple values shown in Aligned section."
+  "Project with complete horizons and multiple values shown in Multi-Horizon section."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: multi-ph-1\n:PROJECT: MultiProj\n:L3_AREA: Area1; Area2\n:L4_GOAL: Goal1; Goal2\n:L5_VISION: Vision1\n:L6_PURPOSE: Purpose1\n:END:\n"))
   :mock nil
@@ -468,12 +469,12 @@
              (should (get-buffer "*Full-GTD Horizon View*"))
              (with-current-buffer "*Full-GTD Horizon View*"
                (goto-char (point-min))
-               (search-forward "** Aligned Projects")
+               (search-forward "** Multi-Horizon Projects")
                (should (search-forward "MultiProj" nil t))))
   :teardown (kill-buffer "*Full-GTD Horizon View*"))
 
-(full-gtd-utils-test-define-story full-gtd-horizons-test-complete-multi-valued-in-aligned-section
-  "Complete L3-L6 project with multiple values appears in Aligned, not Multi-Horizon."
+(full-gtd-utils-test-define-story full-gtd-horizons-test-complete-multi-valued-in-multi-section
+  "Complete L3-L6 project with multiple values appears in Multi-Horizon, not Aligned."
   :setup (full-gtd-init-initialize)
   :files (("action.org" "* TODO Task\n:PROPERTIES:\n:ID: complete-multi-1\n:PROJECT: CompleteMultiProj\n:L3_AREA: Work; Personal\n:L4_GOAL: Goal1; Goal2\n:L5_VISION: VisionA; VisionB\n:L6_PURPOSE: Purpose1\n:END:\n"))
   :mock nil
@@ -482,11 +483,11 @@
              (should (get-buffer "*Full-GTD Horizon View*"))
              (with-current-buffer "*Full-GTD Horizon View*"
                (goto-char (point-min))
-               (search-forward "** Aligned Projects")
+               (search-forward "** Multi-Horizon Projects")
                (should (search-forward "CompleteMultiProj" nil t))
                (goto-char (point-min))
-               (search-forward "** Multi-Horizon Projects")
-               (should-not (search-forward "CompleteMultiProj" (save-excursion (search-forward "** No-Project Actions") (point)) t))))
+               (search-forward "** Aligned Projects")
+               (should-not (search-forward "CompleteMultiProj" (save-excursion (search-forward "** Multi-Horizon Projects") (point)) t))))
   :teardown (kill-buffer "*Full-GTD Horizon View*"))
 
 (full-gtd-utils-test-define-story full-gtd-horizons-test-whitespace-only-values-ignored
@@ -499,7 +500,7 @@
              (should (get-buffer "*Full-GTD Horizon View*"))
              (with-current-buffer "*Full-GTD Horizon View*"
                (goto-char (point-min))
-               (search-forward "** Aligned Projects")
+               (search-forward "** Multi-Horizon Projects")
                (should (search-forward-regexp "L3 Area[ \t]+ValidArea" nil t))
                (should (search-forward-regexp "L3 Area[ \t]+AnotherArea" nil t))
                (should (search-forward "Project: WSProj" nil t))
