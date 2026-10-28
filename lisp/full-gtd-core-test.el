@@ -17,6 +17,31 @@
   (should (equal (full-gtd-core--split-values "Project A; Project B; Project C")
                  '("Project A" "Project B" "Project C"))))
 
+(ert-deftest full-gtd-core-test-filter-entries-skips-subheadings ()
+  "`full-gtd-core-filter-entries' must collect only level-1 headings."
+  (let ((temp-file (make-temp-file "gtd-filter-test-" nil ".org")))
+    (unwind-protect
+        (progn
+          (with-temp-file temp-file
+            (insert "* Heading One\n:PROPERTIES:\n:ID: id-level-one\n:END:\n"
+                    "** Sub Heading\n:PROPERTIES:\n:ID: id-level-two\n:END:\n"
+                    "* Heading Two\n:PROPERTIES:\n:ID: id-level-three\n:END:\n"))
+          (let ((entries (full-gtd-core-filter-entries temp-file nil)))
+            (ert-info ("Expected exactly two entries (level-1 headings only)")
+              (should (= (length entries) 2)))
+            (ert-info ("Headlines must be only the level-1 headings")
+              (let ((heads (mapcar #'car entries)))
+                (should (member "Heading One" heads))
+                (should (member "Heading Two" heads))
+                (should-not (member "Sub Heading" heads))))
+            (ert-info ("Collected IDs must exclude the subheading's ID")
+              (let ((ids (mapcar (lambda (e) (nth 7 e)) entries)))
+                (should (member "id-level-one" ids))
+                (should (member "id-level-three" ids))
+                (should-not (member "id-level-two" ids))))))
+      (when (file-exists-p temp-file)
+        (delete-file temp-file)))))
+
 (ert-deftest full-gtd-core-test-split-values-chinese-semicolon ()
   "Test splitting values with Chinese semicolon."
   (should (equal (full-gtd-core--split-values "Project A；Project B；Project C")

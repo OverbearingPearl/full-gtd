@@ -64,6 +64,7 @@
 
 (defun full-gtd-core-filter-entries (file-path predicates)
   "Filter entries in FILE-PATH using PREDICATES.
+Only level-1 headings are collected; deeper headings are skipped.
 PREDICATES is a list of predicate functions to apply.
 Each predicate is called with no arguments in the context of the entry.
 Return list of entries that pass all predicates.
@@ -79,7 +80,8 @@ Nil values indicate unset properties."
         (org-mode)
         (org-map-entries
          (lambda ()
-           (when (cl-every (lambda (pred) (funcall pred)) predicates)
+           (when (and (= (org-current-level) 1)
+                      (cl-every (lambda (pred) (funcall pred)) predicates))
              (let* ((head (org-get-heading t t))
                     (id (org-entry-get nil "ID"))
                     (tags (org-get-tags))
