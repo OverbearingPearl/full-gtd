@@ -8,9 +8,12 @@
 
 ;;; Commentary:
 
-;; This file handles the Horizon system for GTD (L3 Area through L6 Purpose/Principles).
-;; Hierarchy: L6 Purpose -> L5 Vision -> L4 Goal -> L3 Area -> Projects -> Actions.
-;; L6 contains both Purpose and Principle (edited together via key '6' in review mode);
+;; This file handles the Horizon system for GTD
+;; (L3 Area through L6 Purpose/Principles).
+;; Hierarchy: L6 Purpose -> L5 Vision -> L4 Goal -> L3 Area
+;; -> Projects -> Actions.
+;; L6 contains both Purpose and Principle
+;; (edited together via key '6' in review mode);
 ;; Principle requires Purpose to be set first.
 ;; Provides horizon alignment star-map view for reviewing vertical
 ;; alignment.

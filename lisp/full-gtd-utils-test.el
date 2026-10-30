@@ -54,7 +54,7 @@ BASE-DIR is the base directory to check."
 (defun full-gtd-utils-test-cleanup-buffers (buffer-names)
   "Safely kill all buffers in BUFFER-NAMES, ignoring errors."
   (dolist (name buffer-names)
-    (when-let ((buf (get-buffer name)))
+    (when-let* ((buf (get-buffer name)))
       (with-current-buffer buf
         (setq buffer-read-only nil))
       (condition-case nil

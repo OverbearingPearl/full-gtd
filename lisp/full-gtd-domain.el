@@ -252,7 +252,7 @@ each project."
              (id (or (nth 7 entry) ""))
              (context (or (nth 10 entry) ""))
              (project-string (or (nth 5 entry) "")))
-        (when-let ((projects (full-gtd-domain--split-values project-string)))
+        (when-let* ((projects (full-gtd-domain--split-values project-string)))
           (dolist (project projects)
             (let ((existing (assoc project project-actions)))
               (unless existing

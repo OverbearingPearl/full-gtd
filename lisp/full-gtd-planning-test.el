@@ -3,8 +3,9 @@
 ;;; Commentary:
 
 ;; User stories for GTD Natural Planning Model.
-;; Tests cover the forced completion workflow: Project definition → Horizon setup →
-;; Brainstorm → Mandatory organization → Mandatory next action.
+;; Tests cover the forced completion workflow: Project definition →
+;; Horizon setup → Brainstorm →
+;; Mandatory organization → Mandatory next action.
 
 ;;; Code:
 
@@ -64,7 +65,7 @@
          ((symbol-function 'full-gtd-inbox--read-delegate) (lambda () ""))
          ((symbol-function 'recursive-edit)
           (lambda ()
-            (when-let ((buf (get-buffer "*Full-GTD Brainstorm*")))
+            (when-let* ((buf (get-buffer "*Full-GTD Brainstorm*")))
               (with-current-buffer buf
                 (insert "Redesign homepage\n")
                 (insert "Optimize mobile view\n"))))))
@@ -159,7 +160,7 @@
          ((symbol-function 'full-gtd-inbox--read-context) (lambda () ""))
          ((symbol-function 'recursive-edit)
           (lambda ()
-            (when-let ((buf (get-buffer "*Full-GTD Brainstorm*")))
+            (when-let* ((buf (get-buffer "*Full-GTD Brainstorm*")))
               (with-current-buffer buf
                 (insert "Fix bugs\n"))))))
   :body (full-gtd-planning-start)
@@ -223,7 +224,7 @@
          ((symbol-function 'full-gtd-inbox--read-delegate) (lambda () ""))
          ((symbol-function 'recursive-edit)
           (lambda ()
-            (when-let ((buf (get-buffer "*Full-GTD Brainstorm*")))
+            (when-let* ((buf (get-buffer "*Full-GTD Brainstorm*")))
               (with-current-buffer buf
                 (insert "Idea 1\n")
                 (insert "Idea 2\n")
@@ -282,7 +283,7 @@
               (if (= calls 1) ?t ?r))))  ; First trash, then reference
          ((symbol-function 'recursive-edit)
           (lambda ()
-            (when-let ((buf (get-buffer "*Full-GTD Brainstorm*")))
+            (when-let* ((buf (get-buffer "*Full-GTD Brainstorm*")))
               (with-current-buffer buf
                 (insert "Bad idea 1\n")
                 (insert "Bad idea 2\n"))))))
@@ -344,7 +345,7 @@
          ((symbol-function 'full-gtd-inbox--read-delegate) (lambda () ""))
          ((symbol-function 'recursive-edit)
           (lambda ()
-            (when-let ((buf (get-buffer "*Full-GTD Brainstorm*")))
+            (when-let* ((buf (get-buffer "*Full-GTD Brainstorm*")))
               (with-current-buffer buf
                 (insert "Action\n"))))))
   :body (full-gtd-planning-start)
@@ -392,7 +393,7 @@
           (lambda (_) ?t))  ; Trash
          ((symbol-function 'recursive-edit)
           (lambda ()
-            (when-let ((buf (get-buffer "*Full-GTD Brainstorm*")))
+            (when-let* ((buf (get-buffer "*Full-GTD Brainstorm*")))
               (with-current-buffer buf
                 (insert "Trash me\n"))))))
   :body (full-gtd-planning-start)
@@ -446,7 +447,7 @@
          ((symbol-function 'full-gtd-inbox--read-context) (lambda () ""))
          ((symbol-function 'recursive-edit)
           (lambda ()
-            (when-let ((buf (get-buffer "*Full-GTD Brainstorm*")))
+            (when-let* ((buf (get-buffer "*Full-GTD Brainstorm*")))
               (with-current-buffer buf
                 (insert "Action without context\n"))))))
   :body (full-gtd-planning-start)
@@ -505,7 +506,7 @@
          ((symbol-function 'full-gtd-inbox--read-delegate) (lambda () ""))
          ((symbol-function 'recursive-edit)
           (lambda ()
-            (when-let ((buf (get-buffer "*Full-GTD Brainstorm*")))
+            (when-let* ((buf (get-buffer "*Full-GTD Brainstorm*")))
               (with-current-buffer buf
                 (insert "Action\n"))))))
   :body (full-gtd-planning-start)
@@ -592,7 +593,7 @@
           (lambda (_) (signal 'quit nil)))  ; User quits immediately
          ((symbol-function 'recursive-edit)
           (lambda ()
-            (when-let ((buf (get-buffer "*Full-GTD Brainstorm*")))
+            (when-let* ((buf (get-buffer "*Full-GTD Brainstorm*")))
               (with-current-buffer buf
                 (insert "Idea to organize\n"))))))
   :body (condition-case nil
@@ -642,7 +643,7 @@
           (lambda () "@office"))
          ((symbol-function 'recursive-edit)
           (lambda ()
-            (when-let ((buf (get-buffer "*Full-GTD Brainstorm*")))
+            (when-let* ((buf (get-buffer "*Full-GTD Brainstorm*")))
               (with-current-buffer buf
                 (insert "Raw idea\n"))))))
   :body (full-gtd-planning-start)
@@ -692,7 +693,7 @@
          ((symbol-function 'full-gtd-inbox--read-delegate) (lambda () ""))
          ((symbol-function 'recursive-edit)
           (lambda ()
-            (when-let ((buf (get-buffer "*Full-GTD Brainstorm*")))
+            (when-let* ((buf (get-buffer "*Full-GTD Brainstorm*")))
               (with-current-buffer buf
                 (insert "New project idea\n"))))))
   :body (full-gtd-planning-start)
@@ -750,7 +751,7 @@
          ((symbol-function 'recursive-edit)
           (lambda ()
             ;; Verify pre-populated content exists in buffer
-            (when-let ((buf (get-buffer "*Full-GTD Brainstorm*")))
+            (when-let* ((buf (get-buffer "*Full-GTD Brainstorm*")))
               (with-current-buffer buf
                 ;; Verify existing items are pre-loaded
                 (should (string-match-p "Existing idea 1" (buffer-string)))
@@ -807,7 +808,7 @@
          ((symbol-function 'full-gtd-inbox--read-delegate) (lambda () ""))
          ((symbol-function 'recursive-edit)
           (lambda ()
-            (when-let ((buf (get-buffer "*Full-GTD Brainstorm*")))
+            (when-let* ((buf (get-buffer "*Full-GTD Brainstorm*")))
               (with-current-buffer buf
                 ;; Verify buffer is empty (no pre-loaded content)
                 (should (string= (string-trim (buffer-string)) ""))
@@ -854,7 +855,7 @@
           (lambda (&rest _) ""))
          ((symbol-function 'recursive-edit)
           (lambda ()
-            (when-let ((buf (get-buffer "*Full-GTD Brainstorm*")))
+            (when-let* ((buf (get-buffer "*Full-GTD Brainstorm*")))
               (with-current-buffer buf
                 (insert "Action item\n"))))))
   :body (full-gtd-planning-start)
@@ -901,7 +902,7 @@
          ((symbol-function 'full-gtd-inbox--read-delegate) (lambda () ""))
          ((symbol-function 'recursive-edit)
           (lambda ()
-            (when-let ((buf (get-buffer "*Full-GTD Brainstorm*")))
+            (when-let* ((buf (get-buffer "*Full-GTD Brainstorm*")))
               (with-current-buffer buf
                 (insert "Task\n"))))))
   :body (full-gtd-planning-start)
@@ -951,7 +952,7 @@
          ((symbol-function 'full-gtd-planning--project-exists-p) (lambda (_) nil))
          ((symbol-function 'recursive-edit)
           (lambda ()
-            (when-let ((buf (get-buffer "*Full-GTD Brainstorm*")))
+            (when-let* ((buf (get-buffer "*Full-GTD Brainstorm*")))
               (with-current-buffer buf
                 (insert "Action\n"))))))
   :body (full-gtd-planning-start)
@@ -996,7 +997,7 @@
          ((symbol-function 'full-gtd-inbox--read-delegate) (lambda () ""))
          ((symbol-function 'recursive-edit)
           (lambda ()
-            (when-let ((buf (get-buffer "*Full-GTD Brainstorm*")))
+            (when-let* ((buf (get-buffer "*Full-GTD Brainstorm*")))
               (with-current-buffer buf
                 (insert "Task\n"))))))
   :body (full-gtd-planning-start)
@@ -1031,7 +1032,7 @@
                   (t ""))))
          ((symbol-function 'recursive-edit)
           (lambda ()
-            (when-let ((buf (get-buffer "*Full-GTD Brainstorm*")))
+            (when-let* ((buf (get-buffer "*Full-GTD Brainstorm*")))
               (with-current-buffer buf
                 ;; Only whitespace entries
                 (insert "   \n")
@@ -1094,7 +1095,7 @@
           (lambda (&rest _) ""))
          ((symbol-function 'recursive-edit)
           (lambda ()
-            (when-let ((buf (get-buffer "*Full-GTD Brainstorm*")))
+            (when-let* ((buf (get-buffer "*Full-GTD Brainstorm*")))
               (with-current-buffer buf
                 (insert "New action\n"))))))
   :body (full-gtd-planning-start)
@@ -1120,7 +1121,7 @@
          ((symbol-function 'recursive-edit)
           (lambda ()
             ;; Simulate C-c C-k by invoking the buffer-local binding.
-            (when-let ((buf (get-buffer "*Full-GTD Brainstorm*")))
+            (when-let* ((buf (get-buffer "*Full-GTD Brainstorm*")))
               (with-current-buffer buf
                 (let ((cmd (lookup-key (current-local-map) (kbd "C-c C-k"))))
                   (should (functionp cmd))

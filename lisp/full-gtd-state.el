@@ -59,7 +59,7 @@ Returns (FILE PATH CONTENT-STRING-OR-NIL)."
   (dolist (snap snapshots)
     (let ((path (cadr snap))
           (content (caddr snap)))
-      (when-let ((buf (find-buffer-visiting path)))
+      (when-let* ((buf (find-buffer-visiting path)))
         (with-current-buffer buf
           (set-buffer-modified-p nil))
         (kill-buffer buf))
